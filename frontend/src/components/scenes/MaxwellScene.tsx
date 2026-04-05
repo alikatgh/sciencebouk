@@ -273,7 +273,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     } else {
       buildWaveMode(g)
     }
-  }, [mode])
+  }, [mode, W, H])
 
   // Update field lines when charges move (mode 1 only, triggered by redrawFieldLines)
   function buildFieldMode(g: Selection<SVGGElement, unknown, null, undefined>) {

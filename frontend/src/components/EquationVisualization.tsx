@@ -3,6 +3,10 @@ import { lazy, Suspense } from "react"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { EquationIdProvider } from "./teaching/EquationContext"
 
+export type ScenePresentation = "standard" | "immersive"
+
+const immersiveSceneIds = new Set<number>([12])
+
 const PythagorasScene = lazy(() => import("./scenes/PythagorasScene").then((m) => ({ default: m.PythagorasScene })))
 const LogarithmScene = lazy(() => import("./scenes/LogarithmScene").then((m) => ({ default: m.LogarithmScene })))
 const CalculusScene = lazy(() => import("./scenes/CalculusScene").then((m) => ({ default: m.CalculusScene })))
@@ -21,7 +25,18 @@ const InformationScene = lazy(() => import("./scenes/InformationScene").then((m)
 const ChaosScene = lazy(() => import("./scenes/ChaosScene").then((m) => ({ default: m.ChaosScene })))
 const BlackScholesScene = lazy(() => import("./scenes/BlackScholesScene").then((m) => ({ default: m.BlackScholesScene })))
 
-function LoadingSkeleton(): ReactElement {
+function LoadingSkeleton({ immersive }: { immersive: boolean }): ReactElement {
+  if (immersive) {
+    return (
+      <div className="flex h-full min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8fbff_0%,#eef3ff_58%,#e8eef9_100%)] dark:bg-[radial-gradient(circle_at_top,#12192b_0%,#0b1120_58%,#060913_100%)]">
+        <div className="flex flex-col items-center gap-3 text-slate-400 dark:text-slate-500">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-ocean border-t-transparent" />
+          <p className="text-sm">Loading visualization...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-[400px] items-center justify-center rounded-[34px] border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
       <div className="flex flex-col items-center gap-3">
@@ -38,19 +53,24 @@ export function EquationVisualization({
   equationId: number
 }): ReactElement {
   const SceneComponent = getScene(equationId)
+  const presentation = getScenePresentation(equationId)
   if (!SceneComponent) {
     return <div className="flex h-80 items-center justify-center text-slate-400">No visualization available</div>
   }
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingSkeleton />}>
+      <Suspense fallback={<LoadingSkeleton immersive={presentation === "immersive"} />}>
         <EquationIdProvider value={equationId}>
           <SceneComponent />
         </EquationIdProvider>
       </Suspense>
     </ErrorBoundary>
   )
+}
+
+export function getScenePresentation(id: number): ScenePresentation {
+  return immersiveSceneIds.has(id) ? "immersive" : "standard"
 }
 
 function getScene(id: number): React.LazyExoticComponent<React.ComponentType> | null {
