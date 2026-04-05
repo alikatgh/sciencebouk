@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
 import { BookOpen, Sparkles, PanelRightOpen, PanelBottomOpen } from "lucide-react"
 import { useNarrow } from "../../hooks/useMediaQuery"
 import { useAuth } from "../../auth/AuthContext"
@@ -14,9 +14,10 @@ import { Badge } from "../ui/badge"
 import { Separator } from "../ui/separator"
 import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
-import { LiveFormula } from "./LiveFormula"
 import { LessonRunner } from "./LessonRunner"
 import type { Variable, LessonStep, GlossaryTerm } from "./types"
+
+const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 
 export interface Preset {
   label: string
@@ -43,6 +44,12 @@ interface TeachableEquationProps {
     setHighlightedVar: (name: string | null) => void
     highlightedTerm: string | null
   }) => ReactNode
+}
+
+function FormulaFallback(): ReactElement {
+  return (
+    <div className="h-12 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+  )
 }
 
 export function TeachableEquation({
@@ -171,6 +178,11 @@ export function TeachableEquation({
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
   const isNarrow = useNarrow(900)
+  const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
+  const letterFormula = appSettings.showFormulaLetters ? displayFormula : ""
+  const liveFormula = appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : ""
+  const resultLine = buildResultLine?.(vars)
+  const resultNote = appSettings.showResultNote ? describeResult?.(vars) : undefined
 
   const teachingContent = (
     <div className={`flex flex-col gap-2 overflow-y-auto ${isNarrow ? "px-2 py-2" : "h-full pl-2"}`}>
@@ -184,20 +196,28 @@ export function TeachableEquation({
         )}
 
         {/* Live formula — respects settings */}
-        {(appSettings.showFormulaLetters || appSettings.showFormulaNumbers) && (
+        {formulaCardVisible && (
           <Card>
             <CardContent className="p-3">
-              {buildLiveFormula ? (
-                <LiveFormula
-                  letterFormula={appSettings.showFormulaLetters ? displayFormula : ""}
-                  liveFormula={appSettings.showFormulaNumbers ? buildLiveFormula(vars) : ""}
-                  resultLine={buildResultLine?.(vars)}
-                  resultNote={appSettings.showResultNote ? describeResult?.(vars) : undefined}
-                  variables={formulaVariables} onVariableChange={setVar}
-                />
-              ) : displayFormula && appSettings.showFormulaLetters ? (
-                <LiveFormula letterFormula={displayFormula} liveFormula={displayFormula} variables={formulaVariables} onVariableChange={setVar} />
-              ) : null}
+              <Suspense fallback={<FormulaFallback />}>
+                {buildLiveFormula ? (
+                  <LiveFormula
+                    letterFormula={letterFormula}
+                    liveFormula={liveFormula}
+                    resultLine={resultLine}
+                    resultNote={resultNote}
+                    variables={formulaVariables}
+                    onVariableChange={setVar}
+                  />
+                ) : displayFormula && appSettings.showFormulaLetters ? (
+                  <LiveFormula
+                    letterFormula={displayFormula}
+                    liveFormula={displayFormula}
+                    variables={formulaVariables}
+                    onVariableChange={setVar}
+                  />
+                ) : null}
+              </Suspense>
             </CardContent>
           </Card>
         )}

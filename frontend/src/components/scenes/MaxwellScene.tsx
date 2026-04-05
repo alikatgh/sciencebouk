@@ -211,25 +211,30 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     const g = svg.append("g")
     gRef.current = g
 
-    // Mode toggle buttons
-    const btn1X = Math.round(W * 0.044)
-    const btn1W = Math.round(W * 0.167)
+    // Mode toggle buttons — adapt labels to available width
+    const compact = W < 500
+    const btn1Label = compact ? "Field" : "Electric Field Lines"
+    const btn2Label = compact ? "Wave" : "EM Wave"
+    const btnGap = Math.round(W * 0.012)
     const btnY = Math.round(H * 0.027)
-    const btnH = Math.round(H * 0.068)
+    const btnH = Math.max(24, Math.round(H * 0.068))
+    const btn1W = compact ? Math.round(W * 0.14) : Math.round(W * 0.167)
+    const btn1X = Math.round(W * 0.044)
+    const btn2W = compact ? Math.round(W * 0.14) : Math.round(W * 0.133)
+    const btn2X = btn1X + btn1W + btnGap
+
     const btn1 = g.append("g").attr("class", "btn-field").style("cursor", "pointer")
     btn1.append("rect").attr("class", "btn1-bg").attr("x", btn1X).attr("y", btnY).attr("width", btn1W).attr("height", btnH).attr("rx", 8)
     btn1.append("text").attr("class", "btn1-txt").attr("x", btn1X + btn1W / 2).attr("y", btnY + btnH * 0.67).attr("text-anchor", "middle")
       .attr("font-size", fs).attr("font-family", F)
-      .text("Electric Field Lines")
+      .text(btn1Label)
     btn1.on("click", () => setMode(1))
 
-    const btn2X = Math.round(W * 0.222)
-    const btn2W = Math.round(W * 0.133)
     const btn2 = g.append("g").attr("class", "btn-wave").style("cursor", "pointer")
     btn2.append("rect").attr("class", "btn2-bg").attr("x", btn2X).attr("y", btnY).attr("width", btn2W).attr("height", btnH).attr("rx", 8)
     btn2.append("text").attr("class", "btn2-txt").attr("x", btn2X + btn2W / 2).attr("y", btnY + btnH * 0.67).attr("text-anchor", "middle")
       .attr("font-size", fs).attr("font-family", F)
-      .text("EM Wave")
+      .text(btn2Label)
     btn2.on("click", () => setMode(2))
 
     // Field mode group
@@ -392,6 +397,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
 
   function buildWaveMode(g: Selection<SVGGElement, unknown, null, undefined>) {
     const wm = g.select(".wave-mode")
+    const compact = W < 500
     const waveCenter = Math.round(H * 0.48)
     const waveLeft = Math.round(W * 0.067)
     const waveRight = Math.round(W * 0.933)
@@ -471,13 +477,15 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       })
     wlHandleG.call(wlDrag)
 
-    // Info text
-    wm.append("text").attr("x", Math.round(W * 0.844)).attr("y", Math.round(H * 0.136)).attr("text-anchor", "middle")
-      .attr("font-size", waveFs * 0.85).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-      .text("E perpendicular to B")
-    wm.append("text").attr("x", Math.round(W * 0.844)).attr("y", Math.round(H * 0.177)).attr("text-anchor", "middle")
-      .attr("font-size", waveFs * 0.85).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-      .text("Both perpendicular to k")
+    // Info text — hide on narrow screens
+    if (!compact) {
+      wm.append("text").attr("x", Math.round(W * 0.844)).attr("y", Math.round(H * 0.136)).attr("text-anchor", "middle")
+        .attr("font-size", waveFs * 0.85).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
+        .text("E perpendicular to B")
+      wm.append("text").attr("x", Math.round(W * 0.844)).attr("y", Math.round(H * 0.177)).attr("text-anchor", "middle")
+        .attr("font-size", waveFs * 0.85).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
+        .text("Both perpendicular to k")
+    }
 
     // Start animation
     prevTsRef.current = 0
