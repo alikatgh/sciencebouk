@@ -89,8 +89,8 @@ const variables: Variable[] = [
 const lessons: LessonStep[] = [
   {
     id: 'field-lines',
-    instruction: "Look at the electric field lines connecting the positive (+) and negative (-) charges. Drag the charges to see how the field changes.",
-    hint: "Grab a charge and move it around. Watch the field lines bend.",
+    instruction: "Observe the electric field lines connecting the positive (+) and negative (-) charges. Try dragging them to see the field bend.",
+    hint: "You can grab a charge and move it around. The step will advance shortly.",
     highlightElements: [],
     unlockedVariables: ['wavelength'],
     successCondition: { type: 'time_elapsed', duration: 10000 },
@@ -99,8 +99,8 @@ const lessons: LessonStep[] = [
   },
   {
     id: 'em-wave',
-    instruction: "Switch to 'EM Wave' mode using the button in the visualization. You'll see electric (blue) and magnetic (green) waves traveling together.",
-    hint: "Click the 'EM Wave' button at the top of the visualization.",
+    instruction: "Now watch the EM Wave mode. Electric (blue) and magnetic (green) waves travel together, in phase.",
+    hint: "Click the 'EM Wave' button at the top to switch views.",
     highlightElements: ['wavelength'],
     unlockedVariables: ['wavelength'],
     successCondition: { type: 'time_elapsed', duration: 12000 },
@@ -502,7 +502,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
         .curve(curveBasis)
       const bPathGen = line<number>()
         .x(d => waveLeft + d)
-        .y(d => waveCenter + bAmplitude * Math.cos(k * d - t * 4))
+        .y(d => waveCenter + bAmplitude * Math.sin(k * d - t * 4))
         .curve(curveBasis)
 
       const eP = ePathGen(waveXs) ?? ""

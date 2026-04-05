@@ -12,8 +12,8 @@ const FONT = "Manrope, sans-serif"
 const eqConfig = getEquationConfig(1)
 
 const variables: Variable[] = [
-  { name: 'a', symbol: 'a', latex: 'a', value: 3, min: 1, max: 7, step: 0.5, color: VAR_COLORS.primary, description: 'Vertical side' },
-  { name: 'b', symbol: 'b', latex: 'b', value: 4, min: 1, max: 7, step: 0.5, color: VAR_COLORS.secondary, description: 'Horizontal side' },
+  { name: 'a', symbol: 'a', latex: 'a', value: 3, min: 1, max: 12, step: 0.5, color: VAR_COLORS.primary, description: 'Vertical side' },
+  { name: 'b', symbol: 'b', latex: 'b', value: 4, min: 1, max: 12, step: 0.5, color: VAR_COLORS.secondary, description: 'Horizontal side' },
   { name: 'c', symbol: 'c', latex: 'c', value: 5, min: 0, max: 20, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Hypotenuse' },
 ]
 

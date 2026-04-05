@@ -124,7 +124,7 @@ const lessons: LessonStep[] = [
     instruction: "Start with low temperature. Notice the ordered particles.",
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
-    successCondition: { type: 'time_elapsed', duration: 3 },
+    successCondition: { type: 'time_elapsed', duration: 5000 },
     celebration: 'subtle',
     insight: "At low temperature, particles sit in a neat lattice. Only one microstate — entropy is zero.",
   },

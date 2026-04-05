@@ -13,6 +13,7 @@ import { TopNav } from "./TopNav"
 import { subjects } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
+import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 
 const HeroDemo = lazy(() =>
@@ -34,7 +35,7 @@ const iconMap: Record<string, ReactElement> = {
 
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
-    <span className={muted ? "text-slate-300 dark:text-slate-600" : undefined}>
+    <span className={muted ? "opacity-30" : ""}>
       <InlineMath math={formula} />
     </span>
   )
@@ -202,7 +203,8 @@ export function HomePage(): ReactElement {
                   {subjects.filter((s) => !s.active).map((subject) => (
                     <div
                       key={subject.slug}
-                      className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 dark:border-slate-700"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:hover:border-slate-600 dark:hover:bg-slate-800/50"
+                      onClick={() => setSelectedSubject(subject.slug)}
                     >
                       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
                         {iconMap[subject.icon] ?? <Pi className="h-4 w-4" />}

@@ -159,6 +159,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
       const t = setTimeout(() => {
         setShowInsight(true)
         if (isLastStep) {
+          onAdvance()
           setTimeout(() => setShowCelebration(true), 400)
         }
       }, 300)
@@ -166,7 +167,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
     }
     setShowInsight(false)
     setShowCelebration(false)
-  }, [stepCompleted, isLastStep])
+  }, [stepCompleted, isLastStep, onAdvance])
 
   const handleAdvance = useCallback(() => { setShowInsight(false); setShowHint(false); onAdvance() }, [onAdvance])
 

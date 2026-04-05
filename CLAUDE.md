@@ -5,7 +5,9 @@
 - NEVER convert LaTeX to plain text or ASCII
 - NEVER rewrite `\frac`, `\partial`, `\nabla`, Greek letters, subscripts, or superscripts into text
 - All formulas MUST render with `<InlineMath math={...} />` or `<BlockMath math={...} />` from react-katex
-- NEVER use `formatFormulaPreview` or any plain-text formula converter — that file has been deleted
+- The old plain-text formula converter is DELETED — a PreToolUse hook (`guard-katex.sh`) will block any attempt to import, recreate, or reference it in source code
+- NEVER create any function that converts LaTeX strings to plain text, Unicode, or ASCII equivalents
+- When displaying formulas anywhere (cards, lists, previews, modals), ALWAYS use `<InlineMath>` or `<BlockMath>`
 - Treat formula strings as IMMUTABLE source code — if broken, preserve and flag, don't rewrite
 
 ## Stack

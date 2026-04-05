@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { BookOpen, Sparkles, PanelRightOpen } from "lucide-react"
+import { BookOpen, Sparkles, PanelRightOpen, PanelBottomOpen } from "lucide-react"
+import { useNarrow } from "../../hooks/useMediaQuery"
 import { useAuth } from "../../auth/AuthContext"
 import { api } from "../../api/client"
 import { useProgress } from "../../progress/useProgress"
@@ -169,37 +170,10 @@ export function TeachableEquation({
   const hasLessons = lessonSteps.length > 0
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
+  const isNarrow = useNarrow(900)
 
-  return (
-    <div className="flex h-full gap-0">
-      {/* LEFT: Visualization */}
-      <div className="min-h-0 min-w-0 flex-1">
-        {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
-      </div>
-
-      {/* Toggle button when panel is collapsed */}
-      {!teachingPanelOpen && (
-        <button
-          onClick={() => setTeachingPanelOpen(true)}
-          className="flex-shrink-0 self-start rounded-l-lg border border-r-0 border-slate-200 bg-white px-1.5 py-3 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:bg-slate-800"
-          type="button"
-          aria-label="Open teaching panel"
-        >
-          <PanelRightOpen className="h-4 w-4" />
-        </button>
-      )}
-
-      {/* RIGHT: Teaching panel — resizable */}
-      <ResizablePanel
-        edge="left"
-        defaultWidth={272}
-        minWidth={200}
-        maxWidth={400}
-        open={teachingPanelOpen}
-        onCollapse={() => setTeachingPanelOpen(false)}
-        storageKey="sciencebouk-teaching-panel-width"
-      >
-      <div className="flex h-full flex-col gap-2 overflow-y-auto pl-2">
+  const teachingContent = (
+    <div className={`flex flex-col gap-2 overflow-y-auto ${isNarrow ? "px-2 py-2" : "h-full pl-2"}`}>
 
         {/* Hook — conditionally shown */}
         {appSettings.showHookText && (
@@ -280,6 +254,62 @@ export function TeachableEquation({
           </Button>
         )}
       </div>
+  )
+
+  if (isNarrow) {
+    // Vertical stack: visualization on top, teaching panel below
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="min-h-0 flex-1">
+          {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
+        </div>
+
+        {!teachingPanelOpen ? (
+          <button
+            onClick={() => setTeachingPanelOpen(true)}
+            className="flex-shrink-0 self-center rounded-t-lg border border-b-0 border-slate-200 bg-white px-4 py-1.5 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:bg-slate-800"
+            type="button"
+            aria-label="Open teaching panel"
+          >
+            <PanelBottomOpen className="h-4 w-4" />
+          </button>
+        ) : (
+          <div className="flex-shrink-0 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" style={{ maxHeight: "45vh", overflowY: "auto" }}>
+            {teachingContent}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Desktop: side-by-side with resizable panel
+  return (
+    <div className="flex h-full gap-0">
+      <div className="min-h-0 min-w-0 flex-1">
+        {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
+      </div>
+
+      {!teachingPanelOpen && (
+        <button
+          onClick={() => setTeachingPanelOpen(true)}
+          className="flex-shrink-0 self-start rounded-l-lg border border-r-0 border-slate-200 bg-white px-1.5 py-3 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:bg-slate-800"
+          type="button"
+          aria-label="Open teaching panel"
+        >
+          <PanelRightOpen className="h-4 w-4" />
+        </button>
+      )}
+
+      <ResizablePanel
+        edge="left"
+        defaultWidth={272}
+        minWidth={200}
+        maxWidth={400}
+        open={teachingPanelOpen}
+        onCollapse={() => setTeachingPanelOpen(false)}
+        storageKey="sciencebouk-teaching-panel-width"
+      >
+        {teachingContent}
       </ResizablePanel>
     </div>
   )

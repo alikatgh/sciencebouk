@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
@@ -16,7 +16,7 @@ function fPrime(x: number): number {
 }
 
 const variables: Variable[] = [
-  { name: 't', symbol: 't', latex: 't', value: 3, min: 0.5, max: 9.5, step: 0.1, color: VAR_COLORS.primary, description: 'Point on the curve' },
+  { name: 't', symbol: 't', latex: 't', value: 3, min: 0.5, max: 9.5, step: 0.01, color: VAR_COLORS.primary, description: 'Point on the curve' },
   { name: 'h', symbol: 'h', latex: 'h', value: 1.5, min: 0.05, max: 3, step: 0.05, color: VAR_COLORS.secondary, description: 'Distance between points' },
   { name: 'slope', symbol: 'slope', latex: '\\text{slope}', value: 0, min: -10, max: 10, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Steepness at this point' },
   { name: 'f', symbol: 'f', latex: 'f', value: 0, min: 0, max: 0, step: 1, color: '#6b7280', constant: true, description: 'The function' },
@@ -48,7 +48,7 @@ const lessons: LessonStep[] = [
     instruction: "Find where the slope is zero -- the flat spots on the curve.",
     highlightElements: ['t', 'h'],
     unlockedVariables: ['t', 'h'],
-    successCondition: { type: 'time_elapsed', duration: 15000 },
+    successCondition: { type: 'value_reached', target: 'slope', value: 0, tolerance: 0.15 },
     celebration: 'medium',
     insight: "Slope = 0 at peaks and valleys. Setting the derivative to zero finds maximums and minimums. That's optimization.",
   },
@@ -94,10 +94,22 @@ export function CalculusScene(): ReactElement {
       ]}
     >
       {({ vars, setVar }) => (
-        <CalculusChart t={vars.t} h={vars.h} onVarChange={setVar} />
+        <CalculusBridge vars={vars} setVar={setVar} />
       )}
     </TeachableEquation>
   )
+}
+
+function CalculusBridge({ vars, setVar }: { vars: Record<string, number>; setVar: (name: string, value: number) => void }): ReactElement {
+  const slope = fPrime(vars.t)
+
+  useEffect(() => {
+    if (Math.abs((vars.slope ?? 0) - slope) > 0.005) {
+      setVar('slope', Math.round(slope * 100) / 100)
+    }
+  }, [vars.t, vars.slope, slope, setVar])
+
+  return <CalculusChart t={vars.t} h={vars.h} onVarChange={setVar} />
 }
 
 interface CalculusChartProps {
@@ -136,7 +148,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
     if (!isDragging || !onVarChange) return
     const dataX = clientXToDataX(e.clientX)
     if (dataX == null) return
-    const clamped = Math.max(0.5, Math.min(9.5, Math.round(dataX * 10) / 10))
+    const clamped = Math.max(0.5, Math.min(9.5, Math.round(dataX * 100) / 100))
     onVarChange("t", clamped)
   }, [isDragging, clientXToDataX, onVarChange])
 
