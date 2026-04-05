@@ -2,13 +2,13 @@ import type { ReactElement } from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
-// Presets that cycle automatically
+// Only exact Pythagorean triples — c must be a whole number. No approximations on a math product.
 const PRESETS = [
-  { a: 3, b: 4 },
-  { a: 5, b: 5 },
-  { a: 2, b: 7 },
-  { a: 6, b: 3 },
-  { a: 4, b: 6 },
+  { a: 3, b: 4 },   // c = 5
+  { a: 5, b: 12 },  // c = 13
+  { a: 8, b: 6 },   // c = 10
+  { a: 9, b: 12 },  // c = 15
+  { a: 20, b: 21 }, // c = 29
 ]
 
 export function HeroDemo(): ReactElement {
@@ -17,10 +17,10 @@ export function HeroDemo(): ReactElement {
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { a, b } = PRESETS[idx]
-  const c = Math.sqrt(a * a + b * b)
+  const c = Math.round(Math.sqrt(a * a + b * b))  // always exact for our triples
   const a2 = a * a
   const b2 = b * b
-  const c2 = Math.round(c * c * 10) / 10
+  const c2 = c * c
 
   // Auto-cycle every 3s unless paused
   useEffect(() => {

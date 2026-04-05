@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from "react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Lock } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "./AuthContext"
 import { AuthModal } from "./AuthModal"
 
@@ -11,6 +12,7 @@ interface ProGateProps {
 }
 
 export function ProGate({ children, feature }: ProGateProps): ReactElement {
+  const navigate = useNavigate()
   const { isAuthenticated, isPro } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
 
@@ -20,7 +22,13 @@ export function ProGate({ children, feature }: ProGateProps): ReactElement {
     <>
       <motion.div
         className="relative cursor-pointer rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60"
-        onClick={() => setShowAuth(true)}
+        onClick={() => {
+          if (isAuthenticated) {
+            navigate("/pro")
+            return
+          }
+          setShowAuth(true)
+        }}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
       >
@@ -38,7 +46,7 @@ export function ProGate({ children, feature }: ProGateProps): ReactElement {
           </div>
         </div>
       </motion.div>
-      <AuthModal open={showAuth} onClose={() => setShowAuth(false)} initialMode={isAuthenticated ? 'login' : 'register'} />
+      <AuthModal open={showAuth} onClose={() => setShowAuth(false)} initialMode="register" />
     </>
   )
 }

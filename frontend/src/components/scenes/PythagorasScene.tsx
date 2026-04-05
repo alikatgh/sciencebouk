@@ -102,29 +102,13 @@ interface Props {
 
 /**
  * Compute the 4 corners of the c² square (rotated, attached to hypotenuse).
- * In a coordinate system where the right-angle is at origin,
- * side a goes UP (negative Y in SVG), side b goes RIGHT.
- *
- * Hypotenuse: from P2(0, -a) to P1(b, 0).
- * Direction along hyp: d = (b, a) (in SVG: right and down).
- * Perpendicular (outward, away from origin): n = (a/c, -b/c) in data, = (a, -b)/c.
- * In SVG coords (y flipped): the outward normal that points AWAY from origin is (a, -b)/c.
- * But wait — in SVG, P2 is above P1. The perpendicular pointing away from P0(0,0)
- * goes to the upper-right. Let me just verify with a = 3, b = 4, c = 5:
- *   P2 = (0, -3), P1 = (4, 0)
- *   Hyp direction = (4, 3), perp = (-3, 4) or (3, -4)
- *   Origin is at (0,0). Midpoint of hyp = (2, -1.5).
- *   (3, -4) from midpoint → (5, -5.5) — that's upper-right, AWAY from origin. ✓
- * So outward perpendicular unit vector = (a, -b) / c in SVG coords.
- * c² square side length = c (in data units).
- * Offset vector = c * (a/c, -b/c) = (a, -b).
+ * Outward perpendicular unit vector = (a, -b) / c in SVG coords.
  */
 function cSquareCorners(
-  p1: { x: number; y: number }, // end of side b
-  p2: { x: number; y: number }, // end of side a (top)
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
   a: number, b: number, s: number,
 ) {
-  // Offset in pixels: (a, -b) * s
   const dx = a * s
   const dy = -b * s
   return [
@@ -135,18 +119,10 @@ function cSquareCorners(
   ]
 }
 
-/**
- * Bounding box of all geometry in data-unit coords (origin at right-angle).
- * Returns scale and origin position to center everything in the given W×H.
- */
 function computeLayout(a: number, b: number, W: number, H: number) {
   const c = Math.sqrt(a * a + b * b)
   const PAD = 20
 
-  // All corners in data coords (right-angle at 0,0, a up, b right)
-  // sq-a: from (-a, -a) to (0, 0)
-  // sq-b: from (0, 0) to (b, b)
-  // sq-c corners in data coords: apply (a, -b) offset to hyp endpoints
   const cSq = [
     { x: 0, y: -a },
     { x: b, y: 0 },
@@ -170,7 +146,6 @@ function computeLayout(a: number, b: number, W: number, H: number) {
 
   const s = Math.min(availW / totalW, availH / totalH)
 
-  // Right-angle corner position in SVG coords (centered)
   const ox = PAD + (availW - totalW * s) / 2 + (-minX) * s
   const oy = PAD + (availH - totalH * s) / 2 + (-minY) * s
 
@@ -184,17 +159,70 @@ function D3Pythagoras({ a, b, c, highlightedTerm, onVarChange, highlightedVar, o
   onVarChangeRef.current = onVarChange
   onHighlightRef.current = onHighlight
 
-  // Measure + render
+  // Live values during drag — bypasses React render cycle for 60fps SVG
+  const liveRef = useRef({ a, b })
+  const draggingRef = useRef(false)
+  // Store the update function so external effects can call it
+  const updateRef = useRef<((aVal: number, bVal: number) => void) | null>(null)
+
+  // Sync React props → SVG when not dragging (handles presets, lesson steps)
+  useEffect(() => {
+    if (draggingRef.current) return
+    liveRef.current = { a, b }
+    updateRef.current?.(a, b)
+  }, [a, b])
+
+  // Highlight rings (lightweight attr toggle, no SVG rebuild)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const svg = select(el).select("svg")
+    svg.select(".handle-a-ring").attr("opacity", highlightedVar === 'a' ? 0.6 : 0)
+    svg.select(".handle-b-ring").attr("opacity", highlightedVar === 'b' ? 0.6 : 0)
+  }, [highlightedVar])
+
+  // Glossary term highlighting (lightweight attr toggle)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const g = select(el).select("svg g")
+    // Reset
+    g.select(".sq-a").attr("stroke-width", 1.5).attr("stroke", VAR_COLORS.primary)
+    g.select(".sq-b").attr("stroke-width", 1.5).attr("stroke", VAR_COLORS.secondary)
+    g.select(".sq-c").attr("stroke-width", 1.5).attr("stroke", VAR_COLORS.result)
+    g.select(".tri").attr("stroke-width", 2.5).attr("stroke", "#1e293b")
+    g.select(".right-angle").attr("stroke-width", 1.5).attr("stroke", "#94a3b8")
+
+    if (highlightedTerm === "sq-c") g.select(".sq-c").attr("stroke-width", 4)
+    if (highlightedTerm === "tri") g.select(".tri").attr("stroke-width", 4)
+    if (highlightedTerm === "all-squares") {
+      g.select(".sq-a").attr("stroke-width", 4)
+      g.select(".sq-b").attr("stroke-width", 4)
+      g.select(".sq-c").attr("stroke-width", 4)
+    }
+    if (highlightedTerm === "right-angle") g.select(".right-angle").attr("stroke-width", 3).attr("stroke", "#ef4444")
+  }, [highlightedTerm])
+
+  // ═══════════════════════════════════════════════════════════════
+  // Main SVG — created ONCE, rebuilt only on container resize.
+  // Drag updates go through updateGeometry() directly, not React.
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
 
-    const render = () => {
+    let currentW = 0
+    let currentH = 0
+
+    function buildSVG() {
+      if (!el) return
+      select(el).select("svg").remove()
+
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
-
-      select(el).select("svg").remove()
+      currentW = W
+      currentH = H
 
       const svg = select(el)
         .append("svg")
@@ -206,161 +234,205 @@ function D3Pythagoras({ a, b, c, highlightedTerm, onVarChange, highlightedVar, o
       svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
 
       const g = svg.append("g")
-      const { s, ox, oy } = computeLayout(a, b, W, H)
 
-      // Triangle vertices
-      const p0 = { x: ox, y: oy }
-      const p1 = { x: ox + b * s, y: oy }
-      const p2 = { x: ox, y: oy - a * s }
+      // ── Create all elements with classes (positions set by updateGeometry) ──
 
-      // c² square
-      const cSq = cSquareCorners(p1, p2, a, b, s)
-
-      // Font sizes proportional to scene
-      const fs = Math.max(12, Math.min(20, Math.min(W, H) / 30))
-
-      // --- Draw squares (behind triangle) ---
-
-      // Square a (blue, extends left)
-      g.append("rect")
-        .attr("x", p0.x - a * s).attr("y", p0.y - a * s)
-        .attr("width", a * s).attr("height", a * s).attr("rx", 3)
+      // Squares (drawn behind triangle)
+      g.append("rect").attr("class", "sq-a").attr("rx", 3)
         .attr("fill", VAR_COLORS.primary + "15").attr("stroke", VAR_COLORS.primary).attr("stroke-width", 1.5)
-      g.append("text")
-        .attr("x", p0.x - a * s / 2).attr("y", p0.y - a * s / 2)
+      g.append("text").attr("class", "sq-a-text")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-        .attr("font-family", FONT).attr("font-weight", 700).attr("font-size", fs)
-        .attr("fill", VAR_COLORS.primary).text(`a² = ${fmt(a * a)}`)
+        .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.primary)
 
-      // Square b (amber, extends down)
-      g.append("rect")
-        .attr("x", p0.x).attr("y", p0.y)
-        .attr("width", b * s).attr("height", b * s).attr("rx", 3)
+      g.append("rect").attr("class", "sq-b").attr("rx", 3)
         .attr("fill", VAR_COLORS.secondary + "15").attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 1.5)
-      g.append("text")
-        .attr("x", p0.x + b * s / 2).attr("y", p0.y + b * s / 2)
+      g.append("text").attr("class", "sq-b-text")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-        .attr("font-family", FONT).attr("font-weight", 700).attr("font-size", fs)
-        .attr("fill", VAR_COLORS.secondary).text(`b² = ${fmt(b * b)}`)
+        .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.secondary)
 
-      // Square c (red, rotated along hypotenuse)
-      g.append("polygon")
-        .attr("points", cSq.map(p => `${p.x},${p.y}`).join(" "))
+      g.append("polygon").attr("class", "sq-c")
         .attr("fill", VAR_COLORS.result + "10").attr("stroke", VAR_COLORS.result).attr("stroke-width", 1.5)
-      const cCenter = { x: avg(cSq, 'x'), y: avg(cSq, 'y') }
-      g.append("text")
-        .attr("x", cCenter.x).attr("y", cCenter.y)
+      g.append("text").attr("class", "sq-c-text")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-        .attr("font-family", FONT).attr("font-weight", 700).attr("font-size", fs)
-        .attr("fill", VAR_COLORS.result).text(`c² = ${fmt(c * c)}`)
+        .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.result)
 
-      // --- Triangle (on top of squares) ---
-      g.append("polygon")
-        .attr("points", `${p0.x},${p0.y} ${p1.x},${p1.y} ${p2.x},${p2.y}`)
+      // Triangle (on top of squares)
+      g.append("polygon").attr("class", "tri")
         .attr("fill", "#f8fafc").attr("fill-opacity", 0.85)
         .attr("stroke", "#1e293b").attr("stroke-width", 2.5).attr("stroke-linejoin", "round")
 
       // Right-angle marker
-      const ra = Math.min(14, s * 0.8)
-      g.append("path")
-        .attr("d", `M${p0.x + ra},${p0.y} L${p0.x + ra},${p0.y - ra} L${p0.x},${p0.y - ra}`)
+      g.append("path").attr("class", "right-angle")
         .attr("fill", "none").attr("stroke", "#94a3b8").attr("stroke-width", 1.5)
 
-      // --- Side labels ---
-      const lfs = Math.max(14, Math.min(20, fs * 1.1))
-
-      // a label (left of vertical side, inside triangle)
-      g.append("text")
-        .attr("x", p0.x + 16).attr("y", (p0.y + p2.y) / 2)
+      // Side labels
+      g.append("text").attr("class", "label-a")
         .attr("text-anchor", "start").attr("dominant-baseline", "middle")
-        .attr("font-family", FONT).attr("font-weight", 800).attr("font-size", lfs)
-        .attr("fill", VAR_COLORS.primary).text(`a = ${fmt(a)}`)
-
-      // b label (above horizontal side)
-      g.append("text")
-        .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - 12)
+        .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.primary)
+      g.append("text").attr("class", "label-b")
         .attr("text-anchor", "middle").attr("dominant-baseline", "auto")
-        .attr("font-family", FONT).attr("font-weight", 800).attr("font-size", lfs)
-        .attr("fill", VAR_COLORS.secondary).text(`b = ${fmt(b)}`)
-
-      // c label (on hypotenuse, offset outward)
-      const cMidX = (p1.x + p2.x) / 2 + (a / c) * 18
-      const cMidY = (p1.y + p2.y) / 2 - (b / c) * 18
-      g.append("text")
-        .attr("x", cMidX).attr("y", cMidY)
+        .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.secondary)
+      g.append("text").attr("class", "label-c")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-        .attr("font-family", FONT).attr("font-weight", 800).attr("font-size", lfs)
-        .attr("fill", VAR_COLORS.result).text(`c = ${c.toFixed(2)}`)
+        .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.result)
 
-      // --- Drag handles ---
-
-      // Handle a (at top of side a)
-      const hA = g.append("g").style("cursor", "ns-resize")
-      hA.append("circle").attr("cx", p2.x).attr("cy", p2.y).attr("r", 30).attr("fill", "transparent")
-      hA.append("circle").attr("cx", p2.x).attr("cy", p2.y).attr("r", 8)
+      // Drag handles
+      const hA = g.append("g").attr("class", "handle-a").style("cursor", "ns-resize")
+      hA.append("circle").attr("class", "handle-a-hit").attr("r", 30).attr("fill", "transparent")
+      hA.append("circle").attr("class", "handle-a-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.primary).attr("stroke", "white").attr("stroke-width", 2.5)
-      if (highlightedVar === 'a') {
-        hA.append("circle").attr("cx", p2.x).attr("cy", p2.y).attr("r", 18)
-          .attr("fill", "none").attr("stroke", VAR_COLORS.primary)
-          .attr("stroke-width", 2).attr("stroke-dasharray", "5 3").attr("opacity", 0.6)
-      }
+      hA.append("circle").attr("class", "handle-a-ring").attr("r", 18)
+        .attr("fill", "none").attr("stroke", VAR_COLORS.primary)
+        .attr("stroke-width", 2).attr("stroke-dasharray", "5 3").attr("opacity", 0)
 
-      // Handle b (at end of side b)
-      const hB = g.append("g").style("cursor", "ew-resize")
-      hB.append("circle").attr("cx", p1.x).attr("cy", p1.y).attr("r", 30).attr("fill", "transparent")
-      hB.append("circle").attr("cx", p1.x).attr("cy", p1.y).attr("r", 8)
+      const hB = g.append("g").attr("class", "handle-b").style("cursor", "ew-resize")
+      hB.append("circle").attr("class", "handle-b-hit").attr("r", 30).attr("fill", "transparent")
+      hB.append("circle").attr("class", "handle-b-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.secondary).attr("stroke", "white").attr("stroke-width", 2.5)
-      if (highlightedVar === 'b') {
-        hB.append("circle").attr("cx", p1.x).attr("cy", p1.y).attr("r", 18)
-          .attr("fill", "none").attr("stroke", VAR_COLORS.secondary)
-          .attr("stroke-width", 2).attr("stroke-dasharray", "5 3").attr("opacity", 0.6)
+      hB.append("circle").attr("class", "handle-b-ring").attr("r", 18)
+        .attr("fill", "none").attr("stroke", VAR_COLORS.secondary)
+        .attr("stroke-width", 2).attr("stroke-dasharray", "5 3").attr("opacity", 0)
+
+      // ── updateGeometry: repositions everything from a,b WITHOUT React ──
+      function updateGeometry(aVal: number, bVal: number) {
+        const cVal = Math.sqrt(aVal * aVal + bVal * bVal)
+        const { s, ox, oy } = computeLayout(aVal, bVal, W, H)
+
+        const fs = Math.max(12, Math.min(20, Math.min(W, H) / 30))
+        const lfs = Math.max(14, Math.min(20, fs * 1.1))
+
+        const p0 = { x: ox, y: oy }
+        const p1 = { x: ox + bVal * s, y: oy }
+        const p2 = { x: ox, y: oy - aVal * s }
+        const cSq = cSquareCorners(p1, p2, aVal, bVal, s)
+
+        // Square a
+        g.select(".sq-a")
+          .attr("x", p0.x - aVal * s).attr("y", p0.y - aVal * s)
+          .attr("width", aVal * s).attr("height", aVal * s)
+        g.select(".sq-a-text")
+          .attr("x", p0.x - aVal * s / 2).attr("y", p0.y - aVal * s / 2)
+          .attr("font-size", fs).text(`a² = ${fmt(aVal * aVal)}`)
+
+        // Square b
+        g.select(".sq-b")
+          .attr("x", p0.x).attr("y", p0.y)
+          .attr("width", bVal * s).attr("height", bVal * s)
+        g.select(".sq-b-text")
+          .attr("x", p0.x + bVal * s / 2).attr("y", p0.y + bVal * s / 2)
+          .attr("font-size", fs).text(`b² = ${fmt(bVal * bVal)}`)
+
+        // Square c
+        g.select(".sq-c")
+          .attr("points", cSq.map(p => `${p.x},${p.y}`).join(" "))
+        const cCenter = { x: avg(cSq, 'x'), y: avg(cSq, 'y') }
+        g.select(".sq-c-text")
+          .attr("x", cCenter.x).attr("y", cCenter.y)
+          .attr("font-size", fs).text(`c² = ${fmt(cVal * cVal)}`)
+
+        // Triangle
+        g.select(".tri")
+          .attr("points", `${p0.x},${p0.y} ${p1.x},${p1.y} ${p2.x},${p2.y}`)
+
+        // Right-angle marker
+        const ra = Math.min(14, s * 0.8)
+        g.select(".right-angle")
+          .attr("d", `M${p0.x + ra},${p0.y} L${p0.x + ra},${p0.y - ra} L${p0.x},${p0.y - ra}`)
+
+        // Labels
+        g.select(".label-a")
+          .attr("x", p0.x + 16).attr("y", (p0.y + p2.y) / 2)
+          .attr("font-size", lfs).text(`a = ${fmt(aVal)}`)
+        g.select(".label-b")
+          .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - 12)
+          .attr("font-size", lfs).text(`b = ${fmt(bVal)}`)
+
+        const cMidX = (p1.x + p2.x) / 2 + (aVal / cVal) * 18
+        const cMidY = (p1.y + p2.y) / 2 - (bVal / cVal) * 18
+        g.select(".label-c")
+          .attr("x", cMidX).attr("y", cMidY)
+          .attr("font-size", lfs).text(`c = ${cVal.toFixed(2)}`)
+
+        // Handle positions
+        g.select(".handle-a-hit").attr("cx", p2.x).attr("cy", p2.y)
+        g.select(".handle-a-dot").attr("cx", p2.x).attr("cy", p2.y)
+        g.select(".handle-a-ring").attr("cx", p2.x).attr("cy", p2.y)
+
+        g.select(".handle-b-hit").attr("cx", p1.x).attr("cy", p1.y)
+        g.select(".handle-b-dot").attr("cx", p1.x).attr("cy", p1.y)
+        g.select(".handle-b-ring").attr("cx", p1.x).attr("cy", p1.y)
+
+        // Store layout for drag coordinate conversion
+        layoutRef.s = s
+        layoutRef.ox = ox
+        layoutRef.oy = oy
       }
 
-      // D3 drag behaviors
+      // Layout ref for drag handlers (avoids closure stale data)
+      const layoutRef = { s: 1, ox: 0, oy: 0 }
+
+      // Expose for external sync
+      updateRef.current = updateGeometry
+
+      // Initial render
+      updateGeometry(liveRef.current.a, liveRef.current.b)
+
+      // ── D3 drag — updates SVG directly, syncs React only on end ──
+
       const dragA = drag<SVGGElement, unknown>()
+        .on("start", () => { draggingRef.current = true })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-          const newA = Math.max(1, Math.min(7, (oy - event.y) / s))
-          onVarChangeRef.current('a', Math.round(newA * 2) / 2)
+          const newA = Math.max(1, Math.min(7, (layoutRef.oy - event.y) / layoutRef.s))
+          const snapped = Math.round(newA * 2) / 2
+          liveRef.current.a = snapped
+          updateGeometry(snapped, liveRef.current.b)
+        })
+        .on("end", () => {
+          draggingRef.current = false
+          onVarChangeRef.current('a', liveRef.current.a)
         })
       hA.call(dragA)
 
       const dragB = drag<SVGGElement, unknown>()
+        .on("start", () => { draggingRef.current = true })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-          const newB = Math.max(1, Math.min(7, (event.x - ox) / s))
-          onVarChangeRef.current('b', Math.round(newB * 2) / 2)
+          const newB = Math.max(1, Math.min(7, (event.x - layoutRef.ox) / layoutRef.s))
+          const snapped = Math.round(newB * 2) / 2
+          liveRef.current.b = snapped
+          updateGeometry(liveRef.current.a, snapped)
+        })
+        .on("end", () => {
+          draggingRef.current = false
+          onVarChangeRef.current('b', liveRef.current.b)
         })
       hB.call(dragB)
 
       // Hover cross-highlighting
-      hA.on("mouseenter", () => onHighlightRef.current('a')).on("mouseleave", () => onHighlightRef.current(null))
-      hB.on("mouseenter", () => onHighlightRef.current('b')).on("mouseleave", () => onHighlightRef.current(null))
-
-      // Glossary term highlighting — glow the matching element
-      const glowWidth = 4
-      const glowColor = "#8b5cf6"
-      if (highlightedTerm === "sq-c") {
-        // Highlight hypotenuse / c-square
-        g.select("polygon:nth-of-type(1)").attr("stroke-width", glowWidth).attr("stroke", VAR_COLORS.result)
-      }
-      if (highlightedTerm === "tri") {
-        g.select("polygon:nth-of-type(2)").attr("stroke-width", glowWidth).attr("stroke", "#1e293b")
-      }
-      if (highlightedTerm === "all-squares") {
-        g.selectAll("rect").attr("stroke-width", glowWidth)
-        g.select("polygon:nth-of-type(1)").attr("stroke-width", glowWidth)
-      }
-      if (highlightedTerm === "right-angle") {
-        g.select("path").attr("stroke-width", 3).attr("stroke", "#ef4444")
-      }
+      hA.on("mouseenter", () => onHighlightRef.current('a'))
+        .on("mouseleave", () => onHighlightRef.current(null))
+      hB.on("mouseenter", () => onHighlightRef.current('b'))
+        .on("mouseleave", () => onHighlightRef.current(null))
     }
 
-    render()
+    buildSVG()
 
-    const observer = new ResizeObserver(() => requestAnimationFrame(render))
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const w = Math.round(entry.contentRect.width)
+      const h = Math.round(entry.contentRect.height)
+      if (w !== currentW || h !== currentH) {
+        requestAnimationFrame(buildSVG)
+      }
+    })
     observer.observe(el)
 
-    return () => { observer.disconnect(); select(el).select("svg").remove() }
-  }, [a, b, c, highlightedVar, highlightedTerm])
+    return () => {
+      observer.disconnect()
+      select(el).select("svg").remove()
+      updateRef.current = null
+    }
+  }, []) // ← empty deps: SVG created once, rebuilt only on resize
 
   return (
     <div ref={containerRef} className="h-full w-full" />

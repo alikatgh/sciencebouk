@@ -73,7 +73,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
               className="text-base font-bold text-slate-900 transition hover:text-ocean dark:text-white"
               type="button"
             >
-              Sciencebouk
+              Formulas
             </button>
           )}
         </div>

@@ -19,9 +19,9 @@ export interface Subject {
 
 export const subjects: Subject[] = [
   {
-    slug: "algebra",
-    name: "Algebra & Geometry",
-    description: `${equationManifest.length} equations that changed the world`,
+    slug: "core",
+    name: "17 Equations That Changed the World",
+    description: "From Pythagoras to Black-Scholes — the foundations of science",
     icon: "pi",
     active: true,
     formulas: [
