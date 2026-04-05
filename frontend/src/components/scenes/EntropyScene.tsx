@@ -7,12 +7,10 @@ import {
   range,
   drag,
   type D3DragEvent,
-  type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
-import { useContainerSize } from "../../hooks/useContainerSize"
 
 const F = "Manrope, sans-serif"
 
@@ -73,8 +71,6 @@ function computeDisorderedPositions(
     }
   })
 }
-
-// ORDERED is now computed inside the component with proportional values
 
 const variables: Variable[] = [
   { name: 'temperature', symbol: 'T', latex: 'T', value: 20, min: 0, max: 100, step: 1, color: VAR_COLORS.primary, description: 'Temperature (drives disorder)' },
@@ -162,262 +158,287 @@ interface Props {
 
 function D3EntropyVisual({ temperature, onVarChange }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { width: W, height: H } = useContainerSize(containerRef)
-  const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
 
-  // Setup -- rebuilds on resize
+  const liveRef = useRef({ temperature })
+  const draggingRef = useRef(false)
+  const updateRef = useRef<((temp: number) => void) | null>(null)
+
+  // Sync React props → SVG when not dragging
+  useEffect(() => {
+    if (draggingRef.current) return
+    liveRef.current.temperature = temperature
+    updateRef.current?.(temperature)
+  }, [temperature])
+
+  // Main SVG — created once, rebuilt only on resize
   useEffect(() => {
     const container = containerRef.current
-    if (!container || W < 100 || H < 100) return
-    select(container).select("svg").remove()
+    if (!container) return
 
-    const svg = select(container)
-      .append("svg")
-      .attr("width", W)
-      .attr("height", H)
-      .style("display", "block")
-      .style("touch-action", "none")
-      .attr("role", "img")
-      .attr("aria-label", "Entropy visualization -- ordered vs disordered particles")
+    let currentW = 0
+    let currentH = 0
 
-    svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+    function buildSVG() {
+      if (!container) return
+      select(container).select("svg").remove()
 
-    const g = svg.append("g")
-    gRef.current = g
+      const rect = container.getBoundingClientRect()
+      const W = Math.round(rect.width) || 800
+      const H = Math.round(rect.height) || 500
+      if (W < 100 || H < 100) return
+      currentW = W
+      currentH = H
 
-    // Layout proportions
-    const panelW = W * 0.27
-    const panelH = H * 0.55
-    const panelY = H * 0.11
-    const ordPanelX = W * 0.02
-    const disPanelX = W * 0.42
-    const spacing = H * 0.087
-    const startX = ordPanelX + W * 0.07
-    const startY = panelY + H * 0.12
-    const centerX = disPanelX + panelW / 2
-    const centerY = panelY + panelH / 2
+      const svg = select(container)
+        .append("svg")
+        .attr("width", W)
+        .attr("height", H)
+        .style("display", "block")
+        .style("touch-action", "none")
+        .attr("role", "img")
+        .attr("aria-label", "Entropy visualization -- ordered vs disordered particles")
 
-    const ORDERED = computeOrderedPositions(startX, startY, spacing)
+      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
 
-    // Ordered panel
-    g.append("rect").attr("x", ordPanelX).attr("y", panelY).attr("width", panelW).attr("height", panelH)
-      .attr("rx", 14).attr("fill", "#f8fafc").attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
-    g.append("text").attr("x", ordPanelX + panelW / 2).attr("y", panelY + 28).attr("text-anchor", "middle")
-      .attr("font-size", 15).attr("fill", "#1e40af").attr("font-family", F).attr("font-weight", 700)
-      .text("Ordered (Low S)")
+      const g = svg.append("g")
 
-    // Ordered particles (static)
-    for (let i = 0; i < NUM_PARTICLES; i++) {
-      const p = ORDERED[i]
-      g.append("circle")
-        .attr("cx", p.baseX + W * 0.03)
-        .attr("cy", p.baseY)
-        .attr("r", 12)
-        .attr("fill", PARTICLE_COLORS[p.type])
-        .attr("opacity", 0.85)
+      // Layout proportions
+      const panelW = W * 0.27
+      const panelH = H * 0.55
+      const panelY = H * 0.11
+      const ordPanelX = W * 0.02
+      const disPanelX = W * 0.42
+      const spacing = H * 0.087
+      const startX = ordPanelX + W * 0.07
+      const startY = panelY + H * 0.12
+      const centerX = disPanelX + panelW / 2
+      const centerY = panelY + panelH / 2
+
+      const ORDERED = computeOrderedPositions(startX, startY, spacing)
+
+      // Ordered panel
+      g.append("rect").attr("x", ordPanelX).attr("y", panelY).attr("width", panelW).attr("height", panelH)
+        .attr("rx", 14).attr("fill", "#f8fafc").attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+      g.append("text").attr("x", ordPanelX + panelW / 2).attr("y", panelY + 28).attr("text-anchor", "middle")
+        .attr("font-size", 15).attr("fill", "#1e40af").attr("font-family", F).attr("font-weight", 700)
+        .text("Ordered (Low S)")
+
+      // Ordered particles (static)
+      for (let i = 0; i < NUM_PARTICLES; i++) {
+        const p = ORDERED[i]
+        g.append("circle")
+          .attr("cx", p.baseX + W * 0.03)
+          .attr("cy", p.baseY)
+          .attr("r", 12)
+          .attr("fill", PARTICLE_COLORS[p.type])
+          .attr("opacity", 0.85)
+      }
+
+      // Arrow between panels
+      const arrowX1 = ordPanelX + panelW + W * 0.01
+      const arrowX2 = disPanelX - W * 0.01
+      const arrowY = panelY + panelH / 2
+      g.append("line").attr("x1", arrowX1).attr("y1", arrowY).attr("x2", arrowX2).attr("y2", arrowY)
+        .attr("stroke", "#0f172a").attr("stroke-width", 3)
+      g.append("polygon").attr("points", `${arrowX2 - 5},${arrowY - 12} ${arrowX2 + 20},${arrowY} ${arrowX2 - 5},${arrowY + 12}`).attr("fill", "#0f172a")
+      g.append("text").attr("x", (arrowX1 + arrowX2) / 2).attr("y", arrowY - 15).attr("text-anchor", "middle")
+        .attr("font-size", 14).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600)
+        .text("+Heat")
+
+      // Disordered panel
+      g.append("rect").attr("x", disPanelX).attr("y", panelY).attr("width", panelW).attr("height", panelH)
+        .attr("rx", 14).attr("fill", "#f8fafc").attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+      g.append("text").attr("x", disPanelX + panelW / 2).attr("y", panelY + 28).attr("text-anchor", "middle")
+        .attr("font-size", 15).attr("fill", "#059669").attr("font-family", F).attr("font-weight", 700)
+        .text("Disordered (High S)")
+
+      // Disordered particles (positions set by updateScene)
+      for (let i = 0; i < NUM_PARTICLES; i++) {
+        g.append("circle")
+          .attr("class", `dp-${i}`)
+          .attr("r", 12)
+          .attr("fill", PARTICLE_COLORS[ORDERED[i].type])
+          .attr("opacity", 0.85)
+      }
+
+      // Values panel
+      const valsPanelY = panelY + panelH + H * 0.03
+      g.append("rect").attr("class", "vals-bg").attr("x", ordPanelX).attr("y", valsPanelY).attr("width", W * 0.67)
+        .attr("height", H * 0.1).attr("rx", 12).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      g.append("text").attr("class", "w-label").attr("x", ordPanelX + 20).attr("y", valsPanelY + H * 0.065)
+        .attr("font-size", 17).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+      g.append("text").attr("class", "s-label").attr("x", W * 0.29).attr("y", valsPanelY + H * 0.065)
+        .attr("font-size", 17).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+
+      // Entropy graph panel
+      const graphPanelX = W * 0.72
+      const graphPanelW = W * 0.26
+      const graphPanelH = H * 0.64
+      g.append("rect").attr("x", graphPanelX).attr("y", H * 0.05).attr("width", graphPanelW).attr("height", graphPanelH)
+        .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      g.append("text").attr("x", graphPanelX + graphPanelW / 2).attr("y", H * 0.1).attr("text-anchor", "middle")
+        .attr("font-size", 15).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .text("Entropy vs Temperature")
+
+      // Graph axes
+      const gxL = graphPanelX + W * 0.02, gxR = graphPanelX + graphPanelW - W * 0.02, gyT = H * 0.14, gyB = H * 0.64
+      g.append("line").attr("x1", gxL).attr("y1", gyT).attr("x2", gxL).attr("y2", gyB)
+        .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+      g.append("line").attr("x1", gxL).attr("y1", gyB).attr("x2", gxR).attr("y2", gyB)
+        .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+      g.append("text").attr("x", gxR).attr("y", gyB + 16).attr("text-anchor", "end")
+        .attr("font-size", 13).attr("fill", "#94a3b8").attr("font-family", F).text("T")
+      g.append("text").attr("x", gxL - 8).attr("y", gyT + 4).attr("text-anchor", "end")
+        .attr("font-size", 13).attr("fill", "#94a3b8").attr("font-family", F).text("S")
+
+      // Graph curve (static)
+      const gxScale = scaleLinear().domain([0, 100]).range([gxL, gxR])
+      const gyScale = scaleLinear().domain([0, 8.5]).range([gyB, gyT])
+      const temps = range(0, 101, 2)
+      const pathGen = line<number>()
+        .x(d => gxScale(d))
+        .y(d => {
+          const t = d / 100
+          const wVal = Math.max(1, Math.exp(t * 8))
+          return gyScale(Math.log(wVal))
+        })
+      g.append("path").attr("d", pathGen(temps) ?? "").attr("fill", "none")
+        .attr("stroke", "#1e40af").attr("stroke-width", 2.5)
+
+      // Graph tick labels
+      for (const t of [0, 25, 50, 75, 100]) {
+        g.append("text").attr("x", gxScale(t)).attr("y", gyB + 16).attr("text-anchor", "middle")
+          .attr("font-size", 12).attr("fill", "#94a3b8").attr("font-family", F).text(String(t))
+      }
+
+      // Graph dot + drop line (positions set by updateScene)
+      g.append("line").attr("class", "graph-drop")
+        .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
+
+      const dotGroup = g.append("g").attr("class", "graph-dot-group").style("cursor", "grab")
+      dotGroup.append("circle").attr("class", "graph-dot-hit").attr("r", 18).attr("fill", "transparent")
+      dotGroup.append("circle").attr("class", "graph-dot").attr("r", 6)
+        .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
+
+      // Temperature slider bar beneath the graph
+      const sliderY = H * 0.72
+      g.append("line").attr("x1", gxL).attr("y1", sliderY).attr("x2", gxR).attr("y2", sliderY)
+        .attr("stroke", "#cbd5e1").attr("stroke-width", 4).attr("stroke-linecap", "round")
+
+      const sliderHandle = g.append("g").attr("class", "temp-slider-handle").style("cursor", "grab")
+      sliderHandle.append("rect")
+        .attr("x", -15).attr("y", -15).attr("width", 30).attr("height", 30)
+        .attr("fill", "transparent")
+      sliderHandle.append("circle").attr("class", "slider-thumb").attr("r", 8)
+        .attr("fill", "#3b82f6").attr("stroke", "white").attr("stroke-width", 2)
+      sliderHandle.append("text").attr("class", "slider-label").attr("y", -14).attr("text-anchor", "middle")
+        .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#3b82f6")
+
+      // Drag hint
+      g.append("text").attr("x", W / 2).attr("y", H - 12).attr("text-anchor", "middle")
+        .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
+        .text("Drag the dot on the graph or the slider to change temperature")
+
+      // ── updateScene: repositions everything from temperature, no React ──
+      function updateScene(temp: number) {
+        const disordered = computeDisorderedPositions(ORDERED, temp, centerX, centerY, spacing)
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          g.select(`.dp-${i}`)
+            .attr("cx", disordered[i].x)
+            .attr("cy", disordered[i].y)
+        }
+
+        const t = temp / 100
+        const microstateCount = Math.max(1, Math.round(Math.exp(t * 8)))
+        const entropyNorm = Math.log(microstateCount)
+
+        g.select(".w-label").text(`W = ${microstateCount.toLocaleString()}`)
+        g.select(".s-label").text(`S = ${entropyNorm.toFixed(3)} kB`)
+
+        const cx = gxScale(temp)
+        const cy = gyScale(entropyNorm)
+
+        g.select(".graph-dot-group").attr("transform", `translate(${cx},${cy})`)
+        g.select(".graph-drop")
+          .attr("x1", cx).attr("y1", cy).attr("x2", cx).attr("y2", gyB)
+
+        const sliderX = gxScale(temp)
+        g.select(".temp-slider-handle").attr("transform", `translate(${sliderX},${sliderY})`)
+        g.select(".slider-label").text(`T=${temp}`)
+      }
+
+      // Expose for external sync
+      updateRef.current = updateScene
+
+      // Initial render
+      updateScene(liveRef.current.temperature)
+
+      // ── D3 drag — updates SVG directly, syncs React only on end ──
+
+      const tempDragBehavior = drag<SVGGElement, unknown>()
+        .on("start", function () {
+          draggingRef.current = true
+          select(this).style("cursor", "grabbing")
+          select(this).select(".graph-dot").transition().duration(100).attr("r", 8)
+        })
+        .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+          const newTemp = gxScale.invert(event.x)
+          const clamped = Math.max(0, Math.min(100, Math.round(newTemp)))
+          liveRef.current.temperature = clamped
+          updateScene(clamped)
+        })
+        .on("end", function () {
+          draggingRef.current = false
+          select(this).style("cursor", "grab")
+          select(this).select(".graph-dot").transition().duration(100).attr("r", 6)
+          onVarChangeRef.current('temperature', liveRef.current.temperature)
+        })
+
+      dotGroup.call(tempDragBehavior)
+
+      const sliderDragBehavior = drag<SVGGElement, unknown>()
+        .on("start", function () {
+          draggingRef.current = true
+          select(this).style("cursor", "grabbing")
+          select(this).select(".slider-thumb").transition().duration(100).attr("r", 10)
+        })
+        .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+          const newTemp = gxScale.invert(event.x)
+          const clamped = Math.max(0, Math.min(100, Math.round(newTemp)))
+          liveRef.current.temperature = clamped
+          updateScene(clamped)
+        })
+        .on("end", function () {
+          draggingRef.current = false
+          select(this).style("cursor", "grab")
+          select(this).select(".slider-thumb").transition().duration(100).attr("r", 8)
+          onVarChangeRef.current('temperature', liveRef.current.temperature)
+        })
+
+      sliderHandle.call(sliderDragBehavior)
     }
 
-    // Arrow between panels
-    const arrowX1 = ordPanelX + panelW + W * 0.01
-    const arrowX2 = disPanelX - W * 0.01
-    const arrowY = panelY + panelH / 2
-    g.append("line").attr("x1", arrowX1).attr("y1", arrowY).attr("x2", arrowX2).attr("y2", arrowY)
-      .attr("stroke", "#0f172a").attr("stroke-width", 3)
-    g.append("polygon").attr("points", `${arrowX2 - 5},${arrowY - 12} ${arrowX2 + 20},${arrowY} ${arrowX2 - 5},${arrowY + 12}`).attr("fill", "#0f172a")
-    g.append("text").attr("x", (arrowX1 + arrowX2) / 2).attr("y", arrowY - 15).attr("text-anchor", "middle")
-      .attr("font-size", 14).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600)
-      .text("+Heat")
+    buildSVG()
 
-    // Disordered panel
-    g.append("rect").attr("x", disPanelX).attr("y", panelY).attr("width", panelW).attr("height", panelH)
-      .attr("rx", 14).attr("fill", "#f8fafc").attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
-    g.append("text").attr("x", disPanelX + panelW / 2).attr("y", panelY + 28).attr("text-anchor", "middle")
-      .attr("font-size", 15).attr("fill", "#059669").attr("font-family", F).attr("font-weight", 700)
-      .text("Disordered (High S)")
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const w = Math.round(entry.contentRect.width)
+      const h = Math.round(entry.contentRect.height)
+      if (w !== currentW || h !== currentH) {
+        requestAnimationFrame(buildSVG)
+      }
+    })
+    observer.observe(container)
 
-    // Disordered particles (will be updated)
-    for (let i = 0; i < NUM_PARTICLES; i++) {
-      g.append("circle")
-        .attr("class", `dp-${i}`)
-        .attr("r", 12)
-        .attr("fill", PARTICLE_COLORS[ORDERED[i].type])
-        .attr("opacity", 0.85)
+    return () => {
+      observer.disconnect()
+      select(container).select("svg").remove()
+      updateRef.current = null
     }
-
-    // Values panel
-    const valsPanelY = panelY + panelH + H * 0.03
-    g.append("rect").attr("class", "vals-bg").attr("x", ordPanelX).attr("y", valsPanelY).attr("width", W * 0.67)
-      .attr("height", H * 0.1).attr("rx", 12).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-    g.append("text").attr("class", "w-label").attr("x", ordPanelX + 20).attr("y", valsPanelY + H * 0.065)
-      .attr("font-size", 17).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-    g.append("text").attr("class", "s-label").attr("x", W * 0.29).attr("y", valsPanelY + H * 0.065)
-      .attr("font-size", 17).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-
-    // Entropy graph panel
-    const graphPanelX = W * 0.72
-    const graphPanelW = W * 0.26
-    const graphPanelH = H * 0.64
-    g.append("rect").attr("x", graphPanelX).attr("y", H * 0.05).attr("width", graphPanelW).attr("height", graphPanelH)
-      .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-    g.append("text").attr("x", graphPanelX + graphPanelW / 2).attr("y", H * 0.1).attr("text-anchor", "middle")
-      .attr("font-size", 15).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-      .text("Entropy vs Temperature")
-
-    // Graph axes
-    const gxL = graphPanelX + W * 0.02, gxR = graphPanelX + graphPanelW - W * 0.02, gyT = H * 0.14, gyB = H * 0.64
-    g.append("line").attr("x1", gxL).attr("y1", gyT).attr("x2", gxL).attr("y2", gyB)
-      .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
-    g.append("line").attr("x1", gxL).attr("y1", gyB).attr("x2", gxR).attr("y2", gyB)
-      .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
-    g.append("text").attr("x", gxR).attr("y", gyB + 16).attr("text-anchor", "end")
-      .attr("font-size", 13).attr("fill", "#94a3b8").attr("font-family", F).text("T")
-    g.append("text").attr("x", gxL - 8).attr("y", gyT + 4).attr("text-anchor", "end")
-      .attr("font-size", 13).attr("fill", "#94a3b8").attr("font-family", F).text("S")
-
-    // Graph curve (static)
-    const gxScale = scaleLinear().domain([0, 100]).range([gxL, gxR])
-    const gyScale = scaleLinear().domain([0, 8.5]).range([gyB, gyT])
-    const temps = range(0, 101, 2)
-    const pathGen = line<number>()
-      .x(d => gxScale(d))
-      .y(d => {
-        const t = d / 100
-        const wVal = Math.max(1, Math.exp(t * 8))
-        return gyScale(Math.log(wVal))
-      })
-    g.append("path").attr("d", pathGen(temps) ?? "").attr("fill", "none")
-      .attr("stroke", "#1e40af").attr("stroke-width", 2.5)
-
-    // Graph tick labels
-    for (const t of [0, 25, 50, 75, 100]) {
-      g.append("text").attr("x", gxScale(t)).attr("y", gyB + 16).attr("text-anchor", "middle")
-        .attr("font-size", 12).attr("fill", "#94a3b8").attr("font-family", F).text(String(t))
-    }
-
-    // Graph dot + drop line (will be updated)
-    g.append("line").attr("class", "graph-drop")
-      .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
-
-    // Draggable graph dot — large hit area for easy grab
-    const dotGroup = g.append("g").attr("class", "graph-dot-group").style("cursor", "grab")
-    dotGroup.append("circle").attr("class", "graph-dot-hit").attr("r", 18).attr("fill", "transparent")
-    dotGroup.append("circle").attr("class", "graph-dot").attr("r", 6)
-      .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
-
-    const tempDragBehavior = drag<SVGGElement, unknown>()
-      .on("start", function () {
-        select(this).style("cursor", "grabbing")
-        select(this).select(".graph-dot").transition().duration(100).attr("r", 8)
-      })
-      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-        const newTemp = gxScale.invert(event.x)
-        const clamped = Math.max(0, Math.min(100, Math.round(newTemp)))
-        onVarChangeRef.current('temperature', clamped)
-      })
-      .on("end", function () {
-        select(this).style("cursor", "grab")
-        select(this).select(".graph-dot").transition().duration(100).attr("r", 6)
-      })
-
-    dotGroup.call(tempDragBehavior)
-
-    // Temperature slider bar beneath the graph
-    const sliderY = H * 0.72
-    const sliderX1 = gxL
-    const sliderX2 = gxR
-    g.append("line").attr("x1", sliderX1).attr("y1", sliderY).attr("x2", sliderX2).attr("y2", sliderY)
-      .attr("stroke", "#cbd5e1").attr("stroke-width", 4).attr("stroke-linecap", "round")
-
-    const sliderHandle = g.append("g").attr("class", "temp-slider-handle").style("cursor", "grab")
-    sliderHandle.append("rect")
-      .attr("x", -15).attr("y", -15).attr("width", 30).attr("height", 30)
-      .attr("fill", "transparent")
-    sliderHandle.append("circle").attr("class", "slider-thumb").attr("r", 8)
-      .attr("fill", "#3b82f6").attr("stroke", "white").attr("stroke-width", 2)
-    sliderHandle.append("text").attr("class", "slider-label").attr("y", -14).attr("text-anchor", "middle")
-      .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#3b82f6")
-
-    const sliderScale = scaleLinear().domain([0, 100]).range([sliderX1, sliderX2])
-
-    const sliderDragBehavior = drag<SVGGElement, unknown>()
-      .on("start", function () {
-        select(this).style("cursor", "grabbing")
-        select(this).select(".slider-thumb").transition().duration(100).attr("r", 10)
-      })
-      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-        const newTemp = sliderScale.invert(event.x)
-        const clamped = Math.max(0, Math.min(100, Math.round(newTemp)))
-        onVarChangeRef.current('temperature', clamped)
-      })
-      .on("end", function () {
-        select(this).style("cursor", "grab")
-        select(this).select(".slider-thumb").transition().duration(100).attr("r", 8)
-      })
-
-    sliderHandle.call(sliderDragBehavior)
-
-    // Drag hint
-    g.append("text").attr("x", W / 2).attr("y", H - 12).attr("text-anchor", "middle")
-      .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-      .text("Drag the dot on the graph or the slider to change temperature")
-
-    return () => { select(container).select("svg").remove() }
-  }, [W, H])
-
-  // Update on temperature change
-  useEffect(() => {
-    const g = gRef.current
-    if (!g || W < 100 || H < 100) return
-    const dur = 200
-
-    const spacing = H * 0.087
-    const disPanelX = W * 0.42
-    const panelW = W * 0.27
-    const panelH = H * 0.55
-    const panelY = H * 0.11
-    const startX = W * 0.02 + W * 0.07
-    const startY = panelY + H * 0.12
-    const centerX = disPanelX + panelW / 2
-    const centerY = panelY + panelH / 2
-
-    const ordered = computeOrderedPositions(startX, startY, spacing)
-    const disordered = computeDisorderedPositions(ordered, temperature, centerX, centerY, spacing)
-    for (let i = 0; i < NUM_PARTICLES; i++) {
-      g.select(`.dp-${i}`)
-        .transition().duration(dur)
-        .attr("cx", disordered[i].x)
-        .attr("cy", disordered[i].y)
-    }
-
-    const t = temperature / 100
-    const microstateCount = Math.max(1, Math.round(Math.exp(t * 8)))
-    const entropyNorm = Math.log(microstateCount)
-
-    g.select(".w-label").text(`W = ${microstateCount.toLocaleString()}`)
-    g.select(".s-label").text(`S = ${entropyNorm.toFixed(3)} kB`)
-
-    // Graph indicator
-    const graphPanelX = W * 0.72
-    const graphPanelW = W * 0.26
-    const gxL = graphPanelX + W * 0.02, gxR = graphPanelX + graphPanelW - W * 0.02, gyT = H * 0.14, gyB = H * 0.64
-    const gxScale = scaleLinear().domain([0, 100]).range([gxL, gxR])
-    const gyScale = scaleLinear().domain([0, 8.5]).range([gyB, gyT])
-    const cx = gxScale(temperature)
-    const cy = gyScale(entropyNorm)
-
-    g.select(".graph-dot-group").transition().duration(dur).attr("transform", `translate(${cx},${cy})`)
-    g.select(".graph-drop").transition().duration(dur)
-      .attr("x1", cx).attr("y1", cy).attr("x2", cx).attr("y2", gyB)
-
-    // Update temperature slider handle
-    const sliderScale = scaleLinear().domain([0, 100]).range([gxL, gxR])
-    const sliderX = sliderScale(temperature)
-    g.select(".temp-slider-handle").transition().duration(dur)
-      .attr("transform", `translate(${sliderX},${H * 0.72})`)
-    g.select(".slider-label").text(`T=${temperature}`)
-  }, [temperature, W, H])
+  }, []) // ← empty deps: SVG created once, rebuilt only on resize
 
   return (
     <div
