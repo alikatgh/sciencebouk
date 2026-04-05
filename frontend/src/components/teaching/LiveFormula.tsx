@@ -1,6 +1,5 @@
 import type { ReactElement } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 import type { Variable } from "./types"
 

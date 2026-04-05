@@ -17,7 +17,7 @@ const HARMONIC_COLORS = [VAR_COLORS.primary, VAR_COLORS.secondary, VAR_COLORS.te
 const variables: Variable[] = [
   { name: 'a1', symbol: 'a\u2081', latex: 'a_1', value: 1.0, min: 0, max: 1, step: 0.05, color: VAR_COLORS.primary, description: 'Fundamental amplitude' },
   { name: 'a2', symbol: 'a\u2082', latex: 'a_2', value: 0.5, min: 0, max: 1, step: 0.05, color: VAR_COLORS.secondary, description: '2nd harmonic amplitude' },
-  { name: 'a3', symbol: 'a\u2083', latex: 'a_3', value: 0.33, min: 0, max: 1, step: 0.05, color: VAR_COLORS.tertiary, description: '3rd harmonic amplitude' },
+  { name: 'a3', symbol: 'a\u2083', latex: 'a_3', value: 0.35, min: 0, max: 1, step: 0.05, color: VAR_COLORS.tertiary, description: '3rd harmonic amplitude' },
   { name: 'a4', symbol: 'a\u2084', latex: 'a_4', value: 0.0, min: 0, max: 1, step: 0.05, color: '#a855f7', description: '4th harmonic amplitude' },
 ]
 
@@ -44,11 +44,11 @@ const lessons: LessonStep[] = [
   },
   {
     id: 'square-wave',
-    instruction: "Try to approximate a square wave: set a\u2081=1.0, a\u2082=0, a\u2083=0.33, a\u2084=0. (Only odd harmonics!)",
-    hint: "Set a\u2081=1.0, a\u2082=0, a\u2083=0.33, a\u2084=0.",
+    instruction: "Try to approximate a square wave: set a\u2081=1.0, a\u2082=0, a\u2083=0.35, a\u2084=0. (Only odd harmonics!)",
+    hint: "Set a\u2081=1.0, a\u2082=0, a\u2083=0.35, a\u2084=0.",
     highlightElements: ['a1', 'a2', 'a3', 'a4'],
     unlockedVariables: ['a1', 'a2', 'a3', 'a4'],
-    successCondition: { type: 'value_reached', target: 'a3', value: 0.33, tolerance: 0.1 },
+    successCondition: { type: 'value_reached', target: 'a3', value: 0.35, tolerance: 0.1 },
     celebration: 'big',
     insight: "A square wave is built from only odd harmonics (1, 3, 5...) with amplitudes 1/n. This is Fourier's great insight: ANY shape can be built from sine waves. MP3 compression works by throwing away the harmonics your ear can't hear.",
   },
@@ -78,8 +78,8 @@ export function FourierScene(): ReactElement {
       }}
       presets={[
         { label: "Pure tone", values: { a1: 1.0, a2: 0, a3: 0, a4: 0 } },
-        { label: "Square-ish", values: { a1: 1.0, a2: 0, a3: 0.33, a4: 0 } },
-        { label: "Rich", values: { a1: 1.0, a2: 0.5, a3: 0.33, a4: 0.25 } },
+        { label: "Square-ish", values: { a1: 1.0, a2: 0, a3: 0.35, a4: 0 } },
+        { label: "Rich", values: { a1: 1.0, a2: 0.5, a3: 0.35, a4: 0.25 } },
       ]}
     >
       {({ vars, setVar, highlightedVar, setHighlightedVar }) => (

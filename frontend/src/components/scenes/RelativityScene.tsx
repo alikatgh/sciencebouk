@@ -76,26 +76,14 @@ export function RelativityScene(): ReactElement {
         return `Time slows by ${pct.toFixed(1)}% for the traveler`
       }}
       presets={[
-        { label: "Walking", values: { v: 0.000005 } },
-        { label: "Airplane", values: { v: 0.0000009 } },
+        { label: "Everyday", values: { v: 0 } },
+        { label: "Half light", values: { v: 0.50 } },
         { label: "90% light speed", values: { v: 0.90 } },
       ]}
     >
-      {({ vars, setVar, highlightedVar, setHighlightedVar }) => {
-        const gamma = 1 / Math.sqrt(1 - vars.v * vars.v)
-        if (Math.abs(vars.gamma - gamma) > 0.01) {
-          setVar('gamma', gamma)
-        }
-        return (
-          <D3RelativityVisual
-            velocity={vars.v}
-            gamma={gamma}
-            highlightedVar={highlightedVar}
-            onHighlight={setHighlightedVar}
-            onVarChange={setVar}
-          />
-        )
-      }}
+      {({ vars, setVar, highlightedVar, setHighlightedVar }) => (
+        <RelativityBridge vars={vars} setVar={setVar} highlightedVar={highlightedVar} setHighlightedVar={setHighlightedVar} />
+      )}
     </TeachableEquation>
   )
 }
@@ -106,6 +94,31 @@ interface Props {
   highlightedVar: string | null
   onHighlight: (name: string | null) => void
   onVarChange: (name: string, value: number) => void
+}
+
+function RelativityBridge({ vars, setVar, highlightedVar, setHighlightedVar }: {
+  vars: Record<string, number>
+  setVar: (name: string, value: number) => void
+  highlightedVar: string | null
+  setHighlightedVar: (name: string | null) => void
+}): ReactElement {
+  const gamma = 1 / Math.sqrt(1 - vars.v * vars.v)
+
+  useEffect(() => {
+    if (Math.abs(vars.gamma - gamma) > 0.01) {
+      setVar('gamma', gamma)
+    }
+  }, [vars.v, vars.gamma, gamma, setVar])
+
+  return (
+    <D3RelativityVisual
+      velocity={vars.v}
+      gamma={gamma}
+      highlightedVar={highlightedVar}
+      onHighlight={setHighlightedVar}
+      onVarChange={setVar}
+    />
+  )
 }
 
 function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVarChange }: Props): ReactElement {

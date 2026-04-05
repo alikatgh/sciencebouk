@@ -1,6 +1,6 @@
 import type { ReactElement } from "react"
 import { useCallback, useState } from "react"
-import { BlockMath, InlineMath } from "react-katex"
+import { InlineMath } from "react-katex"
 import { Volume2, VolumeX, Type, Palette, Gauge, Globe, Keyboard, RotateCcw, Trash2, BookOpen, Sparkles, GraduationCap, Lightbulb, Target } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"

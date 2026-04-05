@@ -39,7 +39,7 @@ const lessons: LessonStep[] = [
   },
   {
     id: 'break-it',
-    instruction: "Everything unlocked. Maximize the force.",
+    instruction: "Everything unlocked. Bring the masses as close as possible.",
     highlightElements: ['m1', 'm2', 'r'],
     unlockedVariables: ['m1', 'm2', 'r'],
     successCondition: { type: 'value_reached', target: 'r', value: 1.5, tolerance: 0.2 },
