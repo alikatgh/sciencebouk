@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useState } from "react"
+import { lazy, Suspense, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Lock, ArrowRight, CheckCircle2,
@@ -9,14 +9,15 @@ import {
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
-import { TooltipProvider } from "./ui/tooltip"
 import { TopNav } from "./TopNav"
-import { HeroDemo } from "./HeroDemo"
 import { subjects } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- KaTeX rendering for formula cards
-import { InlineMath } from "react-katex"
+import { formatFormulaPreview } from "../lib/formatFormulaPreview"
+
+const HeroDemo = lazy(() =>
+  import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
+)
 
 const iconMap: Record<string, ReactElement> = {
   "pi": <Pi className="h-5 w-5" />,
@@ -31,11 +32,10 @@ const iconMap: Record<string, ReactElement> = {
   "grid-3x3": <Grid3X3 className="h-5 w-5" />,
 }
 
-/** Renders a LaTeX formula using KaTeX. NEVER replace with plain text. */
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
     <span className={muted ? "text-slate-300 dark:text-slate-600" : undefined}>
-      <InlineMath math={formula} />
+      {formatFormulaPreview(formula)}
     </span>
   )
 }
@@ -50,8 +50,7 @@ export function HomePage(): ReactElement {
   const isCompleted = (id: number): boolean => progressByEquation.get(id)?.completed ?? false
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <main className="min-h-screen bg-white dark:bg-slate-950">
+    <main className="min-h-screen bg-white dark:bg-slate-950">
         {/* Header */}
         <TopNav
           showBack={!!activeSubject}
@@ -109,7 +108,21 @@ export function HomePage(): ReactElement {
                 </div>
                 {/* Animated equation demo */}
                 <div className="hidden flex-col items-center gap-2 md:flex">
-                  <HeroDemo />
+                  <Suspense
+                    fallback={
+                      <div className="w-56 rounded-2xl bg-white/10 px-5 py-5 backdrop-blur">
+                        <div className="h-4 w-24 rounded bg-white/20" />
+                        <div className="mt-4 h-8 w-full rounded bg-white/10" />
+                        <div className="mt-4 flex items-end justify-center gap-2">
+                          <div className="h-10 w-10 rounded bg-blue-400/20" />
+                          <div className="h-14 w-14 rounded bg-amber-400/20" />
+                          <div className="h-16 w-16 rounded bg-red-400/20" />
+                        </div>
+                      </div>
+                    }
+                  >
+                    <HeroDemo />
+                  </Suspense>
                   <p className="text-[10px] text-slate-500">click to explore · auto-cycles</p>
                 </div>
               </div>
@@ -256,7 +269,6 @@ export function HomePage(): ReactElement {
             </div>
           )}
         </div>
-      </main>
-    </TooltipProvider>
+    </main>
   )
 }
