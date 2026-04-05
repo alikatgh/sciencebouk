@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import {
   ArrowRight,

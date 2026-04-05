@@ -9,6 +9,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!response.ok) {
     throw new Error(`API ${response.status}: ${response.statusText}`)
   }
+  if (response.status === 204) {
+    return undefined as T
+  }
   return response.json() as Promise<T>
 }
 
@@ -109,6 +112,7 @@ export const api = {
 
   progress: {
     getAll: () => request<ProgressItem[]>('/progress/'),
+    clear: () => request<{ ok: boolean }>('/progress/', { method: 'DELETE' }),
     update: (eqId: number, data: Partial<ProgressItem>) =>
       request<ProgressItem>(`/progress/${eqId}/`, { method: 'PATCH', body: JSON.stringify(data) }),
     bulkSync: (items: BulkSyncItem[]) =>

@@ -3,7 +3,7 @@ import { useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Crown, LogOut, BarChart2, CreditCard, BookOpen, Clock, CheckCircle2, Camera, Pencil, Check, X } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { useAllProgress, getLocalProgress } from "../progress/useProgress"
+import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import { TopNav } from "./TopNav"
@@ -11,7 +11,7 @@ import { TopNav } from "./TopNav"
 export default function ProfilePage(): ReactElement {
   const navigate = useNavigate()
   const { user, isAuthenticated, isPro, logout } = useAuth()
-  const { completedCount, totalTimeMinutes, total } = useAllProgress()
+  const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
   const [managingSubscription, setManagingSubscription] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(user?.profile.display_name ?? "")
@@ -82,8 +82,8 @@ export default function ProfilePage(): ReactElement {
     setUploadingAvatar(false)
   }
 
-  const eqProgress = equationManifest.map((eq) => ({ ...eq, progress: getLocalProgress(eq.id) }))
-  const inProgressCount = eqProgress.filter((e) => !e.progress.completed && e.progress.timeSpentSeconds > 0).length
+  const eqProgress = equationManifest.map((eq) => ({ ...eq, progress: progressByEquation.get(eq.id) }))
+  const inProgressCount = eqProgress.filter((e) => !(e.progress?.completed ?? false) && (e.progress?.timeSpentSeconds ?? 0) > 0).length
   const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
   return (
@@ -214,9 +214,10 @@ export default function ProfilePage(): ReactElement {
             <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">Your Equations</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {eqProgress.map((eq) => {
-                const done = eq.progress.completed
-                const started = eq.progress.timeSpentSeconds > 0
-                const mins = Math.round(eq.progress.timeSpentSeconds / 60)
+                const progress = eq.progress
+                const done = progress?.completed ?? false
+                const started = (progress?.timeSpentSeconds ?? 0) > 0
+                const mins = Math.round((progress?.timeSpentSeconds ?? 0) / 60)
                 return (
                   <button
                     key={eq.id}

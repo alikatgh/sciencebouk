@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from io import StringIO
 from rest_framework.test import APIClient
 
@@ -705,6 +706,19 @@ class MyProgressListTests(AuthProgressBase):
                       'time_spent_seconds', 'notes', 'bookmarked', 'last_viewed']:
             self.assertIn(field, record)
 
+    def test_delete_progress_authenticated_clears_only_current_users_records(self):
+        UserProgress.objects.create(user=self.free_user, equation=self.eq1, completed=True)
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq2, completed=True)
+        self._auth_as(self.free_user)
+        response = self.client.delete('/api/progress/')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(UserProgress.objects.filter(user=self.free_user).exists())
+        self.assertTrue(UserProgress.objects.filter(user=self.pro_user).exists())
+
+    def test_delete_progress_unauthenticated_returns_401(self):
+        response = self.client.delete('/api/progress/')
+        self.assertEqual(response.status_code, 401)
+
 
 # ---------------------------------------------------------------------------
 # PATCH /api/progress/{equation_id}/ — update one equation's progress
@@ -838,6 +852,27 @@ class BulkSyncProgressTests(AuthProgressBase):
         item = response.json()[0]
         for field in ['equation_id', 'completed', 'notes', 'bookmarked']:
             self.assertIn(field, item)
+
+    def test_bulk_sync_updates_variables_explored(self):
+        self._auth_as(self.free_user)
+        payload = {'items': [{'equation_id': 1, 'variables_explored': ['a', 'b']}]}
+        self.client.post('/api/progress/sync/', payload, format='json')
+        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        self.assertEqual(progress.variables_explored, ['a', 'b'])
+
+    def test_bulk_sync_clears_completed_at_when_completed_false(self):
+        UserProgress.objects.create(
+            user=self.free_user,
+            equation=self.eq1,
+            completed=True,
+            completed_at=timezone.now(),
+        )
+        self._auth_as(self.free_user)
+        payload = {'items': [{'equation_id': 1, 'completed': False}]}
+        self.client.post('/api/progress/sync/', payload, format='json')
+        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        self.assertFalse(progress.completed)
+        self.assertIsNone(progress.completed_at)
 
 
 # ---------------------------------------------------------------------------

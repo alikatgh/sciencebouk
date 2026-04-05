@@ -28,11 +28,13 @@ const STORAGE_KEY_PREFIX = "eq-progress-"
 const syncTimers = new Map<number, ReturnType<typeof setTimeout>>()
 const progressListeners = new Set<() => void>()
 const localProgressCache = new Map<number, EquationProgress>()
+const progressSnapshotCache = new Map<string, { version: number; snapshot: ProgressSnapshot }>()
 
 let storageListenerAttached = false
 let serverProgressCache = new Map<number, ProgressItem>()
 let serverProgressPromise: Promise<Map<number, ProgressItem>> | null = null
 let hasFetchedServerProgress = false
+let progressVersion = 0
 
 function progressKey(equationId: number): string {
   return `${STORAGE_KEY_PREFIX}${equationId}`
@@ -54,6 +56,7 @@ function normalizeProgress(progress?: Partial<EquationProgress>): EquationProgre
 }
 
 function notifyProgressListeners() {
+  progressVersion += 1
   for (const listener of progressListeners) listener()
 }
 
@@ -147,6 +150,24 @@ function setLocalProgress(equationId: number, progress: EquationProgress) {
   notifyProgressListeners()
 }
 
+export function clearStoredProgress() {
+  if (typeof localStorage === "undefined") return
+
+  for (const timer of syncTimers.values()) clearTimeout(timer)
+  syncTimers.clear()
+
+  for (const equation of equationManifest) {
+    localStorage.removeItem(progressKey(equation.id))
+  }
+
+  localProgressCache.clear()
+  serverProgressCache = new Map()
+  serverProgressPromise = null
+  hasFetchedServerProgress = false
+  progressSnapshotCache.clear()
+  notifyProgressListeners()
+}
+
 function mergeProgress(local: EquationProgress, server: ProgressItem): EquationProgress {
   return {
     completed: local.completed || server.completed,
@@ -225,29 +246,40 @@ function debouncedSync(eqId: number, progress: EquationProgress) {
   syncTimers.set(eqId, timer)
 }
 
-// Cache the snapshot to avoid infinite re-renders with useSyncExternalStore
-let cachedTotals: { completedCount: number; totalTimeMinutes: number; total: number } = { completedCount: 0, totalTimeMinutes: 0, total: 0 }
-let cachedTotalsKey = ""
+export interface ProgressSnapshot {
+  completedCount: number
+  totalTimeMinutes: number
+  total: number
+  progressByEquation: Map<number, EquationProgress>
+}
 
-function getProgressTotalsSnapshot(includeServer: boolean) {
+function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
+  const cacheKey = includeServer ? "server" : "local"
+  const cached = progressSnapshotCache.get(cacheKey)
+  if (cached && cached.version === progressVersion) {
+    return cached.snapshot
+  }
+
   let completedCount = 0
   let totalTimeSeconds = 0
+  const progressByEquation = new Map<number, EquationProgress>()
 
   for (const equation of equationManifest) {
     const progress = readMergedProgress(equation.id, includeServer)
+    progressByEquation.set(equation.id, progress)
     if (progress.completed) completedCount += 1
     totalTimeSeconds += progress.timeSpentSeconds
   }
 
-  const totalTimeMinutes = Math.round(totalTimeSeconds / 60)
-  const key = `${completedCount}-${totalTimeMinutes}-${equationManifest.length}-${includeServer}`
-
-  if (key !== cachedTotalsKey) {
-    cachedTotalsKey = key
-    cachedTotals = { completedCount, totalTimeMinutes, total: equationManifest.length }
+  const snapshot = {
+    completedCount,
+    totalTimeMinutes: Math.round(totalTimeSeconds / 60),
+    total: equationManifest.length,
+    progressByEquation,
   }
 
-  return cachedTotals
+  progressSnapshotCache.set(cacheKey, { version: progressVersion, snapshot })
+  return snapshot
 }
 
 export function getLocalProgressSyncItems(): BulkSyncItem[] {
@@ -348,7 +380,7 @@ export function useAllProgress() {
   const { isAuthenticated, isPro } = useAuth()
   const includeServer = isAuthenticated && isPro
   const getSnapshot = useCallback(
-    () => getProgressTotalsSnapshot(includeServer),
+    () => getProgressSnapshot(includeServer),
     [includeServer],
   )
   const snapshot = useSyncExternalStore(subscribeToProgress, getSnapshot, getSnapshot)

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 // Presets that cycle automatically
@@ -14,6 +14,7 @@ const PRESETS = [
 export function HeroDemo(): ReactElement {
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
+  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { a, b } = PRESETS[idx]
   const c = Math.sqrt(a * a + b * b)
@@ -30,11 +31,22 @@ export function HeroDemo(): ReactElement {
     return () => clearInterval(timer)
   }, [paused])
 
+  useEffect(() => () => {
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current)
+    }
+  }, [])
+
   const handleClick = useCallback(() => {
     setPaused(true)
     setIdx((prev) => (prev + 1) % PRESETS.length)
-    // Resume auto after 8s
-    setTimeout(() => setPaused(false), 8000)
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current)
+    }
+    resumeTimeoutRef.current = setTimeout(() => {
+      setPaused(false)
+      resumeTimeoutRef.current = null
+    }, 8000)
   }, [])
 
   // Square sizes proportional to area (sqrt for visual)
@@ -47,6 +59,12 @@ export function HeroDemo(): ReactElement {
     <div
       className="w-56 cursor-pointer select-none rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]"
       onClick={handleClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          handleClick()
+        }
+      }}
       role="button"
       tabIndex={0}
       aria-label="Click to cycle through examples"

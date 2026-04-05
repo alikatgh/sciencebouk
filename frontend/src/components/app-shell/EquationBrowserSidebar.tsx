@@ -1,5 +1,5 @@
 import type { ReactElement, RefObject } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+// framer-motion removed — using ResizablePanel instead
 import {
   ArrowLeft,
   CheckCircle2,
@@ -21,7 +21,8 @@ import { Separator } from "../ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import type { EquationSummary } from "../../data/equationManifest"
-import { getLocalProgress } from "../../progress/useProgress"
+import type { EquationProgress } from "../../progress/useProgress"
+import { ResizablePanel } from "../ui/resizable-panel"
 
 interface EquationBrowserSidebarProps {
   equations: EquationSummary[]
@@ -34,6 +35,7 @@ interface EquationBrowserSidebarProps {
   completedCount: number
   total: number
   totalTimeMinutes: number
+  progressByEquation: Map<number, EquationProgress>
   prevEquation: EquationSummary | null
   nextEquation: EquationSummary | null
   isAuthenticated: boolean
@@ -57,15 +59,17 @@ interface EquationBrowserSidebarProps {
 function EquationList({
   equations,
   selectedId,
+  progressByEquation,
   onSelectEquation,
 }: {
   equations: EquationSummary[]
   selectedId: number
+  progressByEquation: Map<number, EquationProgress>
   onSelectEquation: (id: number) => void
 }) {
   return equations.map((equation) => {
     const active = equation.id === selectedId
-    const done = getLocalProgress(equation.id).completed
+    const done = progressByEquation.get(equation.id)?.completed ?? false
 
     return (
       <Tooltip key={equation.id}>
@@ -200,6 +204,7 @@ export function EquationBrowserSidebar({
   completedCount,
   total,
   totalTimeMinutes,
+  progressByEquation,
   prevEquation,
   nextEquation,
   isAuthenticated,
@@ -223,14 +228,16 @@ export function EquationBrowserSidebar({
 
   return (
     <>
-      <AnimatePresence initial={false}>
-        {sidebarOpen && (
-          <motion.aside
-            className="hidden flex-shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 200, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
+      {sidebarOpen ? (
+          <ResizablePanel
+            edge="right"
+            defaultWidth={220}
+            minWidth={160}
+            maxWidth={360}
+            open={sidebarOpen}
+            onCollapse={onToggleSidebar}
+            storageKey="sciencebouk-sidebar-width"
+            className="hidden flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex"
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-800">
               <button onClick={onGoHome} className="text-sm font-semibold text-slate-900 transition hover:text-slate-600 dark:text-white" type="button">
@@ -276,7 +283,12 @@ export function EquationBrowserSidebar({
                 {visibleEquations.length === 0 ? (
                   <p className="py-4 text-center text-xs text-slate-400">No results</p>
                 ) : (
-                  <EquationList equations={visibleEquations} selectedId={selectedId} onSelectEquation={onSelectEquation} />
+                  <EquationList
+                    equations={visibleEquations}
+                    selectedId={selectedId}
+                    progressByEquation={progressByEquation}
+                    onSelectEquation={onSelectEquation}
+                  />
                 )}
               </div>
             </ScrollArea>
@@ -293,9 +305,8 @@ export function EquationBrowserSidebar({
                 onLogout={onLogout}
               />
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+          </ResizablePanel>
+      ) : null}
 
       {!sidebarOpen && (
         <div className="hidden flex-shrink-0 flex-col items-center gap-2 border-r border-slate-200 bg-white px-1.5 py-3 dark:border-slate-800 dark:bg-slate-900 lg:flex">
@@ -342,7 +353,12 @@ export function EquationBrowserSidebar({
           )}
           <ScrollArea className="flex-1 px-3">
             <div className="space-y-0.5 pb-4">
-              <EquationList equations={equations} selectedId={selectedId} onSelectEquation={onSelectEquation} />
+              <EquationList
+                equations={equations}
+                selectedId={selectedId}
+                progressByEquation={progressByEquation}
+                onSelectEquation={onSelectEquation}
+              />
             </div>
           </ScrollArea>
           <Separator />
