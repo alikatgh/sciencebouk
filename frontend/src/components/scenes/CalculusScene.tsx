@@ -1,9 +1,6 @@
 import type { ReactElement } from "react"
-import { useCallback, useMemo, useRef, useState } from "react"
-import {
-  ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis,
-  CartesianGrid, ReferenceLine, ReferenceDot, Tooltip as RTooltip,
-} from "recharts"
+import { useCallback, useMemo, useState } from "react"
+import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
@@ -113,25 +110,17 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [isDragging, setIsDragging] = useState(false)
-  const chartWrapperRef = useRef<HTMLDivElement>(null)
-
-  // Recharts chart margins — must match the ComposedChart margin prop
-  const chartMargin = useMemo(() => ({ top: 10, right: 30, bottom: 24, left: 10 }), [])
-  const xDomain: [number, number] = [0, 10.5]
-  const yAxisWidth = 40
+  const frame = useChartFrame({
+    margin: { top: 10, right: 30, bottom: 28, left: 48 },
+    minHeight: 320,
+    xDomain: [0, 10.5],
+    yDomain: [-1, 14],
+  })
 
   /** Convert a clientX pixel position to a data-space x value */
   const clientXToDataX = useCallback((clientX: number): number | null => {
-    const wrapper = chartWrapperRef.current
-    if (!wrapper) return null
-    const rect = wrapper.getBoundingClientRect()
-    const plotLeft = rect.left + chartMargin.left + yAxisWidth
-    const plotRight = rect.right - chartMargin.right
-    const plotWidth = plotRight - plotLeft
-    if (plotWidth <= 0) return null
-    const ratio = (clientX - plotLeft) / plotWidth
-    return xDomain[0] + ratio * (xDomain[1] - xDomain[0])
-  }, [chartMargin, yAxisWidth])
+    return frame.clientXToX(clientX)
+  }, [frame])
 
   const handleDragStart = useCallback((e: React.PointerEvent) => {
     // Only start drag if near the blue dot
@@ -171,12 +160,12 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
     setEditingVar(null)
   }, [editingVar, editValue, onVarChange])
 
-  const handleChartClick = useCallback((data: any) => {
-    if (data?.activePayload?.[0]?.payload?.x != null && onVarChange) {
-      const x = Number(data.activePayload[0].payload.x)
-      onVarChange("t", Math.max(0.5, Math.min(9.5, Math.round(x * 10) / 10)))
-    }
-  }, [onVarChange])
+  const handleChartClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!onVarChange || isDragging) return
+    const x = frame.clientXToX(event.clientX)
+    if (x == null) return
+    onVarChange("t", Math.max(0.5, Math.min(9.5, Math.round(x * 10) / 10)))
+  }, [frame, isDragging, onVarChange])
   const [showArea, setShowArea] = useState(false)
   const [showDeriv, setShowDeriv] = useState(false)
 
@@ -221,6 +210,38 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
     ]
   }, [t, h, secantSlope])
 
+  const xTicks = useMemo(() => getTicks([0, 10.5], 10), [])
+  const yTicks = useMemo(() => getTicks([-1, 14], 6), [])
+  const curvePath = useMemo(() => buildLinePath({
+    data: curveData,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y: (point) => point.y,
+  }), [curveData, frame.xScale, frame.yScale])
+  const areaPath = useMemo(() => buildAreaPath({
+    data: curveData,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y0: () => 0,
+    y1: (point) => point.areaFill,
+  }), [curveData, frame.xScale, frame.yScale])
+  const tangentPath = useMemo(() => buildLinePath({
+    data: tangentData,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y: (point) => point.y,
+  }), [frame.xScale, frame.yScale, tangentData])
+  const secantPath = useMemo(() => buildLinePath({
+    data: secantData,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y: (point) => point.y,
+  }), [frame.xScale, frame.yScale, secantData])
+
   return (
     <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}>
       <div className="flex h-full flex-col">
@@ -251,110 +272,128 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
 
         {/* Chart */}
         <div
-          ref={chartWrapperRef}
+          ref={frame.containerRef}
           className="min-h-0 flex-1"
           style={{ cursor: isDragging ? "grabbing" : "crosshair", touchAction: "none" }}
           onPointerDown={handleDragStart}
           onPointerMove={handleDragMove}
           onPointerUp={handleDragEnd}
           onPointerCancel={handleDragEnd}
+          onClick={handleChartClick}
         >
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart margin={{ top: 10, right: 30, bottom: 24, left: 10 }} onClick={isDragging ? undefined : handleChartClick} style={{ cursor: isDragging ? "grabbing" : "crosshair" }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="x" type="number"
-                domain={[0, 10.5]}
-                tickCount={11}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                allowDuplicatedCategory={false}
+          <svg width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+            {xTicks.map((tick) => (
+              <line
+                key={`grid-x-${tick}`}
+                x1={frame.xScale(tick)}
+                x2={frame.xScale(tick)}
+                y1={frame.plotTop}
+                y2={frame.plotBottom}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <YAxis
-                domain={[-1, 14]}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                width={40}
+            ))}
+            {yTicks.map((tick) => (
+              <line
+                key={`grid-y-${tick}`}
+                x1={frame.plotLeft}
+                x2={frame.plotRight}
+                y1={frame.yScale(tick)}
+                y2={frame.yScale(tick)}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <RTooltip
-                contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }}
-                formatter={(value: any, name: any) => {
-                  const label = name === "y" ? "f(x)" : name === "deriv" ? "f'(x)" : name
-                  return [Number(value).toFixed(3), label]
-                }}
-                labelFormatter={(label: any) => `x = ${Number(label).toFixed(1)}`}
-              />
+            ))}
 
-              {/* Area fill under curve up to t */}
-              {showArea && (
-                <Area
-                  data={curveData}
-                  dataKey="areaFill"
-                  fill={VAR_COLORS.primary}
-                  stroke="none"
-                  fillOpacity={0.12}
-                  isAnimationActive={false}
-                  connectNulls={false}
-                />
-              )}
+            <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
+            <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
-              {/* Main curve */}
-              <Line data={curveData} dataKey="y" stroke="#1e293b" strokeWidth={3} dot={false} isAnimationActive={false} />
+            {showArea && areaPath && <path d={areaPath} fill={VAR_COLORS.primary} opacity={0.12} />}
+            <path d={curvePath} fill="none" stroke="#1e293b" strokeWidth={3} />
 
-              {/* Derivative curve (optional) */}
-              {showDeriv && (
-                <Line data={curveData} dataKey="deriv" stroke="#06b6d4" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} opacity={0.5} />
-              )}
-
-              {/* Tangent line */}
-              <Line
-                data={tangentData}
-                dataKey="y"
-                stroke="#94a3b8"
-                strokeWidth={isNearLimit ? 2.5 : 1.5}
-                strokeDasharray={isNearLimit ? undefined : "6 4"}
-                dot={false}
-                isAnimationActive={false}
-                opacity={isNearLimit ? 0.6 : 0.3}
-              />
-
-              {/* Secant line */}
-              <Line
-                data={secantData}
-                dataKey="y"
-                stroke={VAR_COLORS.secondary}
-                strokeWidth={2.5}
-                dot={false}
-                isAnimationActive={false}
-                opacity={0.8}
-              />
-
-              {/* Vertical reference lines */}
-              <ReferenceLine x={t} stroke={VAR_COLORS.primary} strokeDasharray="4 3" strokeWidth={1} opacity={0.4} />
-              <ReferenceLine x={t + h} stroke={VAR_COLORS.secondary} strokeDasharray="4 3" strokeWidth={1} opacity={0.3} />
-
-              {/* Primary point (blue) — draggable */}
-              <ReferenceDot
-                x={t}
-                y={f(t)}
-                r={isDragging ? 13 : 10}
-                fill={VAR_COLORS.primary}
-                stroke="white"
-                strokeWidth={3}
-                style={{ cursor: isDragging ? "grabbing" : "grab", filter: isDragging ? "drop-shadow(0 0 6px rgba(59,130,246,0.5))" : undefined }}
-              />
-
-              {/* Second point (amber) */}
-              <ReferenceDot
-                x={t + h}
-                y={f(t + h)}
-                r={6}
-                fill={VAR_COLORS.secondary}
-                stroke="white"
+            {showDeriv && (
+              <path
+                d={buildLinePath({
+                  data: curveData,
+                  xScale: frame.xScale,
+                  yScale: frame.yScale,
+                  x: (point) => point.x,
+                  y: (point) => point.deriv,
+                })}
+                fill="none"
+                stroke="#06b6d4"
                 strokeWidth={2}
+                strokeDasharray="6 4"
+                opacity={0.5}
               />
-            </ComposedChart>
-          </ResponsiveContainer>
+            )}
+
+            <path
+              d={tangentPath}
+              fill="none"
+              stroke="#94a3b8"
+              strokeWidth={isNearLimit ? 2.5 : 1.5}
+              strokeDasharray={isNearLimit ? undefined : "6 4"}
+              opacity={isNearLimit ? 0.6 : 0.3}
+            />
+            <path d={secantPath} fill="none" stroke={VAR_COLORS.secondary} strokeWidth={2.5} opacity={0.8} />
+
+            <line x1={frame.xScale(t)} x2={frame.xScale(t)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeDasharray="4 3" strokeWidth={1} opacity={0.4} />
+            <line x1={frame.xScale(t + h)} x2={frame.xScale(t + h)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.secondary} strokeDasharray="4 3" strokeWidth={1} opacity={0.3} />
+
+            {xTicks.map((tick) => (
+              <g key={`tick-x-${tick}`}>
+                <line x1={frame.xScale(tick)} x2={frame.xScale(tick)} y1={frame.plotBottom} y2={frame.plotBottom + 6} stroke="#cbd5e1" />
+                <text x={frame.xScale(tick)} y={frame.plotBottom + 18} textAnchor="middle" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(0)}
+                </text>
+              </g>
+            ))}
+            {yTicks.map((tick) => (
+              <g key={`tick-y-${tick}`}>
+                <line x1={frame.plotLeft - 6} x2={frame.plotLeft} y1={frame.yScale(tick)} y2={frame.yScale(tick)} stroke="#cbd5e1" />
+                <text x={frame.plotLeft - 10} y={frame.yScale(tick) + 4} textAnchor="end" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(0)}
+                </text>
+              </g>
+            ))}
+
+            <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 6} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
+              x
+            </text>
+            <text
+              x={16}
+              y={(frame.plotTop + frame.plotBottom) / 2}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#64748b"
+              fontWeight="600"
+              transform={`rotate(-90 16 ${(frame.plotTop + frame.plotBottom) / 2})`}
+            >
+              y
+            </text>
+
+            <circle
+              cx={frame.xScale(t)}
+              cy={frame.yScale(f(t))}
+              r={isDragging ? 13 : 10}
+              fill={VAR_COLORS.primary}
+              stroke="white"
+              strokeWidth={3}
+              style={{
+                cursor: isDragging ? "grabbing" : "grab",
+                filter: isDragging ? "drop-shadow(0 0 6px rgba(59,130,246,0.5))" : undefined,
+              }}
+            />
+            <circle
+              cx={frame.xScale(t + h)}
+              cy={frame.yScale(f(t + h))}
+              r={6}
+              fill={VAR_COLORS.secondary}
+              stroke="white"
+              strokeWidth={2}
+            />
+          </svg>
         </div>
 
         {/* Toggle buttons */}

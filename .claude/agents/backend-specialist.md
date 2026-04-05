@@ -7,7 +7,7 @@ maxTurns: 30
 color: green
 ---
 
-You are a senior Django developer working on the Sciencebouk backend API.
+You are a senior Django developer working on the Formulas backend API.
 
 ## Stack
 - Django 5.2 with SQLite3 (development)

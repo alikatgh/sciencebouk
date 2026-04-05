@@ -1,9 +1,6 @@
 import type { ReactElement } from "react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import {
-  ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, ReferenceLine, Tooltip as RTooltip,
-} from "recharts"
+import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
@@ -66,9 +63,18 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [isDragging, setIsDragging] = useState(false)
-  const chartContainerRef = useRef<HTMLDivElement>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
+
+  const xDomainMin = mu - 4 * sigma
+  const xDomainMax = mu + 4 * sigma
+  const peak = pdf(mu, mu, sigma)
+  const frame = useChartFrame({
+    margin: { top: 10, right: 20, bottom: 28, left: 56 },
+    minHeight: 320,
+    xDomain: [xDomainMin, xDomainMax],
+    yDomain: [0, peak * 1.15],
+  })
 
   const handleBadgeClick = useCallback((varName: string, currentValue: number) => {
     setEditingVar(varName)
@@ -86,29 +92,11 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
     setEditingVar(null)
   }, [editingVar, editValue, onVarChange])
 
-  const handleChartClick = useCallback((data: any) => {
-    if (data?.activePayload?.[0]?.payload?.x != null && onVarChange) {
-      const x = Number(data.activePayload[0].payload.x)
-      onVarChange("mu", Math.max(-3, Math.min(3, Math.round(x * 10) / 10)))
-    }
-  }, [onVarChange])
-
-  // Pointer-drag to change mu
-  const xDomainMin = mu - 4 * sigma
-  const xDomainMax = mu + 4 * sigma
-
   const pointerToMu = useCallback((clientX: number): number => {
-    const el = chartContainerRef.current
-    if (!el) return mu
-    const rect = el.getBoundingClientRect()
-    // Recharts margins: left=10 + yAxis width ~45 = 55, right=20
-    const chartLeft = rect.left + 55
-    const chartRight = rect.right - 20
-    const chartWidth = chartRight - chartLeft
-    const frac = (clientX - chartLeft) / chartWidth
-    const val = xDomainMin + frac * (xDomainMax - xDomainMin)
+    const val = frame.clientXToX(clientX)
+    if (val == null) return mu
     return Math.round(Math.max(-3, Math.min(3, val)) * 10) / 10
-  }, [mu, sigma, xDomainMin, xDomainMax])
+  }, [frame, mu])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     setIsDragging(true)
@@ -150,6 +138,39 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
 
   const muHighlighted = highlightedVar === "mu"
   const sigmaHighlighted = highlightedVar === "sigma"
+  const xTicks = useMemo(() => getTicks([xDomainMin, xDomainMax], 8), [xDomainMin, xDomainMax])
+  const yTicks = useMemo(() => getTicks([0, peak * 1.15], 5), [peak])
+  const shade3Path = useMemo(() => buildAreaPath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y0: () => 0,
+    y1: (point) => point.shade3,
+  }), [data, frame.xScale, frame.yScale])
+  const shade2Path = useMemo(() => buildAreaPath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y0: () => 0,
+    y1: (point) => point.shade2,
+  }), [data, frame.xScale, frame.yScale])
+  const shade1Path = useMemo(() => buildAreaPath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y0: () => 0,
+    y1: (point) => point.shade1,
+  }), [data, frame.xScale, frame.yScale])
+  const curvePath = useMemo(() => buildLinePath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y: (point) => point.y,
+  }), [data, frame.xScale, frame.yScale])
 
   return (
     <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -180,7 +201,7 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
         </div>
 
         {/* Chart */}
-        <div ref={chartContainerRef} className="relative min-h-0 flex-1" style={{ minHeight: 300 }}>
+        <div ref={frame.containerRef} className="relative min-h-0 flex-1" style={{ minHeight: 300 }}>
           <div
             className="absolute inset-0 z-10"
             style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
@@ -188,60 +209,107 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
           />
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 10 }} style={{ cursor: isDragging ? "grabbing" : "grab" }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="x" type="number"
-                domain={[mu - 4 * sigma, mu + 4 * sigma]}
-                tickCount={9}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
+          <svg width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+            {xTicks.map((tick) => (
+              <line
+                key={`grid-x-${tick}`}
+                x1={frame.xScale(tick)}
+                x2={frame.xScale(tick)}
+                y1={frame.plotTop}
+                y2={frame.plotBottom}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <YAxis
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                tickFormatter={(v: number) => v.toFixed(2)}
-                width={45}
+            ))}
+            {yTicks.map((tick) => (
+              <line
+                key={`grid-y-${tick}`}
+                x1={frame.plotLeft}
+                x2={frame.plotRight}
+                y1={frame.yScale(tick)}
+                y2={frame.yScale(tick)}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <RTooltip
-                contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }}
-                formatter={(value) => [Number(value).toFixed(4), "\u03A6(x)"]}
-                labelFormatter={(label) => `x = ${Number(label).toFixed(2)}`}
-              />
+            ))}
 
-              {/* 3 sigma shading */}
-              <Area dataKey="shade3" fill="#dbeafe" stroke="none" fillOpacity={0.3} isAnimationActive={false} />
-              {/* 2 sigma shading */}
-              <Area dataKey="shade2" fill="#93c5fd" stroke="none" fillOpacity={0.3} isAnimationActive={false} />
-              {/* 1 sigma shading */}
-              <Area dataKey="shade1" fill={VAR_COLORS.primary} stroke="none" fillOpacity={0.25} isAnimationActive={false} />
+            <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
+            <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
-              {/* Main curve */}
-              <Line dataKey="y" stroke="#1e293b" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+            {shade3Path && <path d={shade3Path} fill="#dbeafe" opacity={0.3} />}
+            {shade2Path && <path d={shade2Path} fill="#93c5fd" opacity={0.3} />}
+            {shade1Path && <path d={shade1Path} fill={VAR_COLORS.primary} opacity={0.25} />}
+            <path d={curvePath} fill="none" stroke="#1e293b" strokeWidth={2.5} />
 
-              {/* Mean line */}
-              <ReferenceLine
-                x={mu}
-                stroke={muHighlighted ? VAR_COLORS.primary : "#3b82f6"}
-                strokeWidth={muHighlighted ? 3 : 1.5}
-                strokeDasharray="6 3"
-                label={{ value: `\u03BC = ${mu.toFixed(1)}`, position: "top", fill: VAR_COLORS.primary, fontSize: 13, fontWeight: 700 }}
-              />
+            <line
+              x1={frame.xScale(mu)}
+              x2={frame.xScale(mu)}
+              y1={frame.plotTop}
+              y2={frame.plotBottom}
+              stroke={muHighlighted ? VAR_COLORS.primary : "#3b82f6"}
+              strokeWidth={muHighlighted ? 3 : 1.5}
+              strokeDasharray="6 3"
+            />
+            <line
+              x1={frame.xScale(mu - sigma)}
+              x2={frame.xScale(mu - sigma)}
+              y1={frame.plotTop}
+              y2={frame.plotBottom}
+              stroke={sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0"}
+              strokeDasharray="4 4"
+            />
+            <line
+              x1={frame.xScale(mu + sigma)}
+              x2={frame.xScale(mu + sigma)}
+              y1={frame.plotTop}
+              y2={frame.plotBottom}
+              stroke={sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0"}
+              strokeDasharray="4 4"
+            />
+            <line
+              x1={frame.xScale(mu - 2 * sigma)}
+              x2={frame.xScale(mu - 2 * sigma)}
+              y1={frame.plotTop}
+              y2={frame.plotBottom}
+              stroke="#f1f5f9"
+              strokeDasharray="3 3"
+            />
+            <line
+              x1={frame.xScale(mu + 2 * sigma)}
+              x2={frame.xScale(mu + 2 * sigma)}
+              y1={frame.plotTop}
+              y2={frame.plotBottom}
+              stroke="#f1f5f9"
+              strokeDasharray="3 3"
+            />
 
-              {/* +/-1 sigma markers */}
-              <ReferenceLine x={mu - sigma} stroke={sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0"} strokeDasharray="4 4" />
-              <ReferenceLine x={mu + sigma} stroke={sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0"} strokeDasharray="4 4"
-                label={{ value: `+1\u03C3`, position: "top", fill: VAR_COLORS.secondary, fontSize: 11 }}
-              />
+            <text x={frame.xScale(mu)} y={frame.plotTop + 14} textAnchor="middle" fontSize="13" fontWeight="700" fill={VAR_COLORS.primary}>
+              μ = {mu.toFixed(1)}
+            </text>
+            <text x={frame.xScale(mu + sigma)} y={frame.plotTop + 30} textAnchor="middle" fontSize="11" fill={VAR_COLORS.secondary}>
+              +1σ
+            </text>
+            <text x={frame.xScale(mu + 2 * sigma)} y={frame.plotTop + 44} textAnchor="middle" fontSize="10" fill="#94a3b8">
+              +2σ
+            </text>
 
-              {/* +/-2 sigma markers */}
-              <ReferenceLine x={mu - 2 * sigma} stroke="#f1f5f9" strokeDasharray="3 3" />
-              <ReferenceLine x={mu + 2 * sigma} stroke="#f1f5f9" strokeDasharray="3 3"
-                label={{ value: `+2\u03C3`, position: "top", fill: "#94a3b8", fontSize: 10 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+            {xTicks.map((tick) => (
+              <g key={`tick-x-${tick}`}>
+                <line x1={frame.xScale(tick)} x2={frame.xScale(tick)} y1={frame.plotBottom} y2={frame.plotBottom + 6} stroke="#cbd5e1" />
+                <text x={frame.xScale(tick)} y={frame.plotBottom + 18} textAnchor="middle" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(1)}
+                </text>
+              </g>
+            ))}
+            {yTicks.map((tick) => (
+              <g key={`tick-y-${tick}`}>
+                <line x1={frame.plotLeft - 6} x2={frame.plotLeft} y1={frame.yScale(tick)} y2={frame.yScale(tick)} stroke="#cbd5e1" />
+                <text x={frame.plotLeft - 10} y={frame.yScale(tick) + 4} textAnchor="end" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(2)}
+                </text>
+              </g>
+            ))}
+          </svg>
         </div>
 
         {/* Percentage labels */}

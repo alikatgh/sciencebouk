@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Bash, Read
 ---
 
-Run all linting and type checking for the Sciencebouk project.
+Run all linting and type checking for the Formulas project.
 
 ## Frontend
 ```bash

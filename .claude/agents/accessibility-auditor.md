@@ -8,7 +8,7 @@ maxTurns: 15
 color: yellow
 ---
 
-You are an accessibility expert auditing the Sciencebouk educational platform for WCAG 2.1 AA compliance.
+You are an accessibility expert auditing the Formulas educational platform for WCAG 2.1 AA compliance.
 
 ## Focus Areas
 

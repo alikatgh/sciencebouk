@@ -1,9 +1,6 @@
 import type { ReactElement } from "react"
 import { useCallback, useMemo, useState } from "react"
-import {
-  ResponsiveContainer, ComposedChart, ScatterChart, Scatter, Line, XAxis, YAxis,
-  CartesianGrid, ReferenceLine, Tooltip as RTooltip,
-} from "recharts"
+import { buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
@@ -104,6 +101,18 @@ interface ChaosChartProps {
 function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
+  const bifurcationFrame = useChartFrame({
+    margin: { top: 10, right: 20, bottom: 28, left: 44 },
+    minHeight: 220,
+    xDomain: [2.5, 4],
+    yDomain: [0, 1],
+  })
+  const timeFrame = useChartFrame({
+    margin: { top: 8, right: 20, bottom: 28, left: 44 },
+    minHeight: 220,
+    xDomain: [0, 59],
+    yDomain: [0, 1],
+  })
 
   const handleBadgeClick = useCallback((varName: string, currentValue: number) => {
     setEditingVar(varName)
@@ -121,12 +130,12 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
     setEditingVar(null)
   }, [editingVar, editValue, onVarChange])
 
-  const handleBifurcationClick = useCallback((data: any) => {
-    if (data?.activePayload?.[0]?.payload?.r != null && onVarChange) {
-      const rVal = Number(data.activePayload[0].payload.r)
-      onVarChange("r", Math.max(2.5, Math.min(4.0, Math.round(rVal * 1000) / 1000)))
-    }
-  }, [onVarChange])
+  const handleBifurcationClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!onVarChange) return
+    const rVal = bifurcationFrame.clientXToX(event.clientX)
+    if (rVal == null) return
+    onVarChange("r", Math.max(2.5, Math.min(4.0, Math.round(rVal * 1000) / 1000)))
+  }, [bifurcationFrame, onVarChange])
 
   // Bifurcation data (static -- precomputed once)
   const bifurcationData = useMemo(() => {
@@ -162,6 +171,17 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
   else if (r < 3.5644) periodText = "Period 8"
   else if (r < 3.82) periodText = "Chaos"
   else if (r < 3.86) periodText = "Period 3 window"
+  const bifurcationXTicks = useMemo(() => getTicks([2.5, 4], 7), [])
+  const bifurcationYTicks = useMemo(() => getTicks([0, 1], 6), [])
+  const timeXTicks = useMemo(() => getTicks([0, 59], 7), [])
+  const timeYTicks = useMemo(() => getTicks([0, 1], 6), [])
+  const timeSeriesPath = useMemo(() => buildLinePath({
+    data: timeSeriesData,
+    xScale: timeFrame.xScale,
+    yScale: timeFrame.yScale,
+    x: (point) => point.t,
+    y: (point) => point.x,
+  }), [timeFrame.xScale, timeFrame.yScale, timeSeriesData])
 
   return (
     <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -193,38 +213,89 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
         </div>
 
         {/* Bifurcation diagram -- top half */}
-        <div className="min-h-0 flex-1" style={{ minHeight: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 10, right: 20, bottom: 5, left: 10 }} onClick={handleBifurcationClick} style={{ cursor: "crosshair" }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="r" type="number"
-                domain={[2.5, 4.0]}
-                tickCount={7}
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                label={{ value: "r", position: "bottom", offset: -4, fill: "#64748b", fontSize: 13, fontWeight: 600 }}
+        <div
+          ref={bifurcationFrame.containerRef}
+          className="min-h-0 flex-1"
+          style={{ minHeight: 200, cursor: "crosshair" }}
+          onClick={handleBifurcationClick}
+        >
+          <svg width={bifurcationFrame.width} height={bifurcationFrame.height} viewBox={`0 0 ${bifurcationFrame.width} ${bifurcationFrame.height}`}>
+            {bifurcationXTicks.map((tick) => (
+              <line
+                key={`bif-grid-x-${tick}`}
+                x1={bifurcationFrame.xScale(tick)}
+                x2={bifurcationFrame.xScale(tick)}
+                y1={bifurcationFrame.plotTop}
+                y2={bifurcationFrame.plotBottom}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <YAxis
-                dataKey="x" type="number"
-                domain={[0, 1]}
-                tickCount={6}
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                label={{ value: "x", angle: -90, position: "insideLeft", fill: "#64748b", fontSize: 13, fontWeight: 600 }}
-                width={35}
+            ))}
+            {bifurcationYTicks.map((tick) => (
+              <line
+                key={`bif-grid-y-${tick}`}
+                x1={bifurcationFrame.plotLeft}
+                x2={bifurcationFrame.plotRight}
+                y1={bifurcationFrame.yScale(tick)}
+                y2={bifurcationFrame.yScale(tick)}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <Scatter data={bifurcationData} fill="#1e293b" opacity={0.5} isAnimationActive={false}>
-                {/* Tiny dots via shape */}
-              </Scatter>
-              <ReferenceLine
-                x={r}
-                stroke="#ef4444"
-                strokeWidth={2}
-                strokeDasharray="6 4"
+            ))}
+            <line x1={bifurcationFrame.plotLeft} x2={bifurcationFrame.plotRight} y1={bifurcationFrame.plotBottom} y2={bifurcationFrame.plotBottom} stroke="#cbd5e1" />
+            <line x1={bifurcationFrame.plotLeft} x2={bifurcationFrame.plotLeft} y1={bifurcationFrame.plotTop} y2={bifurcationFrame.plotBottom} stroke="#cbd5e1" />
+
+            {bifurcationData.map((point, index) => (
+              <circle
+                key={`bif-point-${index}`}
+                cx={bifurcationFrame.xScale(point.r)}
+                cy={bifurcationFrame.yScale(point.x)}
+                r={1}
+                fill="#1e293b"
+                opacity={0.5}
               />
-            </ScatterChart>
-          </ResponsiveContainer>
+            ))}
+            <line
+              x1={bifurcationFrame.xScale(r)}
+              x2={bifurcationFrame.xScale(r)}
+              y1={bifurcationFrame.plotTop}
+              y2={bifurcationFrame.plotBottom}
+              stroke="#ef4444"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+            />
+
+            {bifurcationXTicks.map((tick) => (
+              <g key={`bif-tick-x-${tick}`}>
+                <line x1={bifurcationFrame.xScale(tick)} x2={bifurcationFrame.xScale(tick)} y1={bifurcationFrame.plotBottom} y2={bifurcationFrame.plotBottom + 6} stroke="#cbd5e1" />
+                <text x={bifurcationFrame.xScale(tick)} y={bifurcationFrame.plotBottom + 18} textAnchor="middle" fontSize="11" fill="#94a3b8">
+                  {tick.toFixed(1)}
+                </text>
+              </g>
+            ))}
+            {bifurcationYTicks.map((tick) => (
+              <g key={`bif-tick-y-${tick}`}>
+                <line x1={bifurcationFrame.plotLeft - 6} x2={bifurcationFrame.plotLeft} y1={bifurcationFrame.yScale(tick)} y2={bifurcationFrame.yScale(tick)} stroke="#cbd5e1" />
+                <text x={bifurcationFrame.plotLeft - 10} y={bifurcationFrame.yScale(tick) + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
+                  {tick.toFixed(1)}
+                </text>
+              </g>
+            ))}
+            <text x={(bifurcationFrame.plotLeft + bifurcationFrame.plotRight) / 2} y={bifurcationFrame.height - 8} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
+              r
+            </text>
+            <text
+              x={16}
+              y={(bifurcationFrame.plotTop + bifurcationFrame.plotBottom) / 2}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#64748b"
+              fontWeight="600"
+              transform={`rotate(-90 16 ${(bifurcationFrame.plotTop + bifurcationFrame.plotBottom) / 2})`}
+            >
+              x
+            </text>
+          </svg>
         </div>
 
         {/* Time series -- bottom half */}
@@ -232,33 +303,58 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
           <div className="px-4 pt-1">
             <span className="text-sm font-bold text-ink">Time Series</span>
           </div>
-          <ResponsiveContainer width="100%" height="85%">
-            <ComposedChart data={timeSeriesData} margin={{ top: 5, right: 20, bottom: 20, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="t" type="number"
-                domain={[0, 59]}
-                tickCount={7}
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                label={{ value: "iteration t", position: "bottom", offset: 0, fill: "#94a3b8", fontSize: 12 }}
-              />
-              <YAxis
-                dataKey="x" type="number"
-                domain={[0, 1]}
-                tickCount={6}
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                width={35}
-              />
-              <RTooltip
-                contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }}
-                formatter={(value: any) => [Number(value).toFixed(4), "x"]}
-                labelFormatter={(label: any) => `t = ${label}`}
-              />
-              <Line dataKey="x" stroke="#5a79ff" strokeWidth={2} dot={{ r: 1.5, fill: "#5a79ff" }} isAnimationActive={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div ref={timeFrame.containerRef} className="h-[85%] min-h-0">
+            <svg width={timeFrame.width} height={timeFrame.height} viewBox={`0 0 ${timeFrame.width} ${timeFrame.height}`}>
+              {timeXTicks.map((tick) => (
+                <line
+                  key={`time-grid-x-${tick}`}
+                  x1={timeFrame.xScale(tick)}
+                  x2={timeFrame.xScale(tick)}
+                  y1={timeFrame.plotTop}
+                  y2={timeFrame.plotBottom}
+                  stroke="#f1f5f9"
+                  strokeDasharray="3 3"
+                />
+              ))}
+              {timeYTicks.map((tick) => (
+                <line
+                  key={`time-grid-y-${tick}`}
+                  x1={timeFrame.plotLeft}
+                  x2={timeFrame.plotRight}
+                  y1={timeFrame.yScale(tick)}
+                  y2={timeFrame.yScale(tick)}
+                  stroke="#f1f5f9"
+                  strokeDasharray="3 3"
+                />
+              ))}
+              <line x1={timeFrame.plotLeft} x2={timeFrame.plotRight} y1={timeFrame.plotBottom} y2={timeFrame.plotBottom} stroke="#cbd5e1" />
+              <line x1={timeFrame.plotLeft} x2={timeFrame.plotLeft} y1={timeFrame.plotTop} y2={timeFrame.plotBottom} stroke="#cbd5e1" />
+              <path d={timeSeriesPath} fill="none" stroke="#5a79ff" strokeWidth={2} />
+              {timeSeriesData.map((point) => (
+                <circle key={`time-point-${point.t}`} cx={timeFrame.xScale(point.t)} cy={timeFrame.yScale(point.x)} r={1.5} fill="#5a79ff" />
+              ))}
+
+              {timeXTicks.map((tick) => (
+                <g key={`time-tick-x-${tick}`}>
+                  <line x1={timeFrame.xScale(tick)} x2={timeFrame.xScale(tick)} y1={timeFrame.plotBottom} y2={timeFrame.plotBottom + 6} stroke="#cbd5e1" />
+                  <text x={timeFrame.xScale(tick)} y={timeFrame.plotBottom + 18} textAnchor="middle" fontSize="11" fill="#94a3b8">
+                    {tick.toFixed(0)}
+                  </text>
+                </g>
+              ))}
+              {timeYTicks.map((tick) => (
+                <g key={`time-tick-y-${tick}`}>
+                  <line x1={timeFrame.plotLeft - 6} x2={timeFrame.plotLeft} y1={timeFrame.yScale(tick)} y2={timeFrame.yScale(tick)} stroke="#cbd5e1" />
+                  <text x={timeFrame.plotLeft - 10} y={timeFrame.yScale(tick) + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
+                    {tick.toFixed(1)}
+                  </text>
+                </g>
+              ))}
+              <text x={(timeFrame.plotLeft + timeFrame.plotRight) / 2} y={timeFrame.height - 8} textAnchor="middle" fontSize="12" fill="#94a3b8">
+                iteration t
+              </text>
+            </svg>
+          </div>
         </div>
       </div>
     </div>

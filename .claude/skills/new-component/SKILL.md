@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Write, Read, Edit, Bash, Glob
 ---
 
-Create a new React component for the Sciencebouk project.
+Create a new React component for the Formulas project.
 
 **Usage**: `/new-component ComponentName`
 

@@ -41,6 +41,14 @@ paths:
 - Use `useRef` for values needed in D3 callbacks to avoid stale closures
 - Memoize filtered/computed arrays with useMemo when passed as props
 
+## Formula Protection — CRITICAL
+- NEVER modify any LaTeX formula string — treat as immutable source code
+- NEVER convert LaTeX to plain text, ASCII, or simplified notation
+- NEVER import or use `formatFormulaPreview` — it is deprecated and blocked
+- ALL formula rendering MUST use `<InlineMath math={...} />` or `<BlockMath math={...} />` from react-katex
+- Formula data in `equations.ts`, `equationManifest.ts`, `subjects.ts` is PROTECTED — do not rewrite formulas
+- If a formula looks broken, preserve it exactly and flag it — do not "fix" it by converting to text
+
 ## Accessibility
 - Interactive SVG elements need `role` and `aria-label` attributes
 - KaTeX formulas need `aria-label` with spoken-math equivalent

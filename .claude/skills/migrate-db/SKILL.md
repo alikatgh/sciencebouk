@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Bash, Read
 ---
 
-Manage Django database migrations for the Sciencebouk backend.
+Manage Django database migrations for the Formulas backend.
 
 **Usage**: `/migrate-db [app_name]` or just `/migrate-db` for all apps.
 
