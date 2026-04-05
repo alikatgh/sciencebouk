@@ -1,5 +1,12 @@
 import type { ReactElement, ReactNode } from "react"
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import {
+  clearTokens as clearStoredTokens,
+  getAccessToken as getStoredAccessToken,
+  refreshAccessToken,
+  saveTokens as saveStoredTokens,
+  type Tokens,
+} from "./tokenStorage"
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
 
@@ -15,11 +22,6 @@ interface User {
     preferred_difficulty: string
     onboarding_completed: boolean
   }
-}
-
-interface Tokens {
-  access: string
-  refresh: string
 }
 
 interface AuthContextValue {
@@ -59,16 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   const [loading, setLoading] = useState(true)
 
   const saveTokens = useCallback((tokens: Tokens) => {
-    localStorage.setItem("sciencebouk-access", tokens.access)
-    localStorage.setItem("sciencebouk-refresh", tokens.refresh)
+    saveStoredTokens(tokens)
   }, [])
 
   const clearTokens = useCallback(() => {
-    localStorage.removeItem("sciencebouk-access")
-    localStorage.removeItem("sciencebouk-refresh")
+    clearStoredTokens()
   }, [])
 
-  const getAccessToken = useCallback(() => localStorage.getItem("sciencebouk-access"), [])
+  const getAccessToken = useCallback(() => getStoredAccessToken(), [])
 
   const fetchMe = useCallback(async (token: string) => {
     const data = await fetchJSON<User>("/auth/me/", {
@@ -76,23 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     })
     setUser(data)
   }, [])
-
-  const refreshToken = useCallback(async (): Promise<string | null> => {
-    const refresh = localStorage.getItem("sciencebouk-refresh")
-    if (!refresh) return null
-    try {
-      const data = await fetchJSON<{ access: string; refresh?: string }>("/auth/refresh/", {
-        method: "POST",
-        body: JSON.stringify({ refresh }),
-      })
-      localStorage.setItem("sciencebouk-access", data.access)
-      if (data.refresh) localStorage.setItem("sciencebouk-refresh", data.refresh)
-      return data.access
-    } catch {
-      clearTokens()
-      return null
-    }
-  }, [clearTokens])
 
   const refreshUser = useCallback(async () => {
     const access = getAccessToken()
@@ -105,14 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
       await fetchMe(access)
       return
     } catch {
-      const newAccess = await refreshToken()
+      const newAccess = await refreshAccessToken()
       if (!newAccess) {
         setUser(null)
         return
       }
       await fetchMe(newAccess)
     }
-  }, [fetchMe, getAccessToken, refreshToken])
+  }, [fetchMe, getAccessToken])
 
   // Boot: check for existing tokens
   useEffect(() => {

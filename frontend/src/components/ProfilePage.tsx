@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Crown, LogOut, BarChart2, CreditCard, BookOpen, Clock, CheckCircle2, Camera, Pencil, Check, X } from "lucide-react"
+import { Crown, LogOut, BarChart2, CreditCard, BookOpen, Clock, CheckCircle2, Camera, Pencil, Check, X, ArrowRight } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
@@ -10,7 +10,7 @@ import { TopNav } from "./TopNav"
 
 export default function ProfilePage(): ReactElement {
   const navigate = useNavigate()
-  const { user, isAuthenticated, isPro, logout, getAccessToken, refreshUser } = useAuth()
+  const { user, isAuthenticated, isPro, logout, refreshUser } = useAuth()
   const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
   const [managingSubscription, setManagingSubscription] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -48,14 +48,7 @@ export default function ProfilePage(): ReactElement {
     setSaving(true)
     setProfileError("")
     try {
-      const token = getAccessToken()
-      if (!token) throw new Error("Please sign in again.")
-      const response = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/auth/me/profile/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ display_name: nameInput.trim() }),
-      })
-      if (!response.ok) throw new Error("Could not save your name.")
+      await api.profile.update(nameInput.trim())
       await refreshUser()
       setEditingName(false)
     } catch (error) {
@@ -79,16 +72,7 @@ export default function ProfilePage(): ReactElement {
     setUploadingAvatar(true)
     setProfileError("")
     try {
-      const token = getAccessToken()
-      if (!token) throw new Error("Please sign in again.")
-      const form = new FormData()
-      form.append("avatar", file)
-      const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/auth/me/avatar/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      })
-      if (!res.ok) throw new Error("Could not upload your photo.")
+      await api.profile.uploadAvatar(file)
       await refreshUser()
     } catch (error) {
       setProfileError(error instanceof Error ? error.message : "Could not upload your photo.")
@@ -206,31 +190,73 @@ export default function ProfilePage(): ReactElement {
               </div>
             </div>
 
-            {/* Right: stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{completedCount}</p>
-                <p className="text-[10px] text-slate-400">Completed</p>
-              </div>
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <Clock className="h-5 w-5 text-blue-500" />
-                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{totalTimeMinutes}</p>
-                <p className="text-[10px] text-slate-400">Minutes</p>
-              </div>
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <BookOpen className="h-5 w-5 text-purple-500" />
-                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{inProgressCount}</p>
-                <p className="text-[10px] text-slate-400">In progress</p>
+            {/* Right: continue learning + stats */}
+            <div className="flex flex-col gap-3">
+              {/* Continue learning CTA */}
+              {(() => {
+                // Find the best "next" equation: most time spent but not completed, or first not started
+                const closest = eqProgress
+                  .filter((e) => !(e.progress?.completed ?? false) && (e.progress?.timeSpentSeconds ?? 0) > 0)
+                  .sort((a, b) => (b.progress?.timeSpentSeconds ?? 0) - (a.progress?.timeSpentSeconds ?? 0))[0]
+                const nextFresh = eqProgress.find((e) => !(e.progress?.completed ?? false) && (e.progress?.timeSpentSeconds ?? 0) === 0)
+                const next = closest ?? nextFresh
+                if (!next) return null
+                return (
+                  <button
+                    onClick={() => navigate(`/equation/${next.id}`)}
+                    className="flex items-center gap-3 rounded-2xl border-2 border-ocean bg-ocean/[0.04] p-4 text-left transition hover:bg-ocean/[0.08] active:scale-[0.99]"
+                    type="button"
+                  >
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-ocean text-white">
+                      <ArrowRight className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold uppercase tracking-wider text-ocean">
+                        {closest ? "Continue where you left off" : "Start here"}
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">{next.title}</p>
+                      {closest && (
+                        <p className="text-[10px] text-slate-400">{Math.round((closest.progress?.timeSpentSeconds ?? 0) / 60)}m studied — keep going</p>
+                      )}
+                    </div>
+                  </button>
+                )
+              })()}
+
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xl font-bold text-emerald-600">{completedCount}</p>
+                  <p className="text-[9px] text-slate-400">Done</p>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xl font-bold text-blue-600">{totalTimeMinutes}m</p>
+                  <p className="text-[9px] text-slate-400">Studied</p>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xl font-bold text-purple-600">{inProgressCount}</p>
+                  <p className="text-[9px] text-slate-400">Exploring</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Equations grid — compact, fits on screen */}
+          {/* Equations — sorted by relevance: in-progress first, then not started, completed last */}
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">Your Equations</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {eqProgress.map((eq) => {
+              {[...eqProgress].sort((a, b) => {
+                const aDone = a.progress?.completed ?? false
+                const bDone = b.progress?.completed ?? false
+                const aStarted = (a.progress?.timeSpentSeconds ?? 0) > 0
+                const bStarted = (b.progress?.timeSpentSeconds ?? 0) > 0
+                // In-progress first, not started second, completed last
+                if (aStarted && !aDone && !(bStarted && !bDone)) return -1
+                if (bStarted && !bDone && !(aStarted && !aDone)) return 1
+                if (!aDone && bDone) return -1
+                if (aDone && !bDone) return 1
+                return a.id - b.id
+              }).map((eq) => {
                 const progress = eq.progress
                 const done = progress?.completed ?? false
                 const started = (progress?.timeSpentSeconds ?? 0) > 0

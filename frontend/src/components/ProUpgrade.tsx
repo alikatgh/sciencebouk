@@ -5,10 +5,10 @@ import { motion } from "framer-motion"
 import { Check, Sparkles, Zap } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { AuthModal } from "../auth/AuthModal"
+import { api } from "../api/client"
 import { equationManifest } from "../data/equationManifest"
 import { TopNav } from "./TopNav"
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
 const EQUATION_COUNT = equationManifest.length
 
 const FREE_FEATURES = [
@@ -28,7 +28,7 @@ const PRO_FEATURES = [
 ]
 
 export function ProPricingPage(): ReactElement {
-  const { isAuthenticated, isPro, getAccessToken } = useAuth()
+  const { isAuthenticated, isPro } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [loading, setLoading] = useState(false)
   const [yearly, setYearly] = useState(true)
@@ -41,16 +41,8 @@ export function ProPricingPage(): ReactElement {
     }
     setLoading(true)
     try {
-      const res = await fetch(`${API}/payments/checkout/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getAccessToken()}`,
-        },
-      })
-      const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else setLoading(false)
+      const { url } = await api.payments.checkout(yearly ? "yearly" : "monthly")
+      window.location.href = url
     } catch {
       setLoading(false)
     }

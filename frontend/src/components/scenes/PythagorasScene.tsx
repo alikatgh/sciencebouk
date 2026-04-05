@@ -121,8 +121,11 @@ function cSquareCorners(
 
 function computeLayout(a: number, b: number, W: number, H: number) {
   const c = Math.sqrt(a * a + b * b)
-  const PAD = 20
+  const PAD = 40 // more padding for labels
 
+  // Bounding box in data coords (right-angle at origin, a up, b right)
+  // sq-a extends left by a, sq-b extends down by b
+  // sq-c extends upper-right: corners at (b+a, -b) and (a, -a-b)
   const cSq = [
     { x: 0, y: -a },
     { x: b, y: 0 },
@@ -133,10 +136,13 @@ function computeLayout(a: number, b: number, W: number, H: number) {
   const allX = [-a, 0, b, ...cSq.map(p => p.x)]
   const allY = [-a, 0, b, ...cSq.map(p => p.y)]
 
-  const minX = Math.min(...allX)
-  const maxX = Math.max(...allX)
-  const minY = Math.min(...allY)
-  const maxY = Math.max(...allY)
+  // Add extra margin for labels (labels extend ~30px beyond geometry)
+  const labelMargin = 2 // data units extra
+
+  const minX = Math.min(...allX) - labelMargin
+  const maxX = Math.max(...allX) + labelMargin
+  const minY = Math.min(...allY) - labelMargin
+  const maxY = Math.max(...allY) + labelMargin
 
   const totalW = maxX - minX
   const totalH = maxY - minY
@@ -339,19 +345,30 @@ function D3Pythagoras({ a, b, c, highlightedTerm, onVarChange, highlightedVar, o
         g.select(".right-angle")
           .attr("d", `M${p0.x + ra},${p0.y} L${p0.x + ra},${p0.y - ra} L${p0.x},${p0.y - ra}`)
 
-        // Labels
+        // Side labels — positioned OUTSIDE the triangle, away from squares
+        // a label: right of the vertical side, inside the triangle
+        const aLabelOffset = Math.max(20, s * 0.8)
         g.select(".label-a")
-          .attr("x", p0.x + 16).attr("y", (p0.y + p2.y) / 2)
+          .attr("x", p0.x + aLabelOffset).attr("y", (p0.y + p2.y) / 2)
+          .attr("text-anchor", "start")
           .attr("font-size", lfs).text(`a = ${fmt(aVal)}`)
+
+        // b label: above the horizontal side, centered
         g.select(".label-b")
-          .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - 12)
+          .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - Math.max(14, s * 0.5))
+          .attr("text-anchor", "middle")
           .attr("font-size", lfs).text(`b = ${fmt(bVal)}`)
 
-        const cMidX = (p1.x + p2.x) / 2 + (aVal / cVal) * 18
-        const cMidY = (p1.y + p2.y) / 2 - (bVal / cVal) * 18
+        // c label: on the hypotenuse, offset INTO the triangle (away from c² square)
+        const cNormX = -(aVal / cVal)  // normal pointing into triangle
+        const cNormY = (bVal / cVal)
+        const cOffset = Math.max(20, s * 0.8)
+        const cMidX = (p1.x + p2.x) / 2 + cNormX * cOffset
+        const cMidY = (p1.y + p2.y) / 2 + cNormY * cOffset
         g.select(".label-c")
           .attr("x", cMidX).attr("y", cMidY)
-          .attr("font-size", lfs).text(`c = ${cVal.toFixed(2)}`)
+          .attr("text-anchor", "middle")
+          .attr("font-size", lfs).text(`c = ${cVal.toFixed(1)}`)
 
         // Handle positions
         g.select(".handle-a-hit").attr("cx", p2.x).attr("cy", p2.y)

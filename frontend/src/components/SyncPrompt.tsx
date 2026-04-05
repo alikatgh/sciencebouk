@@ -8,24 +8,23 @@ import { getLocalProgressSyncItems } from "../progress/useProgress"
 import { Button } from "./ui/button"
 
 interface SyncPromptProps {
-  onClose: () => void
+  onDismiss: () => void
+  onSynced: () => void
 }
 
-export function SyncPrompt({ onClose }: SyncPromptProps): ReactElement | null {
+export function SyncPrompt({ onDismiss, onSynced }: SyncPromptProps): ReactElement | null {
   const { isPro } = useAuth()
   const [syncing, setSyncing] = useState(false)
-  const [done, setDone] = useState(false)
 
   const localItems = getLocalProgressSyncItems()
 
-  if (!isPro || localItems.length === 0 || done) return null
+  if (!isPro || localItems.length === 0) return null
 
   const handleSync = async () => {
     setSyncing(true)
     try {
       await api.progress.bulkSync(localItems)
-      setDone(true)
-      onClose()
+      onSynced()
     } catch {
       setSyncing(false)
     }
@@ -60,7 +59,7 @@ export function SyncPrompt({ onClose }: SyncPromptProps): ReactElement | null {
             >
               {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Sync"}
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={onClose} className="text-slate-400">
+            <Button variant="ghost" size="icon-sm" onClick={onDismiss} className="text-slate-400">
               <X className="h-3.5 w-3.5" />
             </Button>
           </div>

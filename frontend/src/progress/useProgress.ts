@@ -34,6 +34,7 @@ let storageListenerAttached = false
 let serverProgressCache = new Map<number, ProgressItem>()
 let serverProgressPromise: Promise<Map<number, ProgressItem>> | null = null
 let hasFetchedServerProgress = false
+let activeServerUserId: number | null = null
 let progressVersion = 0
 
 function progressKey(equationId: number): string {
@@ -165,6 +166,22 @@ export function clearStoredProgress() {
   serverProgressPromise = null
   hasFetchedServerProgress = false
   progressSnapshotCache.clear()
+  notifyProgressListeners()
+}
+
+function resetServerProgressState() {
+  for (const timer of syncTimers.values()) clearTimeout(timer)
+  syncTimers.clear()
+  serverProgressCache = new Map()
+  serverProgressPromise = null
+  hasFetchedServerProgress = false
+  progressSnapshotCache.delete("server")
+}
+
+function ensureServerProgressUser(userId: number | null) {
+  if (activeServerUserId === userId) return
+  activeServerUserId = userId
+  resetServerProgressState()
   notifyProgressListeners()
 }
 
@@ -310,9 +327,17 @@ export function getLocalProgressSyncItems(): BulkSyncItem[] {
   }, [])
 }
 
+export function getLocalProgressSyncSignature(): string {
+  return JSON.stringify(getLocalProgressSyncItems())
+}
+
 export function useProgress(equationId: number) {
-  const { isAuthenticated, isPro } = useAuth()
+  const { user, isAuthenticated, isPro } = useAuth()
   const [progress, setProgress] = useState<EquationProgress>(() => getLocalProgress(equationId))
+
+  useEffect(() => {
+    ensureServerProgressUser(user?.id ?? null)
+  }, [user?.id])
 
   useEffect(() => {
     let cancelled = false
@@ -335,7 +360,7 @@ export function useProgress(equationId: number) {
     return () => {
       cancelled = true
     }
-  }, [equationId, isAuthenticated, isPro])
+  }, [equationId, isAuthenticated, isPro, user?.id])
 
   const updateProgress = useCallback((update: Partial<EquationProgress>) => {
     setProgress((previous) => {
@@ -377,8 +402,13 @@ export function useProgress(equationId: number) {
 }
 
 export function useAllProgress() {
-  const { isAuthenticated, isPro } = useAuth()
+  const { user, isAuthenticated, isPro } = useAuth()
   const includeServer = isAuthenticated && isPro
+
+  useEffect(() => {
+    ensureServerProgressUser(user?.id ?? null)
+  }, [user?.id])
+
   const getSnapshot = useCallback(
     () => getProgressSnapshot(includeServer),
     [includeServer],

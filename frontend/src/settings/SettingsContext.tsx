@@ -49,6 +49,7 @@ const DEFAULTS: Settings = {
 
 interface SettingsContextValue {
   settings: Settings
+  resolvedTheme: "light" | "dark"
   update: <K extends keyof Settings>(key: K, value: Settings[K]) => void
   reset: () => void
 }
@@ -74,6 +75,10 @@ function save(s: Settings) {
 
 export function SettingsProvider({ children }: { children: ReactNode }): ReactElement {
   const [settings, setSettings] = useState(load)
+  const [systemDark, setSystemDark] = useState(() => {
+    if (typeof window === "undefined") return false
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+  })
 
   const update = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((prev) => {
@@ -88,17 +93,28 @@ export function SettingsProvider({ children }: { children: ReactNode }): ReactEl
     save(DEFAULTS)
   }, [])
 
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleChange = (event: MediaQueryListEvent) => {
+      setSystemDark(event.matches)
+    }
+
+    setSystemDark(mediaQuery.matches)
+    mediaQuery.addEventListener("change", handleChange)
+    return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
+
+  const resolvedTheme = settings.theme === "system"
+    ? (systemDark ? "dark" : "light")
+    : settings.theme
+
   // === APPLY THEME ===
   useEffect(() => {
     const root = document.documentElement
-    if (settings.theme === "dark") {
-      root.classList.add("dark")
-    } else if (settings.theme === "light") {
-      root.classList.remove("dark")
-    } else {
-      root.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches)
-    }
-  }, [settings.theme])
+    root.classList.toggle("dark", resolvedTheme === "dark")
+  }, [resolvedTheme])
 
   // === APPLY FONT SIZE ===
   useEffect(() => {
@@ -131,7 +147,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): ReactEl
     document.documentElement.style.setProperty("--animation-speed", speeds[settings.animationSpeed])
   }, [settings.animationSpeed])
 
-  const value = useMemo(() => ({ settings, update, reset }), [settings, update, reset])
+  const value = useMemo(() => ({ settings, resolvedTheme, update, reset }), [settings, resolvedTheme, update, reset])
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }

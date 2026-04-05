@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from django.db.models import Q, Sum
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -24,6 +26,10 @@ class EquationViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "sort_order"
     lookup_url_kwarg = "id"
     filterset_fields = ["category"]
+
+    @method_decorator(cache_page(60 * 5))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 @api_view(["PATCH"])
@@ -83,6 +89,7 @@ def health(request):
     return Response({"status": "ok"})
 
 
+@cache_page(60 * 5)
 @api_view(["GET"])
 def equation_atlas_legacy(request):
     """Legacy alias that returns the full equation atlas in the original envelope shape.
@@ -213,29 +220,33 @@ def learning_dashboard(request):
     total_time = progress.aggregate(total=Sum("time_spent_seconds"))["total"] or 0
 
     # Streak: count consecutive days with activity
-    events = LearningEvent.objects.filter(user=user).order_by("-created_at")
-    dates = set(e.created_at.date() for e in events[:100])
+    event_timestamps = (
+        LearningEvent.objects.filter(user=user)
+        .order_by("-created_at")
+        .values_list("created_at", flat=True)[:100]
+    )
+    dates = set(ts.date() for ts in event_timestamps)
     streak = 0
     day = timezone.now().date()
     while day in dates:
         streak += 1
         day -= timedelta(days=1)
 
-    # Category completion
+    # Category completion — pre-fetch completed IDs to avoid N+1 queries
+    completed_equation_ids = set(
+        progress.filter(completed=True).values_list("equation_id", flat=True)
+    )
     categories = {}
     for eq in Equation.objects.all():
         cat = eq.category
         if cat not in categories:
             categories[cat] = {"total": 0, "completed": 0}
         categories[cat]["total"] += 1
-        if progress.filter(equation=eq, completed=True).exists():
+        if eq.id in completed_equation_ids:
             categories[cat]["completed"] += 1
 
-    # Recommendation: first uncompleted equation
-    completed_ids = set(
-        progress.filter(completed=True).values_list("equation_id", flat=True)
-    )
-    next_eq = Equation.objects.exclude(id__in=completed_ids).first()
+    # Recommendation: first uncompleted equation (reuse already-fetched set)
+    next_eq = Equation.objects.exclude(id__in=completed_equation_ids).first()
 
     return Response({
         "completedCount": completed,
