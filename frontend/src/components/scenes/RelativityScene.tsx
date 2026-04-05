@@ -7,12 +7,10 @@ import {
   range,
   drag,
   type D3DragEvent,
-  type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
-import { useContainerSize } from "../../hooks/useContainerSize"
 
 const F = "Manrope, sans-serif"
 
@@ -114,12 +112,16 @@ interface Props {
 
 function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVarChange }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { width: W, height: H } = useContainerSize(containerRef)
-  const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onHighlightRef = useRef(onHighlight)
   onHighlightRef.current = onHighlight
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
+
+  // Live velocity during drag -- bypasses React render cycle for 60fps SVG
+  const liveRef = useRef(velocity)
+  const draggingRef = useRef(false)
+  // Store the update function so external effects can call it
+  const updateRef = useRef<((v: number) => void) | null>(null)
 
   // Clock animation state
   const clockAngle1Ref = useRef(0)
@@ -129,331 +131,389 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
   const lastTimeRef = useRef(0)
   const rafRef = useRef(0)
 
-  // Curve scales (proportional to container)
-  const leftPanelLeft = Math.round(W * 0.05)
-  const leftPanelRight = Math.round(W * 0.42)
-  const leftPanelTop = Math.round(H * 0.14)
-  const leftPanelBottom = Math.round(H * 0.78)
-  const xScale = scaleLinear().domain([0, 1]).range([leftPanelLeft + Math.round(W * 0.02), leftPanelRight - Math.round(W * 0.02)])
-  const yScale = scaleLinear().domain([0, 12]).range([leftPanelBottom, leftPanelTop])
-
-  // Setup -- rebuilds on resize
+  // Sync React props into SVG when not dragging (handles presets, lesson steps)
   useEffect(() => {
-    const container = containerRef.current
-    if (!container || W < 100 || H < 100) return
-    select(container).select("svg").remove()
+    if (draggingRef.current) return
+    liveRef.current = velocity
+    updateRef.current?.(velocity)
+  }, [velocity, gamma])
 
-    const svg = select(container)
-      .append("svg")
-      .attr("width", W)
-      .attr("height", H)
-      .style("display", "block")
-      .style("touch-action", "none")
-      .attr("role", "img")
-      .attr("aria-label", "Lorentz factor curve, clocks, and length contraction")
-
-    svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
-
-    const g = svg.append("g")
-    gRef.current = g
-
-    const fs = Math.max(12, Math.min(18, H / 28))
-
-    // Right panel geometry
-    const rpLeft = Math.round(W * 0.48)
-    const rpWidth = Math.round(W * 0.5)
-    const rpCenter = rpLeft + Math.round(rpWidth / 2)
-
-    // --- Gamma curve panel ---
-    const lpLeft = Math.round(W * 0.022)
-    const lpWidth = Math.round(W * 0.433)
-    const lpTop = Math.round(H * 0.037)
-    const lpHeight = Math.round(H * 0.79)
-    g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
-      .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-    g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
-      .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-      .text("Lorentz Factor")
-
-    // Axes
-    const axLeft = xScale(0)
-    const axRight = xScale(1)
-    const axBottom = yScale(0)
-    const axTop = yScale(12)
-    g.append("line").attr("x1", axLeft).attr("y1", axBottom).attr("x2", axRight).attr("y2", axBottom)
-      .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
-    g.append("line").attr("x1", axLeft).attr("y1", axBottom).attr("x2", axLeft).attr("y2", axTop)
-      .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
-    g.append("text").attr("x", (axLeft + axRight) / 2).attr("y", axBottom + Math.round(H * 0.042)).attr("text-anchor", "middle")
-      .attr("font-size", fs * 0.85).attr("fill", "#94a3b8").attr("font-family", F).text("v/c")
-    g.append("text").attr("x", axLeft - 12).attr("y", axTop + 8).attr("font-size", fs * 0.85)
-      .attr("fill", "#94a3b8").attr("font-family", F).text("\u03B3")
-
-    // X axis ticks
-    for (const v of [0, 0.25, 0.5, 0.75, 1.0]) {
-      g.append("line").attr("x1", xScale(v)).attr("y1", axBottom - 2).attr("x2", xScale(v)).attr("y2", axBottom + 4)
-        .attr("stroke", "#94a3b8").attr("stroke-width", 1)
-      g.append("text").attr("x", xScale(v)).attr("y", axBottom + Math.round(H * 0.037)).attr("text-anchor", "middle")
-        .attr("font-size", fs * 0.8).attr("fill", "#94a3b8").attr("font-family", F).text(v.toFixed(2))
-    }
-    // Y axis ticks
-    for (const gv of [1, 2, 4, 6, 8, 10, 12]) {
-      const yp = yScale(gv)
-      if (yp >= axTop && yp <= axBottom) {
-        g.append("line").attr("x1", axLeft - 4).attr("y1", yp).attr("x2", axLeft + 2).attr("y2", yp)
-          .attr("stroke", "#94a3b8").attr("stroke-width", 1)
-        g.append("text").attr("x", axLeft - 8).attr("y", yp + 4).attr("text-anchor", "end")
-          .attr("font-size", fs * 0.8).attr("fill", "#94a3b8").attr("font-family", F).text(String(gv))
-      }
-    }
-
-    // gamma=1 reference
-    g.append("line").attr("x1", axLeft).attr("y1", yScale(1)).attr("x2", axRight).attr("y2", yScale(1))
-      .attr("stroke", "#e2e8f0").attr("stroke-width", 1).attr("stroke-dasharray", "4 4")
-
-    // Gamma curve
-    const vs = range(0, 0.995, 0.005)
-    const pathGen = line<number>()
-      .x(d => xScale(d))
-      .y(d => yScale(1 / Math.sqrt(1 - d * d)))
-    g.append("path").attr("d", pathGen(vs) ?? "").attr("fill", "none")
-      .attr("stroke", "#1e40af").attr("stroke-width", 3)
-
-    // Current point + drop line (will update)
-    g.append("line").attr("class", "curve-drop")
-      .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
-
-    // Draggable velocity handle on the curve
-    const dotG = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab")
-    // Invisible hit area (min 30px)
-    dotG.append("circle").attr("class", "curve-hit").attr("r", 18).attr("fill", "transparent")
-    // Visible dot
-    dotG.append("circle").attr("class", "curve-dot").attr("r", 6)
-      .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
-
-    const velocityDrag = drag<SVGGElement, unknown>()
-      .on("start", function () {
-        select(this).style("cursor", "grabbing")
-        select(this).select(".curve-dot").transition().duration(100)
-          .attr("r", 9).attr("stroke-width", 3)
-      })
-      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-        const newV = Math.max(0, Math.min(0.99, xScale.invert(event.x)))
-        onVarChangeRef.current('v', Math.round(newV * 100) / 100)
-      })
-      .on("end", function () {
-        select(this).style("cursor", "grab")
-        select(this).select(".curve-dot").transition().duration(100)
-          .attr("r", 6).attr("stroke-width", 2)
-      })
-    dotG.call(velocityDrag)
-
-    // Velocity label on curve
-    g.append("text").attr("class", "v-curve-label").attr("y", axBottom + Math.round(H * 0.042))
-      .attr("text-anchor", "middle").attr("font-size", fs).attr("font-weight", 600)
-      .attr("font-family", F).attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
-    g.select(".v-curve-label")
-      .on("mouseenter", () => onHighlightRef.current('v'))
-      .on("mouseleave", () => onHighlightRef.current(null))
-
-    // --- Time Dilation panel ---
-    const tdTop = lpTop
-    const tdHeight = Math.round(H * 0.42)
-    g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
-      .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-    g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
-      .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-      .text("Time Dilation")
-
-    // Clock 1 (stationary)
-    const cr = Math.round(Math.min(rpWidth * 0.1, tdHeight * 0.2))
-    const c1x = Math.round(rpLeft + rpWidth * 0.22)
-    const c1y = Math.round(tdTop + tdHeight * 0.55)
-    g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", cr)
-      .attr("fill", "white").attr("stroke", "#334155").attr("stroke-width", 2.5)
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2
-      g.append("line")
-        .attr("x1", c1x + Math.sin(a) * cr * 0.82).attr("y1", c1y - Math.cos(a) * cr * 0.82)
-        .attr("x2", c1x + Math.sin(a) * cr * 0.95).attr("y2", c1y - Math.cos(a) * cr * 0.95)
-        .attr("stroke", "#64748b").attr("stroke-width", 2)
-    }
-    g.append("line").attr("class", "clock1-hand").attr("x1", c1x).attr("y1", c1y)
-      .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("stroke-linecap", "round")
-    g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", "#1e293b")
-    g.append("text").attr("x", c1x).attr("y", c1y + cr + 20).attr("text-anchor", "middle")
-      .attr("font-size", fs).attr("fill", "#475569").attr("font-family", F).attr("font-weight", 600)
-      .text("Stationary")
-
-    // Clock 2 (moving)
-    const c2x = Math.round(rpLeft + rpWidth * 0.64)
-    const c2y = c1y
-    g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", cr)
-      .attr("fill", "white").attr("stroke", "#334155").attr("stroke-width", 2.5)
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2
-      g.append("line")
-        .attr("x1", c2x + Math.sin(a) * cr * 0.82).attr("y1", c2y - Math.cos(a) * cr * 0.82)
-        .attr("x2", c2x + Math.sin(a) * cr * 0.95).attr("y2", c2y - Math.cos(a) * cr * 0.95)
-        .attr("stroke", "#64748b").attr("stroke-width", 2)
-    }
-    g.append("line").attr("class", "clock2-hand").attr("x1", c2x).attr("y1", c2y)
-      .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("stroke-linecap", "round")
-    g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", 3).attr("fill", "#1e293b")
-    g.append("text").attr("class", "clock2-label").attr("x", c2x).attr("y", c2y + cr + 20)
-      .attr("text-anchor", "middle").attr("font-size", fs).attr("fill", "#475569")
-      .attr("font-family", F).attr("font-weight", 600)
-
-    // --- Length Contraction panel ---
-    const lcTop = tdTop + tdHeight + Math.round(H * 0.023)
-    const lcHeight = Math.round(H * 0.23)
-    g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
-      .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-    g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
-      .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-      .text("Length Contraction")
-
-    // Rest length bar
-    const barX = Math.round(rpLeft + rpWidth * 0.16)
-    const barW = Math.round(rpWidth * 0.33)
-    const barY1 = lcTop + Math.round(lcHeight * 0.38)
-    const barH = Math.round(lcHeight * 0.22)
-    g.append("rect").attr("x", barX).attr("y", barY1).attr("width", barW).attr("height", barH)
-      .attr("rx", 5).attr("fill", "#dbeafe").attr("stroke", "#3b82f6").attr("stroke-width", 1.5)
-    g.append("text").attr("x", barX + barW / 2).attr("y", barY1 + barH * 0.73).attr("text-anchor", "middle")
-      .attr("font-size", fs * 0.9).attr("fill", "#1e40af").attr("font-family", F).attr("font-weight", 600)
-      .text("Rest: L = 1.00")
-
-    // Contracted bar (will update)
-    const barY2 = barY1 + barH + 8
-    g.append("rect").attr("class", "contract-bar").attr("y", barY2).attr("height", barH)
-      .attr("rx", 5).attr("fill", "#fef3c7").attr("stroke", "#f59e0b").attr("stroke-width", 1.5)
-    g.append("text").attr("class", "contract-label").attr("y", barY2 + barH * 0.73)
-      .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("fill", "#92400e")
-      .attr("font-family", F).attr("font-weight", 600)
-
-    // --- Values panel ---
-    const vpTop = lcTop + lcHeight + Math.round(H * 0.023)
-    const vpHeight = Math.round(H * 0.23)
-    g.append("rect").attr("x", rpLeft).attr("y", vpTop).attr("width", rpWidth).attr("height", vpHeight)
-      .attr("rx", 12).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-
-    const valX1 = Math.round(rpLeft + rpWidth * 0.24)
-    const valX2 = Math.round(rpLeft + rpWidth * 0.69)
-    const valY1 = vpTop + Math.round(vpHeight * 0.3)
-    g.append("text").attr("class", "val-v").attr("x", valX1).attr("y", valY1)
-      .attr("font-size", fs * 1.2).attr("font-weight", 700).attr("font-family", F)
-      .attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
-    g.select(".val-v")
-      .on("mouseenter", () => onHighlightRef.current('v'))
-      .on("mouseleave", () => onHighlightRef.current(null))
-
-    g.append("text").attr("class", "val-gamma").attr("x", valX2).attr("y", valY1)
-      .attr("font-size", fs * 1.3).attr("font-weight", 800).attr("font-family", F)
-      .attr("fill", VAR_COLORS.result).style("cursor", "pointer")
-    g.select(".val-gamma")
-      .on("mouseenter", () => onHighlightRef.current('gamma'))
-      .on("mouseleave", () => onHighlightRef.current(null))
-
-    g.append("text").attr("class", "val-time").attr("x", valX1).attr("y", valY1 + Math.round(vpHeight * 0.26))
-      .attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-    g.append("text").attr("class", "val-length").attr("x", valX1).attr("y", valY1 + Math.round(vpHeight * 0.46))
-      .attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-
-    // Extreme annotation
-    g.append("text").attr("class", "extreme-label").attr("x", rpCenter).attr("y", valY1 + Math.round(vpHeight * 0.66))
-      .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600)
-
-    // Clock animation loop
-    let running = true
-    const animateClocks = (ts: number) => {
-      if (!running) return
-      if (lastTimeRef.current === 0) lastTimeRef.current = ts
-      const dt = (ts - lastTimeRef.current) / 1000
-      lastTimeRef.current = ts
-
-      clockAngle1Ref.current = (clockAngle1Ref.current + dt * 60) % 360
-      clockAngle2Ref.current = (clockAngle2Ref.current + dt * 60 / gammaRef.current) % 360
-
-      const rad1 = (clockAngle1Ref.current * Math.PI) / 180
-      const rad2 = (clockAngle2Ref.current * Math.PI) / 180
-      const handLen = cr * 0.7
-
-      g.select(".clock1-hand")
-        .attr("x2", c1x + Math.sin(rad1) * handLen)
-        .attr("y2", c1y - Math.cos(rad1) * handLen)
-
-      g.select(".clock2-hand")
-        .attr("x2", c2x + Math.sin(rad2) * handLen)
-        .attr("y2", c2y - Math.cos(rad2) * handLen)
-
-      rafRef.current = requestAnimationFrame(animateClocks)
-    }
-    rafRef.current = requestAnimationFrame(animateClocks)
-
-    return () => {
-      running = false
-      cancelAnimationFrame(rafRef.current)
-      select(container).select("svg").remove()
-    }
-  }, [W, H])
-
-  // Update on velocity/gamma change
+  // Highlight effect (lightweight attr toggle, no SVG rebuild)
   useEffect(() => {
-    const g = gRef.current
-    if (!g) return
-    const dur = 160
+    const el = containerRef.current
+    if (!el) return
+    const svg = select(el).select("svg")
+    if (svg.empty()) return
 
     const vActive = highlightedVar === 'v'
     const gammaActive = highlightedVar === 'gamma'
 
-    // Curve dot + drop
-    const cx = xScale(velocity)
-    const cy = yScale(Math.min(gamma, 12))
-    g.select(".curve-dot-group").transition().duration(dur)
-      .attr("transform", `translate(${cx}, ${cy})`)
-    g.select(".curve-dot")
+    svg.select(".curve-dot")
       .attr("fill", gammaActive ? VAR_COLORS.result : '#ef4444')
-    g.select(".curve-drop").transition().duration(dur)
-      .attr("x1", cx).attr("y1", cy).attr("x2", cx).attr("y2", leftPanelBottom)
+    svg.select(".curve-drop")
       .attr("stroke", vActive ? VAR_COLORS.primary : '#ef4444')
+  }, [highlightedVar])
 
-    // Velocity label on curve
-    g.select(".v-curve-label").transition().duration(dur)
-      .attr("x", cx).text(`v = ${velocity.toFixed(2)}c`)
+  // ===============================================================
+  // Main SVG -- created ONCE, rebuilt only on container resize.
+  // Drag updates go through updateScene() directly, not React.
+  // ===============================================================
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
 
-    // Clock 2 label
-    g.select(".clock2-label").text(`Moving (${(1 / gamma).toFixed(2)}x)`)
+    let currentW = 0
+    let currentH = 0
+    let clockRunning = true
 
-    // Length contraction
-    const rpLeft = Math.round(W * 0.48)
-    const rpWidth = Math.round(W * 0.5)
-    const barX = Math.round(rpLeft + rpWidth * 0.16)
-    const barW = Math.round(rpWidth * 0.33)
-    const contractedWidth = barW / gamma
-    g.select(".contract-bar").transition().duration(dur)
-      .attr("x", barX).attr("width", contractedWidth)
-    g.select(".contract-label").transition().duration(dur)
-      .attr("x", barX + contractedWidth / 2)
-      .text(`L' = ${(1 / gamma).toFixed(3)}`)
+    function buildSVG() {
+      if (!el) return
+      select(el).select("svg").remove()
+      lastTimeRef.current = 0
 
-    // Values
-    g.select(".val-v").text(`v/c = ${velocity.toFixed(3)}`)
-    g.select(".val-gamma").text(`\u03B3 = ${gamma.toFixed(4)}`)
-    g.select(".val-time").text(`Time dilation: \u0394t' = ${gamma.toFixed(3)} \u0394t`)
-    g.select(".val-length").text(`Length contraction: L' = ${(1 / gamma).toFixed(4)} L`)
+      const rect = el.getBoundingClientRect()
+      const W = Math.round(rect.width) || 800
+      const H = Math.round(rect.height) || 500
+      currentW = W
+      currentH = H
 
-    // Extreme annotations
-    if (gamma > 7) {
-      g.select(".extreme-label").attr("fill", "#ef4444")
-        .text("Extreme relativistic regime -- time nearly stops for the traveler.")
-    } else if (velocity < 0.1) {
-      g.select(".extreme-label").attr("fill", "#94a3b8")
-        .text("At everyday speeds, relativity effects are negligible.")
-    } else {
-      g.select(".extreme-label").text("")
+      if (W < 100 || H < 100) return
+
+      const svg = select(el)
+        .append("svg")
+        .attr("width", W)
+        .attr("height", H)
+        .style("display", "block")
+        .style("touch-action", "none")
+        .attr("role", "img")
+        .attr("aria-label", "Lorentz factor curve, clocks, and length contraction")
+
+      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+
+      const g = svg.append("g")
+
+      const fs = Math.max(12, Math.min(18, H / 28))
+
+      // Curve panel geometry
+      const leftPanelLeft = Math.round(W * 0.05)
+      const leftPanelRight = Math.round(W * 0.42)
+      const leftPanelTop = Math.round(H * 0.14)
+      const leftPanelBottom = Math.round(H * 0.78)
+      const xScale = scaleLinear().domain([0, 1]).range([leftPanelLeft + Math.round(W * 0.02), leftPanelRight - Math.round(W * 0.02)])
+      const yScale = scaleLinear().domain([0, 12]).range([leftPanelBottom, leftPanelTop])
+
+      // Right panel geometry
+      const rpLeft = Math.round(W * 0.48)
+      const rpWidth = Math.round(W * 0.5)
+      const rpCenter = rpLeft + Math.round(rpWidth / 2)
+
+      // --- Gamma curve panel ---
+      const lpLeft = Math.round(W * 0.022)
+      const lpWidth = Math.round(W * 0.433)
+      const lpTop = Math.round(H * 0.037)
+      const lpHeight = Math.round(H * 0.79)
+      g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
+        .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
+        .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text("Lorentz Factor")
+
+      // Axes
+      const axLeft = xScale(0)
+      const axRight = xScale(1)
+      const axBottom = yScale(0)
+      const axTop = yScale(12)
+      g.append("line").attr("x1", axLeft).attr("y1", axBottom).attr("x2", axRight).attr("y2", axBottom)
+        .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+      g.append("line").attr("x1", axLeft).attr("y1", axBottom).attr("x2", axLeft).attr("y2", axTop)
+        .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+      g.append("text").attr("x", (axLeft + axRight) / 2).attr("y", axBottom + Math.round(H * 0.042)).attr("text-anchor", "middle")
+        .attr("font-size", fs * 0.85).attr("fill", "#94a3b8").attr("font-family", F).text("v/c")
+      g.append("text").attr("x", axLeft - 12).attr("y", axTop + 8).attr("font-size", fs * 0.85)
+        .attr("fill", "#94a3b8").attr("font-family", F).text("\u03B3")
+
+      // X axis ticks
+      for (const v of [0, 0.25, 0.5, 0.75, 1.0]) {
+        g.append("line").attr("x1", xScale(v)).attr("y1", axBottom - 2).attr("x2", xScale(v)).attr("y2", axBottom + 4)
+          .attr("stroke", "#94a3b8").attr("stroke-width", 1)
+        g.append("text").attr("x", xScale(v)).attr("y", axBottom + Math.round(H * 0.037)).attr("text-anchor", "middle")
+          .attr("font-size", fs * 0.8).attr("fill", "#94a3b8").attr("font-family", F).text(v.toFixed(2))
+      }
+      // Y axis ticks
+      for (const gv of [1, 2, 4, 6, 8, 10, 12]) {
+        const yp = yScale(gv)
+        if (yp >= axTop && yp <= axBottom) {
+          g.append("line").attr("x1", axLeft - 4).attr("y1", yp).attr("x2", axLeft + 2).attr("y2", yp)
+            .attr("stroke", "#94a3b8").attr("stroke-width", 1)
+          g.append("text").attr("x", axLeft - 8).attr("y", yp + 4).attr("text-anchor", "end")
+            .attr("font-size", fs * 0.8).attr("fill", "#94a3b8").attr("font-family", F).text(String(gv))
+        }
+      }
+
+      // gamma=1 reference
+      g.append("line").attr("x1", axLeft).attr("y1", yScale(1)).attr("x2", axRight).attr("y2", yScale(1))
+        .attr("stroke", "#e2e8f0").attr("stroke-width", 1).attr("stroke-dasharray", "4 4")
+
+      // Gamma curve
+      const vs = range(0, 0.995, 0.005)
+      const pathGen = line<number>()
+        .x(d => xScale(d))
+        .y(d => yScale(1 / Math.sqrt(1 - d * d)))
+      g.append("path").attr("d", pathGen(vs) ?? "").attr("fill", "none")
+        .attr("stroke", "#1e40af").attr("stroke-width", 3)
+
+      // Current point + drop line (will update)
+      g.append("line").attr("class", "curve-drop")
+        .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
+
+      // Draggable velocity handle on the curve
+      const dotG = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab")
+      // Invisible hit area (min 30px)
+      dotG.append("circle").attr("class", "curve-hit").attr("r", 18).attr("fill", "transparent")
+      // Visible dot
+      dotG.append("circle").attr("class", "curve-dot").attr("r", 6)
+        .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
+
+      const velocityDrag = drag<SVGGElement, unknown>()
+        .on("start", function () {
+          draggingRef.current = true
+          select(this).style("cursor", "grabbing")
+          select(this).select(".curve-dot").transition().duration(100)
+            .attr("r", 9).attr("stroke-width", 3)
+        })
+        .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+          const newV = Math.max(0, Math.min(0.99, xScale.invert(event.x)))
+          const snapped = Math.round(newV * 100) / 100
+          liveRef.current = snapped
+          updateScene(snapped)
+        })
+        .on("end", function () {
+          draggingRef.current = false
+          select(this).style("cursor", "grab")
+          select(this).select(".curve-dot").transition().duration(100)
+            .attr("r", 6).attr("stroke-width", 2)
+          onVarChangeRef.current('v', liveRef.current)
+        })
+      dotG.call(velocityDrag)
+
+      // Velocity label on curve
+      g.append("text").attr("class", "v-curve-label").attr("y", axBottom + Math.round(H * 0.042))
+        .attr("text-anchor", "middle").attr("font-size", fs).attr("font-weight", 600)
+        .attr("font-family", F).attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
+      g.select(".v-curve-label")
+        .on("mouseenter", () => onHighlightRef.current('v'))
+        .on("mouseleave", () => onHighlightRef.current(null))
+
+      // --- Time Dilation panel ---
+      const tdTop = lpTop
+      const tdHeight = Math.round(H * 0.42)
+      g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
+        .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
+        .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text("Time Dilation")
+
+      // Clock 1 (stationary)
+      const cr = Math.round(Math.min(rpWidth * 0.1, tdHeight * 0.2))
+      const c1x = Math.round(rpLeft + rpWidth * 0.22)
+      const c1y = Math.round(tdTop + tdHeight * 0.55)
+      g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", cr)
+        .attr("fill", "white").attr("stroke", "#334155").attr("stroke-width", 2.5)
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2
+        g.append("line")
+          .attr("x1", c1x + Math.sin(a) * cr * 0.82).attr("y1", c1y - Math.cos(a) * cr * 0.82)
+          .attr("x2", c1x + Math.sin(a) * cr * 0.95).attr("y2", c1y - Math.cos(a) * cr * 0.95)
+          .attr("stroke", "#64748b").attr("stroke-width", 2)
+      }
+      g.append("line").attr("class", "clock1-hand").attr("x1", c1x).attr("y1", c1y)
+        .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("stroke-linecap", "round")
+      g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", "#1e293b")
+      g.append("text").attr("x", c1x).attr("y", c1y + cr + 20).attr("text-anchor", "middle")
+        .attr("font-size", fs).attr("fill", "#475569").attr("font-family", F).attr("font-weight", 600)
+        .text("Stationary")
+
+      // Clock 2 (moving)
+      const c2x = Math.round(rpLeft + rpWidth * 0.64)
+      const c2y = c1y
+      g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", cr)
+        .attr("fill", "white").attr("stroke", "#334155").attr("stroke-width", 2.5)
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2
+        g.append("line")
+          .attr("x1", c2x + Math.sin(a) * cr * 0.82).attr("y1", c2y - Math.cos(a) * cr * 0.82)
+          .attr("x2", c2x + Math.sin(a) * cr * 0.95).attr("y2", c2y - Math.cos(a) * cr * 0.95)
+          .attr("stroke", "#64748b").attr("stroke-width", 2)
+      }
+      g.append("line").attr("class", "clock2-hand").attr("x1", c2x).attr("y1", c2y)
+        .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("stroke-linecap", "round")
+      g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", 3).attr("fill", "#1e293b")
+      g.append("text").attr("class", "clock2-label").attr("x", c2x).attr("y", c2y + cr + 20)
+        .attr("text-anchor", "middle").attr("font-size", fs).attr("fill", "#475569")
+        .attr("font-family", F).attr("font-weight", 600)
+
+      // --- Length Contraction panel ---
+      const lcTop = tdTop + tdHeight + Math.round(H * 0.023)
+      const lcHeight = Math.round(H * 0.23)
+      g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
+        .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
+        .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text("Length Contraction")
+
+      // Rest length bar
+      const barX = Math.round(rpLeft + rpWidth * 0.16)
+      const barW = Math.round(rpWidth * 0.33)
+      const barY1 = lcTop + Math.round(lcHeight * 0.38)
+      const barH = Math.round(lcHeight * 0.22)
+      g.append("rect").attr("x", barX).attr("y", barY1).attr("width", barW).attr("height", barH)
+        .attr("rx", 5).attr("fill", "#dbeafe").attr("stroke", "#3b82f6").attr("stroke-width", 1.5)
+      g.append("text").attr("x", barX + barW / 2).attr("y", barY1 + barH * 0.73).attr("text-anchor", "middle")
+        .attr("font-size", fs * 0.9).attr("fill", "#1e40af").attr("font-family", F).attr("font-weight", 600)
+        .text("Rest: L = 1.00")
+
+      // Contracted bar (will update)
+      const barY2 = barY1 + barH + 8
+      g.append("rect").attr("class", "contract-bar").attr("y", barY2).attr("height", barH)
+        .attr("rx", 5).attr("fill", "#fef3c7").attr("stroke", "#f59e0b").attr("stroke-width", 1.5)
+      g.append("text").attr("class", "contract-label").attr("y", barY2 + barH * 0.73)
+        .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("fill", "#92400e")
+        .attr("font-family", F).attr("font-weight", 600)
+
+      // --- Values panel ---
+      const vpTop = lcTop + lcHeight + Math.round(H * 0.023)
+      const vpHeight = Math.round(H * 0.23)
+      g.append("rect").attr("x", rpLeft).attr("y", vpTop).attr("width", rpWidth).attr("height", vpHeight)
+        .attr("rx", 12).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+
+      const valX1 = Math.round(rpLeft + rpWidth * 0.24)
+      const valX2 = Math.round(rpLeft + rpWidth * 0.69)
+      const valY1 = vpTop + Math.round(vpHeight * 0.3)
+      g.append("text").attr("class", "val-v").attr("x", valX1).attr("y", valY1)
+        .attr("font-size", fs * 1.2).attr("font-weight", 700).attr("font-family", F)
+        .attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
+      g.select(".val-v")
+        .on("mouseenter", () => onHighlightRef.current('v'))
+        .on("mouseleave", () => onHighlightRef.current(null))
+
+      g.append("text").attr("class", "val-gamma").attr("x", valX2).attr("y", valY1)
+        .attr("font-size", fs * 1.3).attr("font-weight", 800).attr("font-family", F)
+        .attr("fill", VAR_COLORS.result).style("cursor", "pointer")
+      g.select(".val-gamma")
+        .on("mouseenter", () => onHighlightRef.current('gamma'))
+        .on("mouseleave", () => onHighlightRef.current(null))
+
+      g.append("text").attr("class", "val-time").attr("x", valX1).attr("y", valY1 + Math.round(vpHeight * 0.26))
+        .attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
+      g.append("text").attr("class", "val-length").attr("x", valX1).attr("y", valY1 + Math.round(vpHeight * 0.46))
+        .attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
+
+      // Extreme annotation
+      g.append("text").attr("class", "extreme-label").attr("x", rpCenter).attr("y", valY1 + Math.round(vpHeight * 0.66))
+        .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600)
+
+      // ── updateScene: repositions all dynamic elements from velocity WITHOUT React ──
+      function updateScene(vel: number) {
+        const gam = 1 / Math.sqrt(1 - vel * vel)
+
+        // Update gammaRef so the clock animation picks up the new value immediately
+        gammaRef.current = gam
+
+        // Curve dot + drop line (no transition during drag for smoothness)
+        const cx = xScale(vel)
+        const cy = yScale(Math.min(gam, 12))
+        g.select(".curve-dot-group")
+          .attr("transform", `translate(${cx}, ${cy})`)
+        g.select(".curve-drop")
+          .attr("x1", cx).attr("y1", cy).attr("x2", cx).attr("y2", leftPanelBottom)
+
+        // Velocity label on curve
+        g.select(".v-curve-label")
+          .attr("x", cx).text(`v = ${vel.toFixed(2)}c`)
+
+        // Clock 2 label
+        g.select(".clock2-label").text(`Moving (${(1 / gam).toFixed(2)}x)`)
+
+        // Length contraction
+        const contractedWidth = barW / gam
+        g.select(".contract-bar")
+          .attr("x", barX).attr("width", contractedWidth)
+        g.select(".contract-label")
+          .attr("x", barX + contractedWidth / 2)
+          .text(`L' = ${(1 / gam).toFixed(3)}`)
+
+        // Values
+        g.select(".val-v").text(`v/c = ${vel.toFixed(3)}`)
+        g.select(".val-gamma").text(`\u03B3 = ${gam.toFixed(4)}`)
+        g.select(".val-time").text(`Time dilation: \u0394t' = ${gam.toFixed(3)} \u0394t`)
+        g.select(".val-length").text(`Length contraction: L' = ${(1 / gam).toFixed(4)} L`)
+
+        // Extreme annotations
+        if (gam > 7) {
+          g.select(".extreme-label").attr("fill", "#ef4444")
+            .text("Extreme relativistic regime -- time nearly stops for the traveler.")
+        } else if (vel < 0.1) {
+          g.select(".extreme-label").attr("fill", "#94a3b8")
+            .text("At everyday speeds, relativity effects are negligible.")
+        } else {
+          g.select(".extreme-label").text("")
+        }
+      }
+
+      // Expose for external sync
+      updateRef.current = updateScene
+
+      // Initial render
+      updateScene(liveRef.current)
+
+      // Clock animation loop
+      const handLen = cr * 0.7
+      const animateClocks = (ts: number) => {
+        if (!clockRunning) return
+        if (lastTimeRef.current === 0) lastTimeRef.current = ts
+        const dt = (ts - lastTimeRef.current) / 1000
+        lastTimeRef.current = ts
+
+        clockAngle1Ref.current = (clockAngle1Ref.current + dt * 60) % 360
+        clockAngle2Ref.current = (clockAngle2Ref.current + dt * 60 / gammaRef.current) % 360
+
+        const rad1 = (clockAngle1Ref.current * Math.PI) / 180
+        const rad2 = (clockAngle2Ref.current * Math.PI) / 180
+
+        g.select(".clock1-hand")
+          .attr("x2", c1x + Math.sin(rad1) * handLen)
+          .attr("y2", c1y - Math.cos(rad1) * handLen)
+
+        g.select(".clock2-hand")
+          .attr("x2", c2x + Math.sin(rad2) * handLen)
+          .attr("y2", c2y - Math.cos(rad2) * handLen)
+
+        rafRef.current = requestAnimationFrame(animateClocks)
+      }
+      rafRef.current = requestAnimationFrame(animateClocks)
     }
-  }, [velocity, gamma, highlightedVar])
+
+    buildSVG()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const w = Math.round(entry.contentRect.width)
+      const h = Math.round(entry.contentRect.height)
+      if (w !== currentW || h !== currentH) {
+        requestAnimationFrame(buildSVG)
+      }
+    })
+    observer.observe(el)
+
+    return () => {
+      clockRunning = false
+      cancelAnimationFrame(rafRef.current)
+      observer.disconnect()
+      select(el).select("svg").remove()
+      updateRef.current = null
+    }
+  }, []) // empty deps: SVG created once, rebuilt only on resize
 
   return (
     <div

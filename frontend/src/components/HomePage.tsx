@@ -15,7 +15,8 @@ import { HeroDemo } from "./HeroDemo"
 import { subjects } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
-import { formatFormulaPreview } from "../lib/formatFormulaPreview"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- KaTeX rendering for formula cards
+import { InlineMath } from "react-katex"
 
 const iconMap: Record<string, ReactElement> = {
   "pi": <Pi className="h-5 w-5" />,
@@ -30,6 +31,7 @@ const iconMap: Record<string, ReactElement> = {
   "grid-3x3": <Grid3X3 className="h-5 w-5" />,
 }
 
+/** Renders a LaTeX formula using KaTeX. NEVER replace with plain text. */
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
     <span className={muted ? "text-slate-300 dark:text-slate-600" : undefined}>

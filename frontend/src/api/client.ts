@@ -141,6 +141,13 @@ export interface UserProfile {
   tier: "free" | "pro"
 }
 
+export interface AuthenticatedUser {
+  id: number
+  email: string
+  username: string
+  profile: UserProfile
+}
+
 export const api = {
   equations: {
     list: (category?: string) => {
@@ -191,14 +198,14 @@ export const api = {
 
   profile: {
     update: (displayName: string) =>
-      request<UserProfile>('/auth/me/profile/', {
+      request<AuthenticatedUser>('/auth/me/profile/', {
         method: 'PATCH',
         body: JSON.stringify({ display_name: displayName }),
       }),
     uploadAvatar: (file: File) => {
       const form = new FormData()
       form.append('avatar', file)
-      return request<UserProfile>('/auth/me/avatar/', {
+      return request<{ avatar_url: string }>('/auth/me/avatar/', {
         method: 'POST',
         body: form,
       })
