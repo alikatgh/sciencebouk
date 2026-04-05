@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom"
 import { Github, Crown, ExternalLink } from "lucide-react"
 import { TopNav } from "./TopNav"
 import { Button } from "./ui/button"
+import { equationManifest } from "../data/equationManifest"
 
 const GITHUB_URL = "https://github.com/alikatgh/sciencebouk"
 
 export default function AboutPage(): ReactElement {
   const navigate = useNavigate()
+  const equationCount = equationManifest.length
 
   return (
     <main className="flex min-h-screen flex-col bg-white dark:bg-slate-950">
@@ -21,7 +23,7 @@ export default function AboutPage(): ReactElement {
             Grab a variable. Drag it.<br />Watch the equation respond.
           </h1>
           <p className="mt-4 text-base leading-relaxed text-slate-500 dark:text-slate-400">
-            17 equations that shaped the world, turned into interactive visualizations
+            {equationCount} equations that shaped the world, turned into interactive visualizations
             you can touch and understand. No textbook. No video.
             Just drag, change, and see why the formula works.
           </p>
@@ -64,7 +66,7 @@ export default function AboutPage(): ReactElement {
               <div className="rounded-xl border border-slate-200 p-5 dark:border-slate-700">
                 <p className="text-sm font-bold text-slate-900 dark:text-white">Free — forever</p>
                 <ul className="mt-3 space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
-                  <li>All 17 equations (and every future one)</li>
+                  <li>All {equationCount} equations (and every future one)</li>
                   <li>All interactive visualizations</li>
                   <li>All guided lessons</li>
                   <li>Progress saved on your device</li>
@@ -99,7 +101,7 @@ export default function AboutPage(): ReactElement {
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">What's Next</h2>
             <div className="mt-3 space-y-2">
               {[
-                { done: true, text: "17 interactive equations with D3 visualizations" },
+                { done: true, text: `${equationCount} interactive equations with D3 visualizations` },
                 { done: true, text: "Step-by-step lessons you complete by dragging" },
                 { done: true, text: "Live formula substitution with real numbers" },
                 { done: true, text: "Accounts, Pro, and progress sync" },

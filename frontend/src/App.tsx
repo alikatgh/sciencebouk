@@ -46,7 +46,7 @@ export default function App(): ReactElement {
   const [showSync, setShowSync] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { user, isAuthenticated, isPro, logout } = useAuth()
-  const { completedCount, totalTimeMinutes, total } = useAllProgress()
+  const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
 
   useEffect(() => {
     localStorage.setItem("sciencebouk-sidebar", String(sidebarOpen))
@@ -162,6 +162,7 @@ export default function App(): ReactElement {
             completedCount={completedCount}
             total={total}
             totalTimeMinutes={totalTimeMinutes}
+            progressByEquation={progressByEquation}
             prevEquation={prevEquation}
             nextEquation={nextEquation}
             isAuthenticated={isAuthenticated}

@@ -1,3 +1,5 @@
+import { equationManifest } from "./equationManifest"
+
 export interface SubjectFormula {
   title: string
   formula: string
@@ -19,7 +21,7 @@ export const subjects: Subject[] = [
   {
     slug: "algebra",
     name: "Algebra & Geometry",
-    description: "17 equations that changed the world",
+    description: `${equationManifest.length} equations that changed the world`,
     icon: "pi",
     active: true,
     formulas: [

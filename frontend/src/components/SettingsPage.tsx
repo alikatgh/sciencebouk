@@ -1,12 +1,15 @@
 import type { ReactElement } from "react"
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { Volume2, VolumeX, Type, Eye, Palette, Gauge, Globe, Keyboard, RotateCcw, Trash2 } from "lucide-react"
+import { useAuth } from "../auth/AuthContext"
+import { api } from "../api/client"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Separator } from "./ui/separator"
 import { Slider } from "./ui/slider"
 import { Switch } from "./ui/switch"
 import { TopNav } from "./TopNav"
+import { clearStoredProgress } from "../progress/useProgress"
 import { useSettings, type Settings } from "../settings/SettingsContext"
 
 function SettingRow({ label, description, children }: { label: string; description?: string; children: ReactElement }): ReactElement {
@@ -46,13 +49,22 @@ function SegmentedControl({ value, onChange, options }: {
 }
 
 export default function SettingsPage(): ReactElement {
+  const { isAuthenticated } = useAuth()
   const { settings, update, reset } = useSettings()
+  const [clearingProgress, setClearingProgress] = useState(false)
 
-  const clearProgress = useCallback(() => {
+  const clearProgress = useCallback(async () => {
     if (!confirm("This will erase all your progress. Are you sure?")) return
-    for (let i = 1; i <= 17; i++) localStorage.removeItem(`eq-progress-${i}`)
-    window.location.reload()
-  }, [])
+    setClearingProgress(true)
+    try {
+      if (isAuthenticated) {
+        await api.progress.clear()
+      }
+      clearStoredProgress()
+    } finally {
+      setClearingProgress(false)
+    }
+  }, [isAuthenticated])
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -219,7 +231,7 @@ export default function SettingsPage(): ReactElement {
               </SettingRow>
               <Separator />
               <SettingRow label="Clear progress" description="Erase all completed equations">
-                <Button variant="destructive" size="sm" onClick={clearProgress}>
+                <Button variant="destructive" size="sm" onClick={clearProgress} disabled={clearingProgress}>
                   <Trash2 className="h-3 w-3" /> Clear
                 </Button>
               </SettingRow>

@@ -131,11 +131,14 @@ def equation_atlas_legacy(request):
 # ---------------------------------------------------------------------------
 
 
-@api_view(["GET"])
+@api_view(["GET", "DELETE"])
 @permission_classes([IsAuthenticated])
 def my_progress(request):
-    """Get all progress for the authenticated user."""
+    """Get or clear all progress for the authenticated user."""
     progress = UserProgress.objects.filter(user=request.user)
+    if request.method == "DELETE":
+        progress.delete()
+        return Response({"ok": True})
     return Response(UserProgressSerializer(progress, many=True).data)
 
 
@@ -160,6 +163,8 @@ def update_my_progress(request, equation_id):
             setattr(progress, field, request.data[field])
     if request.data.get("completed") and not progress.completed_at:
         progress.completed_at = timezone.now()
+    elif request.data.get("completed") is False:
+        progress.completed_at = None
     progress.save()
     return Response(UserProgressSerializer(progress).data)
 
@@ -181,10 +186,15 @@ def bulk_sync_progress(request):
             defaults={"anon_id": str(request.user.id)},
         )
         for field in [
-            "completed", "lesson_step", "time_spent_seconds", "notes", "bookmarked",
+            "completed", "lesson_step", "time_spent_seconds", "variables_explored",
+            "notes", "bookmarked",
         ]:
             if field in item:
                 setattr(progress, field, item[field])
+        if item.get("completed") and not progress.completed_at:
+            progress.completed_at = timezone.now()
+        elif item.get("completed") is False:
+            progress.completed_at = None
         progress.save()
         results.append(UserProgressSerializer(progress).data)
     return Response(results)

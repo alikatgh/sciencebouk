@@ -1,9 +1,8 @@
 import type { ReactElement } from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { InlineMath } from "react-katex"
 import {
-  Lock, ArrowRight, ArrowLeft, CheckCircle2, LogOut, User,
+  Lock, ArrowRight, CheckCircle2,
   Pi, Atom, FlaskConical, Dna, TrendingUp, Cpu,
   BarChart3, Wrench, Telescope, Grid3X3,
 } from "lucide-react"
@@ -11,14 +10,13 @@ import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Progress } from "./ui/progress"
-import { Avatar, AvatarFallback } from "./ui/avatar"
 import { TooltipProvider } from "./ui/tooltip"
 import { TopNav } from "./TopNav"
 import { HeroDemo } from "./HeroDemo"
 import { subjects, type Subject } from "../data/subjects"
-import { useAuth } from "../auth/AuthContext"
 import { AuthModal } from "../auth/AuthModal"
-import { useAllProgress, getLocalProgress } from "../progress/useProgress"
+import { useAllProgress } from "../progress/useProgress"
+import { formatFormulaPreview } from "../lib/formatFormulaPreview"
 
 const iconMap: Record<string, ReactElement> = {
   "pi": <Pi className="h-5 w-5" />,
@@ -33,18 +31,22 @@ const iconMap: Record<string, ReactElement> = {
   "grid-3x3": <Grid3X3 className="h-5 w-5" />,
 }
 
-function getLocalCompleted(id: number): boolean {
-  try { return getLocalProgress(id).completed } catch { return false }
+function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
+  return (
+    <span className={muted ? "text-slate-300 dark:text-slate-600" : undefined}>
+      {formatFormulaPreview(formula)}
+    </span>
+  )
 }
 
 export function HomePage(): ReactElement {
   const navigate = useNavigate()
-  const { user, isAuthenticated, logout } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
-  const { completedCount, total } = useAllProgress()
+  const { completedCount, total, progressByEquation } = useAllProgress()
 
   const activeSubject = selectedSubject ? subjects.find((s) => s.slug === selectedSubject) : null
+  const isCompleted = (id: number): boolean => progressByEquation.get(id)?.completed ?? false
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -82,7 +84,7 @@ export function HomePage(): ReactElement {
                     <span className="text-ocean">Watch the equation respond.</span>
                   </h2>
                   <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-400">
-                    17 equations that shaped the world — turned into interactive visualizations
+                    {total} equations that shaped the world — turned into interactive visualizations
                     you can touch and understand. No textbook. No video.
                   </p>
                   <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -119,7 +121,7 @@ export function HomePage(): ReactElement {
                 <div className="flex gap-3 overflow-x-auto pb-1">
                   {subjects
                     .filter((s) => s.active)
-                    .flatMap((s) => s.formulas.filter((f) => f.id != null && !getLocalCompleted(f.id!)))
+                    .flatMap((s) => s.formulas.filter((f) => f.id != null && !isCompleted(f.id)))
                     .slice(0, 4)
                     .map((f) => (
                       <button
@@ -129,7 +131,7 @@ export function HomePage(): ReactElement {
                         type="button"
                       >
                         <span className="text-sm text-slate-600 dark:text-slate-300">
-                          <InlineMath math={f.formula} />
+                          <FormulaPreview formula={f.formula} />
                         </span>
                         <span className="mt-1 text-xs font-semibold text-slate-800 dark:text-white">{f.title}</span>
                       </button>
@@ -143,7 +145,7 @@ export function HomePage(): ReactElement {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {subjects.map((subject) => {
                 const formulaCount = subject.formulas.length
-                const completedInSubject = subject.formulas.filter((f) => f.id != null && getLocalCompleted(f.id)).length
+                const completedInSubject = subject.formulas.filter((f) => f.id != null && isCompleted(f.id)).length
                 return (
                   <Card
                     key={subject.slug}
@@ -181,7 +183,7 @@ export function HomePage(): ReactElement {
                       <div className="flex flex-wrap gap-x-4 gap-y-0.5 overflow-hidden" style={{ maxHeight: 24 }}>
                         {subject.formulas.slice(0, 4).map((f, i) => (
                           <span key={i} className="text-[11px] text-slate-400 dark:text-slate-500">
-                            <InlineMath math={f.formula} />
+                            <FormulaPreview formula={f.formula} />
                           </span>
                         ))}
                       </div>
@@ -198,7 +200,7 @@ export function HomePage(): ReactElement {
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {activeSubject!.formulas.map((f: { id?: number; formula: string; title: string; author?: string; year?: string }, i: number) => {
                   const isActive = activeSubject!.active && f.id != null
-                  const done = f.id != null && getLocalCompleted(f.id)
+                  const done = f.id != null && isCompleted(f.id)
 
                   return (
                     <Card
@@ -214,9 +216,9 @@ export function HomePage(): ReactElement {
                       <div className="flex min-h-[72px] items-center justify-center border-b border-slate-100 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50">
                         <div className="text-center text-base text-slate-700 dark:text-slate-300">
                           {isActive ? (
-                            <InlineMath math={f.formula} />
+                            <FormulaPreview formula={f.formula} />
                           ) : (
-                            <span className="text-slate-300 dark:text-slate-600"><InlineMath math={f.formula} /></span>
+                            <FormulaPreview formula={f.formula} muted />
                           )}
                         </div>
                       </div>

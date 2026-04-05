@@ -5,12 +5,14 @@ import { motion } from "framer-motion"
 import { Check, Sparkles, Zap } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { AuthModal } from "../auth/AuthModal"
+import { equationManifest } from "../data/equationManifest"
 import { TopNav } from "./TopNav"
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+const EQUATION_COUNT = equationManifest.length
 
 const FREE_FEATURES = [
-  "All 17 interactive equations",
+  `All ${EQUATION_COUNT} interactive equations`,
   "Guided lessons & real-world hooks",
   "Drag-to-explore visualizations",
   "Dark mode",

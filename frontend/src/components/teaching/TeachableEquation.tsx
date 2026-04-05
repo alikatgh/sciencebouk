@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { BookOpen, Sparkles } from "lucide-react"
+import { BookOpen, Sparkles, PanelRightOpen } from "lucide-react"
 import { useAuth } from "../../auth/AuthContext"
 import { api } from "../../api/client"
 import { useProgress } from "../../progress/useProgress"
@@ -8,6 +8,7 @@ import { useEquationId } from "./EquationContext"
 import { useSettings } from "../../settings/SettingsContext"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { ResizablePanel } from "../ui/resizable-panel"
 import { Badge } from "../ui/badge"
 import { Separator } from "../ui/separator"
 import { TouchableFormula } from "./TouchableFormula"
@@ -167,15 +168,38 @@ export function TeachableEquation({
   const formulaVariables = currentVariables.map((v) => ({ ...v, locked: lockedVars.has(v.name) }))
   const hasLessons = lessonSteps.length > 0
 
+  const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
+
   return (
-    <div className="flex h-full gap-3">
+    <div className="flex h-full gap-0">
       {/* LEFT: Visualization */}
       <div className="min-h-0 min-w-0 flex-1">
         {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
       </div>
 
-      {/* RIGHT: Teaching panel */}
-      <div className="flex w-56 flex-shrink-0 flex-col gap-2 overflow-y-auto md:w-64 lg:w-72">
+      {/* Toggle button when panel is collapsed */}
+      {!teachingPanelOpen && (
+        <button
+          onClick={() => setTeachingPanelOpen(true)}
+          className="flex-shrink-0 self-start rounded-l-lg border border-r-0 border-slate-200 bg-white px-1.5 py-3 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:bg-slate-800"
+          type="button"
+          aria-label="Open teaching panel"
+        >
+          <PanelRightOpen className="h-4 w-4" />
+        </button>
+      )}
+
+      {/* RIGHT: Teaching panel — resizable */}
+      <ResizablePanel
+        edge="left"
+        defaultWidth={272}
+        minWidth={200}
+        maxWidth={400}
+        open={teachingPanelOpen}
+        onCollapse={() => setTeachingPanelOpen(false)}
+        storageKey="sciencebouk-teaching-panel-width"
+      >
+      <div className="flex h-full flex-col gap-2 overflow-y-auto pl-2">
 
         {/* Hook — conditionally shown */}
         {appSettings.showHookText && (
@@ -256,6 +280,7 @@ export function TeachableEquation({
           </Button>
         )}
       </div>
+      </ResizablePanel>
     </div>
   )
 }

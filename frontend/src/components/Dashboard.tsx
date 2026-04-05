@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowRight, Clock, Flame, Loader2, Settings, Trophy } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { useAllProgress, getLocalProgress } from "../progress/useProgress"
+import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import type { DashboardData } from "../api/client"
@@ -35,7 +35,7 @@ function CompletionRing({ completed, total }: { completed: number; total: number
 export default function Dashboard(): ReactElement {
   const { isPro, isAuthenticated } = useAuth()
   const navigate = useNavigate()
-  const { completedCount, totalTimeMinutes, total } = useAllProgress()
+  const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
   const [serverData, setServerData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
@@ -56,13 +56,19 @@ export default function Dashboard(): ReactElement {
       const cat = eq.category
       if (!cats[cat]) cats[cat] = { total: 0, completed: 0 }
       cats[cat].total++
-      if (getLocalProgress(eq.id).completed) cats[cat].completed++
+      if (progressByEquation.get(eq.id)?.completed) cats[cat].completed++
     }
     return cats
-  }, [completedCount])
+  }, [progressByEquation])
 
-  const eqProgress = useMemo(() => equationManifest.map((eq) => ({ ...eq, progress: getLocalProgress(eq.id) })), [completedCount])
-  const nextEquation = useMemo(() => equationManifest.find((eq) => !getLocalProgress(eq.id).completed) ?? null, [completedCount])
+  const eqProgress = useMemo(
+    () => equationManifest.map((eq) => ({ ...eq, progress: progressByEquation.get(eq.id) })),
+    [progressByEquation],
+  )
+  const nextEquation = useMemo(
+    () => equationManifest.find((eq) => !progressByEquation.get(eq.id)?.completed) ?? null,
+    [progressByEquation],
+  )
   const streak = serverData?.currentStreak ?? 0
 
   if (!isPro) {
@@ -181,9 +187,10 @@ export default function Dashboard(): ReactElement {
               <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">All Equations</h2>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                 {eqProgress.map((eq) => {
-                  const done = eq.progress.completed
-                  const started = eq.progress.timeSpentSeconds > 0
-                  const mins = Math.round(eq.progress.timeSpentSeconds / 60)
+                  const progress = eq.progress
+                  const done = progress?.completed ?? false
+                  const started = (progress?.timeSpentSeconds ?? 0) > 0
+                  const mins = Math.round((progress?.timeSpentSeconds ?? 0) / 60)
                   return (
                     <button
                       key={eq.id}
