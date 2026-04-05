@@ -1,13 +1,56 @@
+import { clearTokens, getAccessToken, refreshAccessToken } from "../auth/tokenStorage"
+
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem("sciencebouk-access")
-  const headers: Record<string, string> = { "Content-Type": "application/json" }
-  if (token) headers["Authorization"] = `Bearer ${token}`
+async function readError(response: Response): Promise<Error> {
+  const body = await response.json().catch(() => null) as
+    | { detail?: string; message?: string }
+    | null
 
-  const response = await fetch(`${API_BASE}${path}`, { headers, ...options })
+  const message =
+    body?.detail ??
+    body?.message ??
+    `API ${response.status}: ${response.statusText}`
+
+  return new Error(message)
+}
+
+function withAuthHeaders(options?: RequestInit, token?: string | null): Headers {
+  const headers = new Headers(options?.headers)
+
+  if (!(options?.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json")
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`)
+  }
+
+  return headers
+}
+
+async function doFetch(path: string, options?: RequestInit, token?: string | null): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: withAuthHeaders(options, token),
+  })
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const accessToken = getAccessToken()
+  let response = await doFetch(path, options, accessToken)
+
+  if (response.status === 401 && accessToken) {
+    const refreshedToken = await refreshAccessToken()
+    if (refreshedToken) {
+      response = await doFetch(path, options, refreshedToken)
+    } else {
+      clearTokens()
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(`API ${response.status}: ${response.statusText}`)
+    throw await readError(response)
   }
   if (response.status === 204) {
     return undefined as T
@@ -89,6 +132,15 @@ export interface DashboardData {
   nextRecommended: { id: number; title: string } | null
 }
 
+export interface UserProfile {
+  display_name: string
+  avatar_url: string
+  daily_goal_minutes: number
+  preferred_difficulty: string
+  onboarding_completed: boolean
+  tier: "free" | "pro"
+}
+
 export const api = {
   equations: {
     list: (category?: string) => {
@@ -135,5 +187,21 @@ export const api = {
       request<{ url: string }>('/payments/portal/', { method: 'POST' }),
     status: () =>
       request<{ tier: string; is_pro: boolean }>('/payments/status/'),
+  },
+
+  profile: {
+    update: (displayName: string) =>
+      request<UserProfile>('/auth/me/profile/', {
+        method: 'PATCH',
+        body: JSON.stringify({ display_name: displayName }),
+      }),
+    uploadAvatar: (file: File) => {
+      const form = new FormData()
+      form.append('avatar', file)
+      return request<UserProfile>('/auth/me/avatar/', {
+        method: 'POST',
+        body: form,
+      })
+    },
   },
 }

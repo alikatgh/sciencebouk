@@ -28,3 +28,21 @@ paths:
 - Tailwind utility classes — no inline styles or CSS files per component
 - Custom tokens: ink (text), mist (bg), ocean (primary), aqua (secondary), sunrise (highlight), ember (error)
 - Responsive: use Tailwind breakpoints, not manual media queries
+
+## TypeScript Strictness
+- No `any` types — use `unknown` and narrow, or define proper interfaces
+- All component props must have explicit TypeScript interfaces
+- Event handlers must be properly typed (not `(e: any) => ...`)
+- Prefer `Record<string, T>` over `{ [key: string]: T }`
+
+## Performance Patterns
+- D3 scenes: SVG creation in useEffect with `[]` deps — never rebuild SVG on state change
+- D3 drag handlers must update DOM directly, sync React state only on drag end
+- Use `useRef` for values needed in D3 callbacks to avoid stale closures
+- Memoize filtered/computed arrays with useMemo when passed as props
+
+## Accessibility
+- Interactive SVG elements need `role` and `aria-label` attributes
+- KaTeX formulas need `aria-label` with spoken-math equivalent
+- All buttons and links must have accessible names
+- Color is never the only indicator — always pair with shape or text

@@ -27,3 +27,14 @@ paths:
 - Currently SQLite for development
 - When adding models: create migrations immediately (`makemigrations`)
 - Never commit `db.sqlite3`
+
+## Query Performance
+- Never query inside a loop — prefetch or aggregate first
+- Use `select_related` for ForeignKey, `prefetch_related` for reverse/M2M
+- Use `.values_list()` or `.only()` when you don't need full model instances
+- Cache static/rarely-changing endpoints with `cache_page`
+
+## Security
+- All mutating endpoints require authentication (`@permission_classes([IsAuthenticated])`)
+- Validate and sanitize all user input through serializers — never trust `request.data` directly
+- Use `get_object_or_404` instead of try/except DoesNotExist where appropriate

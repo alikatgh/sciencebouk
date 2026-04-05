@@ -8,15 +8,14 @@ import {
 } from "lucide-react"
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
-import { Badge } from "./ui/badge"
 import { Progress } from "./ui/progress"
 import { TooltipProvider } from "./ui/tooltip"
 import { TopNav } from "./TopNav"
 import { HeroDemo } from "./HeroDemo"
-import { subjects, type Subject } from "../data/subjects"
+import { subjects } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
-import { InlineMath } from "react-katex"
+import { formatFormulaPreview } from "../lib/formatFormulaPreview"
 
 const iconMap: Record<string, ReactElement> = {
   "pi": <Pi className="h-5 w-5" />,
@@ -140,49 +139,36 @@ export function HomePage(): ReactElement {
               </section>
             )}
 
-            {/* === SUBJECT CARDS === */}
-            <h3 id="subjects-section" className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Subjects</h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {subjects.map((subject) => {
-                const formulaCount = subject.formulas.length
-                const completedInSubject = subject.formulas.filter((f) => f.id != null && isCompleted(f.id)).length
+            {/* === FEATURED: 17 Equations === */}
+            <div id="subjects-section">
+              {subjects.filter((s) => s.active).map((subject) => {
+                const completedInSubject = subject.formulas.filter((f) => f.id != null && isCompleted(f.id!)).length
                 return (
                   <Card
                     key={subject.slug}
-                    className={`group cursor-pointer overflow-hidden transition-all hover:shadow-lg active:scale-[0.99] ${
-                      subject.active ? "" : "opacity-60"
-                    }`}
+                    className="group cursor-pointer overflow-hidden border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
                     onClick={() => setSelectedSubject(subject.slug)}
                   >
-                    <div className="flex items-start gap-3 p-4">
-                      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
-                        subject.active ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                      }`}>
-                        {iconMap[subject.icon] ?? <Pi className="h-5 w-5" />}
+                    <div className="flex items-center gap-4 p-5">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white text-slate-900">
+                        {iconMap[subject.icon] ?? <Pi className="h-6 w-6" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-sm font-bold text-slate-900 dark:text-white">{subject.name}</h2>
-                          {!subject.active && <Badge variant="outline" className="text-[8px] px-1 py-0">Soon</Badge>}
-                        </div>
-                        <p className="mt-0.5 text-[11px] text-slate-400">{subject.description}</p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="text-[11px] font-medium text-slate-500">{formulaCount} formulas</span>
-                          {subject.active && completedInSubject > 0 && (
-                            <>
-                              <span className="text-slate-200">|</span>
-                              <span className="text-[11px] font-medium text-emerald-600">{completedInSubject} done</span>
-                            </>
+                        <h2 className="text-lg font-bold">{subject.name}</h2>
+                        <p className="mt-0.5 text-sm text-slate-400">{subject.description}</p>
+                        <div className="mt-2 flex items-center gap-3">
+                          <span className="text-xs font-medium text-slate-400">{subject.formulas.length} interactive equations</span>
+                          {completedInSubject > 0 && (
+                            <span className="text-xs font-medium text-emerald-400">{completedInSubject} completed</span>
                           )}
                         </div>
                       </div>
-                      <ArrowRight className="mt-1 h-4 w-4 text-slate-300 transition group-hover:text-slate-500 dark:text-slate-600" />
+                      <ArrowRight className="h-5 w-5 text-slate-500 transition group-hover:text-white" />
                     </div>
-                    {/* Preview: first 3 formulas */}
-                    <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900/50">
-                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 overflow-hidden" style={{ maxHeight: 24 }}>
-                        {subject.formulas.slice(0, 4).map((f, i) => (
-                          <span key={i} className="text-[11px] text-slate-400 dark:text-slate-500">
+                    <div className="border-t border-slate-700 bg-slate-800/50 px-5 py-2.5 dark:bg-slate-900/50">
+                      <div className="flex flex-wrap gap-x-5 gap-y-1 overflow-hidden" style={{ maxHeight: 28 }}>
+                        {subject.formulas.slice(0, 5).map((f, i) => (
+                          <span key={i} className="text-xs text-slate-400">
                             <FormulaPreview formula={f.formula} />
                           </span>
                         ))}
@@ -192,6 +178,29 @@ export function HomePage(): ReactElement {
                 )
               })}
             </div>
+
+            {/* === COMING NEXT === */}
+            {subjects.some((s) => !s.active) && (
+              <div className="mt-8">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">Coming next</h3>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {subjects.filter((s) => !s.active).map((subject) => (
+                    <div
+                      key={subject.slug}
+                      className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 dark:border-slate-700"
+                    >
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
+                        {iconMap[subject.icon] ?? <Pi className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subject.name}</p>
+                        <p className="text-[10px] text-slate-400">{subject.formulas.length} formulas</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             </>
           ) : (
             /* === FORMULA GRID VIEW (inside a subject) === */

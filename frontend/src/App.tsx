@@ -11,52 +11,46 @@ import { SyncPrompt } from "./components/SyncPrompt"
 import { FormulaProvider } from "./components/teaching/FormulaContext"
 import { TooltipProvider } from "./components/ui/tooltip"
 import { equationManifest } from "./data/equationManifest"
-import { useAllProgress } from "./progress/useProgress"
-
-function useDarkMode() {
-  const [dark, setDark] = useState(() => {
-    if (typeof window === "undefined") return false
-    const stored = localStorage.getItem("sciencebouk-dark-mode")
-    if (stored !== null) return stored === "true"
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-  })
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark)
-    localStorage.setItem("sciencebouk-dark-mode", String(dark))
-  }, [dark])
-
-  return [dark, setDark] as const
-}
+import { getLocalProgressSyncSignature, useAllProgress } from "./progress/useProgress"
+import { useSettings } from "./settings/SettingsContext"
 
 export default function App(): ReactElement {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const firstEquationId = equationManifest[0]?.id ?? 1
   const rawSelectedId = id ? Number(id) : firstEquationId
-  const [dark, setDark] = useDarkMode()
   const [searchQuery, setSearchQuery] = useState("")
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const stored = localStorage.getItem("sciencebouk-sidebar")
-    return stored !== null ? stored === "true" : true
-  })
+  const { settings, resolvedTheme, update: updateSettings } = useSettings()
+  const [sidebarOpen, setSidebarOpen] = useState(() => !settings.sidebarCollapsed)
   const [showSync, setShowSync] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { user, isAuthenticated, isPro, logout } = useAuth()
   const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
+  const syncSignature = useMemo(() => getLocalProgressSyncSignature(), [progressByEquation])
+
+  const setSidebarOpenAndPersist = useCallback((nextOpen: boolean | ((current: boolean) => boolean)) => {
+    setSidebarOpen((current) => {
+      const resolvedOpen = typeof nextOpen === "function" ? nextOpen(current) : nextOpen
+      updateSettings("sidebarCollapsed", !resolvedOpen)
+      return resolvedOpen
+    })
+  }, [updateSettings])
+
+  const toggleTheme = useCallback(() => {
+    updateSettings("theme", resolvedTheme === "dark" ? "light" : "dark")
+  }, [resolvedTheme, updateSettings])
 
   useEffect(() => {
-    localStorage.setItem("sciencebouk-sidebar", String(sidebarOpen))
-  }, [sidebarOpen])
-
-  useEffect(() => {
-    if (isPro && completedCount > 0 && !localStorage.getItem("sciencebouk-sync-dismissed")) {
-      setShowSync(true)
+    if (!isPro || syncSignature === "[]") {
+      setShowSync(false)
+      return
     }
-  }, [isPro, completedCount])
+
+    setShowSync(localStorage.getItem("sciencebouk-sync-dismissed") !== syncSignature)
+  }, [isPro, syncSignature])
 
   const selectedEquation = useMemo(
     () => equationManifest.find((equation) => equation.id === rawSelectedId) ?? null,
@@ -109,7 +103,7 @@ export default function App(): ReactElement {
         if (index > 0) selectEquation(equationManifest[index - 1].id)
       } else if (event.key === "/" || (event.key === "k" && (event.metaKey || event.ctrlKey))) {
         event.preventDefault()
-        if (!sidebarOpen) setSidebarOpen(true)
+        if (!sidebarOpen) setSidebarOpenAndPersist(true)
         setTimeout(() => searchInputRef.current?.focus(), 50)
       } else if (event.key === "Escape") {
         setSearchQuery("")
@@ -117,7 +111,7 @@ export default function App(): ReactElement {
         setShowShortcuts(false)
       } else if (event.key === "[" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
-        setSidebarOpen((current) => !current)
+        setSidebarOpenAndPersist((current) => !current)
       } else if (event.key === "?") {
         event.preventDefault()
         setShowShortcuts((current) => !current)
@@ -134,7 +128,7 @@ export default function App(): ReactElement {
 
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [navigate, selectEquation, selectEquationFromShortcut, selectedId, sidebarOpen])
+  }, [navigate, selectEquation, selectEquationFromShortcut, selectedId, sidebarOpen, setSidebarOpenAndPersist])
 
   const currentIndex = equationManifest.findIndex((equation) => equation.id === selectedId)
   const prevEquation = currentIndex > 0 ? equationManifest[currentIndex - 1] : null
@@ -158,7 +152,7 @@ export default function App(): ReactElement {
             sidebarOpen={sidebarOpen}
             drawerOpen={drawerOpen}
             searchQuery={searchQuery}
-            dark={dark}
+            dark={resolvedTheme === "dark"}
             completedCount={completedCount}
             total={total}
             totalTimeMinutes={totalTimeMinutes}
@@ -174,8 +168,8 @@ export default function App(): ReactElement {
             onSearchChange={setSearchQuery}
             onClearSearch={() => setSearchQuery("")}
             onOpenDrawer={setDrawerOpen}
-            onToggleSidebar={() => setSidebarOpen((current) => !current)}
-            onToggleTheme={() => setDark((current) => !current)}
+            onToggleSidebar={() => setSidebarOpenAndPersist((current) => !current)}
+            onToggleTheme={toggleTheme}
             onGoHome={() => navigate("/")}
             onOpenProfile={() => {
               setDrawerOpen(false)
@@ -226,7 +220,18 @@ export default function App(): ReactElement {
         />
 
         <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
-        {showSync && <SyncPrompt onClose={() => { setShowSync(false); localStorage.setItem("sciencebouk-sync-dismissed", "1") }} />}
+        {showSync && (
+          <SyncPrompt
+            onDismiss={() => {
+              setShowSync(false)
+              localStorage.setItem("sciencebouk-sync-dismissed", syncSignature)
+            }}
+            onSynced={() => {
+              setShowSync(false)
+              localStorage.setItem("sciencebouk-sync-dismissed", syncSignature)
+            }}
+          />
+        )}
       </main>
     </TooltipProvider>
   )
