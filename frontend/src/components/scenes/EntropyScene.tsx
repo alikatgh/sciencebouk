@@ -5,7 +5,9 @@ import {
   scaleLinear,
   line,
   range,
+  drag,
   type Selection,
+  type D3DragEvent,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
@@ -295,15 +297,71 @@ function D3EntropyVisual({ temperature, onVarChange }: Props): ReactElement {
     }
 
     // Graph dot + drop line (will be updated)
-    g.append("circle").attr("class", "graph-dot").attr("r", 5)
-      .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
     g.append("line").attr("class", "graph-drop")
       .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
+
+    // Draggable graph dot — large hit area for easy grab
+    const dotGroup = g.append("g").attr("class", "graph-dot-group").style("cursor", "grab")
+    dotGroup.append("circle").attr("class", "graph-dot-hit").attr("r", 18).attr("fill", "transparent")
+    dotGroup.append("circle").attr("class", "graph-dot").attr("r", 6)
+      .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
+
+    const tempDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select(".graph-dot").transition().duration(100).attr("r", 8)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newTemp = gxScale.invert(event.x)
+        const clamped = Math.max(0, Math.min(100, Math.round(newTemp)))
+        onVarChangeRef.current('temperature', clamped)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        select(this).select(".graph-dot").transition().duration(100).attr("r", 6)
+      })
+
+    dotGroup.call(tempDragBehavior)
+
+    // Temperature slider bar beneath the graph
+    const sliderY = H * 0.72
+    const sliderX1 = gxL
+    const sliderX2 = gxR
+    g.append("line").attr("x1", sliderX1).attr("y1", sliderY).attr("x2", sliderX2).attr("y2", sliderY)
+      .attr("stroke", "#cbd5e1").attr("stroke-width", 4).attr("stroke-linecap", "round")
+
+    const sliderHandle = g.append("g").attr("class", "temp-slider-handle").style("cursor", "grab")
+    sliderHandle.append("rect")
+      .attr("x", -15).attr("y", -15).attr("width", 30).attr("height", 30)
+      .attr("fill", "transparent")
+    sliderHandle.append("circle").attr("class", "slider-thumb").attr("r", 8)
+      .attr("fill", "#3b82f6").attr("stroke", "white").attr("stroke-width", 2)
+    sliderHandle.append("text").attr("class", "slider-label").attr("y", -14).attr("text-anchor", "middle")
+      .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#3b82f6")
+
+    const sliderScale = scaleLinear().domain([0, 100]).range([sliderX1, sliderX2])
+
+    const sliderDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select(".slider-thumb").transition().duration(100).attr("r", 10)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newTemp = sliderScale.invert(event.x)
+        const clamped = Math.max(0, Math.min(100, Math.round(newTemp)))
+        onVarChangeRef.current('temperature', clamped)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        select(this).select(".slider-thumb").transition().duration(100).attr("r", 8)
+      })
+
+    sliderHandle.call(sliderDragBehavior)
 
     // Drag hint
     g.append("text").attr("x", W / 2).attr("y", H - 12).attr("text-anchor", "middle")
       .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-      .text("Drag the temperature in the formula above to explore entropy")
+      .text("Drag the dot on the graph or the slider to change temperature")
 
     return () => { select(container).select("svg").remove() }
   }, [W, H])
@@ -349,9 +407,16 @@ function D3EntropyVisual({ temperature, onVarChange }: Props): ReactElement {
     const cx = gxScale(temperature)
     const cy = gyScale(entropyNorm)
 
-    g.select(".graph-dot").transition().duration(dur).attr("cx", cx).attr("cy", cy)
+    g.select(".graph-dot-group").transition().duration(dur).attr("transform", `translate(${cx},${cy})`)
     g.select(".graph-drop").transition().duration(dur)
       .attr("x1", cx).attr("y1", cy).attr("x2", cx).attr("y2", gyB)
+
+    // Update temperature slider handle
+    const sliderScale = scaleLinear().domain([0, 100]).range([gxL, gxR])
+    const sliderX = sliderScale(temperature)
+    g.select(".temp-slider-handle").transition().duration(dur)
+      .attr("transform", `translate(${sliderX},${H * 0.72})`)
+    g.select(".slider-label").text(`T=${temperature}`)
   }, [temperature, W, H])
 
   return (

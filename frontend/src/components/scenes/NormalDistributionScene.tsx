@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
   CartesianGrid, ReferenceLine, Tooltip as RTooltip,
@@ -65,6 +65,10 @@ interface NormalChartProps {
 function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProps): ReactElement {
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const onVarChangeRef = useRef(onVarChange)
+  onVarChangeRef.current = onVarChange
 
   const handleBadgeClick = useCallback((varName: string, currentValue: number) => {
     setEditingVar(varName)
@@ -88,6 +92,42 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
       onVarChange("mu", Math.max(-3, Math.min(3, Math.round(x * 10) / 10)))
     }
   }, [onVarChange])
+
+  // Pointer-drag to change mu
+  const xDomainMin = mu - 4 * sigma
+  const xDomainMax = mu + 4 * sigma
+
+  const pointerToMu = useCallback((clientX: number): number => {
+    const el = chartContainerRef.current
+    if (!el) return mu
+    const rect = el.getBoundingClientRect()
+    // Recharts margins: left=10 + yAxis width ~45 = 55, right=20
+    const chartLeft = rect.left + 55
+    const chartRight = rect.right - 20
+    const chartWidth = chartRight - chartLeft
+    const frac = (clientX - chartLeft) / chartWidth
+    const val = xDomainMin + frac * (xDomainMax - xDomainMin)
+    return Math.round(Math.max(-3, Math.min(3, val)) * 10) / 10
+  }, [mu, sigma, xDomainMin, xDomainMax])
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    setIsDragging(true)
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    if (onVarChangeRef.current) {
+      onVarChangeRef.current("mu", pointerToMu(e.clientX))
+    }
+  }, [pointerToMu])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return
+    if (onVarChangeRef.current) {
+      onVarChangeRef.current("mu", pointerToMu(e.clientX))
+    }
+  }, [isDragging, pointerToMu])
+
+  const handlePointerUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
 
   const data = useMemo(() => {
     const xMin = mu - 4 * sigma
@@ -140,9 +180,16 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
         </div>
 
         {/* Chart */}
-        <div className="min-h-0 flex-1" style={{ minHeight: 300 }}>
+        <div ref={chartContainerRef} className="relative min-h-0 flex-1" style={{ minHeight: 300 }}>
+          <div
+            className="absolute inset-0 z-10"
+            style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          />
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 10 }} onClick={handleChartClick} style={{ cursor: "crosshair" }}>
+            <ComposedChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 10 }} style={{ cursor: isDragging ? "grabbing" : "grab" }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis
                 dataKey="x" type="number"

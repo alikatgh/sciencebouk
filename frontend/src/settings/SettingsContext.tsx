@@ -63,13 +63,13 @@ export function useSettings(): SettingsContextValue {
 
 function load(): Settings {
   try {
-    const raw = localStorage.getItem("formulas-settings")
+    const raw = localStorage.getItem("sciencebouk-settings")
     return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : { ...DEFAULTS }
   } catch { return { ...DEFAULTS } }
 }
 
 function save(s: Settings) {
-  localStorage.setItem("formulas-settings", JSON.stringify(s))
+  localStorage.setItem("sciencebouk-settings", JSON.stringify(s))
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }): ReactElement {

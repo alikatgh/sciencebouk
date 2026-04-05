@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import {
   ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis,
   CartesianGrid, ReferenceLine, ReferenceDot, Tooltip as RTooltip,
@@ -112,6 +112,48 @@ interface CalculusChartProps {
 function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement {
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
+  const chartWrapperRef = useRef<HTMLDivElement>(null)
+
+  // Recharts chart margins — must match the ComposedChart margin prop
+  const chartMargin = useMemo(() => ({ top: 10, right: 30, bottom: 24, left: 10 }), [])
+  const xDomain: [number, number] = [0, 10.5]
+  const yAxisWidth = 40
+
+  /** Convert a clientX pixel position to a data-space x value */
+  const clientXToDataX = useCallback((clientX: number): number | null => {
+    const wrapper = chartWrapperRef.current
+    if (!wrapper) return null
+    const rect = wrapper.getBoundingClientRect()
+    const plotLeft = rect.left + chartMargin.left + yAxisWidth
+    const plotRight = rect.right - chartMargin.right
+    const plotWidth = plotRight - plotLeft
+    if (plotWidth <= 0) return null
+    const ratio = (clientX - plotLeft) / plotWidth
+    return xDomain[0] + ratio * (xDomain[1] - xDomain[0])
+  }, [chartMargin, yAxisWidth])
+
+  const handleDragStart = useCallback((e: React.PointerEvent) => {
+    // Only start drag if near the blue dot
+    const dataX = clientXToDataX(e.clientX)
+    if (dataX == null) return
+    if (Math.abs(dataX - t) > 0.6) return // too far from the dot
+    setIsDragging(true)
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    e.preventDefault()
+  }, [clientXToDataX, t])
+
+  const handleDragMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging || !onVarChange) return
+    const dataX = clientXToDataX(e.clientX)
+    if (dataX == null) return
+    const clamped = Math.max(0.5, Math.min(9.5, Math.round(dataX * 10) / 10))
+    onVarChange("t", clamped)
+  }, [isDragging, clientXToDataX, onVarChange])
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false)
+  }, [])
 
   const handleBadgeClick = useCallback((varName: string, currentValue: number) => {
     setEditingVar(varName)
@@ -208,9 +250,17 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
         </div>
 
         {/* Chart */}
-        <div className="min-h-0 flex-1">
+        <div
+          ref={chartWrapperRef}
+          className="min-h-0 flex-1"
+          style={{ cursor: isDragging ? "grabbing" : "crosshair", touchAction: "none" }}
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDragMove}
+          onPointerUp={handleDragEnd}
+          onPointerCancel={handleDragEnd}
+        >
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart margin={{ top: 10, right: 30, bottom: 24, left: 10 }} onClick={handleChartClick} style={{ cursor: "crosshair" }}>
+            <ComposedChart margin={{ top: 10, right: 30, bottom: 24, left: 10 }} onClick={isDragging ? undefined : handleChartClick} style={{ cursor: isDragging ? "grabbing" : "crosshair" }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis
                 dataKey="x" type="number"
@@ -283,14 +333,15 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               <ReferenceLine x={t} stroke={VAR_COLORS.primary} strokeDasharray="4 3" strokeWidth={1} opacity={0.4} />
               <ReferenceLine x={t + h} stroke={VAR_COLORS.secondary} strokeDasharray="4 3" strokeWidth={1} opacity={0.3} />
 
-              {/* Primary point (blue) */}
+              {/* Primary point (blue) — draggable */}
               <ReferenceDot
                 x={t}
                 y={f(t)}
-                r={10}
+                r={isDragging ? 13 : 10}
                 fill={VAR_COLORS.primary}
                 stroke="white"
                 strokeWidth={3}
+                style={{ cursor: isDragging ? "grabbing" : "grab", filter: isDragging ? "drop-shadow(0 0 6px rgba(59,130,246,0.5))" : undefined }}
               />
 
               {/* Second point (amber) */}

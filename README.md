@@ -1,4 +1,4 @@
-# Formulas — Interactive Math Education Platform
+# Sciencebouk — Interactive Math Education Platform
 
 An interactive web application that brings 17 landmark mathematical equations to life through rich visualizations, hands-on exploration, and guided lessons.
 

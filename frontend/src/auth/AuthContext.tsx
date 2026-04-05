@@ -58,16 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   const [loading, setLoading] = useState(true)
 
   const saveTokens = useCallback((tokens: Tokens) => {
-    localStorage.setItem("formulas-access", tokens.access)
-    localStorage.setItem("formulas-refresh", tokens.refresh)
+    localStorage.setItem("sciencebouk-access", tokens.access)
+    localStorage.setItem("sciencebouk-refresh", tokens.refresh)
   }, [])
 
   const clearTokens = useCallback(() => {
-    localStorage.removeItem("formulas-access")
-    localStorage.removeItem("formulas-refresh")
+    localStorage.removeItem("sciencebouk-access")
+    localStorage.removeItem("sciencebouk-refresh")
   }, [])
 
-  const getAccessToken = useCallback(() => localStorage.getItem("formulas-access"), [])
+  const getAccessToken = useCallback(() => localStorage.getItem("sciencebouk-access"), [])
 
   const fetchMe = useCallback(async (token: string) => {
     const data = await fetchJSON<User>("/auth/me/", {
@@ -77,15 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   }, [])
 
   const refreshToken = useCallback(async (): Promise<string | null> => {
-    const refresh = localStorage.getItem("formulas-refresh")
+    const refresh = localStorage.getItem("sciencebouk-refresh")
     if (!refresh) return null
     try {
       const data = await fetchJSON<{ access: string; refresh?: string }>("/auth/refresh/", {
         method: "POST",
         body: JSON.stringify({ refresh }),
       })
-      localStorage.setItem("formulas-access", data.access)
-      if (data.refresh) localStorage.setItem("formulas-refresh", data.refresh)
+      localStorage.setItem("sciencebouk-access", data.access)
+      if (data.refresh) localStorage.setItem("sciencebouk-refresh", data.refresh)
       return data.access
     } catch {
       clearTokens()
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   // Boot: check for existing tokens
   useEffect(() => {
     const boot = async () => {
-      const access = localStorage.getItem("formulas-access")
+      const access = localStorage.getItem("sciencebouk-access")
       if (!access) { setLoading(false); return }
       try {
         await fetchMe(access)

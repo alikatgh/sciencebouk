@@ -6,6 +6,8 @@ import {
   line,
   range,
   curveBasis,
+  drag,
+  type D3DragEvent,
   type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
@@ -85,7 +87,7 @@ export function FourierScene(): ReactElement {
         { label: "Rich", values: { a1: 1.0, a2: 0.5, a3: 0.33, a4: 0.25 } },
       ]}
     >
-      {({ vars, highlightedVar, setHighlightedVar }) => (
+      {({ vars, setVar, highlightedVar, setHighlightedVar }) => (
         <D3FourierVisual
           a1={vars.a1}
           a2={vars.a2}
@@ -93,6 +95,7 @@ export function FourierScene(): ReactElement {
           a4={vars.a4}
           highlightedVar={highlightedVar}
           onHighlight={setHighlightedVar}
+          onVarChange={setVar}
         />
       )}
     </TeachableEquation>
@@ -106,14 +109,17 @@ interface D3FourierVisualProps {
   a4: number
   highlightedVar: string | null
   onHighlight: (name: string | null) => void
+  onVarChange: (name: string, value: number) => void
 }
 
-function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight }: D3FourierVisualProps): ReactElement {
+function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarChange }: D3FourierVisualProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
   const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onHighlightRef = useRef(onHighlight)
   onHighlightRef.current = onHighlight
+  const onVarChangeRef = useRef(onVarChange)
+  onVarChangeRef.current = onVarChange
   const [playing, setPlaying] = useState(true)
 
   // Refs for animation
@@ -241,6 +247,8 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight }: D3Four
     const spectrumW = spectrumRight - spectrumLeft
     const spectrumBarW = spectrumW * 0.15
     const spectrumBarScale = scaleLinear().domain([0, 5]).range([spectrumLeft + spectrumW * 0.07, spectrumLeft + spectrumW * 0.93])
+    const spectrumBarH = spectrumBottom - spectrumTop
+    const spectrumAmpScale = scaleLinear().domain([0, 1]).range([spectrumBottom, spectrumTop])
     for (let i = 0; i < 4; i++) {
       const bx = spectrumBarScale(i + 1) - spectrumBarW / 2
       g.append("rect").attr("class", `spectrum-bar-${i}`)
@@ -251,6 +259,34 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight }: D3Four
         .attr("x", bx + spectrumBarW / 2).attr("y", spectrumBottom + H * 0.038)
         .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#64748b")
         .text(`${i + 1}f`)
+
+      // Drag handle on top of each bar
+      const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab")
+      // Invisible hit area (min 30px)
+      handleG.append("rect").attr("class", `spectrum-hit-${i}`)
+        .attr("x", bx - 4).attr("width", spectrumBarW + 8).attr("height", Math.max(30, spectrumBarH))
+        .attr("y", spectrumTop).attr("fill", "transparent")
+      // Visible handle circle
+      handleG.append("circle").attr("class", `spectrum-knob-${i}`)
+        .attr("cx", bx + spectrumBarW / 2).attr("r", 7)
+        .attr("fill", "white").attr("stroke", HARMONIC_COLORS[i]).attr("stroke-width", 2.5)
+
+      const barDrag = drag<SVGGElement, unknown>()
+        .on("start", function () {
+          select(this).style("cursor", "grabbing")
+          select(this).select(`circle`).transition().duration(100)
+            .attr("r", 10).attr("stroke-width", 3)
+        })
+        .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+          const newVal = Math.max(0, Math.min(1, spectrumAmpScale.invert(event.y)))
+          onVarChangeRef.current(harmonicNames[i], Math.round(newVal * 20) / 20)
+        })
+        .on("end", function () {
+          select(this).style("cursor", "grab")
+          select(this).select(`circle`).transition().duration(100)
+            .attr("r", 7).attr("stroke-width", 2.5)
+        })
+      handleG.call(barDrag)
     }
 
     // Equation readout
@@ -340,7 +376,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight }: D3Four
         g.select(`.harmonic-path-${i}`).attr("d", hPath).attr("opacity", amps[i] > 0 ? 1 : 0.2)
       }
 
-      // Spectrum bars
+      // Spectrum bars + drag handles
       const spectrumH = spectrumBottom - spectrumTop
       for (let i = 0; i < 4; i++) {
         const barH = spectrumH * (amps[i] / 1.2)
@@ -349,6 +385,8 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight }: D3Four
           .attr("y", spectrumBottom - barH)
           .attr("height", barH)
           .attr("opacity", amps[i] > 0 ? 0.85 : 0.15)
+        g.select(`.spectrum-knob-${i}`)
+          .attr("cy", spectrumBottom - barH)
       }
 
       rafRef.current = requestAnimationFrame(animate)

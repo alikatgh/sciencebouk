@@ -6,7 +6,9 @@ import {
   line,
   range,
   curveMonotoneX,
+  drag,
   type Selection,
+  type D3DragEvent,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
@@ -195,6 +197,62 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       .attr("x", barX0).attr("y", barY3).attr("height", barH).attr("rx", 6)
       .attr("fill", "#f5b942")
 
+    // Draggable handle on logx bar
+    const xDragHandle = g.append("g").attr("class", "x-drag-handle").style("cursor", "ew-resize")
+    xDragHandle.append("rect")
+      .attr("x", -15).attr("y", barY1 - 5).attr("width", 30).attr("height", barH + 10)
+      .attr("fill", "transparent")
+    xDragHandle.append("circle")
+      .attr("cy", barY1 + barH / 2).attr("r", 7)
+      .attr("fill", "#6585ff").attr("stroke", "white").attr("stroke-width", 2)
+
+    const xValueScale = scaleLinear().domain([1, 100]).range([barX0, barX0 + barMaxW])
+
+    const xDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select("circle").transition().duration(100).attr("r", 9)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newX = xValueScale.invert(event.x)
+        const clamped = Math.max(1, Math.min(100, Math.round(newX)))
+        onVarChangeRef.current('x', clamped)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "ew-resize")
+        select(this).select("circle").transition().duration(100).attr("r", 7)
+      })
+
+    xDragHandle.call(xDragBehavior)
+
+    // Draggable handle on logy bar
+    const yDragHandle = g.append("g").attr("class", "y-drag-handle").style("cursor", "ew-resize")
+    yDragHandle.append("rect")
+      .attr("x", -15).attr("y", barY2 - 5).attr("width", 30).attr("height", barH + 10)
+      .attr("fill", "transparent")
+    yDragHandle.append("circle")
+      .attr("cy", barY2 + barH / 2).attr("r", 7)
+      .attr("fill", "#57b59a").attr("stroke", "white").attr("stroke-width", 2)
+
+    const yValueScale = scaleLinear().domain([1, 100]).range([barX0, barX0 + barMaxW])
+
+    const yDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select("circle").transition().duration(100).attr("r", 9)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newY = yValueScale.invert(event.x)
+        const clamped = Math.max(1, Math.min(100, Math.round(newY)))
+        onVarChangeRef.current('y', clamped)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "ew-resize")
+        select(this).select("circle").transition().duration(100).attr("r", 7)
+      })
+
+    yDragHandle.call(yDragBehavior)
+
     // Divider line inside combined bar
     g.append("line").attr("class", "logxy-divider")
       .attr("y1", barY3 + 2).attr("y2", barY3 + barH - 2)
@@ -245,8 +303,29 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
     // Dot on curve for x
     g.append("line").attr("class", "curve-vline")
       .attr("stroke", "#6585ff").attr("stroke-width", 1.5).attr("stroke-dasharray", "4 3")
-    g.append("circle").attr("class", "curve-dot")
-      .attr("r", 6).attr("fill", "#6585ff").attr("stroke", "white").attr("stroke-width", 2)
+
+    // Draggable curve dot
+    const curveDotGroup = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab")
+    curveDotGroup.append("circle").attr("r", 18).attr("fill", "transparent")
+    curveDotGroup.append("circle").attr("class", "curve-dot").attr("r", 6)
+      .attr("fill", "#6585ff").attr("stroke", "white").attr("stroke-width", 2)
+
+    const curveDotDrag = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select(".curve-dot").transition().duration(100).attr("r", 8)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newX = cxScale.invert(event.x)
+        const clamped = Math.max(1, Math.min(100, Math.round(newX)))
+        onVarChangeRef.current('x', clamped)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        select(this).select(".curve-dot").transition().duration(100).attr("r", 6)
+      })
+
+    curveDotGroup.call(curveDotDrag)
 
     // --- Values panel ---
     const panelX = curveLeft
@@ -284,7 +363,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
     g.append("text")
       .attr("x", W / 2).attr("y", H - H * 0.033)
       .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-      .text("\u2190 drag sliders in the formula to change x and y \u2192")
+      .text("Drag the dots on the bars or curve to change x and y")
 
     return () => { select(container).select("svg").remove() }
   }, [W, H])
@@ -317,10 +396,20 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
     // Curve dot + vertical line
     const dotCx = cxScale(Math.min(xVal, 100))
     const dotCy = cyScale(logX)
-    g.select(".curve-dot").transition().duration(dur).attr("cx", dotCx).attr("cy", dotCy)
+    g.select(".curve-dot-group").transition().duration(dur)
+      .attr("transform", `translate(${dotCx},${dotCy})`)
     g.select(".curve-vline").transition().duration(dur)
       .attr("x1", dotCx).attr("y1", dotCy)
       .attr("x2", dotCx).attr("y2", cyScale(0))
+
+    // Position x and y drag handles at end of their bars
+    const xValueScale = scaleLinear().domain([1, 100]).range([barX0, barX0 + barMaxW])
+    const xHandlePos = barX0 + barScale(Math.max(0.01, logX))
+    g.select(".x-drag-handle").transition().duration(dur)
+      .attr("transform", `translate(${xHandlePos},0)`)
+    const yHandlePos = barX0 + barScale(Math.max(0.01, logY))
+    g.select(".y-drag-handle").transition().duration(dur)
+      .attr("transform", `translate(${yHandlePos},0)`)
 
     // Values panel text
     g.select(".val-logx").text(`log\u2081\u2080(${xVal}) = ${logX.toFixed(4)}`)

@@ -4,7 +4,7 @@ import { Github, Crown, ExternalLink } from "lucide-react"
 import { TopNav } from "./TopNav"
 import { Button } from "./ui/button"
 
-const GITHUB_URL = "https://github.com/AlikNovell/formulas"
+const GITHUB_URL = "https://github.com/alikatgh/sciencebouk"
 
 export default function AboutPage(): ReactElement {
   const navigate = useNavigate()

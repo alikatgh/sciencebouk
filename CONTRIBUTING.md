@@ -1,4 +1,4 @@
-# Contributing to Formulas
+# Contributing to Sciencebouk
 
 ## Development Setup
 
