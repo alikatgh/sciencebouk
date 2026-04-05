@@ -5,7 +5,7 @@ import { EquationIdProvider } from "./teaching/EquationContext"
 
 export type ScenePresentation = "standard" | "immersive"
 
-const immersiveSceneIds = new Set<number>([12])
+const immersiveSceneIds = new Set<number>([])
 
 const PythagorasScene = lazy(() => import("./scenes/PythagorasScene").then((m) => ({ default: m.PythagorasScene })))
 const LogarithmScene = lazy(() => import("./scenes/LogarithmScene").then((m) => ({ default: m.LogarithmScene })))
