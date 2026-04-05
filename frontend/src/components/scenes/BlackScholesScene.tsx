@@ -1,9 +1,6 @@
 import type { ReactElement } from "react"
 import { useCallback, useMemo, useState } from "react"
-import {
-  ResponsiveContainer, ComposedChart, Line, XAxis, YAxis,
-  CartesianGrid, ReferenceLine, Tooltip as RTooltip,
-} from "recharts"
+import { buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
@@ -147,13 +144,6 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
     setEditingVar(null)
   }, [editingVar, editValue, onVarChange])
 
-  const handleChartClick = useCallback((data: any) => {
-    if (data?.activePayload?.[0]?.payload?.S != null && onVarChange) {
-      const s = Number(data.activePayload[0].payload.S)
-      onVarChange("K", Math.max(50, Math.min(150, Math.round(s))))
-    }
-  }, [onVarChange])
-
   const data = useMemo(() => {
     const pts: Array<{
       S: number
@@ -184,6 +174,73 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
     const maxPut = Math.max(...data.map(p => p.put))
     return Math.max(maxCall, maxPut, 50) * 1.1
   }, [data])
+  const frame = useChartFrame({
+    margin: { top: 24, right: showGreeks ? 56 : 30, bottom: 30, left: 58 },
+    minHeight: 320,
+    xDomain: [20, 200],
+    yDomain: [0, Math.ceil(maxPrice)],
+    y2Domain: showGreeks ? [0, 1.2] : undefined,
+  })
+  const handleChartClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!onVarChange) return
+    const s = frame.clientXToX(event.clientX)
+    if (s == null) return
+    onVarChange("K", Math.max(50, Math.min(150, Math.round(s))))
+  }, [frame, onVarChange])
+  const xTicks = useMemo(() => getTicks([20, 200], 10), [])
+  const yTicks = useMemo(() => getTicks([0, Math.ceil(maxPrice)], 6), [maxPrice])
+  const y2Ticks = useMemo(() => (showGreeks ? getTicks([0, 1.2], 5) : []), [showGreeks])
+  const y2Scale = frame.y2Scale
+  const intrinsicCallPath = useMemo(() => buildLinePath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.S,
+    y: (point) => point.intrinsicCall,
+  }), [data, frame.xScale, frame.yScale])
+  const intrinsicPutPath = useMemo(() => buildLinePath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.S,
+    y: (point) => point.intrinsicPut,
+  }), [data, frame.xScale, frame.yScale])
+  const callPath = useMemo(() => buildLinePath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.S,
+    y: (point) => point.call,
+  }), [data, frame.xScale, frame.yScale])
+  const putPath = useMemo(() => buildLinePath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.S,
+    y: (point) => point.put,
+  }), [data, frame.xScale, frame.yScale])
+  const deltaPath = useMemo(() => (
+    showGreeks && frame.y2Scale
+      ? buildLinePath({
+          data,
+          xScale: frame.xScale,
+          yScale: frame.y2Scale,
+          x: (point) => point.S,
+          y: (point) => point.delta,
+        })
+      : ""
+  ), [data, frame.xScale, frame.y2Scale, showGreeks])
+  const gammaPath = useMemo(() => (
+    showGreeks && frame.y2Scale
+      ? buildLinePath({
+          data,
+          xScale: frame.xScale,
+          yScale: frame.y2Scale,
+          x: (point) => point.S,
+          y: (point) => point.gamma,
+        })
+      : ""
+  ), [data, frame.xScale, frame.y2Scale, showGreeks])
 
   const renderBadge = (varName: string, label: string, value: number, format: (v: number) => string, color: string) => {
     if (editingVar === varName) {
@@ -212,71 +269,93 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
         </div>
 
         {/* Chart */}
-        <div className="min-h-0 flex-1" style={{ minHeight: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 24, right: 30, bottom: 24, left: 10 }} onClick={handleChartClick} style={{ cursor: "crosshair" }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="S" type="number"
-                domain={[20, 200]}
-                tickCount={10}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                label={{ value: "Underlying Price (S)", position: "bottom", offset: 2, fill: "#64748b", fontSize: 13, fontWeight: 600 }}
+        <div
+          ref={frame.containerRef}
+          className="min-h-0 flex-1"
+          style={{ minHeight: 300, cursor: "crosshair" }}
+          onClick={handleChartClick}
+        >
+          <svg width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+            {xTicks.map((tick) => (
+              <line
+                key={`grid-x-${tick}`}
+                x1={frame.xScale(tick)}
+                x2={frame.xScale(tick)}
+                y1={frame.plotTop}
+                y2={frame.plotBottom}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <YAxis
-                domain={[0, Math.ceil(maxPrice)]}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                tickFormatter={(v: number) => v.toFixed(0)}
-                width={50}
-                label={{ value: "Option Price", angle: -90, position: "insideLeft", fill: "#64748b", fontSize: 13, fontWeight: 600 }}
+            ))}
+            {yTicks.map((tick) => (
+              <line
+                key={`grid-y-${tick}`}
+                x1={frame.plotLeft}
+                x2={frame.plotRight}
+                y1={frame.yScale(tick)}
+                y2={frame.yScale(tick)}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <RTooltip
-                contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }}
-                formatter={(value: any, name: any) => {
-                  const label = name === "call" ? "Call" : name === "put" ? "Put" : name === "intrinsicCall" ? "Intrinsic Call" : name === "intrinsicPut" ? "Intrinsic Put" : name === "delta" ? "Delta" : name === "gamma" ? "Gamma" : name
-                  return [`$${Number(value).toFixed(2)}`, label]
-                }}
-                labelFormatter={(label: any) => `S = $${label}`}
-              />
+            ))}
+            <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
+            <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
+            {showGreeks && frame.y2Scale && (
+              <line x1={frame.plotRight} x2={frame.plotRight} y1={frame.plotTop} y2={frame.plotBottom} stroke="#f59e0b" />
+            )}
 
-              {/* Intrinsic values (dashed) */}
-              <Line dataKey="intrinsicCall" stroke="#5a79ff" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} opacity={0.4} />
-              <Line dataKey="intrinsicPut" stroke="#10b981" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} opacity={0.4} />
+            <path d={intrinsicCallPath} fill="none" stroke="#5a79ff" strokeWidth={2} strokeDasharray="6 4" opacity={0.4} />
+            <path d={intrinsicPutPath} fill="none" stroke="#10b981" strokeWidth={2} strokeDasharray="6 4" opacity={0.4} />
+            <path d={callPath} fill="none" stroke="#5a79ff" strokeWidth={3} />
+            <path d={putPath} fill="none" stroke="#10b981" strokeWidth={3} />
+            {showGreeks && deltaPath && <path d={deltaPath} fill="none" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 3" />}
+            {showGreeks && gammaPath && <path d={gammaPath} fill="none" stroke="#ef4444" strokeWidth={2} strokeDasharray="4 3" />}
 
-              {/* Option price curves */}
-              <Line dataKey="call" stroke="#5a79ff" strokeWidth={3} dot={false} isAnimationActive={false} />
-              <Line dataKey="put" stroke="#10b981" strokeWidth={3} dot={false} isAnimationActive={false} />
+            <line x1={frame.xScale(K)} x2={frame.xScale(K)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeWidth={1.5} strokeDasharray="6 4" />
+            <text x={frame.xScale(K)} y={frame.plotTop + 14} textAnchor="middle" fontSize="14" fontWeight="700" fill={VAR_COLORS.primary}>
+              K = {K}
+            </text>
 
-              {/* Greeks (conditional) */}
-              {showGreeks && (
-                <Line dataKey="delta" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 3" dot={false} isAnimationActive={false} yAxisId="greeks" />
-              )}
-              {showGreeks && (
-                <Line dataKey="gamma" stroke="#ef4444" strokeWidth={2} strokeDasharray="4 3" dot={false} isAnimationActive={false} yAxisId="greeks" />
-              )}
-              {showGreeks && (
-                <YAxis
-                  yAxisId="greeks"
-                  orientation="right"
-                  domain={[0, 1.2]}
-                  tick={{ fontSize: 10, fill: "#f59e0b" }}
-                  axisLine={{ stroke: "#f59e0b" }}
-                  width={40}
-                />
-              )}
+            {xTicks.map((tick) => (
+              <g key={`tick-x-${tick}`}>
+                <line x1={frame.xScale(tick)} x2={frame.xScale(tick)} y1={frame.plotBottom} y2={frame.plotBottom + 6} stroke="#cbd5e1" />
+                <text x={frame.xScale(tick)} y={frame.plotBottom + 18} textAnchor="middle" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(0)}
+                </text>
+              </g>
+            ))}
+            {yTicks.map((tick) => (
+              <g key={`tick-y-${tick}`}>
+                <line x1={frame.plotLeft - 6} x2={frame.plotLeft} y1={frame.yScale(tick)} y2={frame.yScale(tick)} stroke="#cbd5e1" />
+                <text x={frame.plotLeft - 10} y={frame.yScale(tick) + 4} textAnchor="end" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(0)}
+                </text>
+              </g>
+            ))}
+            {showGreeks && y2Scale && y2Ticks.map((tick) => (
+              <g key={`tick-y2-${tick}`}>
+                <line x1={frame.plotRight} x2={frame.plotRight + 6} y1={y2Scale(tick)} y2={y2Scale(tick)} stroke="#f59e0b" />
+                <text x={frame.plotRight + 10} y={y2Scale(tick) + 4} textAnchor="start" fontSize="10" fill="#f59e0b">
+                  {tick.toFixed(1)}
+                </text>
+              </g>
+            ))}
 
-              {/* Strike price line */}
-              <ReferenceLine
-                x={K}
-                stroke={VAR_COLORS.primary}
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                label={{ value: `K = ${K}`, position: "top", fill: VAR_COLORS.primary, fontSize: 14, fontWeight: 700 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+            <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
+              Underlying Price (S)
+            </text>
+            <text
+              x={18}
+              y={(frame.plotTop + frame.plotBottom) / 2}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#64748b"
+              fontWeight="600"
+              transform={`rotate(-90 18 ${(frame.plotTop + frame.plotBottom) / 2})`}
+            >
+              Option Price
+            </text>
+          </svg>
         </div>
 
         {/* Legend + Greeks toggle */}

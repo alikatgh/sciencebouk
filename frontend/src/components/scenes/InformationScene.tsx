@@ -1,9 +1,11 @@
 import type { ReactElement } from "react"
 import { useMemo, useState, useCallback } from "react"
 import {
-  ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, ReferenceLine, ReferenceDot, Tooltip as RTooltip,
-} from "recharts"
+  buildAreaPath,
+  buildLinePath,
+  getTicks,
+  useChartFrame,
+} from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
@@ -63,6 +65,12 @@ interface InformationChartProps {
 function InformationChart({ prob, onVarChange }: InformationChartProps): ReactElement {
   const entropy = shannonEntropy(prob)
   const q = 1 - prob
+  const frame = useChartFrame({
+    margin: { top: 20, right: 30, bottom: 36, left: 50 },
+    minHeight: 300,
+    xDomain: [0, 1],
+    yDomain: [0, 1.1],
+  })
 
   const [flips, setFlips] = useState<boolean[]>([])
   const [lastOutcome, setLastOutcome] = useState<string | null>(null)
@@ -95,12 +103,13 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
     setEditingVar(null)
   }, [editingVar, editValue, onVarChange])
 
-  const handleChartClick = useCallback((data: any) => {
-    if (data?.activePayload?.[0]?.payload?.x != null && onVarChange) {
-      const x = Number(data.activePayload[0].payload.x)
+  const handleChartClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (onVarChange) {
+      const x = frame.clientXToX(event.clientX)
+      if (x == null) return
       onVarChange("p", Math.max(0.01, Math.min(0.99, Math.round(x * 100) / 100)))
     }
-  }, [onVarChange])
+  }, [frame, onVarChange])
 
   const data = useMemo(() => {
     const pts: Array<{ x: number; y: number; fill?: number }> = []
@@ -119,6 +128,23 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
   const tails = flips.length - heads
   const surpriseH = prob > 0 ? -Math.log2(prob) : Infinity
   const surpriseT = q > 0 ? -Math.log2(q) : Infinity
+  const xTicks = useMemo(() => getTicks([0, 1], 5), [])
+  const yTicks = useMemo(() => getTicks([0, 1.1], 5), [])
+  const fillPath = useMemo(() => buildAreaPath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y0: () => 0,
+    y1: (point) => point.fill ?? 0,
+  }), [data, frame.xScale, frame.yScale])
+  const linePath = useMemo(() => buildLinePath({
+    data,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y: (point) => point.y,
+  }), [data, frame.xScale, frame.yScale])
 
   return (
     <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -140,74 +166,82 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
         </div>
 
         {/* Chart area */}
-        <div className="min-h-0 flex-1" style={{ minHeight: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 10 }} onClick={handleChartClick} style={{ cursor: "crosshair" }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="x" type="number"
-                domain={[0, 1]}
-                tickCount={6}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                label={{ value: "Probability p", position: "bottom", offset: 0, fill: "#94a3b8", fontSize: 13 }}
+        <div
+          ref={frame.containerRef}
+          className="min-h-0 flex-1"
+          style={{ minHeight: 300, cursor: "crosshair" }}
+          onClick={handleChartClick}
+        >
+          <svg width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+            {xTicks.map((tick) => (
+              <line
+                key={`grid-x-${tick}`}
+                x1={frame.xScale(tick)}
+                x2={frame.xScale(tick)}
+                y1={frame.plotTop}
+                y2={frame.plotBottom}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <YAxis
-                domain={[0, 1.1]}
-                tick={{ fontSize: 12, fill: "#94a3b8" }}
-                axisLine={{ stroke: "#cbd5e1" }}
-                tickFormatter={(v: number) => v.toFixed(1)}
-                width={40}
-                label={{ value: "H (bits)", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 13 }}
+            ))}
+            {yTicks.map((tick) => (
+              <line
+                key={`grid-y-${tick}`}
+                x1={frame.plotLeft}
+                x2={frame.plotRight}
+                y1={frame.yScale(tick)}
+                y2={frame.yScale(tick)}
+                stroke="#f1f5f9"
+                strokeDasharray="3 3"
               />
-              <RTooltip
-                contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }}
-                formatter={(value: any) => [Number(value).toFixed(4), "H(p)"]}
-                labelFormatter={(label: any) => `p = ${Number(label).toFixed(3)}`}
-              />
+            ))}
 
-              {/* Area fill up to current p */}
-              <Area dataKey="fill" fill={VAR_COLORS.primary} stroke="none" fillOpacity={0.15} isAnimationActive={false} />
+            <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
+            <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
-              {/* Entropy curve */}
-              <Line dataKey="y" stroke="#1e40af" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+            {fillPath && <path d={fillPath} fill={VAR_COLORS.primary} opacity={0.15} />}
+            <path d={linePath} fill="none" stroke="#1e40af" strokeWidth={2.5} />
 
-              {/* Max entropy reference line at H=1 */}
-              <ReferenceLine
-                y={1}
-                stroke="#f59e0b"
-                strokeDasharray="4 4"
-                strokeWidth={1}
-                label={{ value: "max = 1 bit", position: "right", fill: "#f59e0b", fontSize: 11, fontWeight: 600 }}
-              />
+            <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.yScale(1)} y2={frame.yScale(1)} stroke="#f59e0b" strokeDasharray="4 4" />
+            <line x1={frame.xScale(0.5)} x2={frame.xScale(0.5)} y1={frame.plotTop} y2={frame.plotBottom} stroke="#f59e0b" strokeDasharray="4 4" />
+            <line x1={frame.xScale(prob)} x2={frame.xScale(prob)} y1={frame.plotTop} y2={frame.plotBottom} stroke="#ef4444" strokeDasharray="4 3" />
+            <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={7} fill="#ef4444" stroke="white" strokeWidth={2} />
 
-              {/* p=0.5 reference line */}
-              <ReferenceLine
-                x={0.5}
-                stroke="#f59e0b"
-                strokeDasharray="4 4"
-                strokeWidth={1}
-              />
+            <text x={frame.plotRight - 4} y={frame.yScale(1) - 6} textAnchor="end" fontSize="11" fontWeight="600" fill="#f59e0b">
+              max = 1 bit
+            </text>
 
-              {/* Current p vertical reference */}
-              <ReferenceLine
-                x={prob}
-                stroke="#ef4444"
-                strokeDasharray="4 3"
-                strokeWidth={1}
-              />
+            {xTicks.map((tick) => (
+              <g key={`tick-x-${tick}`}>
+                <line x1={frame.xScale(tick)} x2={frame.xScale(tick)} y1={frame.plotBottom} y2={frame.plotBottom + 6} stroke="#cbd5e1" />
+                <text x={frame.xScale(tick)} y={frame.plotBottom + 18} textAnchor="middle" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(1)}
+                </text>
+              </g>
+            ))}
+            {yTicks.map((tick) => (
+              <g key={`tick-y-${tick}`}>
+                <line x1={frame.plotLeft - 6} x2={frame.plotLeft} y1={frame.yScale(tick)} y2={frame.yScale(tick)} stroke="#cbd5e1" />
+                <text x={frame.plotLeft - 10} y={frame.yScale(tick) + 4} textAnchor="end" fontSize="12" fill="#94a3b8">
+                  {tick.toFixed(1)}
+                </text>
+              </g>
+            ))}
 
-              {/* Current point */}
-              <ReferenceDot
-                x={prob}
-                y={entropy}
-                r={7}
-                fill="#ef4444"
-                stroke="white"
-                strokeWidth={2}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+            <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#94a3b8">
+              Probability p
+            </text>
+            <text
+              x={16}
+              y={(frame.plotTop + frame.plotBottom) / 2}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#94a3b8"
+              transform={`rotate(-90 16 ${(frame.plotTop + frame.plotBottom) / 2})`}
+            >
+              H (bits)
+            </text>
+          </svg>
         </div>
 
         {/* Coin flip simulator + entropy display */}
