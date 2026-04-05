@@ -1,12 +1,13 @@
 import type { ReactElement } from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { ArrowLeft } from "lucide-react"
 import { AuthModal } from "./auth/AuthModal"
 import { useAuth } from "./auth/AuthContext"
 import { EquationBrowserSidebar } from "./components/app-shell/EquationBrowserSidebar"
 import { EquationHeader } from "./components/app-shell/EquationHeader"
 import { ShortcutOverlay } from "./components/app-shell/ShortcutOverlay"
-import { EquationVisualization } from "./components/EquationVisualization"
+import { EquationVisualization, getScenePresentation } from "./components/EquationVisualization"
 import { SyncPrompt } from "./components/SyncPrompt"
 import { FormulaProvider } from "./components/teaching/FormulaContext"
 import { TooltipProvider } from "./components/ui/tooltip"
@@ -88,6 +89,8 @@ export default function App(): ReactElement {
   }, [selectEquation])
 
   const selectedId = selectedEquation?.id ?? firstEquationId
+  const scenePresentation = getScenePresentation(selectedId)
+  const immersiveScene = scenePresentation === "immersive"
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -139,6 +142,36 @@ export default function App(): ReactElement {
 
   if (!selectedEquation) {
     return <main className="h-screen bg-slate-50 dark:bg-slate-950" />
+  }
+
+  if (immersiveScene) {
+    return (
+      <TooltipProvider delayDuration={400}>
+        <main className="relative h-screen overflow-hidden bg-[radial-gradient(circle_at_top,#f8fbff_0%,#eef3ff_58%,#e8eef9_100%)] dark:bg-[radial-gradient(circle_at_top,#12192b_0%,#0b1120_58%,#060913_100%)]">
+          <button
+            onClick={() => navigate("/")}
+            type="button"
+            aria-label="Back to atlas"
+            className="absolute left-4 top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-500 shadow-sm backdrop-blur transition hover:text-slate-900 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+
+          <FormulaProvider value={selectedEquation.formula}>
+            <EquationVisualization equationId={selectedEquation.id} />
+          </FormulaProvider>
+
+          <ShortcutOverlay
+            open={showShortcuts}
+            showZeroShortcut={equationManifest.length >= 10}
+            shortcutJumpMax={shortcutJumpMax}
+            shiftedShortcutMax={shiftedShortcutMax}
+            onClose={() => setShowShortcuts(false)}
+          />
+          <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
+        </main>
+      </TooltipProvider>
+    )
   }
 
   return (

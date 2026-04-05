@@ -176,7 +176,7 @@ export default function SettingsPage(): ReactElement {
         </Card>
 
         {/* ── Two-column middle row ── */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid items-start gap-4 lg:grid-cols-2">
 
           {/* Interaction & Motion */}
           <Card>
@@ -207,6 +207,15 @@ export default function SettingsPage(): ReactElement {
                   </SettingRow>
                 </>
               )}
+              <Separator />
+              <SettingRow label="Language">
+                <SegmentedControl value={settings.language} onChange={(v) => update("language", v)}
+                  options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }, { value: "fr", label: "FR" }, { value: "de", label: "DE" }, { value: "ru", label: "RU" }]} />
+              </SettingRow>
+              <Separator />
+              <SettingRow label="Keyboard shortcuts" description="Show hints in UI">
+                <Switch checked={settings.showKeyboardShortcuts} onCheckedChange={(v) => update("showKeyboardShortcuts", v)} />
+              </SettingRow>
             </CardContent>
           </Card>
 
@@ -228,21 +237,12 @@ export default function SettingsPage(): ReactElement {
                   options={[{ value: "small", label: "S" }, { value: "medium", label: "M" }, { value: "large", label: "L" }]} />
               </SettingRow>
               <Separator />
-              <SettingRow label="Language">
-                <SegmentedControl value={settings.language} onChange={(v) => update("language", v)}
-                  options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }, { value: "fr", label: "FR" }, { value: "de", label: "DE" }, { value: "ru", label: "RU" }]} />
-              </SettingRow>
-              <Separator />
               <SettingRow label="High contrast" description="Better readability">
                 <Switch checked={settings.highContrast} onCheckedChange={(v) => update("highContrast", v)} />
               </SettingRow>
               <Separator />
               <SettingRow label="Color blind mode" description="Patterns + colors">
                 <Switch checked={settings.colorBlindMode} onCheckedChange={(v) => update("colorBlindMode", v)} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Keyboard shortcuts" description="Show hints in UI">
-                <Switch checked={settings.showKeyboardShortcuts} onCheckedChange={(v) => update("showKeyboardShortcuts", v)} />
               </SettingRow>
               <Separator />
               <SettingRow label="Sidebar collapsed" description="Start with sidebar closed">
