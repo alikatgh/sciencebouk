@@ -1,11 +1,7 @@
 import type { ReactElement } from "react"
 import { useEffect, useRef, useState } from "react"
-import {
-  select,
-  drag,
-  type Selection,
-  type D3DragEvent,
-} from "d3"
+import { drag, type D3DragEvent } from "d3-drag"
+import { select, type Selection } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"

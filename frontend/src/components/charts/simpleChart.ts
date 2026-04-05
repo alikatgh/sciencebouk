@@ -1,5 +1,6 @@
-import { area as d3Area, line as d3Line, scaleLinear } from "d3"
-import type { ScaleLinear } from "d3"
+import { scaleLinear } from "d3-scale"
+import type { ScaleLinear } from "d3-scale"
+import { area as d3Area, line as d3Line } from "d3-shape"
 import { useCallback, useMemo, useRef } from "react"
 import type { RefObject } from "react"
 import { useContainerSize } from "../../hooks/useContainerSize"

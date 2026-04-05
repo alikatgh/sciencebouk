@@ -75,26 +75,28 @@ export function ScientistModal({ open, onClose, equationId }: ScientistModalProp
           </div>
         </div>
 
-        <Separator className="my-3" />
+        <Separator className="my-4" />
 
-        {/* Fun fact */}
-        <div className="flex items-start gap-3 rounded-lg bg-amber-50 px-3 py-2.5 dark:bg-amber-950/20">
-          <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-          <p className="text-sm text-amber-800 dark:text-amber-300">{scientist.funFact}</p>
-        </div>
+        <div className="space-y-3">
+          {/* Fun fact */}
+          <div className="flex items-start gap-3 rounded-lg bg-amber-50 px-4 py-3 dark:bg-amber-950/20">
+            <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+            <p className="text-sm text-amber-800 dark:text-amber-300">{scientist.funFact}</p>
+          </div>
 
-        {/* Impact */}
-        <div className="flex items-start gap-3 rounded-lg bg-ocean/5 px-3 py-2.5 dark:bg-ocean/10">
-          <Lightbulb className="mt-0.5 h-4 w-4 flex-shrink-0 text-ocean" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ocean">Why it matters</p>
-            <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{scientist.impact}</p>
+          {/* Impact */}
+          <div className="flex items-start gap-3 rounded-lg bg-ocean/5 px-4 py-3 dark:bg-ocean/10">
+            <Lightbulb className="mt-0.5 h-4 w-4 flex-shrink-0 text-ocean" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-ocean">Why it matters</p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{scientist.impact}</p>
+            </div>
           </div>
         </div>
 
         {/* Links */}
         {scientist.links.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {scientist.links.map((link) => (
               <Button key={link.url} variant="outline" size="sm" asChild>
                 <a href={link.url} target="_blank" rel="noopener noreferrer" className="gap-1.5">

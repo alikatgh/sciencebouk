@@ -1,70 +1,73 @@
 import type { ReactElement } from "react"
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Cloud, Loader2, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { motion } from "framer-motion"
+import { Cloud, Check } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"
 import { getLocalProgressSyncItems } from "../progress/useProgress"
-import { Button } from "./ui/button"
 
 interface SyncPromptProps {
   onDismiss: () => void
   onSynced: () => void
 }
 
+/**
+ * Auto-syncs localStorage progress to the server for Pro users.
+ * Shows a brief "Synced!" toast — no user action required.
+ * Only triggers once per session when there's unsynced data.
+ */
 export function SyncPrompt({ onDismiss, onSynced }: SyncPromptProps): ReactElement | null {
   const { isPro } = useAuth()
-  const [syncing, setSyncing] = useState(false)
+  const [status, setStatus] = useState<"idle" | "syncing" | "done">("idle")
+  const attempted = useRef(false)
 
   const localItems = getLocalProgressSyncItems()
 
-  if (!isPro || localItems.length === 0) return null
-
-  const handleSync = async () => {
-    setSyncing(true)
-    try {
-      await api.progress.bulkSync(localItems)
-      onSynced()
-    } catch {
-      setSyncing(false)
+  // Auto-sync on mount — no user interaction needed
+  useEffect(() => {
+    if (!isPro || localItems.length === 0 || attempted.current) {
+      onDismiss()
+      return
     }
-  }
+    attempted.current = true
+    setStatus("syncing")
+
+    api.progress.bulkSync(localItems)
+      .then(() => {
+        setStatus("done")
+        // Auto-dismiss after showing success briefly
+        setTimeout(() => {
+          onSynced()
+        }, 2000)
+      })
+      .catch(() => {
+        // Silent fail — will retry next session
+        onDismiss()
+      })
+  }, [isPro, localItems.length, onDismiss, onSynced])
+
+  if (status === "idle" || localItems.length === 0) return null
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-x-0 bottom-4 z-50 mx-auto max-w-md px-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-      >
-        <div className="flex items-center gap-3 rounded-2xl border border-ocean/20 bg-white px-4 py-3 shadow-lg dark:border-ocean/30 dark:bg-slate-800">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-ocean/10">
-            <Cloud className="h-4 w-4 text-ocean" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              Sync your progress
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Found progress on {localItems.length} equation{localItems.length !== 1 ? "s" : ""}. Save to your account?
-            </p>
-          </div>
-          <div className="flex flex-shrink-0 items-center gap-1.5">
-            <Button
-              size="sm"
-              onClick={handleSync}
-              disabled={syncing}
-              className="bg-ocean text-white hover:bg-ocean/90"
-            >
-              {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Sync"}
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={onDismiss} className="text-slate-400">
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      className="fixed inset-x-0 bottom-4 z-50 mx-auto max-w-xs px-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+    >
+      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-md dark:border-slate-700 dark:bg-slate-800">
+        {status === "syncing" ? (
+          <>
+            <Cloud className="h-4 w-4 animate-pulse text-ocean" />
+            <p className="text-xs text-slate-500">Syncing {localItems.length} equations...</p>
+          </>
+        ) : (
+          <>
+            <Check className="h-4 w-4 text-emerald-500" />
+            <p className="text-xs text-emerald-600 dark:text-emerald-400">Progress synced</p>
+          </>
+        )}
+      </div>
+    </motion.div>
   )
 }
