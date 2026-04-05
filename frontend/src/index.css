@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --slider-color: #4f73ff;
+  --slider-glow: #25a67f;
+  color: #112236;
+  background:
+    radial-gradient(circle at top left, rgba(115, 219, 200, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(255, 213, 106, 0.12), transparent 22%),
+    linear-gradient(180deg, #fbf8f1 0%, #f7f4ec 50%, #f3efe5 100%);
+  font-family: "Manrope", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 768px) {
+  :root {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    font-size: 18px;
+  }
+}
+
+.dark {
+  color: #e2e8f0;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.katex-display {
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.125rem;
+}
+
+/* Make KaTeX formulas readable */
+.katex {
+  font-size: 1.15em !important;
+}
+
+/* Larger formulas in the main content area */
+section .katex {
+  font-size: 1.3em !important;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@layer base {
+  * {
+    @apply border-slate-200 dark:border-slate-700;
+  }
+
+  body {
+    @apply text-ink dark:text-slate-200;
+  }
+
+  button {
+    @apply font-medium;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-[28px] border border-stone-200 bg-white/90 shadow-panel backdrop-blur dark:border-slate-700 dark:bg-slate-800/90;
+  }
+
+  .soft-ring {
+    box-shadow:
+      0 0 0 6px rgba(27, 141, 99, 0.08),
+      0 20px 40px rgba(32, 56, 47, 0.12);
+  }
+}
+
+.science-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--slider-color), var(--slider-glow));
+  outline: none;
+}
+
+.science-slider::-webkit-slider-runnable-track {
+  height: 0.72rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--slider-color), var(--slider-glow));
+}
+
+.science-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: -0.2rem;
+  border-radius: 999px;
+  border: 3px solid var(--slider-color);
+  background: white;
+  box-shadow: 0 8px 18px rgba(17, 34, 54, 0.18);
+}
+
+.science-slider::-moz-range-track {
+  height: 0.72rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--slider-color), var(--slider-glow));
+}
+
+.science-slider::-moz-range-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 3px solid var(--slider-color);
+  background: white;
+  box-shadow: 0 8px 18px rgba(17, 34, 54, 0.18);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid currentColor;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  cursor: grab;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid currentColor;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  cursor: grab;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Settings: reduced motion (manual toggle) */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Settings: high contrast */
+.high-contrast {
+  --tw-ring-color: #000 !important;
+}
+.high-contrast .text-slate-400,
+.high-contrast .text-slate-500 {
+  color: #374151 !important;
+}
+.dark.high-contrast .text-slate-400,
+.dark.high-contrast .text-slate-500 {
+  color: #d1d5db !important;
+}
+.high-contrast .border-slate-200 {
+  border-color: #6b7280 !important;
+}
+
+/* Settings: color blind mode — add patterns to colored elements */
+.color-blind .bg-emerald-100 { background-image: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 6px); }
+.color-blind .bg-ocean { background-image: repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.15) 3px, rgba(255,255,255,0.15) 6px); }
+
+/* Settings: formula scale */
+.katex { transform: scale(var(--formula-scale, 1)); transform-origin: left center; }
+
+/* Settings: animation speed multiplier */
+:root { --animation-speed: 1; }
