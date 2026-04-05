@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AuthProvider } from "./auth/AuthContext"
 import { SettingsProvider } from "./settings/SettingsContext"
+import "katex/dist/katex.min.css"
 import "./index.css"
 
 const App = lazy(() => import("./App"))

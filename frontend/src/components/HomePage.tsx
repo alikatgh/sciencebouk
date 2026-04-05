@@ -13,7 +13,7 @@ import { TopNav } from "./TopNav"
 import { subjects } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
-import { formatFormulaPreview } from "../lib/formatFormulaPreview"
+import { InlineMath } from "react-katex"
 
 const HeroDemo = lazy(() =>
   import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
@@ -35,7 +35,7 @@ const iconMap: Record<string, ReactElement> = {
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
     <span className={muted ? "text-slate-300 dark:text-slate-600" : undefined}>
-      {formatFormulaPreview(formula)}
+      <InlineMath math={formula} />
     </span>
   )
 }
