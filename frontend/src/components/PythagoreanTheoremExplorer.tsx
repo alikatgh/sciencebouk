@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
-import { drag, pointer, select, type D3DragEvent } from "d3";
+import { pointer, select } from "d3-selection";
+import { drag, type D3DragEvent } from "d3-drag";
 
 interface Point {
   x: number;

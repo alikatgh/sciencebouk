@@ -30,15 +30,11 @@
     "d3": "^7.9.0",
     "framer-motion": "^12.6.3",
     "katex": "^0.16.11",
-    "konva": "^10.2.3",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-katex": "^3.1.0",
-    "react-konva": "^19.2.3",
     "react-router-dom": "^7.14.0",
-    "react-use-measure": "^2.1.7",
-    "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {

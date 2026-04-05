@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { useCallback, useState } from "react"
-import { Volume2, VolumeX, Type, Eye, Palette, Gauge, Globe, Keyboard, RotateCcw, Trash2 } from "lucide-react"
+import { BlockMath, InlineMath } from "react-katex"
+import { Volume2, VolumeX, Type, Palette, Gauge, Globe, Keyboard, RotateCcw, Trash2, BookOpen, Sparkles, GraduationCap, Lightbulb, Target } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"
 import { Button } from "./ui/button"
@@ -48,6 +49,41 @@ function SegmentedControl({ value, onChange, options }: {
   )
 }
 
+function FormulaPreview({ settings }: { settings: Settings }): ReactElement {
+  const scale = settings.formulaSize / 100
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 px-5 py-4 dark:from-slate-800/60 dark:via-blue-950/20 dark:to-indigo-950/10"
+      style={{ fontSize: `${scale}em` }}
+    >
+      <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500" style={{ fontSize: '10px' }}>
+        Live preview
+      </p>
+      <div className="flex flex-col gap-2">
+        {settings.showFormulaLetters && (
+          <div className="text-slate-800 dark:text-slate-200">
+            <InlineMath math="E = mc^{2}" />
+          </div>
+        )}
+        {settings.showFormulaNumbers && (
+          <div className="text-blue-700 dark:text-blue-300">
+            <InlineMath math="9 \times 10^{16} = 1 \times (3 \times 10^{8})^{2}" />
+          </div>
+        )}
+        {settings.showResultNote && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 italic" style={{ fontSize: '12px' }}>
+            A small amount of mass converts to an enormous amount of energy.
+          </p>
+        )}
+        {!settings.showFormulaLetters && !settings.showFormulaNumbers && !settings.showResultNote && (
+          <p className="text-xs text-slate-400 italic" style={{ fontSize: '12px' }}>All formula display options are off</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage(): ReactElement {
   const { isAuthenticated } = useAuth()
   const { settings, update, reset } = useSettings()
@@ -70,70 +106,83 @@ export default function SettingsPage(): ReactElement {
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Settings</span>} />
 
-      <div className="mx-auto max-w-4xl px-4 py-6">
-        {/* 2-column grid on wide screens */}
+      <div className="mx-auto max-w-4xl px-4 py-6 space-y-4">
+
+        {/* ── Learning Experience — full-width hero ── */}
+        <Card className="border-blue-100 dark:border-blue-900/30">
+          <CardHeader className="pb-0">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <GraduationCap className="h-4 w-4 text-blue-500" /> Learning Experience
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3">
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Left: Formula Display controls + preview */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Formula Display
+                </p>
+                <SettingRow label="Formula size" description={`${settings.formulaSize}%`}>
+                  <Slider className="w-28" min={75} max={150} step={5}
+                    value={[settings.formulaSize]} onValueChange={([v]) => update("formulaSize", v)} trackColor="#3b82f6" />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Letter formula" description="a² + b² = c²">
+                  <Switch checked={settings.showFormulaLetters} onCheckedChange={(v) => update("showFormulaLetters", v)} />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Live numbers" description="3² + 4² = 5²">
+                  <Switch checked={settings.showFormulaNumbers} onCheckedChange={(v) => update("showFormulaNumbers", v)} />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Result description" description="Human explanation">
+                  <Switch checked={settings.showResultNote} onCheckedChange={(v) => update("showResultNote", v)} />
+                </SettingRow>
+
+                <div className="mt-3">
+                  <FormulaPreview settings={settings} />
+                </div>
+              </div>
+
+              {/* Right: Learning behavior */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Guidance
+                </p>
+                <SettingRow label="Difficulty">
+                  <SegmentedControl value={settings.difficulty} onChange={(v) => update("difficulty", v as Settings["difficulty"])}
+                    options={[{ value: "beginner", label: "Beginner" }, { value: "intermediate", label: "Mid" }, { value: "advanced", label: "Advanced" }]} />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Auto-start lessons" description="Begin guided lesson on open">
+                  <Switch checked={settings.autoStartLesson} onCheckedChange={(v) => update("autoStartLesson", v)} />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Show hints" description="After 10s of inactivity">
+                  <Switch checked={settings.showHints} onCheckedChange={(v) => update("showHints", v)} />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Show context" description="Real-world hooks">
+                  <Switch checked={settings.showHookText} onCheckedChange={(v) => update("showHookText", v)} />
+                </SettingRow>
+                <Separator />
+                <SettingRow label="Daily goal" description={`${settings.dailyGoalMinutes} min/day`}>
+                  <Slider className="w-28" min={5} max={60} step={5}
+                    value={[settings.dailyGoalMinutes]} onValueChange={([v]) => update("dailyGoalMinutes", v)} trackColor="#10b981" />
+                </SettingRow>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Two-column middle row ── */}
         <div className="grid gap-4 lg:grid-cols-2">
 
-          {/* Appearance */}
+          {/* Interaction & Motion */}
           <Card>
             <CardHeader className="pb-0">
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Palette className="h-4 w-4 text-slate-400" /> Appearance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <SettingRow label="Theme" description="Light, dark, or follow system">
-                <SegmentedControl value={settings.theme} onChange={(v) => update("theme", v as Settings["theme"])}
-                  options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }, { value: "system", label: "System" }]} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Font size" description="Text size across the app">
-                <SegmentedControl value={settings.fontSize} onChange={(v) => update("fontSize", v as Settings["fontSize"])}
-                  options={[{ value: "small", label: "S" }, { value: "medium", label: "M" }, { value: "large", label: "L" }]} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="High contrast" description="Better readability">
-                <Switch checked={settings.highContrast} onCheckedChange={(v) => update("highContrast", v)} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Color blind mode" description="Patterns + colors">
-                <Switch checked={settings.colorBlindMode} onCheckedChange={(v) => update("colorBlindMode", v)} />
-              </SettingRow>
-            </CardContent>
-          </Card>
-
-          {/* Formula Display */}
-          <Card>
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Type className="h-4 w-4 text-slate-400" /> Formula Display
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <SettingRow label="Formula size" description={`${settings.formulaSize}%`}>
-                <Slider className="w-28" min={75} max={150} step={5}
-                  value={[settings.formulaSize]} onValueChange={([v]) => update("formulaSize", v)} trackColor="#3b82f6" />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Letter formula" description="a² + b² = c²">
-                <Switch checked={settings.showFormulaLetters} onCheckedChange={(v) => update("showFormulaLetters", v)} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Live numbers" description="3² + 4² = 5²">
-                <Switch checked={settings.showFormulaNumbers} onCheckedChange={(v) => update("showFormulaNumbers", v)} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Result description" description="Human explanation">
-                <Switch checked={settings.showResultNote} onCheckedChange={(v) => update("showResultNote", v)} />
-              </SettingRow>
-            </CardContent>
-          </Card>
-
-          {/* Animation & Sound */}
-          <Card>
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Gauge className="h-4 w-4 text-slate-400" /> Animation & Sound
+                <Gauge className="h-4 w-4 text-slate-400" /> Interaction & Motion
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
@@ -161,49 +210,35 @@ export default function SettingsPage(): ReactElement {
             </CardContent>
           </Card>
 
-          {/* Learning */}
+          {/* App Preferences */}
           <Card>
             <CardHeader className="pb-0">
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Eye className="h-4 w-4 text-slate-400" /> Learning
+                <Palette className="h-4 w-4 text-slate-400" /> App Preferences
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
-              <SettingRow label="Difficulty">
-                <SegmentedControl value={settings.difficulty} onChange={(v) => update("difficulty", v as Settings["difficulty"])}
-                  options={[{ value: "beginner", label: "Beginner" }, { value: "intermediate", label: "Mid" }, { value: "advanced", label: "Advanced" }]} />
+              <SettingRow label="Theme" description="Light, dark, or follow system">
+                <SegmentedControl value={settings.theme} onChange={(v) => update("theme", v as Settings["theme"])}
+                  options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }, { value: "system", label: "System" }]} />
               </SettingRow>
               <Separator />
-              <SettingRow label="Auto-start lessons" description="Begin guided lesson on open">
-                <Switch checked={settings.autoStartLesson} onCheckedChange={(v) => update("autoStartLesson", v)} />
+              <SettingRow label="Font size" description="Text size across the app">
+                <SegmentedControl value={settings.fontSize} onChange={(v) => update("fontSize", v as Settings["fontSize"])}
+                  options={[{ value: "small", label: "S" }, { value: "medium", label: "M" }, { value: "large", label: "L" }]} />
               </SettingRow>
               <Separator />
-              <SettingRow label="Show hints" description="After 10s of inactivity">
-                <Switch checked={settings.showHints} onCheckedChange={(v) => update("showHints", v)} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Show context" description="Real-world hooks">
-                <Switch checked={settings.showHookText} onCheckedChange={(v) => update("showHookText", v)} />
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Daily goal" description={`${settings.dailyGoalMinutes} min/day`}>
-                <Slider className="w-28" min={5} max={60} step={5}
-                  value={[settings.dailyGoalMinutes]} onValueChange={([v]) => update("dailyGoalMinutes", v)} trackColor="#10b981" />
-              </SettingRow>
-            </CardContent>
-          </Card>
-
-          {/* Layout & Accessibility */}
-          <Card>
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Globe className="h-4 w-4 text-slate-400" /> Layout & Accessibility
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
               <SettingRow label="Language">
                 <SegmentedControl value={settings.language} onChange={(v) => update("language", v)}
                   options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }, { value: "fr", label: "FR" }, { value: "de", label: "DE" }, { value: "ru", label: "RU" }]} />
+              </SettingRow>
+              <Separator />
+              <SettingRow label="High contrast" description="Better readability">
+                <Switch checked={settings.highContrast} onCheckedChange={(v) => update("highContrast", v)} />
+              </SettingRow>
+              <Separator />
+              <SettingRow label="Color blind mode" description="Patterns + colors">
+                <Switch checked={settings.colorBlindMode} onCheckedChange={(v) => update("colorBlindMode", v)} />
               </SettingRow>
               <Separator />
               <SettingRow label="Keyboard shortcuts" description="Show hints in UI">
@@ -216,31 +251,28 @@ export default function SettingsPage(): ReactElement {
             </CardContent>
           </Card>
 
-          {/* Danger Zone */}
-          <Card className="border-red-200 dark:border-red-900/50">
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                <Trash2 className="h-4 w-4" /> Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <SettingRow label="Reset settings" description="Restore all to defaults">
-                <Button variant="outline" size="sm" onClick={reset}>
-                  <RotateCcw className="h-3 w-3" /> Reset
-                </Button>
-              </SettingRow>
-              <Separator />
-              <SettingRow label="Clear progress" description="Erase all completed equations">
-                <Button variant="destructive" size="sm" onClick={clearProgress} disabled={clearingProgress}>
-                  <Trash2 className="h-3 w-3" /> Clear
-                </Button>
-              </SettingRow>
-            </CardContent>
-          </Card>
-
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-300 dark:text-slate-700">
+        {/* ── Data — quiet, no drama ── */}
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <RotateCcw className="h-4 w-4" /> Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="outline" size="sm" onClick={reset}>
+                <RotateCcw className="h-3 w-3" /> Reset settings
+              </Button>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30" onClick={clearProgress} disabled={clearingProgress}>
+                <Trash2 className="h-3 w-3" /> Clear progress
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <p className="mt-2 text-center text-xs text-slate-300 dark:text-slate-700">
           Formulas v0.1.0 · sciencebo.uk
         </p>
       </div>
