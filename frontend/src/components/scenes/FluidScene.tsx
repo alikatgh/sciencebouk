@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import {
   select,
   scaleLinear,
@@ -10,7 +10,6 @@ import {
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
-import { useContainerSize } from "../../hooks/useContainerSize"
 
 const F = "Manrope, sans-serif"
 
@@ -144,279 +143,335 @@ interface Props {
 
 function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { width: W, height: H } = useContainerSize(containerRef)
-  const OBSTACLE_R = Math.min(W, H) * 0.09
-  const [obstaclePos, setObstaclePos] = useState({ x: W * 0.47, y: H * 0.45 })
-  const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
 
+  // Live values — updated by React props sync and read by animation loop / drag
+  const liveRef = useRef({ viscosity, flowSpeed, obstacleX: 0, obstacleY: 0 })
+  const draggingRef = useRef(false)
   const particlesRef = useRef<ParticleState[]>([])
-  const obstacleRef = useRef({ x: obstaclePos.x, y: obstaclePos.y, r: OBSTACLE_R })
-  obstacleRef.current = { x: obstaclePos.x, y: obstaclePos.y, r: OBSTACLE_R }
-  const viscosityRef = useRef(viscosity)
-  viscosityRef.current = viscosity
-  const flowSpeedRef = useRef(flowSpeed)
-  flowSpeedRef.current = flowSpeed
   const rafRef = useRef(0)
   const prevTimeRef = useRef(0)
 
-  // Reset obstacle position on resize
+  // Store the arrow-update function so the sync effect can call it
+  const updateArrowsRef = useRef<(() => void) | null>(null)
+
+  // Sync React props to live refs when not dragging (handles slider changes, presets)
   useEffect(() => {
-    if (W > 100 && H > 100) {
-      setObstaclePos({ x: W * 0.47, y: H * 0.45 })
+    liveRef.current.viscosity = viscosity
+    liveRef.current.flowSpeed = flowSpeed
+    if (!draggingRef.current) {
+      updateArrowsRef.current?.()
     }
-  }, [W, H])
+  }, [viscosity, flowSpeed])
 
-  // Setup -- rebuilds on resize
+  // ═══════════════════════════════════════════════════════════════
+  // Main SVG — created ONCE, rebuilt only on container resize.
+  // Drag updates go through D3 directly, not React.
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
-    const container = containerRef.current
-    if (!container || W < 100 || H < 100) return
-    select(container).select("svg").remove()
+    const el = containerRef.current
+    if (!el) return
 
-    const svg = select(container)
-      .append("svg")
-      .attr("width", W)
-      .attr("height", H)
-      .style("display", "block")
-      .style("touch-action", "none")
-      .attr("role", "img")
-      .attr("aria-label", "Navier-Stokes fluid flow around an obstacle")
+    let currentW = 0
+    let currentH = 0
 
-    svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+    function buildSVG() {
+      if (!el) return
+      select(el).select("svg").remove()
+      cancelAnimationFrame(rafRef.current)
+      prevTimeRef.current = 0
 
-    // Gradient for velocity legend
-    const defs = svg.append("defs")
-    const grad = defs.append("linearGradient").attr("id", "velGrad-d3")
-      .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%")
-    grad.append("stop").attr("offset", "0%").attr("stop-color", "#1e40af")
-    grad.append("stop").attr("offset", "50%").attr("stop-color", "#06b6d4")
-    grad.append("stop").attr("offset", "100%").attr("stop-color", "#ef4444")
+      const rect = el.getBoundingClientRect()
+      const W = Math.round(rect.width) || 800
+      const H = Math.round(rect.height) || 500
+      if (W < 100 || H < 100) return
+      currentW = W
+      currentH = H
 
-    // Flow arrow marker
-    defs.append("marker").attr("id", "flowArr")
-      .attr("markerWidth", 8).attr("markerHeight", 8).attr("refX", 8).attr("refY", 4).attr("orient", "auto")
-      .append("polygon").attr("points", "0,0 8,4 0,8").attr("fill", "#1e293b")
+      const OBSTACLE_R = Math.min(W, H) * 0.09
 
-    const g = svg.append("g")
-    gRef.current = g
+      // Initialize obstacle position
+      liveRef.current.obstacleX = W * 0.47
+      liveRef.current.obstacleY = H * 0.45
 
-    // Title
-    g.append("text").attr("x", W / 2).attr("y", 28).attr("text-anchor", "middle")
-      .attr("font-size", 18).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
-      .text("Navier-Stokes: Flow Around an Obstacle")
+      const svg = select(el)
+        .append("svg")
+        .attr("width", W)
+        .attr("height", H)
+        .style("display", "block")
+        .style("touch-action", "none")
+        .attr("role", "img")
+        .attr("aria-label", "Navier-Stokes fluid flow around an obstacle")
 
-    // Vector field group
-    g.append("g").attr("class", "arrows-group")
+      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
 
-    // Particles group
-    g.append("g").attr("class", "particles-group")
+      // Gradient for velocity legend
+      const defs = svg.append("defs")
+      const grad = defs.append("linearGradient").attr("id", "velGrad-d3")
+        .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%")
+      grad.append("stop").attr("offset", "0%").attr("stop-color", "#1e40af")
+      grad.append("stop").attr("offset", "50%").attr("stop-color", "#06b6d4")
+      grad.append("stop").attr("offset", "100%").attr("stop-color", "#ef4444")
 
-    // Draggable obstacle
-    const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab")
-      .attr("transform", `translate(${obstaclePos.x},${obstaclePos.y})`)
-    obstacleGroup.append("circle").attr("r", OBSTACLE_R)
-      .attr("fill", "#1e293b")
-    obstacleGroup.append("circle").attr("r", OBSTACLE_R)
-      .attr("fill", "none").attr("stroke", "#475569").attr("stroke-width", 2)
-    // Invisible larger hit area
-    obstacleGroup.append("circle").attr("r", OBSTACLE_R + 15)
-      .attr("fill", "transparent")
-    obstacleGroup.append("text").attr("y", -OBSTACLE_R - 10).attr("text-anchor", "middle")
-      .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
-      .text("drag me")
+      // Flow arrow marker
+      defs.append("marker").attr("id", "flowArr")
+        .attr("markerWidth", 8).attr("markerHeight", 8).attr("refX", 8).attr("refY", 4).attr("orient", "auto")
+        .append("polygon").attr("points", "0,0 8,4 0,8").attr("fill", "#1e293b")
 
-    const obstacleDragBehavior = drag<SVGGElement, unknown>()
-      .on("start", function () {
-        select(this).style("cursor", "grabbing")
-        select(this).select("circle").transition().duration(100)
-          .attr("transform", "scale(1.05)")
-      })
-      .on("drag", function (event: D3DragEvent<SVGGElement, unknown, unknown>) {
-        const nx = Math.max(W * 0.15, Math.min(W * 0.85, event.x))
-        const ny = Math.max(H * 0.15, Math.min(H * 0.8, event.y))
-        setObstaclePos({ x: nx, y: ny })
-        select(this).attr("transform", `translate(${nx},${ny})`)
-        obstacleRef.current = { x: nx, y: ny, r: OBSTACLE_R }
-      })
-      .on("end", function () {
-        select(this).style("cursor", "grab")
-        select(this).select("circle").transition().duration(100)
-          .attr("transform", "scale(1)")
-      })
+      const g = svg.append("g")
 
-    obstacleGroup.call(obstacleDragBehavior)
+      // Title
+      g.append("text").attr("x", W / 2).attr("y", 28).attr("text-anchor", "middle")
+        .attr("font-size", 18).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
+        .text("Navier-Stokes: Flow Around an Obstacle")
 
-    // Flow direction indicator
-    const flowIndicatorY = H * 0.45
-    g.append("line").attr("x1", W * 0.03).attr("y1", flowIndicatorY).attr("x2", W * 0.09).attr("y2", flowIndicatorY)
-      .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
-    g.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
-      .attr("font-size", 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-      .text("Flow")
+      // Vector field group
+      g.append("g").attr("class", "arrows-group")
 
-    // Color legend
-    const legendX = W * 0.75
-    const legendW = W * 0.16
-    g.append("rect").attr("x", legendX).attr("y", H - 50).attr("width", legendW).attr("height", 10)
-      .attr("rx", 5).attr("fill", "url(#velGrad-d3)")
-    g.append("text").attr("x", legendX).attr("y", H - 54).attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Slow")
-    g.append("text").attr("x", legendX + legendW).attr("y", H - 54).attr("text-anchor", "end").attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Fast")
-    g.append("text").attr("x", legendX + legendW / 2).attr("y", H - 28).attr("text-anchor", "middle")
-      .attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Velocity magnitude")
+      // Particles group
+      g.append("g").attr("class", "particles-group")
 
-    // Hint
-    g.append("text").attr("x", W / 2).attr("y", H - 8).attr("text-anchor", "middle")
-      .attr("font-size", 12).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-      .text("Drag the obstacle to move it -- adjust viscosity and speed above")
+      // Draggable obstacle
+      const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab")
+        .attr("transform", `translate(${liveRef.current.obstacleX},${liveRef.current.obstacleY})`)
+      obstacleGroup.append("circle").attr("r", OBSTACLE_R)
+        .attr("fill", "#1e293b")
+      obstacleGroup.append("circle").attr("r", OBSTACLE_R)
+        .attr("fill", "none").attr("stroke", "#475569").attr("stroke-width", 2)
+      // Invisible larger hit area
+      obstacleGroup.append("circle").attr("r", OBSTACLE_R + 15)
+        .attr("fill", "transparent")
+      obstacleGroup.append("text").attr("y", -OBSTACLE_R - 10).attr("text-anchor", "middle")
+        .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
+        .text("drag me")
 
-    // Initialize particles
-    const initial: ParticleState[] = []
-    for (let i = 0; i < NUM_PARTICLES; i++) {
-      initial.push({
-        x: Math.random() * W,
-        y: 50 + Math.random() * (H - 100),
-      })
-    }
-    particlesRef.current = initial
+      // Flow direction indicator
+      const flowIndicatorY = H * 0.45
+      g.append("line").attr("x1", W * 0.03).attr("y1", flowIndicatorY).attr("x2", W * 0.09).attr("y2", flowIndicatorY)
+        .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
+      g.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
+        .attr("font-size", 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
+        .text("Flow")
 
-    // Create initial particle circles
-    g.select(".particles-group").selectAll("circle")
-      .data(initial)
-      .enter().append("circle")
-      .attr("r", 3)
-      .attr("opacity", 0.85)
+      // Color legend
+      const legendX = W * 0.75
+      const legendW = W * 0.16
+      g.append("rect").attr("x", legendX).attr("y", H - 50).attr("width", legendW).attr("height", 10)
+        .attr("rx", 5).attr("fill", "url(#velGrad-d3)")
+      g.append("text").attr("x", legendX).attr("y", H - 54).attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Slow")
+      g.append("text").attr("x", legendX + legendW).attr("y", H - 54).attr("text-anchor", "end").attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Fast")
+      g.append("text").attr("x", legendX + legendW / 2).attr("y", H - 28).attr("text-anchor", "middle")
+        .attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Velocity magnitude")
 
-    // Animation loop
-    let running = true
-    const animate = (ts: number) => {
-      if (!running) return
-      if (prevTimeRef.current === 0) prevTimeRef.current = ts
-      const dt = Math.min((ts - prevTimeRef.current) / 1000, 0.05)
-      prevTimeRef.current = ts
+      // Hint
+      g.append("text").attr("x", W / 2).attr("y", H - 8).attr("text-anchor", "middle")
+        .attr("font-size", 12).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
+        .text("Drag the obstacle to move it -- adjust viscosity and speed above")
 
-      const spd = flowSpeedRef.current
-      const visc = viscosityRef.current
-      const obs = obstacleRef.current
+      // ── updateArrows: recomputes vector field from current live values ──
+      function updateArrows() {
+        const live = liveRef.current
+        const obsX = live.obstacleX
+        const obsY = live.obstacleY
+        const spd = live.flowSpeed
+        const visc = live.viscosity
 
-      // Update particle positions
-      const particles = particlesRef.current
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i]
-        const [vx, vy] = flowVelocity(p.x, p.y, spd * 100, visc, obs.x, obs.y, obs.r)
-        let nx = p.x + vx * dt
-        let ny = p.y + vy * dt
-
-        if (nx > W + 20) { nx = -10; ny = 50 + Math.random() * (H - 100) }
-        if (nx < -20) { nx = W + 10; ny = 50 + Math.random() * (H - 100) }
-        if (ny < 40 || ny > H - 40) { ny = ny < 40 ? 50 : H - 50 }
-
-        const ddx = nx - obs.x
-        const ddy = ny - obs.y
-        const dist = Math.sqrt(ddx * ddx + ddy * ddy)
-        if (dist < obs.r + 5) {
-          const angle = Math.atan2(ddy, ddx)
-          nx = obs.x + Math.cos(angle) * (obs.r + 8)
-          ny = obs.y + Math.sin(angle) * (obs.r + 8)
+        const arrowData: Array<{ x: number; y: number; vx: number; vy: number; mag: number }> = []
+        const step = 50
+        for (let gx = 50; gx < W - 30; gx += step) {
+          for (let gy = 50; gy < H - 50; gy += step) {
+            const dx = gx - obsX
+            const dy = gy - obsY
+            if (dx * dx + dy * dy < (OBSTACLE_R + 15) ** 2) continue
+            const [vx, vy] = flowVelocity(gx, gy, spd * 100, visc, obsX, obsY, OBSTACLE_R)
+            const mag = Math.sqrt(vx * vx + vy * vy)
+            arrowData.push({ x: gx, y: gy, vx, vy, mag })
+          }
         }
 
-        p.x = nx
-        p.y = ny
+        const maxMag = Math.max(...arrowData.map(a => a.mag), 1)
+        const colorScale = scaleLinear<string>()
+          .domain([0, maxMag * 0.4, maxMag])
+          .range(["#1e40af", "#06b6d4", "#ef4444"])
+
+        const arrowGroup = g.select(".arrows-group")
+
+        const arrowSel = arrowGroup.selectAll<SVGGElement, typeof arrowData[0]>("g.arrow")
+          .data(arrowData)
+
+        arrowSel.exit().remove()
+
+        const enter = arrowSel.enter().append("g").attr("class", "arrow")
+        enter.append("line")
+        enter.append("polygon")
+
+        const merged = enter.merge(arrowSel)
+        merged.attr("opacity", 0.4)
+
+        merged.each(function(d) {
+          const elArrow = select(this)
+          const arrowLen = Math.min(d.mag / maxMag * 20, 20)
+          if (arrowLen < 2) {
+            elArrow.attr("opacity", 0)
+            return
+          }
+          elArrow.attr("opacity", 0.4)
+          const angle = Math.atan2(d.vy, d.vx)
+          const ex = d.x + Math.cos(angle) * arrowLen
+          const ey = d.y + Math.sin(angle) * arrowLen
+          const hs = 3.5
+          const hx1 = ex - Math.cos(angle - 0.5) * hs
+          const hy1 = ey - Math.sin(angle - 0.5) * hs
+          const hx2 = ex - Math.cos(angle + 0.5) * hs
+          const hy2 = ey - Math.sin(angle + 0.5) * hs
+          const color = colorScale(d.mag)
+
+          elArrow.select("line")
+            .attr("x1", d.x).attr("y1", d.y).attr("x2", ex).attr("y2", ey)
+            .attr("stroke", color).attr("stroke-width", 1.5).attr("stroke-linecap", "round")
+          elArrow.select("polygon")
+            .attr("points", `${ex},${ey} ${hx1},${hy1} ${hx2},${hy2}`)
+            .attr("fill", color)
+        })
       }
 
-      // Color scale
-      const colorScale = scaleLinear<string>()
-        .domain([0, spd * 60, spd * 150])
-        .range(["#1e40af", "#06b6d4", "#ef4444"])
-        .clamp(true)
+      // Expose for external sync effect
+      updateArrowsRef.current = updateArrows
 
-      // Update particle DOM
-      const pSel = g.select(".particles-group").selectAll<SVGCircleElement, ParticleState>("circle")
-        .data(particles)
-      pSel.attr("cx", d => d.x).attr("cy", d => d.y)
-        .attr("fill", d => {
-          const [vx2, vy2] = flowVelocity(d.x, d.y, spd * 100, visc, obs.x, obs.y, obs.r)
-          return colorScale(Math.sqrt(vx2 * vx2 + vy2 * vy2))
+      // ── Obstacle drag — moves circle directly, defers arrow recomputation ──
+      const obstacleDragBehavior = drag<SVGGElement, unknown>()
+        .on("start", function () {
+          draggingRef.current = true
+          select(this).style("cursor", "grabbing")
+          select(this).select("circle").transition().duration(100)
+            .attr("transform", "scale(1.05)")
+        })
+        .on("drag", function (event: D3DragEvent<SVGGElement, unknown, unknown>) {
+          const nx = Math.max(W * 0.15, Math.min(W * 0.85, event.x))
+          const ny = Math.max(H * 0.15, Math.min(H * 0.8, event.y))
+          // Update live ref — no React setState
+          liveRef.current.obstacleX = nx
+          liveRef.current.obstacleY = ny
+          // Move the obstacle group visually (cheap)
+          select(this).attr("transform", `translate(${nx},${ny})`)
+        })
+        .on("end", function () {
+          draggingRef.current = false
+          select(this).style("cursor", "grab")
+          select(this).select("circle").transition().duration(100)
+            .attr("transform", "scale(1)")
+          // Recompute the expensive arrow grid now that dragging is done
+          updateArrows()
         })
 
+      obstacleGroup.call(obstacleDragBehavior)
+
+      // Initialize particles
+      const initial: ParticleState[] = []
+      for (let i = 0; i < NUM_PARTICLES; i++) {
+        initial.push({
+          x: Math.random() * W,
+          y: 50 + Math.random() * (H - 100),
+        })
+      }
+      particlesRef.current = initial
+
+      // Create initial particle circles
+      g.select(".particles-group").selectAll("circle")
+        .data(initial)
+        .enter().append("circle")
+        .attr("r", 3)
+        .attr("opacity", 0.85)
+
+      // Initial arrow render
+      updateArrows()
+
+      // ── Animation loop — reads from refs, never triggers React renders ──
+      let running = true
+      const animate = (ts: number) => {
+        if (!running) return
+        if (prevTimeRef.current === 0) prevTimeRef.current = ts
+        const dt = Math.min((ts - prevTimeRef.current) / 1000, 0.05)
+        prevTimeRef.current = ts
+
+        const live = liveRef.current
+        const spd = live.flowSpeed
+        const visc = live.viscosity
+        const obsX = live.obstacleX
+        const obsY = live.obstacleY
+
+        // Update particle positions
+        const particles = particlesRef.current
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i]
+          const [vx, vy] = flowVelocity(p.x, p.y, spd * 100, visc, obsX, obsY, OBSTACLE_R)
+          let nx = p.x + vx * dt
+          let ny = p.y + vy * dt
+
+          if (nx > W + 20) { nx = -10; ny = 50 + Math.random() * (H - 100) }
+          if (nx < -20) { nx = W + 10; ny = 50 + Math.random() * (H - 100) }
+          if (ny < 40 || ny > H - 40) { ny = ny < 40 ? 50 : H - 50 }
+
+          const ddx = nx - obsX
+          const ddy = ny - obsY
+          const dist = Math.sqrt(ddx * ddx + ddy * ddy)
+          if (dist < OBSTACLE_R + 5) {
+            const angle = Math.atan2(ddy, ddx)
+            nx = obsX + Math.cos(angle) * (OBSTACLE_R + 8)
+            ny = obsY + Math.sin(angle) * (OBSTACLE_R + 8)
+          }
+
+          p.x = nx
+          p.y = ny
+        }
+
+        // Color scale
+        const colorScale = scaleLinear<string>()
+          .domain([0, spd * 60, spd * 150])
+          .range(["#1e40af", "#06b6d4", "#ef4444"])
+          .clamp(true)
+
+        // Update particle DOM
+        const pSel = g.select(".particles-group").selectAll<SVGCircleElement, ParticleState>("circle")
+          .data(particles)
+        pSel.attr("cx", d => d.x).attr("cy", d => d.y)
+          .attr("fill", d => {
+            const [vx2, vy2] = flowVelocity(d.x, d.y, spd * 100, visc, obsX, obsY, OBSTACLE_R)
+            return colorScale(Math.sqrt(vx2 * vx2 + vy2 * vy2))
+          })
+
+        rafRef.current = requestAnimationFrame(animate)
+      }
       rafRef.current = requestAnimationFrame(animate)
+
+      return () => {
+        running = false
+        cancelAnimationFrame(rafRef.current)
+      }
     }
-    rafRef.current = requestAnimationFrame(animate)
+
+    const cleanup = buildSVG()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const w = Math.round(entry.contentRect.width)
+      const h = Math.round(entry.contentRect.height)
+      if (w !== currentW || h !== currentH) {
+        cleanup?.()
+        requestAnimationFrame(() => { buildSVG() })
+      }
+    })
+    observer.observe(el)
 
     return () => {
-      running = false
-      cancelAnimationFrame(rafRef.current)
-      select(container).select("svg").remove()
+      cleanup?.()
+      observer.disconnect()
+      select(el).select("svg").remove()
+      updateArrowsRef.current = null
     }
-  }, [W, H])
-
-  // Update vector field arrows when viscosity, flowSpeed, or obstacle position change
-  useEffect(() => {
-    const g = gRef.current
-    if (!g) return
-
-    const obsX = obstaclePos.x
-    const obsY = obstaclePos.y
-
-    const arrowData: Array<{ x: number; y: number; vx: number; vy: number; mag: number }> = []
-    const step = 50
-    for (let gx = 50; gx < W - 30; gx += step) {
-      for (let gy = 50; gy < H - 50; gy += step) {
-        const dx = gx - obsX
-        const dy = gy - obsY
-        if (dx * dx + dy * dy < (OBSTACLE_R + 15) ** 2) continue
-        const [vx, vy] = flowVelocity(gx, gy, flowSpeed * 100, viscosity, obsX, obsY, OBSTACLE_R)
-        const mag = Math.sqrt(vx * vx + vy * vy)
-        arrowData.push({ x: gx, y: gy, vx, vy, mag })
-      }
-    }
-
-    const maxMag = Math.max(...arrowData.map(a => a.mag), 1)
-    const colorScale = scaleLinear<string>()
-      .domain([0, maxMag * 0.4, maxMag])
-      .range(["#1e40af", "#06b6d4", "#ef4444"])
-
-    const arrowGroup = g.select(".arrows-group")
-
-    // Use general update pattern for arrow lines
-    const arrowSel = arrowGroup.selectAll<SVGGElement, typeof arrowData[0]>("g.arrow")
-      .data(arrowData)
-
-    arrowSel.exit().remove()
-
-    const enter = arrowSel.enter().append("g").attr("class", "arrow")
-    enter.append("line")
-    enter.append("polygon")
-
-    const merged = enter.merge(arrowSel)
-    merged.attr("opacity", 0.4)
-
-    merged.each(function(d) {
-      const el = select(this)
-      const arrowLen = Math.min(d.mag / maxMag * 20, 20)
-      if (arrowLen < 2) {
-        el.attr("opacity", 0)
-        return
-      }
-      el.attr("opacity", 0.4)
-      const angle = Math.atan2(d.vy, d.vx)
-      const ex = d.x + Math.cos(angle) * arrowLen
-      const ey = d.y + Math.sin(angle) * arrowLen
-      const hs = 3.5
-      const hx1 = ex - Math.cos(angle - 0.5) * hs
-      const hy1 = ey - Math.sin(angle - 0.5) * hs
-      const hx2 = ex - Math.cos(angle + 0.5) * hs
-      const hy2 = ey - Math.sin(angle + 0.5) * hs
-      const color = colorScale(d.mag)
-
-      el.select("line")
-        .attr("x1", d.x).attr("y1", d.y).attr("x2", ex).attr("y2", ey)
-        .attr("stroke", color).attr("stroke-width", 1.5).attr("stroke-linecap", "round")
-      el.select("polygon")
-        .attr("points", `${ex},${ey} ${hx1},${hy1} ${hx2},${hy2}`)
-        .attr("fill", color)
-    })
-  }, [flowSpeed, viscosity, obstaclePos.x, obstaclePos.y])
+  }, []) // ← empty deps: SVG created once, rebuilt only on resize
 
   return (
     <div

@@ -12,11 +12,19 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-tooltip", "@radix-ui/react-scroll-area", "@radix-ui/react-slot", "@radix-ui/react-avatar", "@radix-ui/react-progress", "@radix-ui/react-separator"],
-          charts: ["recharts"],
-          visualization: ["d3", "framer-motion"],
-          math: ["katex", "react-katex"],
+          vendor: ["react", "react-dom", "react-router-dom", "@tanstack/react-query"],
+          ui: [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-scroll-area",
+            "@radix-ui/react-slot",
+            "@radix-ui/react-avatar",
+            "@radix-ui/react-progress",
+            "@radix-ui/react-separator",
+            "class-variance-authority",
+            "clsx",
+            "tailwind-merge",
+          ],
         },
       },
     },

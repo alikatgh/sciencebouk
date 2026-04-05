@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import {
   select,
   scaleLinear,
@@ -8,12 +8,10 @@ import {
   curveBasis,
   drag,
   type D3DragEvent,
-  type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
-import { useContainerSize } from "../../hooks/useContainerSize"
 
 const F = "Manrope, sans-serif"
 
@@ -112,319 +110,401 @@ interface D3FourierVisualProps {
   onVarChange: (name: string, value: number) => void
 }
 
+const HARMONIC_NAMES = ['a1', 'a2', 'a3', 'a4'] as const
+const HARMONIC_LABELS = ['a\u2081', 'a\u2082', 'a\u2083', 'a\u2084']
+
 function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarChange }: D3FourierVisualProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { width: W, height: H } = useContainerSize(containerRef)
-  const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
+
+  // Stable callback refs — never stale in D3 closures
   const onHighlightRef = useRef(onHighlight)
   onHighlightRef.current = onHighlight
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
-  const [playing, setPlaying] = useState(true)
 
-  // Refs for animation
+  // Live values during drag — bypasses React render cycle for 60fps SVG
+  const liveRef = useRef([a1, a2, a3, a4])
+  const draggingRef = useRef(false)
+  const playingRef = useRef(true)
+
+  // Store the updateScene function so external effects can call it
+  const updateSceneRef = useRef<((amps: number[]) => void) | null>(null)
+
+  // Animation refs
   const rafRef = useRef(0)
   const timeRef = useRef(0)
   const lastTsRef = useRef(0)
-  const ampsRef = useRef([a1, a2, a3, a4])
-  ampsRef.current = [a1, a2, a3, a4]
 
-  // Layout — proportional to container W/H
-  const plotLeft = W * 0.08
-  const plotRight = W * 0.68
-  const compositeTop = H * 0.07
-  const compositeBottom = H * 0.33
-  const harmonicTop = H * 0.38
-  const harmonicHeight = H * 0.1
-  const harmonicGap = H * 0.02
-  const spectrumLeft = W * 0.72
-  const spectrumRight = W * 0.95
-  const spectrumTop = H * 0.19
-  const spectrumBottom = H * 0.62
-
-  const fontSize = Math.max(12, Math.min(18, H / 28))
-  const fontSizeSm = Math.max(10, Math.min(15, H / 32))
-
-  const omega = 2 * Math.PI
-  const xs = range(0, 1, 0.004)
-  const xScale = scaleLinear().domain([0, 1]).range([plotLeft, plotRight])
-
-  const harmonicNames = ['a1', 'a2', 'a3', 'a4']
-  const harmonicLabels = ['a\u2081', 'a\u2082', 'a\u2083', 'a\u2084']
-
-  // Setup -- rebuilds on resize
+  // Sync React props into SVG when not dragging (handles presets, lesson steps, slider changes)
   useEffect(() => {
-    const container = containerRef.current
-    if (!container || W < 100 || H < 100) return
-    select(container).select("svg").remove()
+    if (draggingRef.current) return
+    liveRef.current = [a1, a2, a3, a4]
+    updateSceneRef.current?.([a1, a2, a3, a4])
+  }, [a1, a2, a3, a4])
 
-    const svg = select(container)
-      .append("svg")
-      .attr("width", W)
-      .attr("height", H)
-      .style("display", "block")
-      .style("touch-action", "none")
-      .attr("role", "img")
-      .attr("aria-label", "Fourier decomposition showing harmonics and composite signal")
-
-    svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
-
-    const g = svg.append("g")
-    gRef.current = g
-
-    // --- Composite section ---
-    g.append("text")
-      .attr("x", plotLeft).attr("y", compositeTop - 4)
-      .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-      .text("Composite Signal")
-
-    // Zero line
-    g.append("line")
-      .attr("x1", plotLeft).attr("y1", (compositeTop + compositeBottom) / 2)
-      .attr("x2", plotRight).attr("y2", (compositeTop + compositeBottom) / 2)
-      .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
-
-    // Composite path
-    g.append("path").attr("class", "composite-path")
-      .attr("fill", "none").attr("stroke", "#1e293b").attr("stroke-width", 3)
-
-    // --- Individual harmonics ---
-    g.append("text")
-      .attr("x", plotLeft).attr("y", harmonicTop - 6)
-      .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-      .text("Harmonics")
-
+  // Highlight rings — lightweight attr toggle, no SVG rebuild
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const svg = select(el).select("svg")
     for (let i = 0; i < 4; i++) {
-      const yMid = harmonicTop + i * (harmonicHeight + harmonicGap) + harmonicHeight / 2
-      const color = HARMONIC_COLORS[i]
+      svg.select(`.harmonic-glow-${i}`)
+        .attr("opacity", highlightedVar === HARMONIC_NAMES[i] ? 0.5 : 0)
+      svg.select(`.harmonic-path-${i}`)
+        .attr("stroke-width", highlightedVar === HARMONIC_NAMES[i] ? 3 : 2)
+    }
+  }, [highlightedVar])
+
+  // ═══════════════════════════════════════════════════════════════
+  // Main SVG — created ONCE, rebuilt only on container resize.
+  // Drag updates go through updateScene() directly, not React.
+  // Animation loop reads from refs, never from React state.
+  // ═══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    let currentW = 0
+    let currentH = 0
+    let animationRunning = true
+
+    function buildSVG() {
+      if (!el) return
+
+      // Stop animation before tearing down
+      cancelAnimationFrame(rafRef.current)
+      lastTsRef.current = 0
+
+      select(el).select("svg").remove()
+
+      const rect = el.getBoundingClientRect()
+      const W = Math.round(rect.width) || 800
+      const H = Math.round(rect.height) || 500
+      currentW = W
+      currentH = H
+
+      if (W < 100 || H < 100) return
+
+      // ── Layout constants ──
+      const plotLeft = W * 0.08
+      const plotRight = W * 0.68
+      const compositeTop = H * 0.07
+      const compositeBottom = H * 0.33
+      const harmonicTop = H * 0.38
+      const harmonicHeight = H * 0.1
+      const harmonicGap = H * 0.02
+      const spectrumLeft = W * 0.72
+      const spectrumRight = W * 0.95
+      const spectrumTop = H * 0.19
+      const spectrumBottom = H * 0.62
+
+      const fontSize = Math.max(12, Math.min(18, H / 28))
+      const fontSizeSm = Math.max(10, Math.min(15, H / 32))
+
+      const omega = 2 * Math.PI
+      const xs = range(0, 1, 0.004)
+      const xScale = scaleLinear().domain([0, 1]).range([plotLeft, plotRight])
+
+      const spectrumW = spectrumRight - spectrumLeft
+      const spectrumBarW = spectrumW * 0.15
+      const spectrumBarScale = scaleLinear().domain([0, 5]).range([spectrumLeft + spectrumW * 0.07, spectrumLeft + spectrumW * 0.93])
+      const spectrumH = spectrumBottom - spectrumTop
+      const spectrumAmpScale = scaleLinear().domain([0, 1]).range([spectrumBottom, spectrumTop])
+
+      const pathGen = line<number>().curve(curveBasis)
+
+      // ── Create SVG ──
+      const svg = select(el)
+        .append("svg")
+        .attr("width", W)
+        .attr("height", H)
+        .style("display", "block")
+        .style("touch-action", "none")
+        .attr("role", "img")
+        .attr("aria-label", "Fourier decomposition showing harmonics and composite signal")
+
+      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+
+      const g = svg.append("g")
+
+      // --- Composite section ---
+      g.append("text")
+        .attr("x", plotLeft).attr("y", compositeTop - 4)
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .text("Composite Signal")
 
       // Zero line
       g.append("line")
-        .attr("x1", plotLeft).attr("y1", yMid).attr("x2", plotRight).attr("y2", yMid)
-        .attr("stroke", "#f1f5f9").attr("stroke-width", 1)
+        .attr("x1", plotLeft).attr("y1", (compositeTop + compositeBottom) / 2)
+        .attr("x2", plotRight).attr("y2", (compositeTop + compositeBottom) / 2)
+        .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
 
-      // Waveform path
-      g.append("path").attr("class", `harmonic-path-${i}`)
-        .attr("fill", "none").attr("stroke", color).attr("stroke-width", 2)
+      // Composite path
+      g.append("path").attr("class", "composite-path")
+        .attr("fill", "none").attr("stroke", "#1e293b").attr("stroke-width", 3)
 
-      // Glow ring for highlight
-      g.append("circle").attr("class", `harmonic-glow-${i}`)
-        .attr("cx", plotLeft - W * 0.024).attr("cy", yMid).attr("r", W * 0.018)
-        .attr("fill", "none").attr("stroke", color).attr("stroke-width", 2).attr("stroke-dasharray", "5 3")
-        .attr("opacity", 0)
-
-      // Label n=i+1
-      const labelG = g.append("g").attr("class", `harmonic-label-${i}`).style("cursor", "pointer")
-      labelG.append("text")
-        .attr("x", plotLeft - W * 0.007).attr("y", yMid + 5)
-        .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
-        .text(`n=${i + 1}`)
-      labelG.append("rect")
-        .attr("x", plotLeft - W * 0.055).attr("y", yMid - 18).attr("width", W * 0.055).attr("height", 36)
-        .attr("fill", "transparent")
-
-      // Amplitude label
-      const ampG = g.append("g").attr("class", `harmonic-amp-${i}`).style("cursor", "pointer")
-      ampG.append("text").attr("class", `amp-text-${i}`)
-        .attr("x", plotRight + W * 0.009).attr("y", yMid + 5)
-        .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
-      ampG.append("rect")
-        .attr("x", plotRight + W * 0.003).attr("y", yMid - 18).attr("width", W * 0.12).attr("height", 36)
-        .attr("fill", "transparent")
-    }
-
-    // --- Spectrum bars ---
-    g.append("text")
-      .attr("x", spectrumLeft).attr("y", spectrumTop - H * 0.048)
-      .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-      .text("Spectrum")
-
-    // Baseline
-    g.append("line")
-      .attr("x1", spectrumLeft).attr("y1", spectrumBottom).attr("x2", spectrumRight).attr("y2", spectrumBottom)
-      .attr("stroke", "#94a3b8").attr("stroke-width", 2)
-
-    const spectrumW = spectrumRight - spectrumLeft
-    const spectrumBarW = spectrumW * 0.15
-    const spectrumBarScale = scaleLinear().domain([0, 5]).range([spectrumLeft + spectrumW * 0.07, spectrumLeft + spectrumW * 0.93])
-    const spectrumBarH = spectrumBottom - spectrumTop
-    const spectrumAmpScale = scaleLinear().domain([0, 1]).range([spectrumBottom, spectrumTop])
-    for (let i = 0; i < 4; i++) {
-      const bx = spectrumBarScale(i + 1) - spectrumBarW / 2
-      g.append("rect").attr("class", `spectrum-bar-${i}`)
-        .attr("x", bx).attr("width", spectrumBarW).attr("rx", 5)
-        .attr("fill", HARMONIC_COLORS[i])
-
+      // --- Individual harmonics ---
       g.append("text")
-        .attr("x", bx + spectrumBarW / 2).attr("y", spectrumBottom + H * 0.038)
-        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#64748b")
-        .text(`${i + 1}f`)
+        .attr("x", plotLeft).attr("y", harmonicTop - 6)
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .text("Harmonics")
 
-      // Drag handle on top of each bar
-      const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab")
-      // Invisible hit area (min 30px)
-      handleG.append("rect").attr("class", `spectrum-hit-${i}`)
-        .attr("x", bx - 4).attr("width", spectrumBarW + 8).attr("height", Math.max(30, spectrumBarH))
-        .attr("y", spectrumTop).attr("fill", "transparent")
-      // Visible handle circle
-      handleG.append("circle").attr("class", `spectrum-knob-${i}`)
-        .attr("cx", bx + spectrumBarW / 2).attr("r", 7)
-        .attr("fill", "white").attr("stroke", HARMONIC_COLORS[i]).attr("stroke-width", 2.5)
-
-      const barDrag = drag<SVGGElement, unknown>()
-        .on("start", function () {
-          select(this).style("cursor", "grabbing")
-          select(this).select(`circle`).transition().duration(100)
-            .attr("r", 10).attr("stroke-width", 3)
-        })
-        .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-          const newVal = Math.max(0, Math.min(1, spectrumAmpScale.invert(event.y)))
-          onVarChangeRef.current(harmonicNames[i], Math.round(newVal * 20) / 20)
-        })
-        .on("end", function () {
-          select(this).style("cursor", "grab")
-          select(this).select(`circle`).transition().duration(100)
-            .attr("r", 7).attr("stroke-width", 2.5)
-        })
-      handleG.call(barDrag)
-    }
-
-    // Equation readout
-    g.append("text").attr("class", "equation-readout")
-      .attr("x", spectrumLeft).attr("y", spectrumBottom + H * 0.11)
-      .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-
-    // Description
-    g.append("text")
-      .attr("x", W / 2).attr("y", H - H * 0.024)
-      .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
-      .text("Fourier Decomposition: any signal = sum of sine waves")
-
-    // D3 play/pause button inside SVG
-    const btnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
-      .attr("transform", `translate(${W - 100}, ${H - 38})`)
-    btnG.append("rect").attr("class", "play-btn-bg").attr("width", 80).attr("height", 26).attr("rx", 13)
-      .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-    btnG.append("text").attr("class", "play-btn-text").attr("x", 40).attr("y", 17).attr("text-anchor", "middle")
-      .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-      .text("Pause")
-    btnG.on("click", () => { setPlaying(p => !p) })
-
-    return () => { select(container).select("svg").remove() }
-  }, [W, H])
-
-  // Hover handlers
-  useEffect(() => {
-    const g = gRef.current
-    if (!g) return
-    for (let i = 0; i < 4; i++) {
-      const name = harmonicNames[i]
-      g.select(`.harmonic-label-${i}`)
-        .on("mouseenter", () => onHighlightRef.current(name))
-        .on("mouseleave", () => onHighlightRef.current(null))
-      g.select(`.harmonic-amp-${i}`)
-        .on("mouseenter", () => onHighlightRef.current(name))
-        .on("mouseleave", () => onHighlightRef.current(null))
-    }
-  }, [W, H])
-
-  // Animation loop: updates D3 paths via requestAnimationFrame
-  useEffect(() => {
-    if (!playing) return
-    let running = true
-
-    const pathGen = line<number>().curve(curveBasis)
-
-    const spectrumW = spectrumRight - spectrumLeft
-    const spectrumBarScale = scaleLinear().domain([0, 5]).range([spectrumLeft + spectrumW * 0.07, spectrumLeft + spectrumW * 0.93])
-    const spectrumBarW = spectrumW * 0.15
-
-    const animate = (ts: number) => {
-      if (!running) return
-      const g = gRef.current
-      if (!g) return
-
-      if (lastTsRef.current === 0) lastTsRef.current = ts
-      const dt = (ts - lastTsRef.current) / 1000
-      lastTsRef.current = ts
-      timeRef.current += dt
-
-      const amps = ampsRef.current
-      const t = timeRef.current
-      const totalAmp = amps.reduce((s, a) => s + Math.abs(a), 0) || 1
-
-      // Composite
-      const compositeYScale = scaleLinear().domain([-totalAmp, totalAmp]).range([compositeBottom, compositeTop])
-      const compositePath = pathGen
-        .x(d => xScale(d))
-        .y(d => {
-          let sum = 0
-          for (let i = 0; i < amps.length; i++) {
-            sum += amps[i] * Math.sin((i + 1) * omega * d + (i + 1) * t * 2)
-          }
-          return compositeYScale(sum)
-        })(xs) ?? ""
-      g.select(".composite-path").attr("d", compositePath)
-
-      // Individual harmonics
       for (let i = 0; i < 4; i++) {
         const yMid = harmonicTop + i * (harmonicHeight + harmonicGap) + harmonicHeight / 2
-        const hYScale = scaleLinear().domain([-1.2, 1.2]).range([yMid + harmonicHeight / 2, yMid - harmonicHeight / 2])
-        const hPath = pathGen
-          .x(d => xScale(d))
-          .y(d => hYScale(amps[i] * Math.sin((i + 1) * omega * d + (i + 1) * t * 2)))(xs) ?? ""
-        g.select(`.harmonic-path-${i}`).attr("d", hPath).attr("opacity", amps[i] > 0 ? 1 : 0.2)
+        const color = HARMONIC_COLORS[i]
+
+        // Zero line
+        g.append("line")
+          .attr("x1", plotLeft).attr("y1", yMid).attr("x2", plotRight).attr("y2", yMid)
+          .attr("stroke", "#f1f5f9").attr("stroke-width", 1)
+
+        // Waveform path
+        g.append("path").attr("class", `harmonic-path-${i}`)
+          .attr("fill", "none").attr("stroke", color).attr("stroke-width", 2)
+
+        // Glow ring for highlight
+        g.append("circle").attr("class", `harmonic-glow-${i}`)
+          .attr("cx", plotLeft - W * 0.024).attr("cy", yMid).attr("r", W * 0.018)
+          .attr("fill", "none").attr("stroke", color).attr("stroke-width", 2).attr("stroke-dasharray", "5 3")
+          .attr("opacity", 0)
+
+        // Label n=i+1
+        const labelG = g.append("g").attr("class", `harmonic-label-${i}`).style("cursor", "pointer")
+        labelG.append("text")
+          .attr("x", plotLeft - W * 0.007).attr("y", yMid + 5)
+          .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
+          .text(`n=${i + 1}`)
+        labelG.append("rect")
+          .attr("x", plotLeft - W * 0.055).attr("y", yMid - 18).attr("width", W * 0.055).attr("height", 36)
+          .attr("fill", "transparent")
+
+        // Amplitude label
+        const ampG = g.append("g").attr("class", `harmonic-amp-${i}`).style("cursor", "pointer")
+        ampG.append("text").attr("class", `amp-text-${i}`)
+          .attr("x", plotRight + W * 0.009).attr("y", yMid + 5)
+          .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
+        ampG.append("rect")
+          .attr("x", plotRight + W * 0.003).attr("y", yMid - 18).attr("width", W * 0.12).attr("height", 36)
+          .attr("fill", "transparent")
       }
 
-      // Spectrum bars + drag handles
-      const spectrumH = spectrumBottom - spectrumTop
+      // --- Spectrum bars ---
+      g.append("text")
+        .attr("x", spectrumLeft).attr("y", spectrumTop - H * 0.048)
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .text("Spectrum")
+
+      // Baseline
+      g.append("line")
+        .attr("x1", spectrumLeft).attr("y1", spectrumBottom).attr("x2", spectrumRight).attr("y2", spectrumBottom)
+        .attr("stroke", "#94a3b8").attr("stroke-width", 2)
+
       for (let i = 0; i < 4; i++) {
-        const barH = spectrumH * (amps[i] / 1.2)
         const bx = spectrumBarScale(i + 1) - spectrumBarW / 2
-        g.select(`.spectrum-bar-${i}`)
-          .attr("y", spectrumBottom - barH)
-          .attr("height", barH)
-          .attr("opacity", amps[i] > 0 ? 0.85 : 0.15)
-        g.select(`.spectrum-knob-${i}`)
-          .attr("cy", spectrumBottom - barH)
+        g.append("rect").attr("class", `spectrum-bar-${i}`)
+          .attr("x", bx).attr("width", spectrumBarW).attr("rx", 5)
+          .attr("fill", HARMONIC_COLORS[i])
+
+        g.append("text")
+          .attr("x", bx + spectrumBarW / 2).attr("y", spectrumBottom + H * 0.038)
+          .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#64748b")
+          .text(`${i + 1}f`)
+
+        // Drag handle on top of each bar
+        const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab")
+        // Invisible hit area (min 30px)
+        handleG.append("rect").attr("class", `spectrum-hit-${i}`)
+          .attr("x", bx - 4).attr("width", spectrumBarW + 8).attr("height", Math.max(30, spectrumH))
+          .attr("y", spectrumTop).attr("fill", "transparent")
+        // Visible handle circle
+        handleG.append("circle").attr("class", `spectrum-knob-${i}`)
+          .attr("cx", bx + spectrumBarW / 2).attr("r", 7)
+          .attr("fill", "white").attr("stroke", HARMONIC_COLORS[i]).attr("stroke-width", 2.5)
+
+        // D3 drag — updates SVG directly, syncs React only on end
+        const barDrag = drag<SVGGElement, unknown>()
+          .on("start", function () {
+            draggingRef.current = true
+            select(this).style("cursor", "grabbing")
+            select(this).select("circle").transition().duration(100)
+              .attr("r", 10).attr("stroke-width", 3)
+          })
+          .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+            const newVal = Math.max(0, Math.min(1, spectrumAmpScale.invert(event.y)))
+            const snapped = Math.round(newVal * 20) / 20
+            liveRef.current[i] = snapped
+            updateScene(liveRef.current)
+          })
+          .on("end", function () {
+            draggingRef.current = false
+            select(this).style("cursor", "grab")
+            select(this).select("circle").transition().duration(100)
+              .attr("r", 7).attr("stroke-width", 2.5)
+            // Sync React state only on drag end
+            onVarChangeRef.current(HARMONIC_NAMES[i], liveRef.current[i])
+          })
+        handleG.call(barDrag)
       }
 
-      rafRef.current = requestAnimationFrame(animate)
+      // Equation readout
+      g.append("text").attr("class", "equation-readout")
+        .attr("x", spectrumLeft).attr("y", spectrumBottom + H * 0.11)
+        .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
+
+      // Description
+      g.append("text")
+        .attr("x", W / 2).attr("y", H - H * 0.024)
+        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
+        .text("Fourier Decomposition: any signal = sum of sine waves")
+
+      // D3 play/pause button inside SVG
+      const btnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
+        .attr("transform", `translate(${W - 100}, ${H - 38})`)
+      btnG.append("rect").attr("class", "play-btn-bg").attr("width", 80).attr("height", 26).attr("rx", 13)
+        .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      btnG.append("text").attr("class", "play-btn-text").attr("x", 40).attr("y", 17).attr("text-anchor", "middle")
+        .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
+        .text("Pause")
+      btnG.on("click", () => {
+        playingRef.current = !playingRef.current
+        updatePlayButton()
+        if (playingRef.current) {
+          lastTsRef.current = 0
+          rafRef.current = requestAnimationFrame(animate)
+        }
+      })
+
+      // Hover cross-highlighting
+      for (let i = 0; i < 4; i++) {
+        const name = HARMONIC_NAMES[i]
+        g.select(`.harmonic-label-${i}`)
+          .on("mouseenter", () => onHighlightRef.current(name))
+          .on("mouseleave", () => onHighlightRef.current(null))
+        g.select(`.harmonic-amp-${i}`)
+          .on("mouseenter", () => onHighlightRef.current(name))
+          .on("mouseleave", () => onHighlightRef.current(null))
+      }
+
+      // ── updateScene: repositions non-animated elements from amps WITHOUT React ──
+      function updateScene(amps: number[]) {
+        // Amplitude labels
+        for (let i = 0; i < 4; i++) {
+          g.select(`.amp-text-${i}`).text(`${HARMONIC_LABELS[i]}=${amps[i].toFixed(2)}`)
+        }
+
+        // Equation readout
+        g.select(".equation-readout")
+          .text(`f(t) = ${amps[0].toFixed(2)}sin(t) + ${amps[1].toFixed(2)}sin(2t) + ${amps[2].toFixed(2)}sin(3t) + ${amps[3].toFixed(2)}sin(4t)`)
+
+        // Spectrum bars + knobs (static position based on amplitude)
+        for (let i = 0; i < 4; i++) {
+          const barH = spectrumH * (amps[i] / 1.2)
+          g.select(`.spectrum-bar-${i}`)
+            .attr("y", spectrumBottom - barH)
+            .attr("height", barH)
+            .attr("opacity", amps[i] > 0 ? 0.85 : 0.15)
+          g.select(`.spectrum-knob-${i}`)
+            .attr("cy", spectrumBottom - barH)
+        }
+      }
+
+      function updatePlayButton() {
+        const playing = playingRef.current
+        g.select(".play-btn-bg")
+          .attr("fill", playing ? "#4f73ff" : "white")
+          .attr("stroke", playing ? "#4f73ff" : "#e2e8f0")
+        g.select(".play-btn-text")
+          .attr("fill", playing ? "white" : "#64748b")
+          .text(playing ? "Pause" : "Play")
+      }
+
+      // ── Animation loop: reads from refs, never from React state ──
+      function animate(ts: number) {
+        if (!animationRunning) return
+        if (!playingRef.current) return
+
+        if (lastTsRef.current === 0) lastTsRef.current = ts
+        const dt = (ts - lastTsRef.current) / 1000
+        lastTsRef.current = ts
+        timeRef.current += dt
+
+        const amps = liveRef.current
+        const t = timeRef.current
+        const totalAmp = amps.reduce((s, a) => s + Math.abs(a), 0) || 1
+
+        // Composite waveform
+        const compositeYScale = scaleLinear().domain([-totalAmp, totalAmp]).range([compositeBottom, compositeTop])
+        const compositePath = pathGen
+          .x(d => xScale(d))
+          .y(d => {
+            let sum = 0
+            for (let k = 0; k < amps.length; k++) {
+              sum += amps[k] * Math.sin((k + 1) * omega * d + (k + 1) * t * 2)
+            }
+            return compositeYScale(sum)
+          })(xs) ?? ""
+        g.select(".composite-path").attr("d", compositePath)
+
+        // Individual harmonics
+        for (let i = 0; i < 4; i++) {
+          const yMid = harmonicTop + i * (harmonicHeight + harmonicGap) + harmonicHeight / 2
+          const hYScale = scaleLinear().domain([-1.2, 1.2]).range([yMid + harmonicHeight / 2, yMid - harmonicHeight / 2])
+          const hPath = pathGen
+            .x(d => xScale(d))
+            .y(d => hYScale(amps[i] * Math.sin((i + 1) * omega * d + (i + 1) * t * 2)))(xs) ?? ""
+          g.select(`.harmonic-path-${i}`).attr("d", hPath).attr("opacity", amps[i] > 0 ? 1 : 0.2)
+        }
+
+        // Spectrum bars + knobs (animated position tracks live amps)
+        for (let i = 0; i < 4; i++) {
+          const barH = spectrumH * (amps[i] / 1.2)
+          g.select(`.spectrum-bar-${i}`)
+            .attr("y", spectrumBottom - barH)
+            .attr("height", barH)
+            .attr("opacity", amps[i] > 0 ? 0.85 : 0.15)
+          g.select(`.spectrum-knob-${i}`)
+            .attr("cy", spectrumBottom - barH)
+        }
+
+        rafRef.current = requestAnimationFrame(animate)
+      }
+
+      // Expose for external sync (preset changes, prop sync)
+      updateSceneRef.current = updateScene
+
+      // Initial render
+      updateScene(liveRef.current)
+      updatePlayButton()
+
+      // Start animation
+      if (playingRef.current) {
+        lastTsRef.current = 0
+        rafRef.current = requestAnimationFrame(animate)
+      }
     }
 
-    rafRef.current = requestAnimationFrame(animate)
+    buildSVG()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const w = Math.round(entry.contentRect.width)
+      const h = Math.round(entry.contentRect.height)
+      if (w !== currentW || h !== currentH) {
+        requestAnimationFrame(buildSVG)
+      }
+    })
+    observer.observe(el)
+
     return () => {
-      running = false
+      animationRunning = false
       cancelAnimationFrame(rafRef.current)
+      observer.disconnect()
+      select(el).select("svg").remove()
+      updateSceneRef.current = null
       lastTsRef.current = 0
     }
-  }, [playing])
-
-  // Update non-animated elements when amplitudes or highlight change
-  useEffect(() => {
-    const g = gRef.current
-    if (!g) return
-
-    const amps = [a1, a2, a3, a4]
-
-    for (let i = 0; i < 4; i++) {
-      const isActive = highlightedVar === harmonicNames[i]
-      g.select(`.amp-text-${i}`).text(`${harmonicLabels[i]}=${amps[i].toFixed(2)}`)
-      g.select(`.harmonic-path-${i}`).attr("stroke-width", isActive ? 3 : 2)
-      g.select(`.harmonic-glow-${i}`).attr("opacity", isActive ? 0.5 : 0)
-    }
-
-    g.select(".equation-readout")
-      .text(`f(t) = ${a1.toFixed(2)}sin(t) + ${a2.toFixed(2)}sin(2t) + ${a3.toFixed(2)}sin(3t) + ${a4.toFixed(2)}sin(4t)`)
-
-    // Update D3 play/pause button appearance
-    g.select(".play-btn-bg")
-      .attr("fill", playing ? "#4f73ff" : "white")
-      .attr("stroke", playing ? "#4f73ff" : "#e2e8f0")
-    g.select(".play-btn-text")
-      .attr("fill", playing ? "white" : "#64748b")
-      .text(playing ? "Pause" : "Play")
-  }, [a1, a2, a3, a4, highlightedVar, playing])
+  }, []) // ← empty deps: SVG created once, rebuilt only on resize
 
   return (
     <div

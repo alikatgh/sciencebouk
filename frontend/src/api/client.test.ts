@@ -85,12 +85,7 @@ describe("api client", () => {
 
     const fetchMock = vi.fn().mockResolvedValueOnce(
       jsonResponse(200, {
-        display_name: "Ada",
         avatar_url: "/media/avatar.png",
-        daily_goal_minutes: 20,
-        preferred_difficulty: "gentle",
-        onboarding_completed: true,
-        tier: "free",
       }),
     )
 

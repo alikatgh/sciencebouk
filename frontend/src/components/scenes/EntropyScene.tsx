@@ -6,8 +6,8 @@ import {
   line,
   range,
   drag,
-  type Selection,
   type D3DragEvent,
+  type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"

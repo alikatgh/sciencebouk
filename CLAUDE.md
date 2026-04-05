@@ -1,5 +1,13 @@
 # Sciencebouk — Interactive Math Education Platform
 
+## CRITICAL: Formula Protection Rules
+- NEVER modify any LaTeX formula string, KaTeX input, or mathematical notation
+- NEVER convert LaTeX to plain text or ASCII
+- NEVER rewrite `\frac`, `\partial`, `\nabla`, Greek letters, subscripts, or superscripts into text
+- All formulas MUST render with `<InlineMath math={...} />` or `<BlockMath math={...} />` from react-katex
+- NEVER use `formatFormulaPreview` or any plain-text formula converter — that file has been deleted
+- Treat formula strings as IMMUTABLE source code — if broken, preserve and flag, don't rewrite
+
 ## Stack
 - **Frontend**: React 19 + TypeScript 5.8 + Vite 6.3 + Tailwind CSS 3.4
 - **Backend**: Django 5.2 + SQLite3
