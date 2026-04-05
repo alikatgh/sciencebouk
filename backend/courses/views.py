@@ -1,0 +1,270 @@
+from datetime import timedelta
+
+from django.db.models import Q, Sum
+from django.utils import timezone
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from .models import Course, Equation, LearningEvent, UserProgress
+from .serializers import (
+    CourseDetailSerializer,
+    EquationSerializer,
+    ProgressUpdateSerializer,
+    UserProgressSerializer,
+)
+
+
+class EquationViewSet(viewsets.ReadOnlyModelViewSet):
+    """List and retrieve equations. Supports ?category= filtering."""
+
+    queryset = Equation.objects.all()
+    serializer_class = EquationSerializer
+    lookup_field = "sort_order"
+    lookup_url_kwarg = "id"
+    filterset_fields = ["category"]
+
+
+@api_view(["PATCH"])
+def update_progress(request, id):
+    """Mark progress on a single equation identified by sort_order."""
+    try:
+        equation = Equation.objects.get(sort_order=id)
+    except Equation.DoesNotExist:
+        return Response({"error": "Equation not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = ProgressUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    anon_id = serializer.validated_data["user_id"]
+    progress, _ = UserProgress.objects.get_or_create(
+        anon_id=anon_id,
+        equation=equation,
+    )
+    if "completed" in serializer.validated_data:
+        progress.completed = serializer.validated_data["completed"]
+    if "notes" in serializer.validated_data:
+        progress.notes = serializer.validated_data["notes"]
+    progress.save()
+
+    return Response(UserProgressSerializer(progress).data)
+
+
+@api_view(["GET"])
+def course_detail(request, slug):
+    """Retrieve a course with its nested lessons."""
+    try:
+        course = Course.objects.prefetch_related("lessons").get(slug=slug)
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response(CourseDetailSerializer(course).data)
+
+
+@api_view(["GET"])
+def search_equations(request):
+    """Search equations by title, author, or category using ?q=<term>."""
+    q = request.query_params.get("q", "").strip()
+    if not q:
+        return Response(
+            {"error": "Query parameter 'q' is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    equations = Equation.objects.filter(
+        Q(title__icontains=q) | Q(author__icontains=q) | Q(category__icontains=q)
+    )
+    return Response(EquationSerializer(equations, many=True).data)
+
+
+@api_view(["GET"])
+def health(request):
+    """Health check endpoint."""
+    return Response({"status": "ok"})
+
+
+@api_view(["GET"])
+def equation_atlas_legacy(request):
+    """Legacy alias that returns the full equation atlas in the original envelope shape.
+
+    Kept for backward compatibility with the frontend while it migrates to /api/equations/.
+    """
+    try:
+        course = Course.objects.prefetch_related("lessons").get(
+            slug="equations-that-changed-the-world"
+        )
+    except Course.DoesNotExist:
+        # Fall back to an empty payload if the DB hasn't been seeded yet.
+        return Response(
+            {
+                "course": {},
+                "equationAtlas": [],
+            }
+        )
+
+    equations = Equation.objects.all()
+    first_lesson = course.lessons.first()
+
+    payload = {
+        "course": {
+            "slug": course.slug,
+            "title": course.title,
+            "progressPercent": course.progress_percent,
+            "tone": course.tone,
+        },
+        "today": {
+            "goal": first_lesson.objective if first_lesson else "",
+            "durationMinutes": first_lesson.duration_minutes if first_lesson else 0,
+        },
+        "featuredLesson": {
+            "title": first_lesson.title if first_lesson else "",
+            "objective": first_lesson.objective if first_lesson else "",
+            "steps": first_lesson.steps if first_lesson else [],
+        },
+        "equationAtlas": EquationSerializer(equations, many=True).data,
+    }
+    return Response(payload)
+
+
+# ---------------------------------------------------------------------------
+# Pro / Authenticated endpoints
+# ---------------------------------------------------------------------------
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_progress(request):
+    """Get all progress for the authenticated user."""
+    progress = UserProgress.objects.filter(user=request.user)
+    return Response(UserProgressSerializer(progress, many=True).data)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_my_progress(request, equation_id):
+    """Update progress for a specific equation. Pro users only for sync."""
+    try:
+        equation = Equation.objects.get(sort_order=equation_id)
+    except Equation.DoesNotExist:
+        return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    progress, _ = UserProgress.objects.get_or_create(
+        user=request.user, equation=equation,
+        defaults={"anon_id": str(request.user.id)},
+    )
+    for field in [
+        "completed", "lesson_step", "time_spent_seconds",
+        "variables_explored", "notes", "bookmarked",
+    ]:
+        if field in request.data:
+            setattr(progress, field, request.data[field])
+    if request.data.get("completed") and not progress.completed_at:
+        progress.completed_at = timezone.now()
+    progress.save()
+    return Response(UserProgressSerializer(progress).data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def bulk_sync_progress(request):
+    """Bulk sync progress from localStorage when user signs up for Pro."""
+    items = request.data.get("items", [])
+    results = []
+    for item in items:
+        eq_id = item.get("equation_id")
+        try:
+            equation = Equation.objects.get(sort_order=eq_id)
+        except Equation.DoesNotExist:
+            continue
+        progress, _ = UserProgress.objects.get_or_create(
+            user=request.user, equation=equation,
+            defaults={"anon_id": str(request.user.id)},
+        )
+        for field in [
+            "completed", "lesson_step", "time_spent_seconds", "notes", "bookmarked",
+        ]:
+            if field in item:
+                setattr(progress, field, item[field])
+        progress.save()
+        results.append(UserProgressSerializer(progress).data)
+    return Response(results)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def learning_dashboard(request):
+    """Return aggregated learning analytics for the authenticated Pro user."""
+    user = request.user
+    if not hasattr(user, "profile") or user.profile.tier != "pro":
+        return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
+
+    progress = UserProgress.objects.filter(user=user)
+    completed = progress.filter(completed=True).count()
+    total_time = progress.aggregate(total=Sum("time_spent_seconds"))["total"] or 0
+
+    # Streak: count consecutive days with activity
+    events = LearningEvent.objects.filter(user=user).order_by("-created_at")
+    dates = set(e.created_at.date() for e in events[:100])
+    streak = 0
+    day = timezone.now().date()
+    while day in dates:
+        streak += 1
+        day -= timedelta(days=1)
+
+    # Category completion
+    categories = {}
+    for eq in Equation.objects.all():
+        cat = eq.category
+        if cat not in categories:
+            categories[cat] = {"total": 0, "completed": 0}
+        categories[cat]["total"] += 1
+        if progress.filter(equation=eq, completed=True).exists():
+            categories[cat]["completed"] += 1
+
+    # Recommendation: first uncompleted equation
+    completed_ids = set(
+        progress.filter(completed=True).values_list("equation_id", flat=True)
+    )
+    next_eq = Equation.objects.exclude(id__in=completed_ids).first()
+
+    return Response({
+        "completedCount": completed,
+        "totalEquations": Equation.objects.count(),
+        "totalTimeMinutes": round(total_time / 60),
+        "currentStreak": streak,
+        "categories": categories,
+        "nextRecommended": {
+            "id": next_eq.sort_order,
+            "title": next_eq.title,
+        } if next_eq else None,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def log_event(request):
+    """Log a learning event for analytics. Pro users only."""
+    if not hasattr(request.user, "profile") or not request.user.profile.is_pro:
+        return Response({"error": "Pro subscription required"}, status=status.HTTP_403_FORBIDDEN)
+
+    eq_id = request.data.get("equation_id")
+    event_type = request.data.get("event_type")
+    data = request.data.get("data", {})
+
+    if not event_type:
+        return Response({"error": "event_type is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    equation = None
+    if eq_id is not None:
+        try:
+            equation = Equation.objects.get(sort_order=eq_id)
+        except Equation.DoesNotExist:
+            return Response({"error": "Equation not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    LearningEvent.objects.create(
+        user=request.user,
+        equation=equation,
+        event_type=event_type,
+        data=data,
+    )
+    return Response({"ok": True}, status=status.HTTP_201_CREATED)

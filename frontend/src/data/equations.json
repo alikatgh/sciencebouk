@@ -1,0 +1,377 @@
+[
+  {
+    "id": 1, "title": "Pythagoras's Theorem", "formula": "a^2 + b^2 = c^2",
+    "author": "Pythagoras", "year": "530 BC", "category": "Geometry",
+    "hook": "You need to build a ramp. The step is 3 feet high, the base starts 4 feet away. How long is the ramp?",
+    "hookAction": "Drag the sides of the triangle to see a\u00b2 + b\u00b2 always equals c\u00b2.",
+    "variables": [
+      { "name": "a", "symbol": "a", "description": "Vertical side", "min": 1, "max": 7, "step": 0.5, "default": 3, "unit": null, "color": "primary" },
+      { "name": "b", "symbol": "b", "description": "Horizontal side", "min": 1, "max": 7, "step": 0.5, "default": 4, "unit": null, "color": "secondary" },
+      { "name": "c", "symbol": "c", "description": "Hypotenuse (computed)", "min": 0, "max": 20, "step": 0.01, "default": 5, "unit": null, "color": "result", "constant": true }
+    ],
+    "presets": [
+      { "label": "3-4-5", "values": { "a": 3, "b": 4 } },
+      { "label": "5-12-13", "values": { "a": 5, "b": 12 } },
+      { "label": "Ladder", "values": { "a": 2, "b": 6 } }
+    ],
+    "lessons": [
+      { "id": "touch", "instruction": "Grab the blue dot on side a and drag to make it longer.", "hint": "Find the blue handle at the top of side a.", "unlocked": ["a"], "successType": "variable_changed", "successTarget": "a", "celebration": "subtle", "insight": "The hypotenuse c grew too. The squares always balance: a\u00b2 + b\u00b2 = c\u00b2." },
+      { "id": "squares", "instruction": "Watch the squares. Blue + amber always equals red. Drag both a and b.", "unlocked": ["a", "b"], "successType": "variable_changed", "successTarget": "b", "celebration": "subtle", "insight": "a\u00b2 + b\u00b2 = c\u00b2. Always. No matter what size." },
+      { "id": "classic", "instruction": "Set a = 3 and b = 4. What is c?", "unlocked": ["a", "b"], "successType": "value_reached", "successTarget": "a", "successValue": 3, "successTolerance": 0.5, "celebration": "big", "insight": "c = 5. The famous 3-4-5 triangle. Builders have used this for 4,000 years." }
+    ],
+    "glossary": [
+      { "words": ["hypotenuse"], "highlightClass": "sq-c", "color": "#ef4444", "tooltip": "The longest side, opposite the right angle" },
+      { "words": ["right angle", "right triangle"], "highlightClass": "right-angle", "color": "#64748b", "tooltip": "The 90\u00b0 corner" },
+      { "words": ["square", "squares", "area"], "highlightClass": "all-squares", "color": "#8b5cf6", "tooltip": "Area squares attached to each side" },
+      { "words": ["triangle"], "highlightClass": "tri", "color": "#334155", "tooltip": "The right triangle" },
+      { "words": ["ramp"], "highlightClass": "sq-c", "color": "#ef4444", "tooltip": "The ramp length equals the hypotenuse" }
+    ]
+  },
+  {
+    "id": 2, "title": "Logarithms", "formula": "\\log xy = \\log x + \\log y",
+    "author": "John Napier", "year": "1610", "category": "Algebra",
+    "hook": "An earthquake at 7.0 vs 8.0 on the Richter scale \u2014 it's not 'a little bigger'. It's 10\u00d7 more powerful.",
+    "hookAction": "Drag x and y to see how log turns multiplication into addition.",
+    "variables": [
+      { "name": "x", "symbol": "x", "description": "First number to multiply", "min": 1, "max": 100, "step": 1, "default": 20, "unit": null, "color": "primary" },
+      { "name": "y", "symbol": "y", "description": "Second number to multiply", "min": 1, "max": 100, "step": 1, "default": 5, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "10 \u00d7 10", "values": { "x": 10, "y": 10 } },
+      { "label": "2 \u00d7 50", "values": { "x": 2, "y": 50 } },
+      { "label": "100 \u00d7 100", "values": { "x": 100, "y": 100 } }
+    ],
+    "lessons": [
+      { "id": "drag-x", "instruction": "Drag x to change the first number. Watch the bars.", "unlocked": ["x"], "successType": "variable_changed", "successTarget": "x", "celebration": "subtle", "insight": "log(100) is only 2. Logarithms compress huge ranges into small numbers." },
+      { "id": "product", "instruction": "Change both. Verify log(x) + log(y) = log(x\u00d7y).", "unlocked": ["x", "y"], "successType": "variable_changed", "successTarget": "y", "celebration": "subtle", "insight": "The product rule: log turns multiplication into addition. Before calculators, this is how people did arithmetic." },
+      { "id": "earthquake", "instruction": "Set x=10, y=10. Then try x=100, y=100.", "unlocked": ["x", "y"], "successType": "variable_changed", "successTarget": "x", "celebration": "big", "insight": "Each +1 on Richter means 10\u00d7 more powerful. Magnitude 8 isn't 'slightly bigger' than 7." }
+    ],
+    "glossary": [
+      { "words": ["bars", "bar"], "highlightClass": "bars", "color": "#3b82f6", "tooltip": "Visual bars showing log values" },
+      { "words": ["curve"], "highlightClass": "curve", "color": "#1e293b", "tooltip": "The logarithm curve y = log(x)" },
+      { "words": ["product rule"], "highlightClass": "verify", "color": "#16a34a", "tooltip": "log(xy) = log(x) + log(y)" }
+    ]
+  },
+  {
+    "id": 3, "title": "Calculus", "formula": "\\frac{df}{dt}=\\lim_{h\\to0}\\frac{f(t+h)-f(t)}{h}",
+    "author": "Newton", "year": "1668", "category": "Calculus",
+    "hook": "Your speedometer is broken. You only have the odometer. How do you figure out your speed?",
+    "hookAction": "Grab the blue dot and drag it along the curve to see speed as steepness.",
+    "variables": [
+      { "name": "t", "symbol": "t", "description": "Point on the curve", "min": 0.5, "max": 9.5, "step": 0.1, "default": 3, "unit": null, "color": "primary" },
+      { "name": "h", "symbol": "h", "description": "Distance between two points", "min": 0.05, "max": 3, "step": 0.05, "default": 1.5, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "Peak (t=2)", "values": { "t": 2, "h": 1.5 } },
+      { "label": "Valley (t=7)", "values": { "t": 7, "h": 1.5 } },
+      { "label": "Steep (t=9)", "values": { "t": 9, "h": 1.5 } }
+    ],
+    "lessons": [
+      { "id": "touch", "instruction": "Grab the blue dot and drag it along the curve.", "unlocked": ["t"], "successType": "variable_changed", "successTarget": "t", "celebration": "subtle", "insight": "The orange line tilts as you move. Its steepness IS the speed \u2014 that's a derivative." },
+      { "id": "secant", "instruction": "Drag h smaller. Watch the orange line approach the gray tangent.", "unlocked": ["h"], "successType": "variable_changed", "successTarget": "h", "celebration": "subtle", "insight": "As h \u2192 0, the secant becomes the tangent. That's what 'limit' means \u2014 just zooming in." },
+      { "id": "explore", "instruction": "Find where the slope is zero \u2014 the flat spots.", "unlocked": ["t", "h"], "successType": "time_elapsed", "successDuration": 15000, "celebration": "medium", "insight": "Slope = 0 at peaks and valleys. Setting derivative to zero finds maximums and minimums." }
+    ],
+    "glossary": [
+      { "words": ["curve"], "highlightClass": "main-curve", "color": "#1e293b", "tooltip": "The function f(x)" },
+      { "words": ["blue dot", "dot"], "highlightClass": "primary-dot", "color": "#3b82f6", "tooltip": "The point you're examining" },
+      { "words": ["orange line", "secant"], "highlightClass": "secant-line", "color": "#f59e0b", "tooltip": "Line through two points on the curve" },
+      { "words": ["tangent"], "highlightClass": "tangent-line", "color": "#94a3b8", "tooltip": "Line touching the curve at exactly one point" },
+      { "words": ["slope", "steepness", "speed"], "highlightClass": "slope-box", "color": "#ef4444", "tooltip": "How steep the curve is at this point" },
+      { "words": ["peaks", "valleys", "flat spots"], "highlightClass": "main-curve", "color": "#1e293b", "tooltip": "Where slope = 0" },
+      { "words": ["derivative"], "highlightClass": "slope-box", "color": "#ef4444", "tooltip": "The rate of change \u2014 slope at a point" }
+    ]
+  },
+  {
+    "id": 4, "title": "Law of Gravity", "formula": "F=G\\frac{m_1m_2}{r^2}",
+    "author": "Newton", "year": "1687", "category": "Physics",
+    "hook": "Astronauts don't escape gravity \u2014 they fall sideways. The force barely changes at space-station altitude.",
+    "hookAction": "Drag the masses to see how gravity changes.",
+    "variables": [
+      { "name": "m1", "symbol": "m\u2081", "description": "Mass of first object", "min": 1, "max": 10, "step": 0.5, "default": 3, "unit": "kg", "color": "primary" },
+      { "name": "m2", "symbol": "m\u2082", "description": "Mass of second object", "min": 1, "max": 10, "step": 0.5, "default": 7, "unit": "kg", "color": "secondary" },
+      { "name": "r", "symbol": "r", "description": "Distance between centers", "min": 1.5, "max": 10, "step": 0.1, "default": 5, "unit": "m", "color": "tertiary" }
+    ],
+    "presets": [
+      { "label": "Two balls", "values": { "m1": 3, "m2": 7, "r": 5 } },
+      { "label": "Close up", "values": { "m1": 8, "m2": 8, "r": 2 } },
+      { "label": "Far apart", "values": { "m1": 5, "m2": 5, "r": 9 } }
+    ],
+    "lessons": [
+      { "id": "touch", "instruction": "Drag m\u2081 in the formula to make the first mass heavier.", "unlocked": ["m1"], "successType": "variable_changed", "successTarget": "m1", "celebration": "subtle", "insight": "More mass = more gravitational pull. That's why Jupiter has such strong gravity." },
+      { "id": "distance", "instruction": "Drag r downward. Make the objects closer.", "unlocked": ["r"], "successType": "variable_changed", "successTarget": "r", "celebration": "subtle", "insight": "Halve the distance, quadruple the force. The r\u00b2 makes gravity extremely strong up close." },
+      { "id": "break-it", "instruction": "Maximize the force. Max masses, min distance.", "unlocked": ["m1", "m2", "r"], "successType": "value_reached", "successTarget": "r", "successValue": 1.5, "successTolerance": 0.2, "celebration": "big", "insight": "Huge masses + tiny distance = enormous force. This is black-hole territory." }
+    ],
+    "glossary": [
+      { "words": ["mass", "masses"], "highlightClass": "m1-group", "color": "#3b82f6", "tooltip": "The objects being attracted" },
+      { "words": ["force", "pull", "gravity"], "highlightClass": "force-box", "color": "#ef4444", "tooltip": "Gravitational attraction between the masses" },
+      { "words": ["force arrow", "arrow"], "highlightClass": "arrow-r", "color": "#ef4444", "tooltip": "Shows direction and strength of gravity" },
+      { "words": ["distance"], "highlightClass": "dist-line", "color": "#10b981", "tooltip": "Gap between the centers of the two masses" }
+    ]
+  },
+  {
+    "id": 5, "title": "Wave Equation", "formula": "\\frac{\\partial^2 u}{\\partial t^2}=c^2\\frac{\\partial^2 u}{\\partial x^2}",
+    "author": "J. d'Alembert", "year": "1746", "category": "Physics",
+    "hook": "Pluck a guitar string. Why a musical note instead of noise? Only certain wave shapes fit.",
+    "hookAction": "Adjust frequency and amplitude to see how waves behave.",
+    "variables": [
+      { "name": "freq", "symbol": "f", "description": "Frequency \u2014 how fast the wave oscillates", "min": 0.5, "max": 5, "step": 0.1, "default": 1.5, "unit": "Hz", "color": "primary" },
+      { "name": "amp", "symbol": "A", "description": "Amplitude \u2014 how tall the wave is", "min": 20, "max": 100, "step": 1, "default": 60, "unit": "px", "color": "secondary" },
+      { "name": "wavelength", "symbol": "\u03bb", "description": "Wavelength \u2014 distance between peaks", "min": 50, "max": 200, "step": 1, "default": 120, "unit": "px", "color": "tertiary" }
+    ],
+    "presets": [
+      { "label": "Low bass", "values": { "freq": 0.5, "amp": 80, "wavelength": 180 } },
+      { "label": "High pitch", "values": { "freq": 4, "amp": 40, "wavelength": 60 } },
+      { "label": "Tall wave", "values": { "freq": 1, "amp": 100, "wavelength": 150 } }
+    ],
+    "lessons": [
+      { "id": "freq", "instruction": "Drag frequency higher. Watch the waves compress.", "unlocked": ["freq"], "successType": "variable_changed", "successTarget": "freq", "celebration": "subtle", "insight": "Higher frequency = more waves per second = higher pitch in sound." },
+      { "id": "amp", "instruction": "Now change amplitude. The wave gets taller or shorter.", "unlocked": ["amp"], "successType": "variable_changed", "successTarget": "amp", "celebration": "subtle", "insight": "Amplitude is loudness in sound, brightness in light. The wave shape stays the same." },
+      { "id": "super", "instruction": "Watch the red superposition \u2014 two waves combining.", "unlocked": ["freq", "amp", "wavelength"], "successType": "time_elapsed", "successDuration": 10000, "celebration": "medium", "insight": "When waves combine, they add up. This is how noise-canceling headphones work \u2014 by adding an opposite wave." }
+    ]
+  },
+  {
+    "id": 6, "title": "The Square Root of Minus One", "formula": "i^2=-1",
+    "author": "Euler", "year": "1750", "category": "Complex Numbers",
+    "hook": "Your phone screen can rotate 90\u00b0. The software multiplies every coordinate by i.",
+    "hookAction": "Tap 'Multiply by i' and watch every point rotate exactly 90\u00b0.",
+    "variables": [
+      { "name": "a", "symbol": "a", "description": "Real part Re(z)", "min": -2.5, "max": 2.5, "step": 0.1, "default": 1, "unit": null, "color": "primary" },
+      { "name": "b", "symbol": "b", "description": "Imaginary part Im(z)", "min": -2.5, "max": 2.5, "step": 0.1, "default": 0.5, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "Unit (1+0i)", "values": { "a": 1, "b": 0 } },
+      { "label": "Pure i (0+1i)", "values": { "a": 0, "b": 1 } },
+      { "label": "45\u00b0 (1+1i)", "values": { "a": 1, "b": 1 } }
+    ],
+    "lessons": [
+      { "id": "real", "instruction": "Drag a to move the point left and right on the real axis.", "unlocked": ["a"], "successType": "variable_changed", "successTarget": "a", "celebration": "subtle", "insight": "The real part moves horizontally, like a normal number line. Complex numbers add a second dimension." },
+      { "id": "imag", "instruction": "Now drag b to move the point up and down.", "unlocked": ["b"], "successType": "variable_changed", "successTarget": "b", "celebration": "subtle", "insight": "The imaginary axis is perpendicular to the real axis. Every point is a complex number a + bi." },
+      { "id": "rotate", "instruction": "Set a=1, b=0, then use 'Multiply by i' button.", "unlocked": ["a", "b"], "successType": "variable_changed", "successTarget": "b", "celebration": "big", "insight": "Multiplying by i rotates 90\u00b0. Do it twice (i\u00d7i) = 180\u00b0 = multiplying by -1. That's why i\u00b2 = -1!" }
+    ]
+  },
+  {
+    "id": 7, "title": "Euler's Formula for Polyhedra", "formula": "V-E+F=2",
+    "author": "Euler", "year": "1751", "category": "Topology",
+    "hook": "Count corners, edges, and faces of any 3D shape. Corners \u2212 edges + faces always equals 2.",
+    "hookAction": "Tap different shapes and try to break the rule.",
+    "variables": [
+      { "name": "V", "symbol": "V", "description": "Vertices (corners)", "min": 4, "max": 20, "step": 1, "default": 8, "unit": null, "color": "primary", "constant": true },
+      { "name": "E", "symbol": "E", "description": "Edges", "min": 6, "max": 30, "step": 1, "default": 12, "unit": null, "color": "secondary", "constant": true },
+      { "name": "F", "symbol": "F", "description": "Faces", "min": 4, "max": 12, "step": 1, "default": 6, "unit": null, "color": "tertiary", "constant": true }
+    ],
+    "presets": [
+      { "label": "Tetrahedron", "values": { "V": 4, "E": 6, "F": 4 } },
+      { "label": "Cube", "values": { "V": 8, "E": 12, "F": 6 } },
+      { "label": "Icosahedron", "values": { "V": 12, "E": 30, "F": 20 } }
+    ],
+    "lessons": [
+      { "id": "cube", "instruction": "Look at the cube: 8 corners, 12 edges, 6 faces. Does 8-12+6 = 2?", "unlocked": [], "successType": "time_elapsed", "successDuration": 8000, "celebration": "subtle", "insight": "8 - 12 + 6 = 2. It works!" },
+      { "id": "try", "instruction": "Click other shapes. Count V, E, F for each.", "unlocked": [], "successType": "time_elapsed", "successDuration": 12000, "celebration": "subtle", "insight": "V - E + F = 2 for every convex polyhedron. Euler proved this in 1751." },
+      { "id": "icosa", "instruction": "Try the icosahedron: 12 vertices, 30 edges, 20 faces.", "unlocked": [], "successType": "time_elapsed", "successDuration": 8000, "celebration": "big", "insight": "12 - 30 + 20 = 2. Still works! This is a topological invariant \u2014 it doesn't change no matter how you stretch the shape." }
+    ]
+  },
+  {
+    "id": 8, "title": "Normal Distribution", "formula": "\\Phi(x)=\\frac{1}{\\sqrt{2\\pi\\sigma}}e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}",
+    "author": "C. F. Gauss", "year": "1810", "category": "Statistics",
+    "hook": "In a class of 1000 students, how many score above 90%? This curve answers that.",
+    "hookAction": "Drag the center and width of the curve to see how scores spread.",
+    "variables": [
+      { "name": "mu", "symbol": "\u03bc", "description": "Mean \u2014 center of the bell curve", "min": -3, "max": 3, "step": 0.1, "default": 0, "unit": null, "color": "primary" },
+      { "name": "sigma", "symbol": "\u03c3", "description": "Standard deviation \u2014 width of the spread", "min": 0.3, "max": 3, "step": 0.1, "default": 1, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "Standard", "values": { "mu": 0, "sigma": 1 } },
+      { "label": "Wide", "values": { "mu": 0, "sigma": 2.5 } },
+      { "label": "Narrow", "values": { "mu": 0, "sigma": 0.5 } }
+    ],
+    "lessons": [
+      { "id": "mu", "instruction": "Drag \u03bc to shift the curve left and right.", "unlocked": ["mu"], "successType": "variable_changed", "successTarget": "mu", "celebration": "subtle", "insight": "\u03bc is the average. Shifting it moves the entire bell curve." },
+      { "id": "sigma", "instruction": "Drag \u03c3 to make the curve wider or narrower.", "unlocked": ["sigma"], "successType": "variable_changed", "successTarget": "sigma", "celebration": "subtle", "insight": "Bigger \u03c3 = more spread. Smaller \u03c3 = everyone clustered around the mean." },
+      { "id": "rule", "instruction": "Set \u03c3=1. The shaded region is 68% of all data.", "unlocked": ["mu", "sigma"], "successType": "value_reached", "successTarget": "sigma", "successValue": 1, "successTolerance": 0.2, "celebration": "big", "insight": "68% within 1\u03c3, 95% within 2\u03c3, 99.7% within 3\u03c3. Works for heights, test scores, manufacturing \u2014 everything." }
+    ]
+  },
+  {
+    "id": 9, "title": "Fourier Transform", "formula": "f(\\omega)=\\int_{-\\infty}^{\\infty}f(x)e^{-2\\pi i x\\omega}\\,dx",
+    "author": "J. Fourier", "year": "1822", "category": "Signal Processing",
+    "hook": "Every sound your phone plays is just a recipe of pure tones mixed together.",
+    "hookAction": "Toggle harmonics on/off to build complex sounds from simple waves.",
+    "variables": [
+      { "name": "a1", "symbol": "A\u2081", "description": "Fundamental amplitude", "min": 0, "max": 1, "step": 0.05, "default": 0.8, "unit": null, "color": "primary" },
+      { "name": "a2", "symbol": "A\u2082", "description": "2nd harmonic amplitude", "min": 0, "max": 1, "step": 0.05, "default": 0.4, "unit": null, "color": "secondary" },
+      { "name": "a3", "symbol": "A\u2083", "description": "3rd harmonic amplitude", "min": 0, "max": 1, "step": 0.05, "default": 0.25, "unit": null, "color": "tertiary" },
+      { "name": "a4", "symbol": "A\u2084", "description": "4th harmonic amplitude", "min": 0, "max": 1, "step": 0.05, "default": 0.15, "unit": null, "color": "quaternary" }
+    ],
+    "presets": [
+      { "label": "Pure tone", "values": { "a1": 1, "a2": 0, "a3": 0, "a4": 0 } },
+      { "label": "Square-ish", "values": { "a1": 1, "a2": 0, "a3": 0.33, "a4": 0 } },
+      { "label": "Rich", "values": { "a1": 0.8, "a2": 0.5, "a3": 0.3, "a4": 0.2 } }
+    ],
+    "lessons": [
+      { "id": "fundamental", "instruction": "Set all harmonics to 0 except A\u2081. That's a pure sine wave.", "unlocked": ["a1", "a2", "a3", "a4"], "successType": "variable_changed", "successTarget": "a2", "celebration": "subtle", "insight": "A pure sine wave is the simplest possible sound. Every complex sound is built from these." },
+      { "id": "add", "instruction": "Now add A\u2082 and A\u2083. Watch the shape change.", "unlocked": ["a1", "a2", "a3", "a4"], "successType": "variable_changed", "successTarget": "a3", "celebration": "subtle", "insight": "Adding harmonics creates timbre \u2014 why a piano and violin sound different playing the same note." },
+      { "id": "square", "instruction": "Try the 'Square-ish' preset. Odd harmonics make square waves.", "unlocked": ["a1", "a2", "a3", "a4"], "successType": "time_elapsed", "successDuration": 10000, "celebration": "big", "insight": "A perfect square wave needs infinite harmonics. This is how synthesizers and MP3 compression work." }
+    ]
+  },
+  {
+    "id": 10, "title": "Navier-Stokes Equation",
+    "formula": "\\rho\\left(\\frac{\\partial \\mathbf{v}}{\\partial t}+\\mathbf{v}\\cdot\\nabla\\mathbf{v}\\right)=-\\nabla p+\\nabla\\cdot\\mathbf{T}+\\mathbf{f}",
+    "author": "Navier, Stokes", "year": "1845", "category": "Fluid Dynamics",
+    "hook": "Why does smoke curl? Why do planes fly? This equation governs every fluid \u2014 and we still can't fully solve it.",
+    "hookAction": "Adjust viscosity and flow speed to watch fluid behavior change.",
+    "variables": [
+      { "name": "viscosity", "symbol": "\u03bd", "description": "Viscosity \u2014 how thick/sticky the fluid is", "min": 0.1, "max": 5, "step": 0.1, "default": 1, "unit": null, "color": "primary" },
+      { "name": "flowSpeed", "symbol": "v", "description": "Flow speed", "min": 0.5, "max": 5, "step": 0.1, "default": 2, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "Laminar", "values": { "viscosity": 3, "flowSpeed": 1 } },
+      { "label": "Turbulent", "values": { "viscosity": 0.5, "flowSpeed": 4 } },
+      { "label": "Honey", "values": { "viscosity": 5, "flowSpeed": 1 } }
+    ],
+    "lessons": [
+      { "id": "watch", "instruction": "Watch the particles flow around the obstacle.", "unlocked": ["flowSpeed"], "successType": "time_elapsed", "successDuration": 8000, "celebration": "subtle", "insight": "The particles follow streamlines \u2014 paths that the fluid naturally takes." },
+      { "id": "viscosity", "instruction": "Increase viscosity. The flow becomes smoother.", "unlocked": ["viscosity"], "successType": "variable_changed", "successTarget": "viscosity", "celebration": "subtle", "insight": "High viscosity = honey. Low viscosity = water. The fluid resists deformation more." },
+      { "id": "turbulence", "instruction": "Try 'Turbulent' preset. Low viscosity + high speed = chaos.", "unlocked": ["viscosity", "flowSpeed"], "successType": "variable_changed", "successTarget": "flowSpeed", "celebration": "big", "insight": "This transition from smooth to chaotic flow is why Navier-Stokes is a million-dollar unsolved problem." }
+    ]
+  },
+  {
+    "id": 11, "title": "Maxwell's Equations",
+    "formula": "\\nabla\\cdot\\mathbf{E}=0,\\;\\nabla\\times\\mathbf{E}=-\\frac{1}{c}\\frac{\\partial \\mathbf{H}}{\\partial t}",
+    "author": "J. C. Maxwell", "year": "1865", "category": "Electromagnetism",
+    "hook": "How does WiFi get through walls? Electric fields shaking back and forth launch waves at the speed of light.",
+    "hookAction": "Place charges and watch field lines appear. Switch to wave mode.",
+    "variables": [
+      { "name": "wavelength", "symbol": "\u03bb", "description": "Wavelength of the electromagnetic wave", "min": 50, "max": 300, "step": 5, "default": 150, "unit": "px", "color": "primary" }
+    ],
+    "presets": [
+      { "label": "Short (X-ray)", "values": { "wavelength": 60 } },
+      { "label": "Visible", "values": { "wavelength": 150 } },
+      { "label": "Long (radio)", "values": { "wavelength": 280 } }
+    ],
+    "lessons": [
+      { "id": "field", "instruction": "Click to place charges. Watch field lines appear.", "unlocked": ["wavelength"], "successType": "time_elapsed", "successDuration": 10000, "celebration": "subtle", "insight": "Electric field lines show the force direction. They flow from positive to negative charges." },
+      { "id": "wave", "instruction": "Switch to Wave mode. See E and B fields oscillating.", "unlocked": ["wavelength"], "successType": "variable_changed", "successTarget": "wavelength", "celebration": "subtle", "insight": "E and B fields create each other \u2014 a changing E makes B, a changing B makes E. This self-sustaining loop IS light." },
+      { "id": "lambda", "instruction": "Change wavelength. Shorter = higher energy (X-rays). Longer = radio.", "unlocked": ["wavelength"], "successType": "variable_changed", "successTarget": "wavelength", "celebration": "big", "insight": "All electromagnetic radiation \u2014 radio, microwave, light, X-rays, gamma \u2014 is the same thing, just different wavelengths." }
+    ]
+  },
+  {
+    "id": 12, "title": "Second Law of Thermodynamics", "formula": "dS\\ge0",
+    "author": "L. Boltzmann", "year": "1874", "category": "Thermodynamics",
+    "hook": "Why can't you unscramble an egg? The odds are 1 in a number with more digits than atoms in the universe.",
+    "hookAction": "Drag temperature and watch order dissolve into chaos.",
+    "variables": [
+      { "name": "temperature", "symbol": "T", "description": "Temperature \u2014 how much energy the particles have", "min": 0, "max": 100, "step": 1, "default": 30, "unit": null, "color": "primary" }
+    ],
+    "presets": [
+      { "label": "Frozen", "values": { "temperature": 0 } },
+      { "label": "Room temp", "values": { "temperature": 40 } },
+      { "label": "Max entropy", "values": { "temperature": 100 } }
+    ],
+    "lessons": [
+      { "id": "order", "instruction": "Set temperature to 0. Look at the ordered particles on the left.", "unlocked": ["temperature"], "successType": "time_elapsed", "successDuration": 6000, "celebration": "subtle", "insight": "At low temperature, particles stay organized. Low entropy = high order." },
+      { "id": "heat", "instruction": "Drag temperature up. Watch the right panel get chaotic.", "unlocked": ["temperature"], "successType": "variable_changed", "successTarget": "temperature", "celebration": "subtle", "insight": "More energy = particles scatter randomly. Entropy (disorder) increases." },
+      { "id": "arrow", "instruction": "Set to maximum. This always happens \u2014 never the reverse.", "unlocked": ["temperature"], "successType": "value_reached", "successTarget": "temperature", "successValue": 100, "successTolerance": 5, "celebration": "big", "insight": "Entropy always increases. This gives time its direction \u2014 the 'arrow of time'. You can't unscramble an egg." }
+    ]
+  },
+  {
+    "id": 13, "title": "Relativity", "formula": "E=mc^2",
+    "author": "Einstein", "year": "1905", "category": "Physics",
+    "hook": "GPS satellites need Einstein's corrections. Without them, your location drifts 10 km per day.",
+    "hookAction": "Drag speed to see time slow down and objects shrink.",
+    "variables": [
+      { "name": "v", "symbol": "v", "description": "Velocity as fraction of light speed", "min": 0, "max": 0.99, "step": 0.01, "default": 0.3, "unit": "c", "color": "primary" }
+    ],
+    "presets": [
+      { "label": "Walking", "values": { "v": 0.01 } },
+      { "label": "Airplane", "values": { "v": 0.1 } },
+      { "label": "90% light", "values": { "v": 0.9 } }
+    ],
+    "lessons": [
+      { "id": "slow", "instruction": "Drag v up slowly. Watch the Lorentz factor \u03b3.", "unlocked": ["v"], "successType": "variable_changed", "successTarget": "v", "celebration": "subtle", "insight": "At low speeds, \u03b3 \u2248 1 \u2014 time and space are normal. Relativity only matters at extreme speeds." },
+      { "id": "fast", "instruction": "Push v to 0.9c. Watch time dilation and length contraction.", "unlocked": ["v"], "successType": "value_reached", "successTarget": "v", "successValue": 0.9, "successTolerance": 0.05, "celebration": "subtle", "insight": "At 90% light speed, time runs 2.3\u00d7 slower. A 10-year trip feels like 4.4 years. The twin paradox is real." },
+      { "id": "limit", "instruction": "Try to reach v = 1.0. You can't.", "unlocked": ["v"], "successType": "value_reached", "successTarget": "v", "successValue": 0.99, "successTolerance": 0.01, "celebration": "big", "insight": "\u03b3 goes to infinity as v \u2192 c. You'd need infinite energy to reach light speed. Nothing with mass can get there." }
+    ]
+  },
+  {
+    "id": 14, "title": "Schrodinger's Equation", "formula": "i\\hbar\\frac{\\partial}{\\partial t}\\Psi=H\\Psi",
+    "author": "E. Schrodinger", "year": "1927", "category": "Quantum Mechanics",
+    "hook": "An electron isn't a ball \u2014 it's a probability cloud. Confine it more, and it gets MORE energetic.",
+    "hookAction": "Change quantum number n and box width L to see the wave function change.",
+    "variables": [
+      { "name": "n", "symbol": "n", "description": "Quantum number (energy level)", "min": 1, "max": 5, "step": 1, "default": 1, "unit": null, "color": "primary" },
+      { "name": "L", "symbol": "L", "description": "Box width", "min": 0.5, "max": 2, "step": 0.1, "default": 1, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "Ground state", "values": { "n": 1, "L": 1 } },
+      { "label": "Excited", "values": { "n": 3, "L": 1 } },
+      { "label": "Tight box", "values": { "n": 1, "L": 0.5 } }
+    ],
+    "lessons": [
+      { "id": "ground", "instruction": "This is n=1, the ground state. The blue wave shows where the particle is likely to be.", "unlocked": ["n"], "successType": "time_elapsed", "successDuration": 8000, "celebration": "subtle", "insight": "A quantum particle doesn't have a definite position. The wave function gives probabilities." },
+      { "id": "excite", "instruction": "Increase n. Watch the wave function develop more peaks.", "unlocked": ["n"], "successType": "variable_changed", "successTarget": "n", "celebration": "subtle", "insight": "Higher n = more nodes = higher energy. Energy goes as n\u00b2." },
+      { "id": "squeeze", "instruction": "Shrink the box (L). Watch energy levels spread apart.", "unlocked": ["n", "L"], "successType": "variable_changed", "successTarget": "L", "celebration": "big", "insight": "Heisenberg Uncertainty: confine the particle more \u2192 energy increases. This is why atoms don't collapse." }
+    ]
+  },
+  {
+    "id": 15, "title": "Information Theory", "formula": "H=-\\sum p(x)\\log p(x)",
+    "author": "C. Shannon", "year": "1949", "category": "Information",
+    "hook": "Playing 20 Questions? If the answer is almost certainly 'yes', the question was useless.",
+    "hookAction": "Drag probability to see how uncertainty changes.",
+    "variables": [
+      { "name": "p", "symbol": "p", "description": "Probability of outcome", "min": 0.01, "max": 0.99, "step": 0.01, "default": 0.5, "unit": null, "color": "primary" }
+    ],
+    "presets": [
+      { "label": "Fair coin", "values": { "p": 0.5 } },
+      { "label": "Biased", "values": { "p": 0.9 } },
+      { "label": "Certain", "values": { "p": 0.99 } }
+    ],
+    "lessons": [
+      { "id": "max", "instruction": "Set p = 0.5. This is maximum uncertainty.", "unlocked": ["p"], "successType": "value_reached", "successTarget": "p", "successValue": 0.5, "successTolerance": 0.05, "celebration": "subtle", "insight": "H = 1 bit at p = 0.5. A fair coin carries the most information \u2014 you genuinely don't know what's coming." },
+      { "id": "certain", "instruction": "Push p toward 0.99. Watch entropy drop to nearly zero.", "unlocked": ["p"], "successType": "value_reached", "successTarget": "p", "successValue": 0.99, "successTolerance": 0.02, "celebration": "subtle", "insight": "Near-certain outcomes carry almost no information. 'Will the sun rise?' tells you nothing \u2014 you already knew." },
+      { "id": "explore", "instruction": "Find the symmetric shape of the entropy curve.", "unlocked": ["p"], "successType": "variable_changed", "successTarget": "p", "celebration": "big", "insight": "H(p) = H(1-p). Knowing something is 90% likely or 10% likely gives the same amount of information. Entropy measures surprise." }
+    ]
+  },
+  {
+    "id": 16, "title": "Chaos Theory", "formula": "x_{t+1}=k x_t(1-x_t)",
+    "author": "R. May", "year": "1975", "category": "Dynamical Systems",
+    "hook": "Weather forecasts fail past 10 days. The tiniest change leads to completely different outcomes.",
+    "hookAction": "Drag r and watch order dissolve into chaos.",
+    "variables": [
+      { "name": "r", "symbol": "r", "description": "Growth parameter \u2014 controls stability vs chaos", "min": 2.5, "max": 4, "step": 0.001, "default": 3.2, "unit": null, "color": "primary" },
+      { "name": "x0", "symbol": "x\u2080", "description": "Initial population value", "min": 0.1, "max": 0.9, "step": 0.01, "default": 0.5, "unit": null, "color": "secondary" }
+    ],
+    "presets": [
+      { "label": "Stable", "values": { "r": 2.8, "x0": 0.5 } },
+      { "label": "Period-2", "values": { "r": 3.2, "x0": 0.5 } },
+      { "label": "Chaos", "values": { "r": 3.8, "x0": 0.5 } }
+    ],
+    "lessons": [
+      { "id": "stable", "instruction": "Set r \u2248 2.8. The time series settles to one value.", "unlocked": ["r"], "successType": "value_reached", "successTarget": "r", "successValue": 2.8, "successTolerance": 0.15, "celebration": "subtle", "insight": "At low r, the system finds equilibrium. Like a stable ecosystem." },
+      { "id": "oscillate", "instruction": "Set r \u2248 3.2. Now it oscillates between two values.", "unlocked": ["r"], "successType": "value_reached", "successTarget": "r", "successValue": 3.2, "successTolerance": 0.15, "celebration": "subtle", "insight": "Period-2 cycle: the population overshoots, then undershoots. Predictable but not fixed." },
+      { "id": "chaos", "instruction": "Push r to 3.8. Welcome to chaos.", "unlocked": ["r"], "successType": "value_reached", "successTarget": "r", "successValue": 3.8, "successTolerance": 0.1, "celebration": "medium", "insight": "Looks random but it's deterministic. This is chaos: predictable rules, unpredictable behavior." },
+      { "id": "butterfly", "instruction": "Change x\u2080 by just 0.01. Watch trajectories diverge.", "unlocked": ["r", "x0"], "successType": "variable_changed", "successTarget": "x0", "celebration": "big", "insight": "The butterfly effect. A butterfly in Brazil can change Texas weather. That's why forecasts fail past 10 days." }
+    ]
+  },
+  {
+    "id": 17, "title": "Black-Scholes Equation",
+    "formula": "\\frac{1}{2}\\sigma^2S^2\\frac{\\partial^2V}{\\partial S^2}+rS\\frac{\\partial V}{\\partial S}+\\frac{\\partial V}{\\partial t}-rV=0",
+    "author": "Black, Scholes", "year": "1990", "category": "Finance",
+    "hook": "You can buy the RIGHT to purchase a stock at today's price, but in the future. How much is that right worth?",
+    "hookAction": "Drag volatility and time to see how option prices change.",
+    "variables": [
+      { "name": "K", "symbol": "K", "description": "Strike price \u2014 the agreed buy/sell price", "min": 50, "max": 150, "step": 1, "default": 100, "unit": "$", "color": "primary" },
+      { "name": "sigma", "symbol": "\u03c3", "description": "Volatility \u2014 how much the stock price swings", "min": 0.05, "max": 1, "step": 0.01, "default": 0.3, "unit": null, "color": "secondary" },
+      { "name": "T", "symbol": "T", "description": "Time to expiry", "min": 0.01, "max": 2, "step": 0.01, "default": 0.5, "unit": "yr", "color": "tertiary" },
+      { "name": "r", "symbol": "r", "description": "Risk-free interest rate", "min": 0.01, "max": 0.15, "step": 0.005, "default": 0.05, "unit": null, "color": "quaternary" }
+    ],
+    "presets": [
+      { "label": "Low vol", "values": { "K": 100, "sigma": 0.1, "T": 0.5, "r": 0.05 } },
+      { "label": "High vol", "values": { "K": 100, "sigma": 0.8, "T": 0.5, "r": 0.05 } },
+      { "label": "Near expiry", "values": { "K": 100, "sigma": 0.3, "T": 0.02, "r": 0.05 } }
+    ],
+    "lessons": [
+      { "id": "strike", "instruction": "Drag K. Higher strike = cheaper call option (you'd pay more to exercise).", "unlocked": ["K"], "successType": "variable_changed", "successTarget": "K", "celebration": "subtle", "insight": "Call = right to BUY. Higher strike means you pay more to exercise, so the right is worth less." },
+      { "id": "vol", "instruction": "Drag volatility up. Both call and put get more expensive.", "unlocked": ["sigma"], "successType": "variable_changed", "successTarget": "sigma", "celebration": "subtle", "insight": "More volatility = more valuable options. If the stock could go way up, you profit. If it goes down, you just don't exercise." },
+      { "id": "time", "instruction": "Drag T toward zero. Watch the curve sharpen.", "unlocked": ["K", "sigma", "T", "r"], "successType": "variable_changed", "successTarget": "T", "celebration": "big", "insight": "As expiry approaches, time value evaporates. The smooth curve collapses into a sharp corner. This is theta decay." }
+    ]
+  }
+]

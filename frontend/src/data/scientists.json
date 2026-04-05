@@ -1,0 +1,250 @@
+[
+  {
+    "id": 1,
+    "name": "Pythagoras",
+    "fullName": "Pythagoras of Samos",
+    "born": "c. 570 BC",
+    "died": "c. 495 BC",
+    "nationality": "Greek",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Kapitolinischer_Pythagoras_adjusted.jpg/220px-Kapitolinischer_Pythagoras_adjusted.jpg",
+    "bio": "Ancient Greek philosopher and mathematician who founded a religious movement called Pythagoreanism. His followers believed that mathematics was the key to understanding the universe. Though the theorem bearing his name was known to Babylonians 1000 years earlier, Pythagoras is credited with the first known proof.",
+    "funFact": "His followers were so devoted that they had strict rules — including never eating beans.",
+    "impact": "The Pythagorean theorem is used billions of times daily in GPS navigation, computer graphics, architecture, and every field that involves distance calculation.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Pythagoras" },
+      { "label": "MacTutor Biography", "url": "https://mathshistory.st-andrews.ac.uk/Biographies/Pythagoras/" }
+    ],
+    "equationIds": [1]
+  },
+  {
+    "id": 2,
+    "name": "John Napier",
+    "fullName": "John Napier of Merchiston",
+    "born": "1550",
+    "died": "1617",
+    "nationality": "Scottish",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/John_Napier_%28765%29.jpg/220px-John_Napier_%28765%29.jpg",
+    "bio": "Scottish landowner and mathematician who invented logarithms as a calculation aid. He spent 20 years developing his tables of logarithms, which revolutionized astronomy and navigation by turning tedious multiplication into simple addition.",
+    "funFact": "Napier also invented a calculating device called 'Napier's bones' — numbered rods that could multiply large numbers mechanically.",
+    "impact": "Logarithms are the foundation of the Richter scale, decibel scale, pH scale, and information theory. They compress exponential data into human-manageable ranges.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/John_Napier" },
+      { "label": "MacTutor Biography", "url": "https://mathshistory.st-andrews.ac.uk/Biographies/Napier/" }
+    ],
+    "equationIds": [2]
+  },
+  {
+    "id": 3,
+    "name": "Isaac Newton",
+    "fullName": "Sir Isaac Newton",
+    "born": "1643",
+    "died": "1727",
+    "nationality": "English",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Portrait_of_Sir_Isaac_Newton%2C_1689.jpg/220px-Portrait_of_Sir_Isaac_Newton%2C_1689.jpg",
+    "bio": "One of the most influential scientists in history. Newton developed calculus independently of Leibniz, discovered the laws of motion and universal gravitation, and made groundbreaking contributions to optics. He was also Warden of the Royal Mint and spent years on alchemy.",
+    "funFact": "Newton invented calculus during the Great Plague of 1665-1666 while Cambridge University was closed. He called it his 'annus mirabilis' — miracle year.",
+    "impact": "Calculus is the mathematical language of change. It's essential in physics, engineering, economics, medicine, and every science that studies how things evolve over time.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Isaac_Newton" },
+      { "label": "Newton Project", "url": "http://www.newtonproject.ox.ac.uk/" }
+    ],
+    "equationIds": [3, 4]
+  },
+  {
+    "id": 4,
+    "name": "Jean le Rond d'Alembert",
+    "fullName": "Jean-Baptiste le Rond d'Alembert",
+    "born": "1717",
+    "died": "1783",
+    "nationality": "French",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Jean_le_Rond_d%27Alembert.jpg/220px-Jean_le_Rond_d%27Alembert.jpg",
+    "bio": "French mathematician and philosopher who was abandoned as an infant on the steps of a Paris church. He became one of the editors of the famous Encyclop\u00e9die and made fundamental contributions to mathematics, including the wave equation.",
+    "funFact": "He was found as a baby on the steps of the Saint-Jean-le-Rond church in Paris, which gave him his name.",
+    "impact": "The wave equation describes everything from sound and light to earthquakes and quantum mechanics. It's one of the most important equations in physics.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Jean_le_Rond_d%27Alembert" }
+    ],
+    "equationIds": [5]
+  },
+  {
+    "id": 5,
+    "name": "Leonhard Euler",
+    "fullName": "Leonhard Euler",
+    "born": "1707",
+    "died": "1783",
+    "nationality": "Swiss",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Leonhard_Euler_2.jpg/220px-Leonhard_Euler_2.jpg",
+    "bio": "The most prolific mathematician in history, producing over 800 papers. Euler introduced much of modern mathematical notation (including e, i, f(x), and \u03a3). He went blind in his later years but his productivity actually increased — he dictated his work to scribes.",
+    "funFact": "After losing sight in both eyes, Euler reportedly said: 'Now I will have fewer distractions.'",
+    "impact": "Euler's work touches every branch of mathematics. Complex numbers (i\u00b2 = -1) are essential in electrical engineering, quantum mechanics, and signal processing. His polyhedra formula launched topology.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Leonhard_Euler" },
+      { "label": "Euler Archive", "url": "http://eulerarchive.maa.org/" }
+    ],
+    "equationIds": [6, 7]
+  },
+  {
+    "id": 6,
+    "name": "Carl Friedrich Gauss",
+    "fullName": "Johann Carl Friedrich Gauss",
+    "born": "1777",
+    "died": "1855",
+    "nationality": "German",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Carl_Friedrich_Gauss_1840_by_Jensen.jpg/220px-Carl_Friedrich_Gauss_1840_by_Jensen.jpg",
+    "bio": "Known as the 'Prince of Mathematicians', Gauss made extraordinary contributions to number theory, algebra, statistics, analysis, and physics. He discovered the normal distribution while studying astronomical observation errors.",
+    "funFact": "As a child, Gauss supposedly summed the numbers 1 to 100 instantly by noticing that pairs (1+100, 2+99, ...) each equal 101.",
+    "impact": "The normal distribution (bell curve) is everywhere: test scores, heights, manufacturing tolerances, financial returns, and experimental errors all follow it.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Carl_Friedrich_Gauss" }
+    ],
+    "equationIds": [8]
+  },
+  {
+    "id": 7,
+    "name": "Joseph Fourier",
+    "fullName": "Jean-Baptiste Joseph Fourier",
+    "born": "1768",
+    "died": "1830",
+    "nationality": "French",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Joseph_Fourier_%28circa_1820%29.jpg/220px-Joseph_Fourier_%28circa_1820%29.jpg",
+    "bio": "French mathematician who accompanied Napoleon to Egypt and later became governor of Is\u00e8re. His major work showed that any periodic function can be decomposed into a sum of simple sine and cosine waves — the Fourier Transform.",
+    "funFact": "Fourier was so obsessed with heat that he kept his rooms extremely warm and wrapped himself in blankets, which may have contributed to his death.",
+    "impact": "The Fourier Transform is used in MP3 compression, JPEG images, MRI scans, speech recognition, and virtually all digital signal processing.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Joseph_Fourier" }
+    ],
+    "equationIds": [9]
+  },
+  {
+    "id": 8,
+    "name": "Claude-Louis Navier & George Stokes",
+    "fullName": "Claude-Louis Navier and Sir George Gabriel Stokes",
+    "born": "1785 / 1819",
+    "died": "1836 / 1903",
+    "nationality": "French / Irish-British",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Navier_Claude.jpg/220px-Navier_Claude.jpg",
+    "bio": "Navier was a French engineer who first derived the equations of fluid motion in 1822. Stokes, an Irish-born British mathematician, independently refined them in 1845. Together their work describes how fluids (air, water, blood) flow.",
+    "funFact": "Proving whether smooth solutions always exist for the Navier-Stokes equations is one of the seven Millennium Prize Problems — with a $1 million reward.",
+    "impact": "These equations govern weather prediction, aircraft design, ocean currents, blood flow in arteries, and every fluid phenomenon on Earth.",
+    "links": [
+      { "label": "Wikipedia (Navier-Stokes)", "url": "https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations" },
+      { "label": "Millennium Prize", "url": "https://www.claymath.org/millennium/navier-stokes-equation/" }
+    ],
+    "equationIds": [10]
+  },
+  {
+    "id": 9,
+    "name": "James Clerk Maxwell",
+    "fullName": "James Clerk Maxwell",
+    "born": "1831",
+    "died": "1879",
+    "nationality": "Scottish",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/James_Clerk_Maxwell.png/220px-James_Clerk_Maxwell.png",
+    "bio": "Maxwell unified electricity, magnetism, and light into a single theory — one of the greatest achievements in physics. His four equations predicted electromagnetic waves, which were confirmed by Hertz in 1887, leading directly to radio, TV, and wireless communication.",
+    "funFact": "Einstein kept a photo of Maxwell on his study wall alongside photos of Newton and Faraday.",
+    "impact": "Maxwell's equations are the foundation of all electromagnetic technology: radio, TV, WiFi, fiber optics, radar, and every device that uses electricity.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/James_Clerk_Maxwell" }
+    ],
+    "equationIds": [11]
+  },
+  {
+    "id": 10,
+    "name": "Ludwig Boltzmann",
+    "fullName": "Ludwig Eduard Boltzmann",
+    "born": "1844",
+    "died": "1906",
+    "nationality": "Austrian",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Boltzmann2.jpg/220px-Boltzmann2.jpg",
+    "bio": "Austrian physicist who provided a statistical explanation of the second law of thermodynamics and the concept of entropy. His ideas were fiercely opposed during his lifetime by scientists who didn't believe in atoms.",
+    "funFact": "Boltzmann's tombstone is engraved with his entropy formula S = k log W. Tragically, he took his own life in 1906, just before his atomic theory was vindicated.",
+    "impact": "Entropy and the arrow of time explain why eggs break but don't unbreak, why heat flows from hot to cold, and why the universe tends toward disorder.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Ludwig_Boltzmann" }
+    ],
+    "equationIds": [12]
+  },
+  {
+    "id": 11,
+    "name": "Albert Einstein",
+    "fullName": "Albert Einstein",
+    "born": "1879",
+    "died": "1955",
+    "nationality": "German-American",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/220px-Albert_Einstein_Head.jpg",
+    "bio": "Perhaps the most famous scientist ever. Einstein published four groundbreaking papers in 1905 — his 'miracle year' — including special relativity and E=mc\u00b2. He later developed general relativity, which describes gravity as the curvature of spacetime.",
+    "funFact": "Einstein was offered the presidency of Israel in 1952 but declined, saying he lacked 'the natural aptitude and the experience to deal properly with people.'",
+    "impact": "E=mc\u00b2 explains how the Sun shines, how nuclear power works, and why GPS satellites need relativistic corrections to stay accurate.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Albert_Einstein" },
+      { "label": "Einstein Archives", "url": "https://www.alberteinstein.info/" }
+    ],
+    "equationIds": [13]
+  },
+  {
+    "id": 12,
+    "name": "Erwin Schr\u00f6dinger",
+    "fullName": "Erwin Rudolf Josef Alexander Schr\u00f6dinger",
+    "born": "1887",
+    "died": "1961",
+    "nationality": "Austrian",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Erwin_Schr%C3%B6dinger_%281933%29.jpg/220px-Erwin_Schr%C3%B6dinger_%281933%29.jpg",
+    "bio": "Austrian-Irish physicist who developed wave mechanics, providing a mathematical framework for quantum theory. His famous thought experiment involving a cat that is simultaneously alive and dead illustrates the strangeness of quantum superposition.",
+    "funFact": "Schr\u00f6dinger's cat was meant to show how absurd quantum mechanics seemed — he never intended it as a serious proposal.",
+    "impact": "The Schr\u00f6dinger equation is the foundation of quantum mechanics, governing transistors, lasers, MRI machines, and all modern electronics.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Erwin_Schr%C3%B6dinger" }
+    ],
+    "equationIds": [14]
+  },
+  {
+    "id": 13,
+    "name": "Claude Shannon",
+    "fullName": "Claude Elwood Shannon",
+    "born": "1916",
+    "died": "2001",
+    "nationality": "American",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/ClaudeShannon_MFO3807.jpg/220px-ClaudeShannon_MFO3807.jpg",
+    "bio": "The father of information theory. Shannon's 1948 paper 'A Mathematical Theory of Communication' single-handedly created the field, defining bits, entropy, and channel capacity. He also built chess-playing machines and juggling robots.",
+    "funFact": "Shannon was known for riding a unicycle through the halls of Bell Labs while juggling. He also built a flame-throwing trumpet.",
+    "impact": "Information theory is the foundation of the entire digital age: data compression, error correction, cryptography, and every byte transmitted over the internet.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Claude_Shannon" },
+      { "label": "Bell Labs tribute", "url": "https://www.bell-labs.com/about/history/innovation-stories/claude-shannon/" }
+    ],
+    "equationIds": [15]
+  },
+  {
+    "id": 14,
+    "name": "Robert May",
+    "fullName": "Robert McCredie May, Baron May of Oxford",
+    "born": "1936",
+    "died": "2020",
+    "nationality": "Australian-British",
+    "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Robert_May.jpg/220px-Robert_May.jpg",
+    "bio": "Australian physicist turned ecologist who showed that simple deterministic equations can produce chaotic behavior. His 1976 paper on the logistic map demonstrated that even the simplest population models can exhibit unpredictable dynamics.",
+    "funFact": "May originally studied physics but switched to ecology, where his mathematical skills revolutionized the field.",
+    "impact": "Chaos theory explains why weather forecasting fails beyond ~10 days, why ecosystems can collapse suddenly, and why the stock market is unpredictable.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Robert_May,_Baron_May_of_Oxford" }
+    ],
+    "equationIds": [16]
+  },
+  {
+    "id": 15,
+    "name": "Fischer Black & Myron Scholes",
+    "fullName": "Fischer Sheffey Black and Myron Samuel Scholes",
+    "born": "1938 / 1941",
+    "died": "1995 / living",
+    "nationality": "American / Canadian-American",
+    "portrait": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f0/Myron_Scholes_2008_in_Lindau.png/220px-Myron_Scholes_2008_in_Lindau.png",
+    "bio": "Black and Scholes, along with Robert Merton, developed the mathematical model for pricing financial options. Scholes and Merton received the Nobel Prize in Economics in 1997 (Black had died in 1995).",
+    "funFact": "The hedge fund Long-Term Capital Management, co-founded by Scholes and Merton, spectacularly collapsed in 1998, nearly destabilizing global markets.",
+    "impact": "The Black-Scholes formula transformed finance, enabling the explosive growth of derivatives markets. It's used to price trillions of dollars in options every year.",
+    "links": [
+      { "label": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model" },
+      { "label": "Nobel Prize", "url": "https://www.nobelprize.org/prizes/economic-sciences/1997/summary/" }
+    ],
+    "equationIds": [17]
+  }
+]

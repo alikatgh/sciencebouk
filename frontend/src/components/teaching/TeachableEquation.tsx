@@ -1,0 +1,261 @@
+import type { ReactElement, ReactNode } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { BookOpen, Sparkles } from "lucide-react"
+import { useAuth } from "../../auth/AuthContext"
+import { api } from "../../api/client"
+import { useProgress } from "../../progress/useProgress"
+import { useEquationId } from "./EquationContext"
+import { useSettings } from "../../settings/SettingsContext"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Badge } from "../ui/badge"
+import { Separator } from "../ui/separator"
+import { TouchableFormula } from "./TouchableFormula"
+import { useLatexFormula } from "./FormulaContext"
+import { LiveFormula } from "./LiveFormula"
+import { LessonRunner } from "./LessonRunner"
+import type { Variable, LessonStep, GlossaryTerm } from "./types"
+
+export interface Preset {
+  label: string
+  values: Record<string, number>
+}
+
+interface TeachableEquationProps {
+  equationId?: number
+  hook: string
+  hookAction: string
+  formula: string
+  latexFormula?: string
+  variables: Variable[]
+  lessonSteps: LessonStep[]
+  buildLiveFormula?: (vars: Record<string, number>) => string
+  buildResultLine?: (vars: Record<string, number>) => string
+  describeResult?: (vars: Record<string, number>) => string
+  presets?: Preset[]
+  glossary?: GlossaryTerm[]
+  children: (props: {
+    vars: Record<string, number>
+    setVar: (name: string, value: number) => void
+    highlightedVar: string | null
+    setHighlightedVar: (name: string | null) => void
+    highlightedTerm: string | null
+  }) => ReactNode
+}
+
+export function TeachableEquation({
+  equationId, hook, hookAction, formula, latexFormula,
+  variables: initialVariables, lessonSteps,
+  buildLiveFormula, buildResultLine, describeResult, presets, glossary, children,
+}: TeachableEquationProps): ReactElement {
+  const { isAuthenticated, isPro } = useAuth()
+  const contextFormula = useLatexFormula()
+  const contextEquationId = useEquationId()
+  const resolvedId = equationId ?? contextEquationId
+
+  // Progress tracking — writes to localStorage (and server for Pro)
+  const { progress, updateProgress, markVariableExplored } = useProgress(resolvedId)
+  const progressEnabled = resolvedId > 0
+  const displayFormula = latexFormula || contextFormula
+
+  const [vars, setVars] = useState<Record<string, number>>(() => {
+    const r: Record<string, number> = {}
+    for (const v of initialVariables) r[v.name] = v.value
+    return r
+  })
+
+  const [highlightedVar, setHighlightedVar] = useState<string | null>(null)
+  const [highlightedTerm, setHighlightedTerm] = useState<string | null>(null)
+  const { settings: appSettings } = useSettings()
+  const [lessonMode, setLessonMode] = useState(appSettings.autoStartLesson)
+  const [lessonStep, setLessonStep] = useState(0)
+  const [stepCompleted, setStepCompleted] = useState(false)
+  const prevVarsRef = useRef(vars)
+  const progressRef = useRef(progress)
+
+  const setVar = useCallback((name: string, value: number) => { setVars((p) => ({ ...p, [name]: value })) }, [])
+  const applyPreset = useCallback((preset: Preset) => { setVars((p) => ({ ...p, ...preset.values })) }, [])
+
+  const currentVariables = initialVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value }))
+
+  useEffect(() => {
+    progressRef.current = progress
+  }, [progress])
+
+  useEffect(() => {
+    if (!lessonMode || stepCompleted) return
+    const step = lessonSteps[lessonStep]
+    if (!step) return
+    const c = step.successCondition
+    const previousVars = prevVarsRef.current
+    switch (c.type) {
+      case 'variable_changed': {
+        if (c.target) { const prev = previousVars[c.target]; const curr = vars[c.target]; if (prev !== undefined && curr !== undefined && prev !== curr) setStepCompleted(true) }
+        break
+      }
+      case 'value_reached': {
+        if (c.target && c.value !== undefined) { const curr = vars[c.target]; if (curr !== undefined && Math.abs(curr - c.value) <= (c.tolerance ?? 0.5)) setStepCompleted(true) }
+        break
+      }
+      case 'time_elapsed': {
+        const timer = setTimeout(() => setStepCompleted(true), c.duration ?? 15000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [vars, lessonMode, lessonStep, lessonSteps, stepCompleted])
+
+  // Track time spent — tick every 5 seconds
+  useEffect(() => {
+    if (!progressEnabled) return
+    const timer = setInterval(() => {
+      updateProgress({ timeSpentSeconds: progressRef.current.timeSpentSeconds + 5 })
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [progressEnabled, updateProgress])
+
+  // Track variable exploration
+  useEffect(() => {
+    if (!progressEnabled) return
+    const previousVars = prevVarsRef.current
+    for (const key of Object.keys(vars)) {
+      if (previousVars[key] !== vars[key]) {
+        markVariableExplored(key)
+      }
+    }
+  }, [vars, progressEnabled, markVariableExplored])
+
+  useEffect(() => {
+    prevVarsRef.current = vars
+  }, [vars])
+
+  const advanceLesson = useCallback(() => {
+    const completedStepIndex = lessonStep
+    const isLastStep = lessonStep >= lessonSteps.length - 1
+
+    if (!isLastStep) {
+      setLessonStep((p) => p + 1)
+      setStepCompleted(false)
+    }
+
+    // Update progress with current lesson step
+    if (progressEnabled) {
+      updateProgress({
+        lessonStep: lessonSteps[completedStepIndex]?.id ?? "",
+        ...(isLastStep ? { completed: true } : {}),
+      })
+    }
+
+    // Log event for Pro users
+    if (isPro && isAuthenticated && resolvedId > 0) {
+      api.analytics.logEvent(resolvedId, isLastStep ? 'lesson_completed' : 'lesson_step_completed', { step: completedStepIndex }).catch(() => {})
+    }
+  }, [lessonStep, lessonSteps, isPro, isAuthenticated, resolvedId, progressEnabled, updateProgress])
+
+  const resetLesson = useCallback(() => {
+    setLessonStep(0); setStepCompleted(false)
+    const r: Record<string, number> = {}
+    for (const v of initialVariables) r[v.name] = v.value
+    setVars(r)
+  }, [initialVariables])
+
+  const lockedVars = new Set<string>()
+  if (lessonMode && lessonSteps[lessonStep]) {
+    const unlocked = new Set(lessonSteps[lessonStep].unlockedVariables)
+    for (const v of initialVariables) { if (!v.constant && !unlocked.has(v.name)) lockedVars.add(v.name) }
+  }
+
+  const formulaVariables = currentVariables.map((v) => ({ ...v, locked: lockedVars.has(v.name) }))
+  const hasLessons = lessonSteps.length > 0
+
+  return (
+    <div className="flex h-full gap-3">
+      {/* LEFT: Visualization */}
+      <div className="min-h-0 min-w-0 flex-1">
+        {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
+      </div>
+
+      {/* RIGHT: Teaching panel */}
+      <div className="flex w-56 flex-shrink-0 flex-col gap-2 overflow-y-auto md:w-64 lg:w-72">
+
+        {/* Hook — conditionally shown */}
+        {appSettings.showHookText && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+            <p className="text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100">{hook}</p>
+            <p className="mt-2 text-xs font-bold text-ocean">{"\u2192"} {hookAction}</p>
+          </div>
+        )}
+
+        {/* Live formula — respects settings */}
+        {(appSettings.showFormulaLetters || appSettings.showFormulaNumbers) && (
+          <Card>
+            <CardContent className="p-3">
+              {buildLiveFormula ? (
+                <LiveFormula
+                  letterFormula={appSettings.showFormulaLetters ? displayFormula : ""}
+                  liveFormula={appSettings.showFormulaNumbers ? buildLiveFormula(vars) : ""}
+                  resultLine={buildResultLine?.(vars)}
+                  resultNote={appSettings.showResultNote ? describeResult?.(vars) : undefined}
+                  variables={formulaVariables} onVariableChange={setVar}
+                />
+              ) : displayFormula && appSettings.showFormulaLetters ? (
+                <LiveFormula letterFormula={displayFormula} liveFormula={displayFormula} variables={formulaVariables} onVariableChange={setVar} />
+              ) : null}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Variables */}
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Variables</CardTitle>
+          </CardHeader>
+          <CardContent className="px-1 pb-2">
+            <TouchableFormula
+              variables={formulaVariables} onVariableChange={setVar}
+              highlightedVariable={highlightedVar} onVariableHover={setHighlightedVar} formula={formula}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Presets */}
+        {presets && presets.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {presets.map((p) => (
+              <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className="text-[10px]">
+                {p.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Lesson — at bottom, after presets */}
+        {hasLessons && lessonMode && (
+          <Card className="border-ocean/30 bg-ocean/5 dark:border-ocean/40 dark:bg-ocean/10">
+            <CardHeader className="flex-row items-center justify-between space-y-0 p-3 pb-2">
+              <CardTitle className="flex items-center gap-1.5 text-xs text-ocean">
+                <BookOpen className="h-3.5 w-3.5" /> Guided lesson
+              </CardTitle>
+              <Button variant="ghost" size="xs" onClick={() => setLessonMode(false)} className="text-ocean/60 hover:text-ocean">
+                Skip
+              </Button>
+            </CardHeader>
+            <CardContent className="px-3 pb-3">
+              <LessonRunner
+                steps={lessonSteps} currentStepIndex={lessonStep}
+                onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
+                variables={formulaVariables} onHighlight={setHighlightedVar}
+                glossary={glossary} onTermHighlight={setHighlightedTerm}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {hasLessons && !lessonMode && (
+          <Button variant="outline" className="w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean" onClick={() => { setLessonMode(true); resetLesson() }}>
+            <Sparkles className="h-3.5 w-3.5" /> Restart lesson
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}

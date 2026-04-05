@@ -1,0 +1,70 @@
+import type { ReactElement } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { Button } from "../ui/button"
+
+interface ShortcutOverlayProps {
+  open: boolean
+  showZeroShortcut: boolean
+  shortcutJumpMax: number
+  shiftedShortcutMax: number
+  onClose: () => void
+}
+
+export function ShortcutOverlay({
+  open,
+  showZeroShortcut,
+  shortcutJumpMax,
+  shiftedShortcutMax,
+  onClose,
+}: ShortcutOverlayProps): ReactElement {
+  const rows: [string, string][] = [
+    ["j / ↓", "Next"],
+    ["k / ↑", "Previous"],
+    [`1-${shortcutJumpMax}`, "Jump to #"],
+    ...(showZeroShortcut ? ([["0", "#10"]] as [string, string][]) : []),
+    ...(shiftedShortcutMax > 0
+      ? ([[`⇧+1-${shiftedShortcutMax}`, `#11-${10 + shiftedShortcutMax}`]] as [string, string][])
+      : []),
+    ["/", "Search"],
+    ["h", "Home"],
+    ["⌘[", "Sidebar"],
+    ["?", "Shortcuts"],
+  ]
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            className="fixed left-1/2 top-1/2 z-50 w-80 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+          >
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Keyboard Shortcuts</h3>
+            <div className="mt-3 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+              {rows.map(([key, desc]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[11px] dark:border-slate-600 dark:bg-slate-700">
+                    {key}
+                  </kbd>
+                  <span className="text-slate-400">{desc}</span>
+                </div>
+              ))}
+            </div>
+            <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={onClose}>
+              Close (Esc)
+            </Button>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
