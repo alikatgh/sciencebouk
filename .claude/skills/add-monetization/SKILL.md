@@ -1,6 +1,6 @@
 ---
 name: add-monetization
-description: Add freemium model — free equations, paid personalization via Django backend on Namecheap
+description: Add freemium model — free equations, paid personalization via Django backend on Namecheap (Sciencebouk)
 user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: opus
@@ -429,7 +429,7 @@ certbot --nginx -d yourdomain.com
 
 ```bash
 SECRET_KEY=generate-a-real-secret-key
-DOMAIN=formulas.yourdomain.com
+DOMAIN=sciencebouk.yourdomain.com
 DB_PASSWORD=generate-a-real-password
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -445,7 +445,7 @@ FRONTEND_URL=https://formulas.yourdomain.com
 
 1. **After completing 3rd equation**: "You're on a roll! Pro users complete 3× more equations because progress syncs everywhere."
 
-2. **After 7 days of use**: "You've spent 2 hours learning with Formulas this week. Track your streak with Pro."
+2. **After 7 days of use**: "You've spent 2 hours learning with Sciencebouk this week. Track your streak with Pro."
 
 3. **When they revisit an equation**: "Welcome back to Gravity! With Pro, we'd remember exactly where you left off."
 

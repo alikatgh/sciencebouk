@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Bash, Read, Glob
 ---
 
-Build and prepare the Formulas project for deployment.
+Build and prepare the Sciencebouk project for deployment.
 
 **Usage**: `/deploy [staging|production]`
 

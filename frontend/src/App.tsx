@@ -16,14 +16,14 @@ import { useAllProgress } from "./progress/useProgress"
 function useDarkMode() {
   const [dark, setDark] = useState(() => {
     if (typeof window === "undefined") return false
-    const stored = localStorage.getItem("formulas-dark-mode")
+    const stored = localStorage.getItem("sciencebouk-dark-mode")
     if (stored !== null) return stored === "true"
     return window.matchMedia("(prefers-color-scheme: dark)").matches
   })
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark)
-    localStorage.setItem("formulas-dark-mode", String(dark))
+    localStorage.setItem("sciencebouk-dark-mode", String(dark))
   }, [dark])
 
   return [dark, setDark] as const
@@ -40,7 +40,7 @@ export default function App(): ReactElement {
   const [showAuth, setShowAuth] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const stored = localStorage.getItem("formulas-sidebar")
+    const stored = localStorage.getItem("sciencebouk-sidebar")
     return stored !== null ? stored === "true" : true
   })
   const [showSync, setShowSync] = useState(false)
@@ -49,11 +49,11 @@ export default function App(): ReactElement {
   const { completedCount, totalTimeMinutes, total } = useAllProgress()
 
   useEffect(() => {
-    localStorage.setItem("formulas-sidebar", String(sidebarOpen))
+    localStorage.setItem("sciencebouk-sidebar", String(sidebarOpen))
   }, [sidebarOpen])
 
   useEffect(() => {
-    if (isPro && completedCount > 0 && !localStorage.getItem("formulas-sync-dismissed")) {
+    if (isPro && completedCount > 0 && !localStorage.getItem("sciencebouk-sync-dismissed")) {
       setShowSync(true)
     }
   }, [isPro, completedCount])
@@ -225,7 +225,7 @@ export default function App(): ReactElement {
         />
 
         <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
-        {showSync && <SyncPrompt onClose={() => { setShowSync(false); localStorage.setItem("formulas-sync-dismissed", "1") }} />}
+        {showSync && <SyncPrompt onClose={() => { setShowSync(false); localStorage.setItem("sciencebouk-sync-dismissed", "1") }} />}
       </main>
     </TooltipProvider>
   )

@@ -8,7 +8,7 @@ def backend_home(_: object) -> HttpResponse:
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Formulas API</title>
+  <title>Sciencebouk API</title>
   <style>
     * { box-sizing: border-box; margin: 0; }
     body { font-family: system-ui, sans-serif; background: #f8fafc; color: #1e293b; padding: 24px; }
@@ -29,7 +29,7 @@ def backend_home(_: object) -> HttpResponse:
   </style>
 </head>
 <body>
-  <h1>Formulas API Server</h1>
+  <h1>Sciencebouk API Server</h1>
   <p class="sub">Backend is running. The frontend app is at <a href="http://127.0.0.1:5173">127.0.0.1:5173</a></p>
 
   <div class="grid">

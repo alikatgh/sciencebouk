@@ -5,6 +5,8 @@ import {
   scaleLinear,
   line,
   range,
+  drag,
+  type D3DragEvent,
   type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
@@ -83,11 +85,12 @@ export function WaveScene(): ReactElement {
         { label: "Tall wave", values: { freq: 2.0, amp: 95, wavelength: 120 } },
       ]}
     >
-      {({ vars, highlightedVar, setHighlightedVar }) => (
+      {({ vars, setVar, highlightedVar, setHighlightedVar }) => (
         <D3WaveVisual
           frequency={vars.freq}
           amplitude={vars.amp}
           wavelength={vars.wavelength}
+          onVarChange={setVar}
           highlightedVar={highlightedVar}
           onHighlight={setHighlightedVar}
         />
@@ -100,11 +103,14 @@ interface D3WaveVisualProps {
   frequency: number
   amplitude: number
   wavelength: number
+  onVarChange: (name: string, value: number) => void
   highlightedVar: string | null
   onHighlight: (name: string | null) => void
 }
 
-function D3WaveVisual({ frequency, amplitude, wavelength, highlightedVar, onHighlight }: D3WaveVisualProps): ReactElement {
+function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)) }
+
+function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlightedVar, onHighlight }: D3WaveVisualProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
   const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
@@ -120,6 +126,8 @@ function D3WaveVisual({ frequency, amplitude, wavelength, highlightedVar, onHigh
   ampRef.current = amplitude
   const wlRef = useRef(wavelength)
   wlRef.current = wavelength
+  const onVarChangeRef = useRef(onVarChange)
+  onVarChangeRef.current = onVarChange
   const onHighlightRef = useRef(onHighlight)
   onHighlightRef.current = onHighlight
 
@@ -178,6 +186,14 @@ function D3WaveVisual({ frequency, amplitude, wavelength, highlightedVar, onHigh
     // Wave 2 path
     g.append("path").attr("class", "wave2-path")
       .attr("fill", "none").attr("stroke", "#57b59a").attr("stroke-width", 3).attr("opacity", 0.85)
+
+    // Draggable amplitude handle at wave peak
+    const ampHandle = g.append("g").attr("class", "amp-handle").style("cursor", "grab")
+    ampHandle.append("circle").attr("class", "amp-handle-hit").attr("r", 28).attr("fill", "transparent")
+    ampHandle.append("circle").attr("class", "amp-handle-dot").attr("r", 8)
+      .attr("fill", VAR_COLORS.secondary).attr("stroke", "white").attr("stroke-width", 3)
+    ampHandle.append("text").attr("class", "amp-handle-label").attr("x", 14).attr("y", -14)
+      .attr("font-size", 12).attr("fill", VAR_COLORS.secondary).attr("font-family", F).attr("font-weight", 600).text("A")
 
     // Amplitude annotation
     const ampG = g.append("g").attr("class", "amp-annotation").attr("opacity", 0)
@@ -255,6 +271,30 @@ function D3WaveVisual({ frequency, amplitude, wavelength, highlightedVar, onHigh
       .on("mouseleave", () => onHighlightRef.current(null))
   }, [W, H])
 
+  // D3 drag on amplitude handle
+  useEffect(() => {
+    const g = gRef.current
+    if (!g) return
+
+    const ampHandle = g.select<SVGGElement>(".amp-handle")
+
+    const dragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const { wave1Y } = layoutRef.current
+        // Dragging up increases amplitude; y decreases as we go up
+        const newAmp = Math.round(clamp(wave1Y - event.y, 20, 100))
+        onVarChangeRef.current('amp', newAmp)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+      })
+
+    ampHandle.call(dragBehavior)
+  }, [W, H])
+
   // Update static elements when props change (annotations, readouts)
   useEffect(() => {
     const g = gRef.current
@@ -266,6 +306,10 @@ function D3WaveVisual({ frequency, amplitude, wavelength, highlightedVar, onHigh
 
     // Wave 1 label color
     g.select(".wave1-label").attr("fill", freqActive ? VAR_COLORS.primary : "#5a79ff")
+
+    // Position amplitude handle at wave peak (leftmost peak position)
+    const { wave1Y: ly2, mx: lmx2, xScale: xs2 } = layoutRef.current
+    g.select(".amp-handle").attr("transform", `translate(${xs2(0)}, ${ly2 - amplitude})`)
 
     // Amplitude annotation
     const { wave1Y: ly, mx: lmx } = layoutRef.current

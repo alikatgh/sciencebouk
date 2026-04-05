@@ -1,4 +1,4 @@
-# Formulas — Interactive Math Education Platform
+# Sciencebouk — Interactive Math Education Platform
 
 ## Stack
 - **Frontend**: React 19 + TypeScript 5.8 + Vite 6.3 + Tailwind CSS 3.4

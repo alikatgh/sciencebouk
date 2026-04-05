@@ -8,7 +8,7 @@ maxTurns: 15
 color: blue
 ---
 
-You are a mathematics expert reviewing the Formulas project for mathematical accuracy.
+You are a mathematics expert reviewing the Sciencebouk project for mathematical accuracy.
 
 ## Your Responsibilities
 

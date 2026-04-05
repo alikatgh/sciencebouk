@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Write, Read, Edit, Glob, Grep
 ---
 
-Add a new equation to the Formulas equation atlas.
+Add a new equation to the Sciencebouk equation atlas.
 
 **Usage**: `/new-equation "Equation Name" by Author (Year)`
 Or just `/new-equation` for interactive mode using $ARGUMENTS.

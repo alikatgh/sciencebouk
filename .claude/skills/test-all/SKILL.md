@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Bash, Read
 ---
 
-Run the full test suite for the Formulas project:
+Run the full test suite for the Sciencebouk project:
 
 ## Frontend Tests
 ```bash

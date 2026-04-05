@@ -445,6 +445,36 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .attr("font-size", waveFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#f59e0b")
       .text("lambda")
 
+    // Draggable wavelength handle on the right tick
+    const wlStart = waveLeft + Math.round(W * 0.089)
+    const wlHandleG = wm.append("g").attr("class", "wl-handle").style("cursor", "grab")
+    // Invisible hit area (min 30px wide)
+    wlHandleG.append("rect").attr("class", "wl-hit")
+      .attr("x", -15).attr("y", wlY - 18).attr("width", 30).attr("height", 36)
+      .attr("fill", "transparent")
+    // Visible handle circle
+    wlHandleG.append("circle").attr("class", "wl-knob")
+      .attr("cy", wlY).attr("r", 8)
+      .attr("fill", "white").attr("stroke", "#f59e0b").attr("stroke-width", 2.5)
+
+    const wlDragScale = scaleLinear().domain([wlStart + 60, wlStart + 250]).range([60, 250])
+    const wlDrag = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select("circle").transition().duration(100)
+          .attr("r", 11).attr("stroke-width", 3)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newWl = Math.max(60, Math.min(250, wlDragScale(event.x)))
+        onVarChangeRef.current('wavelength', Math.round(newWl / 5) * 5)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        select(this).select("circle").transition().duration(100)
+          .attr("r", 8).attr("stroke-width", 2.5)
+      })
+    wlHandleG.call(wlDrag)
+
     // Info text
     wm.append("text").attr("x", Math.round(W * 0.844)).attr("y", Math.round(H * 0.136)).attr("text-anchor", "middle")
       .attr("font-size", waveFs * 0.85).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
@@ -490,13 +520,15 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       wm.select(".b-area").attr("d", `M ${waveLeft} ${waveCenter} ${bP} L ${lastX} ${waveCenter} Z`)
 
       // Wavelength indicator
-      const wlStart = waveLeft + Math.round(W * 0.089)
-      wm.select(".wl-line").attr("x1", wlStart).attr("x2", wlStart + wl)
+      const wlStartAnim = waveLeft + Math.round(W * 0.089)
+      wm.select(".wl-line").attr("x1", wlStartAnim).attr("x2", wlStartAnim + wl)
       wm.select(".wl-tick1")
-        .attr("x1", wlStart).attr("y1", wlY - 6).attr("x2", wlStart).attr("y2", wlY + 6)
+        .attr("x1", wlStartAnim).attr("y1", wlY - 6).attr("x2", wlStartAnim).attr("y2", wlY + 6)
       wm.select(".wl-tick2")
-        .attr("x1", wlStart + wl).attr("y1", wlY - 6).attr("x2", wlStart + wl).attr("y2", wlY + 6)
-      wm.select(".wl-text").attr("x", wlStart + wl / 2)
+        .attr("x1", wlStartAnim + wl).attr("y1", wlY - 6).attr("x2", wlStartAnim + wl).attr("y2", wlY + 6)
+      wm.select(".wl-text").attr("x", wlStartAnim + wl / 2)
+      // Position drag handle on right tick
+      wm.select(".wl-handle").attr("transform", `translate(${wlStartAnim + wl}, 0)`)
 
       rafRef.current = requestAnimationFrame(animate)
     }

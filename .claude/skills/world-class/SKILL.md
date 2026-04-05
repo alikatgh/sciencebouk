@@ -1,12 +1,12 @@
 ---
 name: world-class
-description: Ultimate transformation — take the Formulas project to world-class production quality
+description: Ultimate transformation — take the Sciencebouk project to world-class production quality
 user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: opus
 ---
 
-You are transforming the Formulas project from a prototype into a world-class interactive math education platform. Work methodically through each phase. Use subagents in parallel where possible. Do NOT skip steps — build everything fully, not as stubs.
+You are transforming the Sciencebouk project from a prototype into a world-class interactive math education platform. Work methodically through each phase. Use subagents in parallel where possible. Do NOT skip steps — build everything fully, not as stubs.
 
 ---
 

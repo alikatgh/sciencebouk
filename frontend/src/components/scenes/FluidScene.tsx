@@ -1,9 +1,11 @@
 import type { ReactElement } from "react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   select,
   scaleLinear,
+  drag,
   type Selection,
+  type D3DragEvent,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
@@ -143,22 +145,28 @@ interface Props {
 function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
-  const OBSTACLE_X = W * 0.47
-  const OBSTACLE_Y = H * 0.45
   const OBSTACLE_R = Math.min(W, H) * 0.09
+  const [obstaclePos, setObstaclePos] = useState({ x: W * 0.47, y: H * 0.45 })
   const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
 
   const particlesRef = useRef<ParticleState[]>([])
-  const obstacleRef = useRef({ x: OBSTACLE_X, y: OBSTACLE_Y, r: OBSTACLE_R })
-  obstacleRef.current = { x: OBSTACLE_X, y: OBSTACLE_Y, r: OBSTACLE_R }
+  const obstacleRef = useRef({ x: obstaclePos.x, y: obstaclePos.y, r: OBSTACLE_R })
+  obstacleRef.current = { x: obstaclePos.x, y: obstaclePos.y, r: OBSTACLE_R }
   const viscosityRef = useRef(viscosity)
   viscosityRef.current = viscosity
   const flowSpeedRef = useRef(flowSpeed)
   flowSpeedRef.current = flowSpeed
   const rafRef = useRef(0)
   const prevTimeRef = useRef(0)
+
+  // Reset obstacle position on resize
+  useEffect(() => {
+    if (W > 100 && H > 100) {
+      setObstaclePos({ x: W * 0.47, y: H * 0.45 })
+    }
+  }, [W, H])
 
   // Setup -- rebuilds on resize
   useEffect(() => {
@@ -204,16 +212,46 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
     // Particles group
     g.append("g").attr("class", "particles-group")
 
-    // Obstacle
-    g.append("circle").attr("cx", OBSTACLE_X).attr("cy", OBSTACLE_Y).attr("r", OBSTACLE_R)
+    // Draggable obstacle
+    const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab")
+      .attr("transform", `translate(${obstaclePos.x},${obstaclePos.y})`)
+    obstacleGroup.append("circle").attr("r", OBSTACLE_R)
       .attr("fill", "#1e293b")
-    g.append("circle").attr("cx", OBSTACLE_X).attr("cy", OBSTACLE_Y).attr("r", OBSTACLE_R)
+    obstacleGroup.append("circle").attr("r", OBSTACLE_R)
       .attr("fill", "none").attr("stroke", "#475569").attr("stroke-width", 2)
+    // Invisible larger hit area
+    obstacleGroup.append("circle").attr("r", OBSTACLE_R + 15)
+      .attr("fill", "transparent")
+    obstacleGroup.append("text").attr("y", -OBSTACLE_R - 10).attr("text-anchor", "middle")
+      .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
+      .text("drag me")
+
+    const obstacleDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select("circle").transition().duration(100)
+          .attr("transform", "scale(1.05)")
+      })
+      .on("drag", function (event: D3DragEvent<SVGGElement, unknown, unknown>) {
+        const nx = Math.max(W * 0.15, Math.min(W * 0.85, event.x))
+        const ny = Math.max(H * 0.15, Math.min(H * 0.8, event.y))
+        setObstaclePos({ x: nx, y: ny })
+        select(this).attr("transform", `translate(${nx},${ny})`)
+        obstacleRef.current = { x: nx, y: ny, r: OBSTACLE_R }
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        select(this).select("circle").transition().duration(100)
+          .attr("transform", "scale(1)")
+      })
+
+    obstacleGroup.call(obstacleDragBehavior)
 
     // Flow direction indicator
-    g.append("line").attr("x1", W * 0.03).attr("y1", OBSTACLE_Y).attr("x2", W * 0.09).attr("y2", OBSTACLE_Y)
+    const flowIndicatorY = H * 0.45
+    g.append("line").attr("x1", W * 0.03).attr("y1", flowIndicatorY).attr("x2", W * 0.09).attr("y2", flowIndicatorY)
       .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
-    g.append("text").attr("x", W * 0.06).attr("y", OBSTACLE_Y - 12).attr("text-anchor", "middle")
+    g.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
       .attr("font-size", 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
       .text("Flow")
 
@@ -230,7 +268,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
     // Hint
     g.append("text").attr("x", W / 2).attr("y", H - 8).attr("text-anchor", "middle")
       .attr("font-size", 12).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-      .text("Adjust viscosity and flow speed in the formula above")
+      .text("Drag the obstacle to move it -- adjust viscosity and speed above")
 
     // Initialize particles
     const initial: ParticleState[] = []
@@ -312,19 +350,22 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
     }
   }, [W, H])
 
-  // Update vector field arrows when viscosity or flowSpeed change
+  // Update vector field arrows when viscosity, flowSpeed, or obstacle position change
   useEffect(() => {
     const g = gRef.current
     if (!g) return
+
+    const obsX = obstaclePos.x
+    const obsY = obstaclePos.y
 
     const arrowData: Array<{ x: number; y: number; vx: number; vy: number; mag: number }> = []
     const step = 50
     for (let gx = 50; gx < W - 30; gx += step) {
       for (let gy = 50; gy < H - 50; gy += step) {
-        const dx = gx - OBSTACLE_X
-        const dy = gy - OBSTACLE_Y
+        const dx = gx - obsX
+        const dy = gy - obsY
         if (dx * dx + dy * dy < (OBSTACLE_R + 15) ** 2) continue
-        const [vx, vy] = flowVelocity(gx, gy, flowSpeed * 100, viscosity, OBSTACLE_X, OBSTACLE_Y, OBSTACLE_R)
+        const [vx, vy] = flowVelocity(gx, gy, flowSpeed * 100, viscosity, obsX, obsY, OBSTACLE_R)
         const mag = Math.sqrt(vx * vx + vy * vy)
         arrowData.push({ x: gx, y: gy, vx, vy, mag })
       }
@@ -375,7 +416,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         .attr("points", `${ex},${ey} ${hx1},${hy1} ${hx2},${hy2}`)
         .attr("fill", color)
     })
-  }, [flowSpeed, viscosity])
+  }, [flowSpeed, viscosity, obstaclePos.x, obstaclePos.y])
 
   return (
     <div

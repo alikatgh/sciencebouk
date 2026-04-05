@@ -6,7 +6,9 @@ import {
   line,
   area as d3area,
   range,
+  drag,
   type Selection,
+  type D3DragEvent,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
@@ -166,6 +168,70 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
     g.append("line").attr("class", "wall-right")
       .attr("x1", wavePlotRight).attr("y1", wavePlotTop).attr("x2", wavePlotRight).attr("y2", wavePlotBottom)
       .attr("stroke", "#1e293b").attr("stroke-width", 4)
+
+    // Draggable right wall handle
+    const wallHandle = g.append("g").attr("class", "wall-drag-handle").style("cursor", "ew-resize")
+    wallHandle.append("rect")
+      .attr("x", -15).attr("y", wavePlotTop)
+      .attr("width", 30).attr("height", wavePlotBottom - wavePlotTop)
+      .attr("fill", "transparent")
+    wallHandle.append("line")
+      .attr("y1", wavePlotTop).attr("y2", wavePlotBottom)
+      .attr("stroke", "#f59e0b").attr("stroke-width", 6).attr("stroke-linecap", "round").attr("opacity", 0.5)
+    wallHandle.append("text").attr("class", "wall-drag-label")
+      .attr("y", wavePlotTop - 8).attr("text-anchor", "middle")
+      .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#f59e0b")
+      .text("drag L")
+
+    const wallXScale = scaleLinear().domain([0.5, 2.0]).range([
+      wavePlotLeft + (wavePlotRight - wavePlotLeft) * 0.25,
+      wavePlotLeft + (wavePlotRight - wavePlotLeft) * 1.0,
+    ])
+
+    const wallDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).select("line").transition().duration(100).attr("opacity", 0.8).attr("stroke-width", 8)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newL = wallXScale.invert(event.x)
+        const clamped = Math.round(Math.max(0.5, Math.min(2.0, newL)) * 10) / 10
+        onVarChangeRef.current('L', clamped)
+      })
+      .on("end", function () {
+        select(this).select("line").transition().duration(100).attr("opacity", 0.5).attr("stroke-width", 6)
+      })
+
+    wallHandle.call(wallDragBehavior)
+
+    // Draggable quantum number handle on energy diagram
+    const nHandle = g.append("g").attr("class", "n-drag-handle").style("cursor", "ns-resize")
+    nHandle.append("rect")
+      .attr("x", -20).attr("y", -15).attr("width", 40).attr("height", 30)
+      .attr("fill", "transparent")
+    nHandle.append("circle").attr("r", 8)
+      .attr("fill", "#3b82f6").attr("stroke", "white").attr("stroke-width", 2)
+    nHandle.append("text").attr("class", "n-handle-label")
+      .attr("x", 16).attr("y", 4)
+      .attr("font-size", 12).attr("font-family", F).attr("font-weight", 700).attr("fill", "#3b82f6")
+
+    // n drag behavior — uses energy level y positions, computed dynamically in drag
+    const nDragBehavior = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).select("circle").transition().duration(100).attr("r", 10)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        // Map y position to nearest quantum number (1-5)
+        const yFrac = (event.y - energyTop) / (energyBottom - energyTop)
+        // top = high n, bottom = low n (energy increases upward)
+        const rawN = Math.round(5 - yFrac * 4)
+        const clamped = Math.max(1, Math.min(5, rawN))
+        onVarChangeRef.current('n', clamped)
+      })
+      .on("end", function () {
+        select(this).select("circle").transition().duration(100).attr("r", 8)
+      })
+
+    nHandle.call(nDragBehavior)
 
     // Wall labels
     g.append("text").attr("x", wavePlotLeft).attr("y", wavePlotBottom + H * 0.047)
@@ -404,6 +470,22 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("cx", energyLeft + eW * 0.062).attr("cy", y)
         .attr("opacity", isSelected ? 1 : 0)
     }
+
+    // Position wall drag handle at the right wall
+    const wallXScale = scaleLinear().domain([0.5, 2.0]).range([
+      wavePlotLeft + (wavePlotRight - wavePlotLeft) * 0.25,
+      wavePlotLeft + (wavePlotRight - wavePlotLeft) * 1.0,
+    ])
+    const wallX = wallXScale(wellWidth)
+    g.select(".wall-drag-handle").transition().duration(dur)
+      .attr("transform", `translate(${wallX},0)`)
+    g.select(".wall-drag-label").text(`L=${wellWidth.toFixed(1)}`)
+
+    // Position n drag handle at current energy level
+    const currentY = yScale(currentEnergy)
+    g.select(".n-drag-handle").transition().duration(dur)
+      .attr("transform", `translate(${energyLeft + (energyRight - energyLeft) * 0.062},${currentY})`)
+    g.select(".n-handle-label").text(`n=${quantumN}`)
 
     // Values panel
     g.select(".val-n-label").text(`n = ${quantumN}`)

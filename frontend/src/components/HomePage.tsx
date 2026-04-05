@@ -56,7 +56,7 @@ export function HomePage(): ReactElement {
           left={
             <div className="flex items-center gap-3">
               <span className="text-base font-bold text-slate-900 dark:text-white">
-                {activeSubject ? activeSubject.name : "Formulas"}
+                {activeSubject ? activeSubject.name : "Sciencebouk"}
               </span>
               {completedCount > 0 && !activeSubject && (
                 <div className="flex items-center gap-2">

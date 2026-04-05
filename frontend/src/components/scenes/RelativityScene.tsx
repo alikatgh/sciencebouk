@@ -5,6 +5,8 @@ import {
   scaleLinear,
   line,
   range,
+  drag,
+  type D3DragEvent,
   type Selection,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
@@ -94,6 +96,7 @@ export function RelativityScene(): ReactElement {
             gamma={gamma}
             highlightedVar={highlightedVar}
             onHighlight={setHighlightedVar}
+            onVarChange={setVar}
           />
         )
       }}
@@ -106,14 +109,17 @@ interface Props {
   gamma: number
   highlightedVar: string | null
   onHighlight: (name: string | null) => void
+  onVarChange: (name: string, value: number) => void
 }
 
-function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight }: Props): ReactElement {
+function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVarChange }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
   const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onHighlightRef = useRef(onHighlight)
   onHighlightRef.current = onHighlight
+  const onVarChangeRef = useRef(onVarChange)
+  onVarChangeRef.current = onVarChange
 
   // Clock animation state
   const clockAngle1Ref = useRef(0)
@@ -216,8 +222,31 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight }: Pr
     // Current point + drop line (will update)
     g.append("line").attr("class", "curve-drop")
       .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
-    g.append("circle").attr("class", "curve-dot").attr("r", 6)
+
+    // Draggable velocity handle on the curve
+    const dotG = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab")
+    // Invisible hit area (min 30px)
+    dotG.append("circle").attr("class", "curve-hit").attr("r", 18).attr("fill", "transparent")
+    // Visible dot
+    dotG.append("circle").attr("class", "curve-dot").attr("r", 6)
       .attr("fill", "#ef4444").attr("stroke", "white").attr("stroke-width", 2)
+
+    const velocityDrag = drag<SVGGElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        select(this).select(".curve-dot").transition().duration(100)
+          .attr("r", 9).attr("stroke-width", 3)
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        const newV = Math.max(0, Math.min(0.99, xScale.invert(event.x)))
+        onVarChangeRef.current('v', Math.round(newV * 100) / 100)
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        select(this).select(".curve-dot").transition().duration(100)
+          .attr("r", 6).attr("stroke-width", 2)
+      })
+    dotG.call(velocityDrag)
 
     // Velocity label on curve
     g.append("text").attr("class", "v-curve-label").attr("y", axBottom + Math.round(H * 0.042))
@@ -381,8 +410,9 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight }: Pr
     // Curve dot + drop
     const cx = xScale(velocity)
     const cy = yScale(Math.min(gamma, 12))
-    g.select(".curve-dot").transition().duration(dur)
-      .attr("cx", cx).attr("cy", cy)
+    g.select(".curve-dot-group").transition().duration(dur)
+      .attr("transform", `translate(${cx}, ${cy})`)
+    g.select(".curve-dot")
       .attr("fill", gammaActive ? VAR_COLORS.result : '#ef4444')
     g.select(".curve-drop").transition().duration(dur)
       .attr("x1", cx).attr("y1", cy).attr("x2", cx).attr("y2", leftPanelBottom)

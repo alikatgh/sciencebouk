@@ -2,7 +2,9 @@ import type { ReactElement } from "react"
 import { useEffect, useRef, useState } from "react"
 import {
   select,
+  drag,
   type Selection,
+  type D3DragEvent,
 } from "d3"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
@@ -292,6 +294,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
   const selectedIdxRef = useRef(1) // start with cube
   const [selectedIdx, setSelectedIdx] = useState(1)
   const angleRef = useRef(0)
+  const angleXRef = useRef(0.3)
+  const autoRotateRef = useRef(true)
   const rafRef = useRef(0)
 
   // Setup -- rebuilds on resize
@@ -341,6 +345,30 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     g.append("g").attr("class", "edges-group")
     g.append("g").attr("class", "verts-group")
 
+    // Drag-to-rotate: invisible hit area over the wireframe region
+    const hitArea = svg.append("rect")
+      .attr("x", W * 0.35).attr("y", H * 0.05)
+      .attr("width", W * 0.55).attr("height", H * 0.85)
+      .attr("fill", "transparent")
+      .style("cursor", "grab")
+
+    const rotateDrag = drag<SVGRectElement, unknown>()
+      .on("start", function () {
+        select(this).style("cursor", "grabbing")
+        autoRotateRef.current = false
+      })
+      .on("drag", (event: D3DragEvent<SVGRectElement, unknown, unknown>) => {
+        angleRef.current += event.dx * 0.01
+        angleXRef.current += event.dy * 0.01
+        renderWireframe()
+      })
+      .on("end", function () {
+        select(this).style("cursor", "grab")
+        autoRotateRef.current = true
+      })
+
+    hitArea.call(rotateDrag)
+
     // V, E, F info panel
     const ipX = W * 0.04
     const ipY = H * 0.6
@@ -366,14 +394,21 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
       .text("V - E + F = 2")
 
     // Shape name
-    g.append("text").attr("class", "shape-name").attr("x", W * 0.6).attr("y", H - 16).attr("text-anchor", "middle")
+    g.append("text").attr("class", "shape-name").attr("x", W * 0.6).attr("y", H - 36).attr("text-anchor", "middle")
       .attr("font-size", 20).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
+
+    // Drag hint
+    g.append("text").attr("x", W * 0.6).attr("y", H - 12).attr("text-anchor", "middle")
+      .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
+      .text("Drag the shape to rotate it in 3D")
 
     // Animation loop
     let running = true
     const animate = () => {
       if (!running) return
-      angleRef.current += 0.008
+      if (autoRotateRef.current) {
+        angleRef.current += 0.008
+      }
       renderWireframe()
       rafRef.current = requestAnimationFrame(animate)
     }
@@ -422,7 +457,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
 
     const rotated = solid.vertices.map(v => {
       let r = rotateY(v, angle)
-      r = rotateX(r, angle * 0.4 + 0.3)
+      r = rotateX(r, angleXRef.current)
       return r
     })
 
