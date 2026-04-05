@@ -241,7 +241,7 @@ export default function SettingsPage(): ReactElement {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-300 dark:text-slate-700">
-          Sciencebouk v0.1.0
+          Formulas v0.1.0 · sciencebo.uk
         </p>
       </div>
     </main>

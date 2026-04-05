@@ -31,6 +31,7 @@ interface AuthContextValue {
   register: (email: string, password: string) => Promise<void>
   logout: () => void
   getAccessToken: () => string | null
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -93,23 +94,39 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     }
   }, [clearTokens])
 
+  const refreshUser = useCallback(async () => {
+    const access = getAccessToken()
+    if (!access) {
+      setUser(null)
+      return
+    }
+
+    try {
+      await fetchMe(access)
+      return
+    } catch {
+      const newAccess = await refreshToken()
+      if (!newAccess) {
+        setUser(null)
+        return
+      }
+      await fetchMe(newAccess)
+    }
+  }, [fetchMe, getAccessToken, refreshToken])
+
   // Boot: check for existing tokens
   useEffect(() => {
     const boot = async () => {
-      const access = localStorage.getItem("sciencebouk-access")
-      if (!access) { setLoading(false); return }
       try {
-        await fetchMe(access)
+        await refreshUser()
       } catch {
-        const newAccess = await refreshToken()
-        if (newAccess) {
-          try { await fetchMe(newAccess) } catch { clearTokens() }
-        }
+        clearTokens()
+        setUser(null)
       }
       setLoading(false)
     }
     boot()
-  }, [fetchMe, refreshToken, clearTokens])
+  }, [refreshUser, clearTokens])
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await fetchJSON<{ access: string; refresh: string }>("/auth/login/", {
@@ -143,7 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     register,
     logout,
     getAccessToken,
-  }), [user, loading, login, register, logout, getAccessToken])
+    refreshUser,
+  }), [user, loading, login, register, logout, getAccessToken, refreshUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

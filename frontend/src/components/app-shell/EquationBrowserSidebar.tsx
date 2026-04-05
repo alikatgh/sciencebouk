@@ -241,7 +241,7 @@ export function EquationBrowserSidebar({
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-800">
               <button onClick={onGoHome} className="text-sm font-semibold text-slate-900 transition hover:text-slate-600 dark:text-white" type="button">
-                Sciencebouk
+                Formulas
               </button>
               <div className="flex items-center">
                 <Button variant="ghost" size="icon-sm" onClick={onToggleTheme} className="h-6 w-6">

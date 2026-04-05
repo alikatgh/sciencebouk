@@ -16,7 +16,7 @@ import { HeroDemo } from "./HeroDemo"
 import { subjects, type Subject } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
-import { formatFormulaPreview } from "../lib/formatFormulaPreview"
+import { InlineMath } from "react-katex"
 
 const iconMap: Record<string, ReactElement> = {
   "pi": <Pi className="h-5 w-5" />,
@@ -34,7 +34,7 @@ const iconMap: Record<string, ReactElement> = {
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
     <span className={muted ? "text-slate-300 dark:text-slate-600" : undefined}>
-      {formatFormulaPreview(formula)}
+      <InlineMath math={formula} />
     </span>
   )
 }
@@ -58,7 +58,7 @@ export function HomePage(): ReactElement {
           left={
             <div className="flex items-center gap-3">
               <span className="text-base font-bold text-slate-900 dark:text-white">
-                {activeSubject ? activeSubject.name : "Sciencebouk"}
+                {activeSubject ? activeSubject.name : "Formulas"}
               </span>
               {completedCount > 0 && !activeSubject && (
                 <div className="flex items-center gap-2">

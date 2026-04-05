@@ -10,13 +10,14 @@ import { TopNav } from "./TopNav"
 
 export default function ProfilePage(): ReactElement {
   const navigate = useNavigate()
-  const { user, isAuthenticated, isPro, logout } = useAuth()
+  const { user, isAuthenticated, isPro, logout, getAccessToken, refreshUser } = useAuth()
   const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
   const [managingSubscription, setManagingSubscription] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(user?.profile.display_name ?? "")
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [profileError, setProfileError] = useState("")
   const nameRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -45,15 +46,23 @@ export default function ProfilePage(): ReactElement {
   const handleSaveName = async () => {
     if (!nameInput.trim()) return
     setSaving(true)
+    setProfileError("")
     try {
-      const token = localStorage.getItem("formulas-access")
-      await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/auth/me/profile/`, {
+      const token = getAccessToken()
+      if (!token) throw new Error("Please sign in again.")
+      const response = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/auth/me/profile/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ display_name: nameInput.trim() }),
       })
-      window.location.reload()
-    } catch { setSaving(false) }
+      if (!response.ok) throw new Error("Could not save your name.")
+      await refreshUser()
+      setEditingName(false)
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Could not save your name.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleManageSubscription = async () => {
@@ -68,8 +77,10 @@ export default function ProfilePage(): ReactElement {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingAvatar(true)
+    setProfileError("")
     try {
-      const token = localStorage.getItem("formulas-access")
+      const token = getAccessToken()
+      if (!token) throw new Error("Please sign in again.")
       const form = new FormData()
       form.append("avatar", file)
       const res = await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/auth/me/avatar/`, {
@@ -77,9 +88,14 @@ export default function ProfilePage(): ReactElement {
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       })
-      if (res.ok) window.location.reload()
-    } catch { /* silent */ }
-    setUploadingAvatar(false)
+      if (!res.ok) throw new Error("Could not upload your photo.")
+      await refreshUser()
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Could not upload your photo.")
+    } finally {
+      e.target.value = ""
+      setUploadingAvatar(false)
+    }
   }
 
   const eqProgress = equationManifest.map((eq) => ({ ...eq, progress: progressByEquation.get(eq.id) }))
@@ -152,6 +168,7 @@ export default function ProfilePage(): ReactElement {
                       <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">Free</span>
                     )}
                   </div>
+                  {profileError && <p className="mt-2 text-xs text-red-500">{profileError}</p>}
                 </div>
               </div>
 
