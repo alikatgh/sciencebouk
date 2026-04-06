@@ -11,8 +11,18 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: "0.6.0",
+    date: "6 Apr 2026, 10:00",
+    label: "minor",
+    changes: [
+      { type: "new", text: "STIX Two Text set as default body font across the entire app — lessons, sidebar, about, changelog all render in the scientific journal typeface" },
+      { type: "new", text: "Changelog page at /changelog, linked from footer" },
+      { type: "improved", text: "Switched display font from Newsreader to STIX Two Text (used in Nature, Science, APS journals)" },
+    ],
+  },
+  {
     version: "0.5.0",
-    date: "April 2026",
+    date: "6 Apr 2026, 08:22",
     label: "major",
     changes: [
       { type: "security", text: "Access token moved to memory-only storage — no longer written to localStorage (XSS hardening)" },
@@ -33,21 +43,21 @@ const RELEASES: Release[] = [
   },
   {
     version: "0.4.0",
-    date: "March 2026",
+    date: "5 Apr 2026, 21:40",
     label: "major",
     changes: [
-      { type: "new", text: "STIX Two Text font — the typeface used in Nature, Science, and APS journals" },
       { type: "new", text: "Mobile layout overhaul: teaching panel slides up from bottom on narrow screens" },
       { type: "new", text: "Resizable teaching panel on desktop — drag to adjust width, state persisted across sessions" },
       { type: "improved", text: "SVG clipping fixed on narrow screens across all 17 equation scenes" },
       { type: "improved", text: "Presets respect locked variables during guided lessons" },
       { type: "fix", text: "KaTeX formula converter fully removed — all formulas now render with react-katex exclusively" },
       { type: "fix", text: "Entropy scene removed from immersive mode and now uses the standard app shell" },
+      { type: "fix", text: "Progress auto-syncs silently in the background — no more popup prompt" },
     ],
   },
   {
     version: "0.3.0",
-    date: "February 2026",
+    date: "5 Apr 2026, 16:54",
     label: "major",
     changes: [
       { type: "new", text: "Pro subscription via Stripe — monthly and yearly plans with webhook-verified status" },
@@ -55,12 +65,12 @@ const RELEASES: Release[] = [
       { type: "new", text: "Profile page with Continue Learning CTA and equations sorted by relevance" },
       { type: "new", text: "About page with scientist biographies for each equation" },
       { type: "new", text: "D3 drag interactions added to all 17 equation scenes" },
-      { type: "improved", text: "Progress auto-syncs silently in the background — no more popup prompt" },
+      { type: "new", text: "Resizable panels across the app" },
     ],
   },
   {
     version: "0.2.0",
-    date: "January 2026",
+    date: "5 Apr 2026, 15:18",
     label: "minor",
     changes: [
       { type: "new", text: "17 interactive equation scenes: Pythagoras, Maxwell, Schrödinger, Relativity, Euler, and more" },
@@ -73,10 +83,10 @@ const RELEASES: Release[] = [
   },
   {
     version: "0.1.0",
-    date: "December 2025",
+    date: "5 Apr 2026, 15:03",
     label: "minor",
     changes: [
-      { type: "new", text: "Initial launch: interactive math learning platform with React 19 + Django 5.2" },
+      { type: "new", text: "Initial commit: interactive math learning platform with React 19 + Django 5.2" },
       { type: "new", text: "KaTeX rendering for all mathematical formulas" },
       { type: "new", text: "JWT authentication with register, login, and token refresh" },
       { type: "new", text: "17 equations across Geometry, Algebra, Calculus, Physics, Statistics, and more" },
