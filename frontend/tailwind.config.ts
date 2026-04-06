@@ -17,7 +17,7 @@ const config: Config = {
         panel: "0 24px 54px rgba(32, 56, 47, 0.08)",
       },
       fontFamily: {
-        display: ['"Newsreader"', "serif"],
+        display: ['"STIX Two Text"', "serif"],
         body: ['"Manrope"', "sans-serif"],
       },
     },
