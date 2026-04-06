@@ -200,6 +200,16 @@ class LoginTests(TestCase):
         self.assertIn('access', data)
         self.assertIn('refresh', data)
 
+    def test_login_response_contains_user_payload(self):
+        response = self.client.post('/api/auth/login/', {
+            'username': 'login@example.com',
+            'password': 'correctpass1',
+        }, format='json')
+        data = response.json()
+        self.assertIn('user', data)
+        self.assertEqual(data['user']['email'], 'login@example.com')
+        self.assertIn('profile', data['user'])
+
     def test_login_with_wrong_password_returns_401(self):
         response = self.client.post('/api/auth/login/', {
             'username': 'login@example.com',

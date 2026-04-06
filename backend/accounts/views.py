@@ -7,11 +7,16 @@ from rest_framework.decorators import api_view, parser_classes, permission_class
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import RegisterSerializer, UserSerializer, ProfileSerializer, UserSettingsSerializer
+from .serializers import LoginSerializer, RegisterSerializer, UserSerializer, ProfileSerializer, UserSettingsSerializer
 
 User = get_user_model()
+
+
+class LoginView(TokenObtainPairView):
+    serializer_class = LoginSerializer
 
 
 def verify_google_credential(credential: str, client_id: str) -> dict:

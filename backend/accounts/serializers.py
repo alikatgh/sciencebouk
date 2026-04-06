@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Profile, UserSettings
 
 
@@ -51,3 +52,14 @@ class RegisterSerializer(serializers.Serializer):
             password=validated_data['password'],
         )
         return user
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        return super().get_token(user)
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user'] = UserSerializer(self.user).data
+        return data

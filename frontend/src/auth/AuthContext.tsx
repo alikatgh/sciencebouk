@@ -203,11 +203,17 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   }, [refreshUser])
 
   const login = useCallback(async (email: string, password: string) => {
-    const data = await fetchJSON<{ access: string; refresh: string }>("/auth/login/", {
+    const data = await fetchJSON<{ access: string; refresh: string; user?: User }>("/auth/login/", {
       method: "POST",
       body: JSON.stringify({ username: email, password }),
     })
     saveTokens(data)
+    if (data.user) {
+      if (mountedRef.current) {
+        setUser(data.user)
+      }
+      return
+    }
     await fetchMe(data.access)
   }, [saveTokens, fetchMe])
 
