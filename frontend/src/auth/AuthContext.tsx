@@ -32,6 +32,7 @@ interface AuthContextValue {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
   logout: () => void
   getAccessToken: () => string | null
   refreshUser: () => Promise<void>
@@ -191,6 +192,17 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     }
   }, [saveTokens])
 
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const data = await fetchJSON<{ user: User; tokens: Tokens }>("/auth/google/", {
+      method: "POST",
+      body: JSON.stringify({ credential }),
+    })
+    saveTokens(data.tokens)
+    if (mountedRef.current) {
+      setUser(data.user)
+    }
+  }, [saveTokens])
+
   const logout = useCallback(() => {
     clearTokens()
     if (mountedRef.current) {
@@ -205,10 +217,11 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     loading,
     login,
     register,
+    loginWithGoogle,
     logout,
     getAccessToken,
     refreshUser,
-  }), [user, loading, login, register, logout, getAccessToken, refreshUser])
+  }), [user, loading, login, register, loginWithGoogle, logout, getAccessToken, refreshUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

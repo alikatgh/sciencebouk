@@ -25,6 +25,9 @@ CLAUDE.local.md
 # Internal audit docs
 VISUALIZATION_AUDIT.md
 
+# Local setup guide (contains personal credentials table)
+SETUP.md
+
 # Deployment & infra (private)
 docker-compose.yml
 docker-compose.prod.yml

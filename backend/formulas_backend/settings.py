@@ -52,6 +52,9 @@ _DEV_SECRET_KEY = "django-insecure-dev-key-change-in-production"
 if not DEBUG and SECRET_KEY == _DEV_SECRET_KEY:
     raise ImproperlyConfigured("SECRET_KEY must be set in production")
 
+# Google OAuth
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+
 # Stripe
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')

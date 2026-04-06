@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser
@@ -9,6 +10,59 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import RegisterSerializer, UserSerializer, ProfileSerializer, UserSettingsSerializer
+
+User = get_user_model()
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_auth(request):
+    """Verify a Google ID token and return JWT tokens, creating the user if needed."""
+    credential = request.data.get('credential', '').strip()
+    if not credential:
+        return Response({"error": "credential is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', '')
+    if not client_id:
+        return Response({"error": "Google OAuth is not configured on this server"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+        idinfo = google_id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
+    except Exception:
+        return Response({"error": "Invalid Google credential"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    email = idinfo.get('email', '').lower()
+    if not email:
+        return Response({"error": "Google account has no email"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user, created = User.objects.get_or_create(
+        email=email,
+        defaults={'username': email},
+    )
+
+    if created:
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+        # Populate display name from Google profile if available
+        name = idinfo.get('name', '')
+        picture = idinfo.get('picture', '')
+        if hasattr(user, 'profile'):
+            if name:
+                user.profile.display_name = name
+            if picture:
+                user.profile.avatar_url = picture
+            user.profile.save(update_fields=['display_name', 'avatar_url'])
+
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'user': UserSerializer(user).data,
+        'tokens': {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
