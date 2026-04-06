@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { BookOpen, Sparkles, PanelRightOpen, PanelBottomOpen } from "lucide-react"
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
-import { useNarrow } from "../../hooks/useMediaQuery"
+import { useContainerSize } from "../../hooks/useContainerSize"
 import { useAuth } from "../../auth/AuthContext"
 import { api } from "../../api/client"
 import { useProgress } from "../../progress/useProgress"
@@ -66,6 +66,11 @@ export function TeachableEquation({
   variables: initialVariables, lessonSteps,
   buildLiveFormula, buildResultLine, describeResult, presets, glossary, children,
 }: TeachableEquationProps): ReactElement {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { width: containerWidth } = useContainerSize(containerRef)
+  const isNarrow = containerWidth > 0 && containerWidth < 720
+  const isMobile = containerWidth > 0 && containerWidth < 480
+
   const { isAuthenticated, isPro } = useAuth()
   const contextFormula = useLatexFormula()
   const contextEquationId = useEquationId()
@@ -204,8 +209,6 @@ export function TeachableEquation({
   const hasLessons = lessonSteps.length > 0
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
-  const isNarrow = useNarrow(720)
-  const isMobile = useNarrow(480)
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const letterFormula = appSettings.showFormulaLetters ? displayFormula : ""
   const liveFormula = appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : ""
@@ -314,7 +317,7 @@ export function TeachableEquation({
     const panelMaxHeight = isMobile ? "35vh" : "45vh"
 
     return (
-      <div className="flex h-full flex-col overflow-hidden">
+      <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
         <div className="min-h-0 flex-1 flex items-center justify-center overflow-hidden">
           <div className={`w-full ${isMobile ? "max-h-[50vh]" : "h-full"}`} style={isMobile ? { aspectRatio: "4/3", maxWidth: "100%" } : undefined}>
             {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
@@ -352,7 +355,7 @@ export function TeachableEquation({
 
   // Desktop: side-by-side with resizable panel
   return (
-    <div className="flex h-full gap-0">
+    <div ref={containerRef} className="flex h-full gap-0">
       <div className="min-h-0 min-w-0 flex-1">
         {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
       </div>
