@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react"
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import {
+  REFRESH_TOKEN_KEY,
   clearTokens as clearStoredTokens,
   getAccessToken as getStoredAccessToken,
   refreshAccessToken,
@@ -56,9 +57,18 @@ async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json()
 }
 
+export function isAuthFailureError(error: unknown): boolean {
+  return error instanceof Error && /^Error 40(1|3)/.test(error.message)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }): ReactElement {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const mountedRef = useRef(true)
+
+  useEffect(() => () => {
+    mountedRef.current = false
+  }, [])
 
   const saveTokens = useCallback((tokens: Tokens) => {
     saveStoredTokens(tokens)
@@ -74,57 +84,92 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     const data = await fetchJSON<User>("/auth/me/", {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     })
-    setUser(data)
+    if (mountedRef.current) {
+      setUser(data)
+    }
   }, [])
 
   const refreshUser = useCallback(async () => {
-    const access = getAccessToken()
+    let access = getAccessToken()
+
+    // No access token in memory (e.g. page reload) — try refresh token first
     if (!access) {
-      clearStoredTokens()
-      setUser(null)
-      return
+      access = await refreshAccessToken()
+      if (!access) {
+        clearStoredTokens()
+        if (mountedRef.current) setUser(null)
+        return
+      }
     }
 
     try {
       await fetchMe(access)
-      return
     } catch (firstError) {
-      // Only attempt token refresh for auth failures; treat network errors as transient
-      const isAuthError = firstError instanceof Error && /^Error 40(1|3)/.test(firstError.message)
-      if (!isAuthError) {
+      if (!isAuthFailureError(firstError)) {
         console.warn("[AuthContext] refreshUser: non-auth error, skipping token refresh", firstError)
-        setUser(null)
         return
       }
+      // Access token expired — try refresh
       try {
         const newAccess = await refreshAccessToken()
         if (!newAccess) {
           clearStoredTokens()
-          setUser(null)
+          if (mountedRef.current) setUser(null)
           return
         }
         await fetchMe(newAccess)
       } catch (refreshError) {
         console.warn("[AuthContext] refreshUser: token refresh failed", refreshError)
         clearStoredTokens()
-        setUser(null)
+        if (mountedRef.current) setUser(null)
       }
     }
   }, [fetchMe, getAccessToken])
 
   // Boot: check for existing tokens
   useEffect(() => {
+    let cancelled = false
+
     const boot = async () => {
       try {
         await refreshUser()
       } catch {
         clearTokens()
-        setUser(null)
+        if (!cancelled && mountedRef.current) {
+          setUser(null)
+        }
       }
-      setLoading(false)
+      if (!cancelled && mountedRef.current) {
+        setLoading(false)
+      }
     }
-    boot()
+
+    void boot()
+
+    return () => {
+      cancelled = true
+    }
   }, [refreshUser, clearTokens])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== REFRESH_TOKEN_KEY && event.key !== null) return
+
+      if (event.newValue === null) {
+        if (mountedRef.current) {
+          setUser(null)
+        }
+        return
+      }
+
+      void refreshUser()
+    }
+
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [refreshUser])
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await fetchJSON<{ access: string; refresh: string }>("/auth/login/", {
@@ -141,12 +186,16 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
       body: JSON.stringify({ email, password }),
     })
     saveTokens(data.tokens)
-    setUser(data.user)
+    if (mountedRef.current) {
+      setUser(data.user)
+    }
   }, [saveTokens])
 
   const logout = useCallback(() => {
     clearTokens()
-    setUser(null)
+    if (mountedRef.current) {
+      setUser(null)
+    }
   }, [clearTokens])
 
   const value = useMemo<AuthContextValue>(() => ({
