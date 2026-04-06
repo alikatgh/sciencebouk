@@ -1,10 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,300;1,8..60,400;1,8..60,600;1,8..60,700&family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  --font-body: "STIX Two Text", serif;
   --slider-color: #4f73ff;
   --slider-glow: #25a67f;
   --slider-unfilled: rgb(226 232 240);
@@ -13,7 +14,7 @@
     radial-gradient(circle at top left, rgba(115, 219, 200, 0.12), transparent 24%),
     radial-gradient(circle at top right, rgba(255, 213, 106, 0.12), transparent 22%),
     linear-gradient(180deg, #fbf8f1 0%, #f7f4ec 50%, #f3efe5 100%);
-  font-family: "STIX Two Text", serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
   font-weight: 400;

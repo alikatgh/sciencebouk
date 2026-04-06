@@ -22,6 +22,7 @@ export interface Settings {
   showFormulaLetters: boolean
   showFormulaNumbers: boolean
   showResultNote: boolean
+  fontFamily: string
 }
 
 const DEFAULTS: Settings = {
@@ -45,6 +46,7 @@ const DEFAULTS: Settings = {
   showFormulaLetters: true,
   showFormulaNumbers: true,
   showResultNote: true,
+  fontFamily: "STIX Two Text",
 }
 
 interface SettingsContextValue {
@@ -88,6 +90,8 @@ function load(): Settings {
     if (typeof parsed.showFormulaLetters === "boolean") valid.showFormulaLetters = parsed.showFormulaLetters
     if (typeof parsed.showFormulaNumbers === "boolean") valid.showFormulaNumbers = parsed.showFormulaNumbers
     if (typeof parsed.showResultNote === "boolean") valid.showResultNote = parsed.showResultNote
+    const FONT_IDS = ["STIX Two Text","Lora","Merriweather","EB Garamond","Crimson Text","Source Serif 4","Libre Baskerville","Playfair Display","Spectral","Inter","IBM Plex Sans","DM Sans","Manrope"]
+    if (typeof parsed.fontFamily === "string" && FONT_IDS.includes(parsed.fontFamily)) valid.fontFamily = parsed.fontFamily
     return { ...DEFAULTS, ...valid }
   } catch { return { ...DEFAULTS } }
 }
@@ -169,6 +173,15 @@ export function SettingsProvider({ children }: { children: ReactNode }): ReactEl
     const speeds = { off: "0", slow: "2", normal: "1", fast: "0.5" }
     document.documentElement.style.setProperty("--animation-speed", speeds[settings.animationSpeed])
   }, [settings.animationSpeed])
+
+  // === APPLY FONT FAMILY as CSS variable ===
+  useEffect(() => {
+    const isSerif = !["Inter", "IBM Plex Sans", "DM Sans", "Manrope"].includes(settings.fontFamily)
+    document.documentElement.style.setProperty(
+      "--font-body",
+      `"${settings.fontFamily}", ${isSerif ? "serif" : "sans-serif"}`
+    )
+  }, [settings.fontFamily])
 
   const value = useMemo(() => ({ settings, resolvedTheme, update, reset }), [settings, resolvedTheme, update, reset])
 

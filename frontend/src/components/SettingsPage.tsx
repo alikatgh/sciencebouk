@@ -15,6 +15,41 @@ import { InlineMath } from "react-katex"
 import { clearStoredProgress } from "../progress/useProgress"
 import { useSettings, type Settings } from "../settings/SettingsContext"
 
+const FONTS = [
+  { id: "STIX Two Text",     label: "STIX Two Text",    stack: '"STIX Two Text", serif',    desc: "Nature \u00b7 Science \u00b7 APS",  category: "serif" },
+  { id: "Lora",              label: "Lora",              stack: '"Lora", serif',              desc: "Editorial serif",          category: "serif" },
+  { id: "Merriweather",      label: "Merriweather",      stack: '"Merriweather", serif',      desc: "Highly readable",          category: "serif" },
+  { id: "EB Garamond",       label: "EB Garamond",       stack: '"EB Garamond", serif',       desc: "Classic Renaissance",      category: "serif" },
+  { id: "Crimson Text",      label: "Crimson Text",      stack: '"Crimson Text", serif',      desc: "Elegant book typeface",    category: "serif" },
+  { id: "Source Serif 4",    label: "Source Serif 4",    stack: '"Source Serif 4", serif',    desc: "Adobe \u00b7 clean & modern",  category: "serif" },
+  { id: "Libre Baskerville", label: "Libre Baskerville", stack: '"Libre Baskerville", serif', desc: "Classic Baskerville",      category: "serif" },
+  { id: "Playfair Display",  label: "Playfair Display",  stack: '"Playfair Display", serif',  desc: "Elegant high-contrast",   category: "serif" },
+  { id: "Spectral",          label: "Spectral",          stack: '"Spectral", serif',          desc: "Literary & editorial",     category: "serif" },
+  { id: "Inter",             label: "Inter",             stack: '"Inter", sans-serif',         desc: "Clean modern sans-serif", category: "sans" },
+  { id: "IBM Plex Sans",     label: "IBM Plex Sans",     stack: '"IBM Plex Sans", sans-serif', desc: "Technical & geometric",  category: "sans" },
+  { id: "DM Sans",           label: "DM Sans",           stack: '"DM Sans", sans-serif',       desc: "Friendly & contemporary",category: "sans" },
+  { id: "Manrope",           label: "Manrope",           stack: '"Manrope", sans-serif',       desc: "Rounded geometric",       category: "sans" },
+]
+
+function FontCard({ font, selected, onSelect }: { font: typeof FONTS[0]; selected: boolean; onSelect: () => void }): ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
+        selected
+          ? "border-ocean bg-ocean/5 dark:border-ocean/70 dark:bg-ocean/10"
+          : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-slate-600"
+      }`}
+    >
+      <p className="text-sm font-medium text-slate-800 dark:text-slate-200" style={{ fontFamily: font.stack }}>
+        {font.label}
+      </p>
+      <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">{font.desc}</p>
+    </button>
+  )
+}
+
 function SettingRow({ label, description, children }: { label: string; description?: string; children: ReactElement }): ReactElement {
   return (
     <div className="flex items-center justify-between gap-4 py-2.5">
@@ -247,6 +282,27 @@ export default function SettingsPage(): ReactElement {
               <SettingRow label="Color blind mode" description="Patterns + colors">
                 <Switch checked={settings.colorBlindMode} onCheckedChange={(v) => update("colorBlindMode", v)} />
               </SettingRow>
+              <Separator />
+              <div className="py-2.5">
+                <p className="mb-1 text-sm font-medium text-slate-900 dark:text-white">Reading font</p>
+                <p className="mb-2.5 text-xs text-slate-400 dark:text-slate-500">Used for lessons, text, and all prose</p>
+                <div className="mb-3">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Serif</p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {FONTS.filter(f => f.category === "serif").map(f => (
+                      <FontCard key={f.id} font={f} selected={settings.fontFamily === f.id} onSelect={() => update("fontFamily", f.id)} />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sans-serif</p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {FONTS.filter(f => f.category === "sans").map(f => (
+                      <FontCard key={f.id} font={f} selected={settings.fontFamily === f.id} onSelect={() => update("fontFamily", f.id)} />
+                    ))}
+                  </div>
+                </div>
+              </div>
               <Separator />
               <SettingRow label="Sidebar collapsed" description="Start with sidebar closed">
                 <Switch checked={settings.sidebarCollapsed} onCheckedChange={(v) => update("sidebarCollapsed", v)} />
