@@ -222,9 +222,9 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     gRef.current = g
 
     // Mode toggle buttons — adapt labels to available width
-    const compact = W < 500
-    const btn1Label = compact ? "Field" : "Electric Field Lines"
-    const btn2Label = compact ? "Wave" : "EM Wave"
+    const compact = W < 700
+    const btn1Label = compact ? "Field Lines" : "Electric Field Lines"
+    const btn2Label = compact ? "EM Wave" : "EM Wave"
     const btnGap = Math.round(W * 0.012)
     const btnY = Math.round(H * 0.027)
     const btnH = Math.max(24, Math.round(H * 0.068))

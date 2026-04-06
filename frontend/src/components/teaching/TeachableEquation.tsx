@@ -204,7 +204,7 @@ export function TeachableEquation({
   const hasLessons = lessonSteps.length > 0
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
-  const isNarrow = useNarrow(900)
+  const isNarrow = useNarrow(720)
   const isMobile = useNarrow(480)
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const letterFormula = appSettings.showFormulaLetters ? displayFormula : ""
@@ -223,33 +223,31 @@ export function TeachableEquation({
           </div>
         )}
 
-        {/* Live formula — respects settings */}
+        {/* Live formula — in its own prominent rounded box */}
         {formulaCardVisible && (
-          <Card>
-            <CardContent className="p-3">
-              <ErrorBoundary fallback={<FormulaFallback />}>
-                <Suspense fallback={<FormulaFallback />}>
-                  {buildLiveFormula ? (
-                    <LiveFormula
-                      letterFormula={letterFormula}
-                      liveFormula={liveFormula}
-                      resultLine={resultLine}
-                      resultNote={resultNote}
-                      variables={formulaVariables}
-                      onVariableChange={setVar}
-                    />
-                  ) : displayFormula && appSettings.showFormulaLetters ? (
-                    <LiveFormula
-                      letterFormula={displayFormula}
-                      liveFormula={displayFormula}
-                      variables={formulaVariables}
-                      onVariableChange={setVar}
-                    />
-                  ) : null}
-                </Suspense>
-              </ErrorBoundary>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border-2 border-ocean/30 bg-white px-4 py-4 dark:border-ocean/40 dark:bg-slate-900">
+            <ErrorBoundary fallback={<FormulaFallback />}>
+              <Suspense fallback={<FormulaFallback />}>
+                {buildLiveFormula ? (
+                  <LiveFormula
+                    letterFormula={letterFormula}
+                    liveFormula={liveFormula}
+                    resultLine={resultLine}
+                    resultNote={resultNote}
+                    variables={formulaVariables}
+                    onVariableChange={setVar}
+                  />
+                ) : displayFormula && appSettings.showFormulaLetters ? (
+                  <LiveFormula
+                    letterFormula={displayFormula}
+                    liveFormula={displayFormula}
+                    variables={formulaVariables}
+                    onVariableChange={setVar}
+                  />
+                ) : null}
+              </Suspense>
+            </ErrorBoundary>
+          </div>
         )}
 
         {/* Variables */}
