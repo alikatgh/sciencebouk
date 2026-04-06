@@ -17,6 +17,7 @@ export function Footer(): ReactElement {
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition hover:text-slate-600 dark:hover:text-slate-300">GitHub</a>
           <Link to="/pro" className="transition hover:text-slate-600 dark:hover:text-slate-300">Pro</Link>
           <Link to="/about" className="transition hover:text-slate-600 dark:hover:text-slate-300">About</Link>
+          <Link to="/changelog" className="transition hover:text-slate-600 dark:hover:text-slate-300">Changelog</Link>
           <Link to="/privacy" className="transition hover:text-slate-600 dark:hover:text-slate-300">Privacy</Link>
           <Link to="/terms" className="transition hover:text-slate-600 dark:hover:text-slate-300">Terms</Link>
           <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" className="transition hover:text-slate-600 dark:hover:text-slate-300">Report a bug</a>

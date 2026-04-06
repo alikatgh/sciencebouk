@@ -16,6 +16,7 @@ const SettingsPage = lazy(() => import("./components/SettingsPage"))
 const AboutPage = lazy(() => import("./components/AboutPage"))
 const PrivacyPage = lazy(() => import("./components/PrivacyPage"))
 const TermsPage = lazy(() => import("./components/TermsPage"))
+const ChangelogPage = lazy(() => import("./components/ChangelogPage"))
 
 function RequirePro({ children }: { children: React.ReactElement }): React.ReactElement {
   const { isAuthenticated, isPro, loading } = useAuth()
@@ -68,6 +69,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/changelog" element={<ChangelogPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
