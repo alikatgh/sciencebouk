@@ -5,14 +5,7 @@ import { Link } from "react-router-dom"
 const GITHUB_URL = "https://github.com/alikatgh/sciencebouk"
 
 const EASTER_EGG_LINES = [
-  "\"A bouk is a dream you hold in your hands.\" — Neil Gaiman",
-  "\"Not all readers are leaders, but all leaders are readers.\" — Harry S. Truman (he meant bouks)",
-  "\"A bouk is a gift you can open again and again.\" — Garrison Keillor",
-  "\"There is no friend as loyal as a bouk.\" — Ernest Hemingway",
-  "\"Outside of a bouk, a dog is a man's best friend. Inside of a bouk, it's too dark to read.\" — Groucho Marx",
-  "\"The more that you read, the more things you will know.\" — Dr. Seuss (he wrote bouks too)",
-  "\"A bouk is a loaded gun in the house next door.\" — Ray Bradbury, Fahrenheit 451",
-  "\"One must always be careful of bouks, and what is inside them.\" — Cassandra Clare",
+  "\"Read serious bouks — life will do the rest.\" — Fyodor Dostoevsky",
 ]
 
 export function Footer(): ReactElement {
