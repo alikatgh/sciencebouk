@@ -1,6 +1,5 @@
-import type { ReactElement } from "react"
+import type { CSSProperties, ReactElement } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
 import { ArrowRight, CheckCircle2, RotateCcw, Trophy, Sparkles } from "lucide-react"
 import { Button } from "../ui/button"
 import { Progress } from "../ui/progress"
@@ -63,8 +62,8 @@ function linkTerms(
           return (
             <span key={i} className="cursor-pointer rounded px-0.5 font-bold transition hover:ring-1 hover:ring-current"
               style={{ color: token.varRef.color }}
-              onMouseEnter={() => onHighlight(token.varRef!.name)}
-              onMouseLeave={() => onHighlight(null)}
+              onPointerEnter={() => onHighlight(token.varRef!.name)}
+              onPointerLeave={() => onHighlight(null)}
             >{part}</span>
           )
         }
@@ -75,8 +74,8 @@ function linkTerms(
               className="cursor-pointer border-b border-dashed border-current font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
               style={{ color: token.termRef.color }}
               title={token.termRef.tooltip}
-              onMouseEnter={() => onTermHighlight(token.termRef!.highlightClass)}
-              onMouseLeave={() => onTermHighlight(null)}
+              onPointerEnter={() => onTermHighlight(token.termRef!.highlightClass)}
+              onPointerLeave={() => onTermHighlight(null)}
             >{part}</span>
           )
         }
@@ -105,25 +104,19 @@ function CelebrationParticles(): ReactElement {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {particles.map((p) => (
-        <motion.div
+        <div
           key={p.id}
-          className="absolute rounded-full"
+          className="animate-lesson-confetti absolute rounded-full"
           style={{
             width: p.size,
             height: p.size,
             backgroundColor: p.color,
             left: `${p.x}%`,
             top: "-8px",
-          }}
-          initial={{ opacity: 1, y: 0, x: 0, scale: 1 }}
-          animate={{
-            opacity: [1, 1, 0],
-            y: [0, 80, 160],
-            x: [0, p.drift * 0.5, p.drift],
-            scale: [1, 1.2, 0.6],
-            rotate: [0, 180, 360],
-          }}
-          transition={{ duration: p.duration, delay: p.delay, ease: "easeOut" }}
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            ["--lesson-confetti-drift" as const]: `${p.drift}px`,
+          } as CSSProperties}
         />
       ))}
     </div>
@@ -183,6 +176,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
     setShowHint(false)
     insightTimerRef.current = setTimeout(() => {
+      insightTimerRef.current = null
       setShowInsight(true)
       if (isLastStep) {
         if (!autoAdvancedRef.current) {
@@ -209,6 +203,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
   }, [stepCompleted, isLastStep])
 
   const handleAdvance = useCallback(() => {
+    if (autoAdvancedRef.current) return
     // Mark as advanced so any pending auto-advance timer (300ms after stepCompleted) skips.
     autoAdvancedRef.current = true
     setShowInsight(false)
@@ -232,32 +227,23 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
       </div>
 
       {/* Instruction */}
-      <AnimatePresence mode="wait">
-        <motion.div key={step.id}
-          className="rounded-lg border border-ocean/15 bg-ocean/5 px-3 py-2 dark:border-ocean/20 dark:bg-ocean/10"
-          initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
-          transition={{ duration: 0.2 }}
-        >
+      <div
+        key={step.id}
+        className="animate-slide-in-right rounded-lg border border-ocean/15 bg-ocean/5 px-3 py-2 dark:border-ocean/20 dark:bg-ocean/10"
+      >
           <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">{renderText(step.instruction)}</p>
-        </motion.div>
-      </AnimatePresence>
+      </div>
 
       {/* Hint */}
-      <AnimatePresence>
-        {showHint && step.hint && !stepCompleted && appSettings.showHints && (
-          <motion.p className="mt-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] text-slate-400 dark:bg-slate-700"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >{renderText(step.hint)}</motion.p>
-        )}
-      </AnimatePresence>
+      {showHint && step.hint && !stepCompleted && appSettings.showHints && (
+        <p className="animate-fade-in mt-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] text-slate-400 dark:bg-slate-700">
+          {renderText(step.hint)}
+        </p>
+      )}
 
       {/* Insight (mid-lesson steps) */}
-      <AnimatePresence>
-        {showInsight && stepCompleted && !isAllDone && (
-          <motion.div
-            className="mt-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-700/40 dark:bg-sky-950/30"
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-          >
+      {showInsight && stepCompleted && !isAllDone && (
+        <div className="animate-fade-in-up mt-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-700/40 dark:bg-sky-950/30">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-500" />
               <div className="flex-1">
@@ -267,56 +253,41 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
                 </Button>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* Lesson complete celebration */}
-      <AnimatePresence>
-        {showCelebration && isAllDone && (
-          <motion.div
-            className="relative mt-2 overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-4 dark:border-emerald-600/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-sky-950/30"
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          >
+      {showCelebration && isAllDone && (
+        <div className="animate-scale-in relative mt-2 overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-4 dark:border-emerald-600/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-sky-950/30">
             <CelebrationParticles />
 
             <div className="relative flex flex-col items-center text-center">
-              <motion.div
-                initial={{ scale: 0, rotate: -30 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.15 }}
+              <div
+                className="animate-pop-in"
+                style={{ animationDelay: "150ms" }}
               >
                 <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
                   <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-              </motion.div>
+              </div>
 
-              <motion.p
-                className="text-sm font-bold text-emerald-700 dark:text-emerald-300"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
+              <p
+                className="animate-fade-in-up text-sm font-bold text-emerald-700 dark:text-emerald-300"
+                style={{ animationDelay: "250ms" }}
               >
                 Lesson complete!
-              </motion.p>
+              </p>
 
-              <motion.p
-                className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
+              <p
+                className="animate-fade-in mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300"
+                style={{ animationDelay: "400ms" }}
               >
                 {renderText(step.insight)}
-              </motion.p>
+              </p>
 
-              <motion.div
-                className="mt-3 flex gap-2"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.55 }}
+              <div
+                className="animate-fade-in-up mt-3 flex gap-2"
+                style={{ animationDelay: "550ms" }}
               >
                 <Button variant="outline" size="xs" onClick={onReset} className="gap-1 text-slate-500">
                   <RotateCcw className="h-3 w-3" /> Replay
@@ -324,11 +295,10 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
                 <Button size="xs" className="gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowCelebration(false)}>
                   <Sparkles className="h-3 w-3" /> Keep exploring
                 </Button>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   )
 }

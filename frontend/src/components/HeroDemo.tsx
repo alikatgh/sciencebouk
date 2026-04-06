@@ -1,6 +1,5 @@
 import type { ReactElement } from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { useDocumentVisibility } from "../hooks/useDocumentVisibility"
 
 // Only exact Pythagorean triples — c must be a whole number. No approximations on a math product.
@@ -92,15 +91,13 @@ export function HeroDemo(): ReactElement {
       </div>
 
       {/* Result line — animated */}
-      <motion.p
+      <p
         key={`${a2}-${b2}`}
-        className="mt-2 text-center text-sm font-semibold text-emerald-400"
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
+        className="animate-fade-in-up mt-2 text-center text-sm font-semibold text-emerald-400"
+        style={{ animationDelay: "120ms" }}
       >
         {a2} + {b2} = {c2} ✓
-      </motion.p>
+      </p>
 
       {/* Visual squares — animate size */}
       <div className="mt-4 flex items-end justify-center gap-2">
@@ -133,18 +130,9 @@ export function HeroDemo(): ReactElement {
 
 function AnimatedNumber({ value, color }: { value: number; color: string }): ReactElement {
   return (
-    <AnimatePresence mode="wait">
-      <motion.span
-        key={value}
-        className={color}
-        initial={{ opacity: 0, y: -12, scale: 0.8 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 12, scale: 0.8 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-      >
-        {Number.isInteger(value) ? value : value.toFixed(1)}
-      </motion.span>
-    </AnimatePresence>
+    <span key={value} className={`${color} animate-pop-in inline-block`}>
+      {Number.isInteger(value) ? value : value.toFixed(1)}
+    </span>
   )
 }
 
@@ -160,20 +148,21 @@ function SquareBlock({ size, value, label, color }: {
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <motion.div
+      <div
         className={`rounded ${c.bg} border ${c.border}`}
-        animate={{ width: size, height: size }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+        style={{
+          width: size,
+          height: size,
+          transition: "width 400ms ease, height 400ms ease",
+        }}
       />
-      <motion.span
+      <span
         key={value}
-        className={`text-[9px] font-medium ${c.text}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
+        className={`animate-fade-in text-[9px] font-medium ${c.text}`}
+        style={{ animationDelay: "80ms" }}
       >
         {label} = {Number.isInteger(value) ? value : value.toFixed(1)}
-      </motion.span>
+      </span>
     </div>
   )
 }

@@ -1,9 +1,10 @@
 import type { ReactElement } from "react"
 import { Suspense, lazy, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
-import { Navigate, useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "./auth/AuthContext"
-import { LazyAuthModal } from "./auth/LazyAuthModal"
+
 import { EquationBrowserSidebar } from "./components/app-shell/EquationBrowserSidebar"
+import { ErrorBoundary } from "./components/ErrorBoundary"
 import { EquationHeader } from "./components/app-shell/EquationHeader"
 import { prefetchEquationScene } from "./components/sceneRegistry"
 import { FormulaProvider } from "./components/teaching/FormulaContext"
@@ -64,6 +65,41 @@ function VisualizationFallback(): ReactElement {
   )
 }
 
+function getDismissedSyncSignature(): string | null {
+  try {
+    return localStorage.getItem("sciencebouk-sync-dismissed")
+  } catch {
+    return null
+  }
+}
+
+function persistDismissedSyncSignature(signature: string): void {
+  try {
+    localStorage.setItem("sciencebouk-sync-dismissed", signature)
+  } catch {
+    // Ignore unavailable storage; the prompt will simply reappear later.
+  }
+}
+
+function EquationNotFound({ onGoHome }: { onGoHome: () => void }): ReactElement {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center dark:bg-slate-950">
+      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Equation not found</p>
+      <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">That equation does not exist in the atlas.</h1>
+      <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">
+        Try another equation from the atlas instead of silently falling into the wrong one.
+      </p>
+      <button
+        type="button"
+        onClick={onGoHome}
+        className="rounded-full bg-ocean px-5 py-2 text-sm font-semibold text-white transition hover:bg-ocean/90"
+      >
+        Back to home
+      </button>
+    </main>
+  )
+}
+
 export default function App(): ReactElement {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -72,7 +108,7 @@ export default function App(): ReactElement {
   const [searchQuery, setSearchQuery] = useState("")
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [showAuth, setShowAuth] = useState(false)
+
   const [showShortcuts, setShowShortcuts] = useState(false)
   const { settings, resolvedTheme, update: updateSettings } = useSettings()
   const [sidebarOpen, setSidebarOpen] = useState(() => !settings.sidebarCollapsed)
@@ -109,8 +145,8 @@ export default function App(): ReactElement {
   }, [navigate])
   const handleOpenAuthSidebar = useCallback(() => {
     setDrawerOpen(false)
-    setShowAuth(true)
-  }, [])
+    navigate("/login")
+  }, [navigate])
   const handleOpenPro = useCallback(() => {
     setDrawerOpen(false)
     navigate("/pro")
@@ -122,7 +158,15 @@ export default function App(): ReactElement {
 
   const handleOpenDrawer = useCallback(() => setDrawerOpen(true), [])
   const handleOpenProfileHeader = useCallback(() => navigate("/profile"), [navigate])
-  const handleOpenAuthHeader = useCallback(() => setShowAuth(true), [])
+  const handleOpenAuthHeader = useCallback(() => navigate("/login"), [navigate])
+  const handleDismissSync = useCallback(() => {
+    setShowSync(false)
+    persistDismissedSyncSignature(syncSignature)
+  }, [syncSignature])
+  const handleSynced = useCallback(() => {
+    setShowSync(false)
+    persistDismissedSyncSignature(syncSignature)
+  }, [syncSignature])
 
   useEffect(() => {
     if (!isPro || syncSignature === "[]") {
@@ -130,7 +174,7 @@ export default function App(): ReactElement {
       return
     }
 
-    setShowSync(localStorage.getItem("sciencebouk-sync-dismissed") !== syncSignature)
+    setShowSync(getDismissedSyncSignature() !== syncSignature)
   }, [isPro, syncSignature])
 
   useEffect(() => () => {
@@ -240,7 +284,7 @@ export default function App(): ReactElement {
   }, [nextEquation?.id, prevEquation?.id])
 
   if (routeInvalid) {
-    return <Navigate to={`/equation/${firstEquationId}`} replace />
+    return <EquationNotFound onGoHome={handleGoHome} />
   }
 
   return (
@@ -294,40 +338,39 @@ export default function App(): ReactElement {
 
             <div className="equation-content min-h-0 flex-1 overflow-hidden sm:p-2">
               <FormulaProvider value={selectedEquation.formula}>
-                <Suspense fallback={<VisualizationFallback />}>
-                  <EquationVisualization equationId={selectedEquation.id} />
-                </Suspense>
+                <ErrorBoundary fallback={<VisualizationFallback />}>
+                  <Suspense fallback={<VisualizationFallback />}>
+                    <EquationVisualization equationId={selectedEquation.id} />
+                  </Suspense>
+                </ErrorBoundary>
               </FormulaProvider>
             </div>
           </div>
         </div>
 
         {showShortcuts && (
-          <Suspense fallback={null}>
-            <ShortcutOverlay
-              open={showShortcuts}
-              showZeroShortcut={equationManifest.length >= 10}
-              shortcutJumpMax={shortcutJumpMax}
-              shiftedShortcutMax={shiftedShortcutMax}
-              onClose={() => setShowShortcuts(false)}
-            />
-          </Suspense>
+          <ErrorBoundary fallback={null}>
+            <Suspense fallback={null}>
+              <ShortcutOverlay
+                open={showShortcuts}
+                showZeroShortcut={equationManifest.length >= 10}
+                shortcutJumpMax={shortcutJumpMax}
+                shiftedShortcutMax={shiftedShortcutMax}
+                onClose={() => setShowShortcuts(false)}
+              />
+            </Suspense>
+          </ErrorBoundary>
         )}
 
-        <LazyAuthModal open={showAuth} onClose={() => setShowAuth(false)} />
         {showSync && (
-          <Suspense fallback={null}>
-            <SyncPrompt
-              onDismiss={() => {
-                setShowSync(false)
-                localStorage.setItem("sciencebouk-sync-dismissed", syncSignature)
-              }}
-              onSynced={() => {
-                setShowSync(false)
-                localStorage.setItem("sciencebouk-sync-dismissed", syncSignature)
-              }}
-            />
-          </Suspense>
+          <ErrorBoundary fallback={null}>
+            <Suspense fallback={null}>
+              <SyncPrompt
+                onDismiss={handleDismissSync}
+                onSynced={handleSynced}
+              />
+            </Suspense>
+          </ErrorBoundary>
         )}
       </main>
   )

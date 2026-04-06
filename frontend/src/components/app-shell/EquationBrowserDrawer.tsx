@@ -46,6 +46,9 @@ export function EquationBrowserDrawer({
   onOpenPro,
   onLogout,
 }: EquationBrowserDrawerProps): ReactElement {
+  const completionPercent = total > 0 ? (completedCount / total) * 100 : 0
+  const completionLabel = `${completedCount} of ${total} equations completed`
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="lg:hidden">
@@ -61,7 +64,13 @@ export function EquationBrowserDrawer({
               <span className="font-medium text-emerald-600 dark:text-emerald-400">{completedCount}/{total}</span>
               <span className="text-slate-400">{totalTimeMinutes}m</span>
             </div>
-            <Progress value={(completedCount / total) * 100} className="mt-1 h-1" />
+            <Progress
+              value={completionPercent}
+              className="mt-1 h-1"
+              aria-label="Equation completion"
+              aria-valuetext={completionLabel}
+            />
+            <span className="sr-only">{completionLabel}</span>
           </div>
         )}
         <ScrollArea className="flex-1 px-3">

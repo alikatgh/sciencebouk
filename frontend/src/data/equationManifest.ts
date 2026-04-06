@@ -23,8 +23,8 @@ export const equationManifest: EquationSummary[] = [
   { id: 13, title: "Relativity", formula: "E=mc^2", author: "Einstein", year: "1905", category: "physics" },
   { id: 14, title: "Schrodinger's Equation", formula: "i\\hbar\\frac{\\partial}{\\partial t}\\Psi=H\\Psi", author: "E. Schrodinger", year: "1927", category: "quantum_mechanics" },
   { id: 15, title: "Information Theory", formula: "H=-\\sum p(x)\\log p(x)", author: "C. Shannon", year: "1949", category: "information" },
-  { id: 16, title: "Chaos Theory", formula: "x_{t+1}=k x_t(1-x_t)", author: "R. May", year: "1975", category: "dynamical_systems" },
-  { id: 17, title: "Black-Scholes Equation", formula: "\\frac{1}{2}\\sigma^2S^2\\frac{\\partial^2V}{\\partial S^2}+rS\\frac{\\partial V}{\\partial S}+\\frac{\\partial V}{\\partial t}-rV=0", author: "Black, Scholes", year: "1990", category: "finance" },
+  { id: 16, title: "Chaos Theory", formula: "x_{t+1}=r x_t(1-x_t)", author: "R. May", year: "1975", category: "dynamical_systems" },
+  { id: 17, title: "Black-Scholes Equation", formula: "\\frac{1}{2}\\sigma^2S^2\\frac{\\partial^2V}{\\partial S^2}+rS\\frac{\\partial V}{\\partial S}+\\frac{\\partial V}{\\partial t}-rV=0", author: "Black, Scholes", year: "1973", category: "finance" },
 ]
 
 const searchableEquationManifest = equationManifest.map((equation) => ({

@@ -6,10 +6,11 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import Course, Equation, LearningEvent, UserProgress
 from .serializers import (
@@ -38,8 +39,13 @@ class EquationViewSet(viewsets.ReadOnlyModelViewSet):
         return super().list(request, *args, **kwargs)
 
 
+class AnonymousProgressThrottle(AnonRateThrottle):
+    scope = "anon_progress"
+
+
 @api_view(["PATCH"])
 @permission_classes([AllowAny])
+@throttle_classes([AnonymousProgressThrottle])
 def update_progress(request, id):
     """Mark progress on a single equation identified by sort_order."""
     try:
@@ -110,9 +116,9 @@ def health(request):
     return Response({"status": "ok"})
 
 
-@cache_page(60 * 5)
 @api_view(["GET"])
 @permission_classes([AllowAny])
+@cache_page(60 * 5)
 def equation_atlas_legacy(request):
     """Legacy alias that returns the full equation atlas in the original envelope shape.
 
@@ -164,10 +170,19 @@ def equation_atlas_legacy(request):
 @permission_classes([IsAuthenticated])
 def my_progress(request):
     """Get or clear all progress for the authenticated user."""
-    progress = UserProgress.objects.filter(user=request.user)
+    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+        return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
+
+    progress = UserProgress.objects.filter(user=request.user).order_by("equation__sort_order")
     if request.method == "DELETE":
         progress.delete()
         return Response({"ok": True})
+
+    paginator = PageNumberPagination()
+    paginator.page_size = 20
+    page = paginator.paginate_queryset(progress, request)
+    if page is not None:
+        return paginator.get_paginated_response(UserProgressSerializer(page, many=True).data)
     return Response(UserProgressSerializer(progress, many=True).data)
 
 
@@ -189,8 +204,9 @@ def update_my_progress(request, equation_id):
 
     progress, _ = UserProgress.objects.get_or_create(
         user=request.user, equation=equation,
-        defaults={"anon_id": str(request.user.id)},
+        defaults={"anon_id": ""},
     )
+    progress.anon_id = ""
     for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
         if field in vd:
             setattr(progress, field, vd[field])
@@ -236,8 +252,9 @@ def bulk_sync_progress(request):
 
         progress, _ = UserProgress.objects.get_or_create(
             user=request.user, equation=equation,
-            defaults={"anon_id": str(request.user.id)},
+            defaults={"anon_id": ""},
         )
+        progress.anon_id = ""
         for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
             if field in vd:
                 setattr(progress, field, vd[field])

@@ -145,6 +145,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
   gammaRef.current = gamma
   const lastTimeRef = useRef(0)
   const rafRef = useRef(0)
+  const resizeRafRef = useRef(0)
 
   // Sync React props into SVG when not dragging (handles presets, lesson steps)
   useEffect(() => {
@@ -183,6 +184,11 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
     function buildSVG() {
       if (!el) return
+      // Cancel any previous animation loop before rebuilding
+      clockRunning = false
+      cancelAnimationFrame(rafRef.current)
+      clockRunning = true
+
       select(el).select("svg").remove()
       lastTimeRef.current = 0
 
@@ -199,7 +205,6 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Lorentz factor curve, clocks, and length contraction")
 
@@ -282,7 +287,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
 
       // Draggable velocity handle on the curve
-      const dotG = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab")
+      const dotG = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab").style("touch-action", "none")
       // Invisible hit area (min 30px)
       dotG.append("circle").attr("class", "curve-hit").attr("r", 18).attr("fill", "transparent")
       // Visible dot
@@ -316,8 +321,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .attr("text-anchor", "middle").attr("font-size", fs).attr("font-weight", 600)
         .attr("font-family", F).attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
       g.select(".v-curve-label")
-        .on("mouseenter", () => onHighlightRef.current('v'))
-        .on("mouseleave", () => onHighlightRef.current(null))
+        .on("pointerenter", () => onHighlightRef.current('v'))
+        .on("pointerleave", () => onHighlightRef.current(null))
 
       // --- Time Dilation panel ---
       const tdTop = lpTop
@@ -488,7 +493,10 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         cancelAnimationFrame(rafRef.current)
         if (!rebuildScheduled) {
           rebuildScheduled = true
-          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+          resizeRafRef.current = requestAnimationFrame(() => {
+            rebuildScheduled = false
+            buildSVG()
+          })
         }
       }
     })
@@ -497,6 +505,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
     return () => {
       clockRunning = false
       cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(resizeRafRef.current)
       observer.disconnect()
       select(el).select("svg").remove()
       updateRef.current = null

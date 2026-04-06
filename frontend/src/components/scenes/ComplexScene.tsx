@@ -182,7 +182,6 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Complex plane visualization showing i squared equals negative one")
 
@@ -244,7 +243,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
         .attr("stroke", VAR_COLORS.primary).attr("stroke-width", 2.5).attr("stroke-dasharray", "6 4").attr("opacity", 0)
 
       // Draggable point group
-      const ptG = g.append("g").attr("class", "point-group").style("cursor", "grab")
+      const ptG = g.append("g").attr("class", "point-group").style("cursor", "grab").style("touch-action", "none")
       ptG.append("circle").attr("class", "point-hit").attr("r", 44).attr("fill", "transparent")
       ptG.append("circle").attr("class", "point-dot").attr("r", 10)
         .attr("fill", "#5a79ff").attr("stroke", "white").attr("stroke-width", 3)
@@ -282,17 +281,21 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       // D3 action buttons inside SVG
       const btnLabels = ["x i", "x (-1)", "Conj", "Reset"]
       const btnClasses = ["btn-mult-i", "btn-mult-neg", "btn-conj", "btn-reset"]
+      const btnCharW = W < 380 ? 7 : 9
+      const btnPad = W < 380 ? 14 : 20
+      const btnGap = W < 380 ? 6 : 10
+      const btnFontSize = W < 380 ? 10 : 12
       let bx = W * 0.015
       for (let i = 0; i < btnLabels.length; i++) {
-        const bw = btnLabels[i].length * 9 + 20
+        const bw = btnLabels[i].length * btnCharW + btnPad
         const bg = g.append("g").attr("class", btnClasses[i]).style("cursor", "pointer")
           .attr("transform", `translate(${bx}, ${H - 38})`)
         bg.append("rect").attr("width", bw).attr("height", 26).attr("rx", 13)
           .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
         bg.append("text").attr("x", bw / 2).attr("y", 17).attr("text-anchor", "middle")
-          .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#4f73ff")
+          .attr("font-size", btnFontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#4f73ff")
           .text(btnLabels[i])
-        bx += bw + 10
+        bx += bw + btnGap
       }
 
       // ── updateGeometry: repositions everything from a,b WITHOUT React ──
@@ -383,8 +386,8 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       ptG.call(dragBehavior)
 
       // Hover cross-highlighting
-      ptG.on("mouseenter", () => onHighlightRef.current('a'))
-        .on("mouseleave", () => onHighlightRef.current(null))
+      ptG.on("pointerenter", () => onHighlightRef.current('a'))
+        .on("pointerleave", () => onHighlightRef.current(null))
 
       // ── Button click handlers (use liveRef for current a/b) ──
       g.select(".btn-mult-i").on("click", () => {

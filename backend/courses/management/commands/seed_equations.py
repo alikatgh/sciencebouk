@@ -146,7 +146,7 @@ class Command(BaseCommand):
             {
                 "sort_order": 16,
                 "title": "Chaos Theory",
-                "formula": "x_{t+1}=k x_t(1-x_t)",
+                "formula": "x_{t+1}=r x_t(1-x_t)",
                 "author": "R. May",
                 "year": "1975",
                 "category": "dynamical_systems",
@@ -157,7 +157,7 @@ class Command(BaseCommand):
                 "title": "Black-Scholes Equation",
                 "formula": "\\frac{1}{2}\\sigma^2S^2\\frac{\\partial^2V}{\\partial S^2}+rS\\frac{\\partial V}{\\partial S}+\\frac{\\partial V}{\\partial t}-rV=0",
                 "author": "Black, Scholes",
-                "year": "1990",
+                "year": "1973",
                 "category": "finance",
                 "description": "Determines the fair price of financial options.",
             },

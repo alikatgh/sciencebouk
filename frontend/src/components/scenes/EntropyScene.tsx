@@ -120,7 +120,7 @@ const variables: Variable[] = [
 
 const lessons: LessonStep[] = [
   {
-    id: 'ordered',
+    id: 'order',
     instruction: "Start with low temperature. Notice the ordered particles.",
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
@@ -129,7 +129,7 @@ const lessons: LessonStep[] = [
     insight: "At low temperature, particles sit in a neat lattice. Only one microstate — entropy is zero.",
   },
   {
-    id: 'warming',
+    id: 'heat',
     instruction: "Drag T up to about 50. Watch particles scatter.",
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
@@ -138,7 +138,7 @@ const lessons: LessonStep[] = [
     insight: "More thermal energy means more possible arrangements. Entropy climbs as disorder grows.",
   },
   {
-    id: 'max-entropy',
+    id: 'arrow',
     instruction: "Push T to 100. Maximum entropy — total disorder.",
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],

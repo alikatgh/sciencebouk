@@ -5,10 +5,14 @@ from .models import Course, Equation, Lesson, UserProgress
 
 class EquationSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="sort_order", read_only=True)
+    category = serializers.SerializerMethodField()
 
     class Meta:
         model = Equation
         fields = ["id", "title", "formula", "author", "year", "category", "description", "stage"]
+
+    def get_category(self, obj):
+        return obj.get_category_display()
 
 
 class LessonSerializer(serializers.ModelSerializer):

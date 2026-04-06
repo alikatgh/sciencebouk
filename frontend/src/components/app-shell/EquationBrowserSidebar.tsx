@@ -13,6 +13,7 @@ import {
 import { Button } from "../ui/button"
 import { Progress } from "../ui/progress"
 import { ScrollArea } from "../ui/scroll-area"
+import { ErrorBoundary } from "../ErrorBoundary"
 import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
 import { ResizablePanel } from "../ui/resizable-panel"
@@ -87,6 +88,8 @@ function EquationBrowserSidebarComponent({
   onLogout,
 }: EquationBrowserSidebarProps): ReactElement {
   const visibleEquations = filteredEquations ?? equations
+  const completionPercent = total > 0 ? (completedCount / total) * 100 : 0
+  const completionLabel = `${completedCount} of ${total} equations completed`
 
   return (
     <>
@@ -117,7 +120,13 @@ function EquationBrowserSidebarComponent({
 
             {completedCount > 0 && (
               <div className="mx-3 mb-1">
-                <Progress value={(completedCount / total) * 100} className="h-0.5" />
+                <Progress
+                  value={completionPercent}
+                  className="h-0.5"
+                  aria-label="Equation completion"
+                  aria-valuetext={completionLabel}
+                />
+                <span className="sr-only">{completionLabel}</span>
               </div>
             )}
 
@@ -189,7 +198,7 @@ function EquationBrowserSidebarComponent({
               onFocus={() => {
                 void prefetchEquationScene(prevEquation.id)
               }}
-              title={prevEquation.title}
+              aria-label={`Previous equation: ${prevEquation.title}`}
               className="text-slate-400"
             >
               <ArrowLeft className="h-3 w-3 rotate-90" />
@@ -206,7 +215,7 @@ function EquationBrowserSidebarComponent({
               onFocus={() => {
                 void prefetchEquationScene(nextEquation.id)
               }}
-              title={nextEquation.title}
+              aria-label={`Next equation: ${nextEquation.title}`}
               className="text-slate-400"
             >
               <ArrowLeft className="h-3 w-3 -rotate-90" />
@@ -221,27 +230,29 @@ function EquationBrowserSidebarComponent({
       )}
 
       {drawerOpen && (
-        <Suspense fallback={null}>
-          <EquationBrowserDrawer
-            open={drawerOpen}
-            equations={equations}
-            selectedId={selectedId}
-            completedCount={completedCount}
-            total={total}
-            totalTimeMinutes={totalTimeMinutes}
-            progressByEquation={progressByEquation}
-            isAuthenticated={isAuthenticated}
-            isPro={isPro}
-            userEmail={userEmail}
-            userInitial={userInitial}
-            onOpenChange={onOpenDrawer}
-            onSelectEquation={onSelectEquation}
-            onOpenProfile={onOpenProfile}
-            onOpenAuth={onOpenAuth}
-            onOpenPro={onOpenPro}
-            onLogout={onLogout}
-          />
-        </Suspense>
+        <ErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <EquationBrowserDrawer
+              open={drawerOpen}
+              equations={equations}
+              selectedId={selectedId}
+              completedCount={completedCount}
+              total={total}
+              totalTimeMinutes={totalTimeMinutes}
+              progressByEquation={progressByEquation}
+              isAuthenticated={isAuthenticated}
+              isPro={isPro}
+              userEmail={userEmail}
+              userInitial={userInitial}
+              onOpenChange={onOpenDrawer}
+              onSelectEquation={onSelectEquation}
+              onOpenProfile={onOpenProfile}
+              onOpenAuth={onOpenAuth}
+              onOpenPro={onOpenPro}
+              onLogout={onLogout}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </>
   )

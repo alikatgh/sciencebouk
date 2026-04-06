@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { api } from "./client"
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../auth/tokenStorage"
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, getAccessToken, resetTokenStorageForTests, saveTokens } from "../auth/tokenStorage"
 
 function createStorageMock(): Storage {
   const store = new Map<string, string>()
@@ -36,9 +36,11 @@ describe("api client", () => {
   beforeEach(() => {
     vi.stubGlobal("localStorage", createStorageMock())
     localStorage.clear()
+    resetTokenStorageForTests()
   })
 
   afterEach(() => {
+    resetTokenStorageForTests()
     vi.unstubAllGlobals()
   })
 
@@ -53,8 +55,7 @@ describe("api client", () => {
   })
 
   it("refreshes expired access tokens and retries the request", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-access")
-    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token")
+    saveTokens({ access: "expired-access", refresh: "refresh-token" })
 
     const fetchMock = vi
       .fn()
@@ -76,12 +77,13 @@ describe("api client", () => {
 
     expect(firstHeaders.get("Authorization")).toBe("Bearer expired-access")
     expect(retriedHeaders.get("Authorization")).toBe("Bearer fresh-access")
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("fresh-access")
+    expect(getAccessToken()).toBe("fresh-access")
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull()
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("fresh-refresh")
   })
 
   it("does not force json content headers for avatar uploads", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "active-access")
+    saveTokens({ access: "active-access", refresh: "refresh-token" })
 
     const fetchMock = vi.fn().mockResolvedValueOnce(
       jsonResponse(200, {
@@ -111,5 +113,50 @@ describe("api client", () => {
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe("http://localhost:8000/api/payments/checkout/")
     expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify({ price_type: "yearly" }))
+  })
+
+  it("unwraps paginated search responses", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ id: 1, title: "Pythagoras", formula: "a^2+b^2=c^2", author: "Pythagoras", year: "530 BC", category: "geometry", description: "", stage: "live" }],
+    }))
+
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(api.search("pyth")).resolves.toEqual([
+      expect.objectContaining({ id: 1, title: "Pythagoras" }),
+    ])
+  })
+
+  it("flattens paginated progress responses across pages", async () => {
+    saveTokens({ access: "active-access", refresh: "refresh-token" })
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, {
+        count: 2,
+        next: "http://localhost:8000/api/progress/?page=2",
+        previous: null,
+        results: [{ equation_id: 1, completed: true, completed_at: null, lesson_step: "", time_spent_seconds: 10, variables_explored: [], notes: "", bookmarked: false, last_viewed: null }],
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        count: 2,
+        next: null,
+        previous: "http://localhost:8000/api/progress/",
+        results: [{ equation_id: 2, completed: false, completed_at: null, lesson_step: "step-2", time_spent_seconds: 20, variables_explored: ["x"], notes: "", bookmarked: true, last_viewed: null }],
+      }))
+
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(api.progress.getAll()).resolves.toEqual([
+      expect.objectContaining({ equation_id: 1 }),
+      expect.objectContaining({ equation_id: 2 }),
+    ])
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://localhost:8000/api/progress/")
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("http://localhost:8000/api/progress/?page=2")
   })
 })

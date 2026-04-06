@@ -153,18 +153,20 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       select(el).select("svg").remove()
 
       const rect = el.getBoundingClientRect()
-      const W = Math.round(rect.width) || 800
+      const viewportW = Math.round(rect.width) || 800
+      const W = Math.max(420, viewportW)
       const H = Math.round(rect.height) || 500
-      currentW = W
+      currentW = viewportW
       currentH = H
 
-      // Skip rendering if the container is too narrow to accommodate the layout
-      if (W < 300) return
+      if (viewportW < 300) return
 
       const svg = select(el)
         .append("svg")
-        .attr("width", W)
+        .attr("width", "100%")
         .attr("height", H)
+        .attr("viewBox", `0 0 ${W} ${H}`)
+        .attr("preserveAspectRatio", "xMidYMid meet")
         .style("display", "block")
         .attr("role", "img")
         .attr("aria-label", "Two masses with gravitational force — drag to explore")
@@ -313,9 +315,10 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
           g.select(".m1-glow").attr("opacity", 0.5)
         })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+          const scaledX = currentW > 0 ? event.x * (W / currentW) : event.x
           const availW = W - 280
           if (availW <= 0) return
-          const gap = Math.abs(event.x - W / 2) * 2
+          const gap = Math.abs(scaledX - W / 2) * 2
           const newR = 1.5 + (gap / availW) * (10 - 1.5)
           const snapped = Math.round(Math.max(1.5, Math.min(10, newR)) * 10) / 10
           liveRef.current.r = snapped
@@ -336,8 +339,9 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
           g.select(".m2-glow").attr("opacity", 0.5)
         })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+          const scaledX = currentW > 0 ? event.x * (W / currentW) : event.x
           const cx = W / 2
-          const gap = Math.abs(event.x - cx) * 2
+          const gap = Math.abs(scaledX - cx) * 2
           const totalRange = W - 280
           if (totalRange <= 0) return
           const newR = 1.5 + (gap / totalRange) * (10 - 1.5)
@@ -354,15 +358,16 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       m2G.call(m2Drag)
 
       // Hover cross-highlighting
-      m1G.on("mouseenter", () => onHighlightRef.current('m1'))
-        .on("mouseleave", () => onHighlightRef.current(null))
-      m2G.on("mouseenter", () => onHighlightRef.current('m2'))
-        .on("mouseleave", () => onHighlightRef.current(null))
+      m1G.on("pointerenter", () => onHighlightRef.current('m1'))
+        .on("pointerleave", () => onHighlightRef.current(null))
+      m2G.on("pointerenter", () => onHighlightRef.current('m2'))
+        .on("pointerleave", () => onHighlightRef.current(null))
     }
 
     buildSVG()
 
     let rebuildScheduled = false
+    let resizeRaf = 0
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
@@ -371,13 +376,14 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       if (w !== currentW || h !== currentH) {
         if (!rebuildScheduled) {
           rebuildScheduled = true
-          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+          resizeRaf = requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
         }
       }
     })
     observer.observe(el)
 
     return () => {
+      cancelAnimationFrame(resizeRaf)
       observer.disconnect()
       select(el).select("svg").remove()
       updateRef.current = null

@@ -14,6 +14,13 @@ from .serializers import RegisterSerializer, UserSerializer, ProfileSerializer, 
 User = get_user_model()
 
 
+def verify_google_credential(credential: str, client_id: str) -> dict:
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests as google_requests
+
+    return google_id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def google_auth(request):
@@ -27,15 +34,15 @@ def google_auth(request):
         return Response({"error": "Google OAuth is not configured on this server"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     try:
-        from google.oauth2 import id_token as google_id_token
-        from google.auth.transport import requests as google_requests
-        idinfo = google_id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
+        idinfo = verify_google_credential(credential, client_id)
     except Exception:
         return Response({"error": "Invalid Google credential"}, status=status.HTTP_401_UNAUTHORIZED)
 
     email = idinfo.get('email', '').lower()
     if not email:
         return Response({"error": "Google account has no email"}, status=status.HTTP_400_BAD_REQUEST)
+    if not idinfo.get('email_verified'):
+        return Response({"error": "Google email is not verified"}, status=status.HTTP_400_BAD_REQUEST)
 
     user, created = User.objects.get_or_create(
         email=email,

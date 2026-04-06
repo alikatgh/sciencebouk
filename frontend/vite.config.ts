@@ -25,14 +25,15 @@ export default defineConfig({
             "clsx",
             "tailwind-merge",
           ],
-          motion: ["framer-motion"],
           katex: ["katex", "react-katex"],
-          d3: [
+          "d3-interaction": [
             "d3-selection",
+            "d3-drag",
+          ],
+          "d3-viz": [
+            "d3-array",
             "d3-scale",
             "d3-shape",
-            "d3-drag",
-            "d3-array",
             "d3-transition",
           ],
         },

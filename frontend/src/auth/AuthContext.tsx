@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react"
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import {
+  AUTH_STATE_EVENT,
   REFRESH_TOKEN_KEY,
   clearTokens as clearStoredTokens,
   getAccessToken as getStoredAccessToken,
@@ -8,8 +9,8 @@ import {
   saveTokens as saveStoredTokens,
   type Tokens,
 } from "./tokenStorage"
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+import { API_BASE } from "../config/api"
+import { createHttpError, hasHttpStatus } from "../api/httpError"
 
 interface User {
   id: number
@@ -47,19 +48,22 @@ export function useAuth(): AuthContextValue {
 }
 
 async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail ?? body.email?.[0] ?? body.password?.[0] ?? `Error ${res.status}`)
+    throw createHttpError(
+      res.status,
+      body.detail ?? body.email?.[0] ?? body.password?.[0] ?? `HTTP ${res.status}`,
+    )
   }
   return res.json()
 }
 
 export function isAuthFailureError(error: unknown): boolean {
-  return error instanceof Error && /^Error 40(1|3)/.test(error.message)
+  return hasHttpStatus(error, [401, 403])
 }
 
 export function AuthProvider({ children }: { children: ReactNode }): ReactElement {
@@ -92,10 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
 
   const refreshUser = useCallback(async () => {
     let access = getAccessToken()
+    let hasRefreshed = false
 
     // No access token in memory (e.g. page reload) — try refresh token first
     if (!access) {
       access = await refreshAccessToken()
+      hasRefreshed = true
       if (!access) {
         clearStoredTokens()
         if (mountedRef.current) setUser(null)
@@ -110,9 +116,15 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
         console.warn("[AuthContext] refreshUser: non-auth error, skipping token refresh", firstError)
         return
       }
+      if (hasRefreshed) {
+        clearStoredTokens()
+        if (mountedRef.current) setUser(null)
+        return
+      }
       // Access token expired — try refresh
       try {
         const newAccess = await refreshAccessToken()
+        hasRefreshed = true
         if (!newAccess) {
           clearStoredTokens()
           if (mountedRef.current) setUser(null)
@@ -168,8 +180,26 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
       void refreshUser()
     }
 
+    const handleAuthStateChange = (event: Event) => {
+      const authenticated = (event as CustomEvent<{ authenticated?: boolean }>).detail?.authenticated
+      if (authenticated === false) {
+        if (mountedRef.current) {
+          setUser(null)
+        }
+        return
+      }
+
+      if (authenticated === true) {
+        void refreshUser()
+      }
+    }
+
     window.addEventListener("storage", handleStorage)
-    return () => window.removeEventListener("storage", handleStorage)
+    window.addEventListener(AUTH_STATE_EVENT, handleAuthStateChange as EventListener)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+      window.removeEventListener(AUTH_STATE_EVENT, handleAuthStateChange as EventListener)
+    }
   }, [refreshUser])
 
   const login = useCallback(async (email: string, password: string) => {

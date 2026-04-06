@@ -6,6 +6,7 @@ import {
   subjects,
   subjectsBySlug,
 } from "./subjects"
+import { equationManifest } from "./equationManifest"
 
 describe("subjects helpers", () => {
   it("provides stable slug lookups for every subject", () => {
@@ -21,5 +22,18 @@ describe("subjects helpers", () => {
     expect(activeSubjects.every((subject) => subject.active)).toBe(true)
     expect(inactiveSubjects.every((subject) => !subject.active)).toBe(true)
     expect(activeSubjects.length + inactiveSubjects.length).toBe(subjects.length)
+  })
+
+  it("keeps the core subject formulas aligned with the equation manifest", () => {
+    const core = getSubject("core")
+    expect(core?.formulas).toEqual(
+      equationManifest.map((equation) => ({
+        id: equation.id,
+        title: equation.title,
+        formula: equation.formula,
+        author: equation.author,
+        year: equation.year,
+      })),
+    )
   })
 })

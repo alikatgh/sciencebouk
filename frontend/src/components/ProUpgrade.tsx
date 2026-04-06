@@ -1,10 +1,9 @@
 import type { ReactElement } from "react"
 import { useEffect, useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
-import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 import { Check, Loader2, Sparkles, Zap, CheckCircle, XCircle } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { LazyAuthModal } from "../auth/LazyAuthModal"
+
 import { api } from "../api/client"
 import { equationManifest } from "../data/equationManifest"
 import { safeRedirect } from "../lib/safeRedirect"
@@ -29,51 +28,121 @@ const PRO_FEATURES = [
 ]
 
 export function ProPricingPage(): ReactElement {
+  return <ProPricingPageContent mode="pricing" />
+}
+
+export function ProSuccessPage(): ReactElement {
+  return <ProPricingPageContent mode="success" />
+}
+
+export function ProCancelPage(): ReactElement {
+  return <ProPricingPageContent mode="cancel" />
+}
+
+function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel" }): ReactElement {
   const { isAuthenticated, isPro, loading: authLoading, refreshUser } = useAuth()
-  const [showAuth, setShowAuth] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [yearly, setYearly] = useState(true)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [verificationAttempt, setVerificationAttempt] = useState(0)
+  const [verificationTimedOut, setVerificationTimedOut] = useState(false)
   const navigate = useNavigate()
-  const { pathname } = useLocation()
 
-  // H8 + M15: on the success path, refresh the user immediately and again
-  // after 2 s to account for Stripe webhook latency.
+  // Refresh immediately and keep a bounded wait window so /pro/success
+  // never spins forever when the Stripe webhook is delayed or misconfigured.
   useEffect(() => {
-    if (pathname !== "/pro/success") return
+    if (mode !== "success") {
+      setVerificationTimedOut(false)
+      return
+    }
+    if (isPro) {
+      setVerificationTimedOut(false)
+      return
+    }
+
+    setVerificationTimedOut(false)
     void refreshUser()
-    const t = setTimeout(() => { void refreshUser() }, 2000)
-    return () => clearTimeout(t)
-  }, [pathname, refreshUser])
+    const followUp = setTimeout(() => {
+      void refreshUser()
+    }, 2000)
+    const timeout = setTimeout(() => {
+      void refreshUser()
+      setVerificationTimedOut(true)
+    }, 12000)
+
+    return () => {
+      clearTimeout(followUp)
+      clearTimeout(timeout)
+    }
+  }, [mode, refreshUser, isPro, verificationAttempt])
 
   // M15: redirect unauthenticated visitors away from the success page.
   useEffect(() => {
-    if (pathname !== "/pro/success") return
+    if (mode !== "success") return
     if (authLoading) return
     if (!isAuthenticated) navigate("/", { replace: true })
-  }, [pathname, authLoading, isAuthenticated, navigate])
+  }, [mode, authLoading, isAuthenticated, navigate])
 
   const handleUpgrade = async () => {
     if (!isAuthenticated) {
-      setShowAuth(true)
+      navigate("/signup?next=/pro")
       return
     }
     setLoading(true)
+    setCheckoutError(null)
     try {
       const { url } = await api.payments.checkout(yearly ? "yearly" : "monthly")
       safeRedirect(url)
+      // safeRedirect may no-op if the URL is invalid; always clear loading so
+      // the button doesn't stay stuck in "Redirecting..." state indefinitely.
     } catch {
+      setCheckoutError("Something went wrong. Please try again.")
+    } finally {
       setLoading(false)
     }
   }
 
-  if (pathname === "/pro/success") {
-    // Still loading auth state or waiting for webhook — show a spinner.
-    if (authLoading || !isPro) {
+  if (mode === "success") {
+    if (!isPro && !verificationTimedOut) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
           <div className="text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-ocean" />
-            <p className="mt-4 text-slate-500">Verifying payment&hellip;</p>
+            <p className="mt-4 text-slate-500">
+              {authLoading ? "Loading your account..." : "Verifying payment..."}
+            </p>
+          </div>
+        </main>
+      )
+    }
+
+    if (!isPro) {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+          <div className="max-w-md text-center">
+            <Loader2 className="mx-auto h-10 w-10 text-ocean" />
+            <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Still checking your subscription</h1>
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+              Your payment may have gone through, but the confirmation has not reached us yet.
+              Try checking again in a moment. If this keeps happening, the webhook may need attention.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => setVerificationAttempt((attempt) => attempt + 1)}
+                className="rounded-xl bg-ocean px-5 py-2 text-sm font-semibold text-white"
+                type="button"
+              >
+                Check again
+              </button>
+              <button
+                onClick={() => navigate("/")}
+                className="rounded-xl border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                type="button"
+              >
+                Back to equations
+              </button>
+            </div>
           </div>
         </main>
       )
@@ -93,9 +162,9 @@ export function ProPricingPage(): ReactElement {
     )
   }
 
-  if (pathname === "/pro/cancel") {
+  if (mode === "cancel") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <XCircle className="mx-auto h-12 w-12 text-slate-400" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment cancelled</h1>
@@ -110,7 +179,7 @@ export function ProPricingPage(): ReactElement {
 
   if (isPro) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <Sparkles className="mx-auto h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">You're Pro!</h1>
@@ -124,7 +193,7 @@ export function ProPricingPage(): ReactElement {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
+    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
       <TopNav showBack />
       <div className="flex flex-1 flex-col items-center px-4 py-8">
       <h1 className="font-display text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
@@ -177,12 +246,7 @@ export function ProPricingPage(): ReactElement {
         </div>
 
         {/* Pro */}
-        <motion.div
-          className="relative rounded-2xl border-2 border-ocean bg-white p-6 shadow-lg dark:bg-slate-800"
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div className="relative rounded-2xl border-2 border-ocean bg-white p-6 shadow-lg dark:bg-slate-800">
           <div className="absolute -top-3 left-4 rounded-full bg-ocean px-3 py-0.5 text-xs font-bold text-white">
             RECOMMENDED
           </div>
@@ -207,14 +271,16 @@ export function ProPricingPage(): ReactElement {
           >
             {loading ? "Redirecting..." : isAuthenticated ? "Upgrade to Pro" : "Sign up & upgrade"}
           </button>
-        </motion.div>
+          {checkoutError && (
+            <p className="mt-2 text-center text-xs text-red-500">{checkoutError}</p>
+          )}
+        </div>
       </div>
 
         <button onClick={() => navigate("/")} className="mt-8 text-sm text-slate-400 hover:underline" type="button">
           Back to equations
         </button>
 
-        <LazyAuthModal open={showAuth} onClose={() => setShowAuth(false)} initialMode="register" />
       </div>
       <Footer />
     </main>
@@ -235,11 +301,7 @@ export function ConversionPrompt({ equationTitle, completedCount }: SoftPromptPr
   if (completedCount < 3) return null
 
   return (
-    <motion.div
-      className="mt-3 flex items-center gap-3 rounded-xl border border-ocean/20 bg-ocean/5 px-4 py-2.5 dark:border-ocean/30 dark:bg-ocean/10"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
+    <div className="mt-3 flex items-center gap-3 rounded-xl border border-ocean/20 bg-ocean/5 px-4 py-2.5 dark:border-ocean/30 dark:bg-ocean/10">
       <Sparkles className="h-4 w-4 flex-shrink-0 text-ocean" />
       <p className="flex-1 text-xs text-slate-600 dark:text-slate-300">
         Nice work on {equationTitle}! Track progress across devices with Pro.
@@ -250,6 +312,6 @@ export function ConversionPrompt({ equationTitle, completedCount }: SoftPromptPr
       <button onClick={() => setDismissed(true)} className="text-xs text-slate-400 hover:underline" type="button">
         Later
       </button>
-    </motion.div>
+    </div>
   )
 }

@@ -18,7 +18,9 @@ function fPrime(x: number): number {
 const variables: Variable[] = [
   { name: 't', symbol: 't', latex: 't', value: 3, min: 0.5, max: 9.5, step: 0.01, color: VAR_COLORS.primary, description: 'Point on the curve' },
   { name: 'h', symbol: 'h', latex: 'h', value: 1.5, min: 0.05, max: 3, step: 0.05, color: VAR_COLORS.secondary, description: 'Distance between points' },
-  { name: 'slope', symbol: 'slope', latex: '\\text{slope}', value: 0, min: -10, max: 10, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Steepness at this point' },
+  // Initialize slope to the actual derivative at the default t=3 so that a resume
+  // at the 'explore' step doesn't trivially satisfy value_reached(slope≈0) immediately.
+  { name: 'slope', symbol: 'slope', latex: '\\text{slope}', value: Math.round(fPrime(3) * 100) / 100, min: -10, max: 10, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Steepness at this point' },
   { name: 'f', symbol: 'f', latex: 'f', value: 0, min: 0, max: 0, step: 1, color: '#6b7280', constant: true, description: 'The function' },
 ]
 

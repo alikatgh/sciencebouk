@@ -1,3 +1,5 @@
+import { equationManifest } from "./equationManifest"
+
 export interface SubjectFormula {
   title: string
   formula: string
@@ -15,6 +17,14 @@ export interface Subject {
   formulas: SubjectFormula[]
 }
 
+const coreSubjectFormulas: SubjectFormula[] = equationManifest.map((equation) => ({
+  id: equation.id,
+  title: equation.title,
+  formula: equation.formula,
+  author: equation.author,
+  year: equation.year,
+}))
+
 export const subjects: Subject[] = [
   {
     slug: "core",
@@ -22,25 +32,7 @@ export const subjects: Subject[] = [
     description: "From Pythagoras to Black-Scholes — the foundations of science",
     icon: "pi",
     active: true,
-    formulas: [
-      { title: "Pythagoras's Theorem", formula: "a^2+b^2=c^2", id: 1 },
-      { title: "Logarithms", formula: "\\log xy=\\log x+\\log y", id: 2 },
-      { title: "Calculus", formula: "\\frac{df}{dt}=\\lim_{h\\to0}\\frac{f(t+h)-f(t)}{h}", id: 3 },
-      { title: "Law of Gravity", formula: "F=G\\frac{m_1m_2}{r^2}", id: 4 },
-      { title: "Wave Equation", formula: "\\frac{\\partial^2 u}{\\partial t^2}=c^2\\frac{\\partial^2 u}{\\partial x^2}", id: 5 },
-      { title: "Complex Numbers", formula: "i^2=-1", id: 6 },
-      { title: "Euler's Polyhedra", formula: "V-E+F=2", id: 7 },
-      { title: "Normal Distribution", formula: "\\Phi(x)=\\frac{1}{\\sqrt{2\\pi\\sigma}}e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}", id: 8 },
-      { title: "Fourier Transform", formula: "\\hat{f}(\\omega)=\\int f(x)e^{-2\\pi ix\\omega}dx", id: 9 },
-      { title: "Navier-Stokes", formula: "\\rho(\\partial_t\\mathbf{v}+\\mathbf{v}\\cdot\\nabla\\mathbf{v})=-\\nabla p+\\mu\\nabla^2\\mathbf{v}", id: 10 },
-      { title: "Maxwell's Equations", formula: "\\nabla\\times\\mathbf{E}=-\\partial_t\\mathbf{B}", id: 11 },
-      { title: "Thermodynamics", formula: "dS\\ge0", id: 12 },
-      { title: "Relativity", formula: "E=mc^2", id: 13 },
-      { title: "Schr\u00f6dinger", formula: "i\\hbar\\partial_t\\Psi=H\\Psi", id: 14 },
-      { title: "Information Theory", formula: "H=-\\sum p\\log p", id: 15 },
-      { title: "Chaos Theory", formula: "x_{n+1}=rx_n(1-x_n)", id: 16 },
-      { title: "Black-Scholes", formula: "\\frac{1}{2}\\sigma^2S^2V_{SS}+rSV_S+V_t-rV=0", id: 17 },
-    ],
+    formulas: coreSubjectFormulas,
   },
   {
     slug: "physics",

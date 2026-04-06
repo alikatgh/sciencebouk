@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
 from .models import Profile, UserSettings
 
@@ -60,6 +61,10 @@ class ProfileModelTests(TestCase):
         profile_id = user.profile.pk
         user.delete()
         self.assertFalse(Profile.objects.filter(pk=profile_id).exists())
+
+    def test_profile_stripe_identifiers_are_indexed(self):
+        self.assertTrue(Profile._meta.get_field('stripe_customer_id').db_index)
+        self.assertTrue(Profile._meta.get_field('stripe_subscription_id').db_index)
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +152,27 @@ class RegisterTests(TestCase):
             'password': 'strongpass1',
         }, format='json')
         self.assertEqual(response.status_code, 400)
+
+
+class GoogleAuthTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    @patch('accounts.views.verify_google_credential')
+    def test_google_auth_rejects_unverified_email(self, mock_verify):
+        mock_verify.return_value = {
+            'email': 'new-google@example.com',
+            'email_verified': False,
+        }
+
+        with self.settings(GOOGLE_OAUTH_CLIENT_ID='google-client-id'):
+            response = self.client.post('/api/auth/google/', {
+                'credential': 'fake-token',
+            }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'Google email is not verified')
+        self.assertFalse(User.objects.filter(email='new-google@example.com').exists())
 
 
 # ---------------------------------------------------------------------------
@@ -317,6 +343,13 @@ class ProfileUpdateTests(TestCase):
         }, format='json')
         self.user.profile.refresh_from_db()
         self.assertEqual(self.user.profile.tier, 'free')
+
+    def test_avatar_url_is_read_only_and_not_updated(self):
+        self.client.patch('/api/auth/me/profile/', {
+            'avatar_url': 'https://evil.example/avatar.png',
+        }, format='json')
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.avatar_url, '')
 
     def test_update_without_token_returns_401(self):
         self.client.credentials()

@@ -24,7 +24,8 @@ export interface EquationLesson {
   hint?: string
   unlocked: string[]
   successType: string
-  successTarget: string
+  successTarget?: string
+  successDuration?: number
   successValue?: number
   successTolerance?: number
   celebration: string

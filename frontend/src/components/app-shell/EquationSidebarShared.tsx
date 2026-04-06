@@ -73,6 +73,7 @@ const EquationListItem = memo(function EquationListItem({
           onMouseEnter={prefetch}
           onFocus={prefetch}
           type="button"
+          aria-current={active ? "page" : undefined}
         >
           <span
             className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold ${
@@ -83,7 +84,7 @@ const EquationListItem = memo(function EquationListItem({
                   : "text-slate-300 dark:text-slate-600"
             }`}
           >
-            {done ? <CheckCircle2 className="h-3 w-3" /> : equation.id}
+            {done ? <><CheckCircle2 className="h-3 w-3" aria-hidden="true" /><span className="sr-only">Completed</span></> : equation.id}
           </span>
           <span
             className={`truncate text-xs ${
@@ -133,7 +134,7 @@ export const SidebarAccount = memo(function SidebarAccount({
     if (isAuthenticated) {
       return (
         <div className="flex items-center gap-3">
-          <button onClick={onOpenProfile} type="button" className="flex-shrink-0">
+          <button onClick={onOpenProfile} type="button" className="flex-shrink-0" aria-label="Open profile">
             <Avatar className="h-8 w-8 transition hover:ring-2 hover:ring-ocean/50">
               <AvatarFallback>{userInitial}</AvatarFallback>
             </Avatar>
@@ -166,7 +167,7 @@ export const SidebarAccount = memo(function SidebarAccount({
   if (isAuthenticated) {
     return (
       <div className="flex items-center gap-1.5">
-        <button onClick={onOpenProfile} className="flex items-center gap-1.5 min-w-0 flex-1 text-left transition hover:opacity-70" type="button">
+        <button onClick={onOpenProfile} className="flex items-center gap-1.5 min-w-0 flex-1 text-left transition hover:opacity-70" type="button" aria-label="Open profile">
           <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-ocean/10 text-[9px] font-bold text-ocean">
             {userInitial}
           </span>

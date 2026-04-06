@@ -104,6 +104,104 @@ section .katex {
       0 0 0 6px rgba(27, 141, 99, 0.08),
       0 20px 40px rgba(32, 56, 47, 0.12);
   }
+
+  .animate-fade-in {
+    animation: formulas-fade-in calc(220ms * var(--animation-speed, 1)) ease-out both;
+  }
+
+  .animate-fade-in-up {
+    animation: formulas-fade-in-up calc(240ms * var(--animation-speed, 1)) ease-out both;
+  }
+
+  .animate-slide-in-right {
+    animation: formulas-slide-in-right calc(220ms * var(--animation-speed, 1)) ease-out both;
+  }
+
+  .animate-scale-in {
+    animation: formulas-scale-in calc(280ms * var(--animation-speed, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .animate-pop-in {
+    animation: formulas-pop-in calc(320ms * var(--animation-speed, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .animate-lesson-confetti {
+    animation: lesson-confetti calc(1400ms * var(--animation-speed, 1)) ease-out both;
+  }
+}
+
+@keyframes formulas-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes formulas-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes formulas-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes formulas-scale-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes formulas-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82) rotate(-14deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes lesson-confetti {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--lesson-confetti-drift, 0px), 160px, 0) scale(0.6) rotate(360deg);
+  }
 }
 
 .science-slider {
@@ -114,6 +212,7 @@ section .katex {
   border-radius: 999px;
   background: linear-gradient(90deg, var(--slider-color), var(--slider-glow));
   outline: none;
+  touch-action: pan-y;
 }
 
 .science-slider:focus-visible {
@@ -156,6 +255,33 @@ section .katex {
   border: 3px solid var(--slider-color);
   background: white;
   box-shadow: 0 8px 18px rgba(17, 34, 54, 0.18);
+}
+
+@media (pointer: coarse) {
+  .science-slider {
+    height: 1rem;
+  }
+
+  .science-slider::-webkit-slider-runnable-track {
+    height: 1rem;
+  }
+
+  .science-slider::-webkit-slider-thumb {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-top: -0.875rem;
+    border-width: 4px;
+  }
+
+  .science-slider::-moz-range-track {
+    height: 1rem;
+  }
+
+  .science-slider::-moz-range-thumb {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-width: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

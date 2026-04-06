@@ -149,6 +149,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
+      if (H < 100) return
       currentW = W
       currentH = H
 
@@ -173,7 +174,6 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Particle in a Box -- Schrodinger equation visualization")
 
@@ -201,7 +201,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("stroke", "#1e293b").attr("stroke-width", 4)
 
       // Draggable right wall handle
-      const wallHandle = g.append("g").attr("class", "wall-drag-handle").style("cursor", "ew-resize")
+      const wallHandle = g.append("g").attr("class", "wall-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
       wallHandle.append("rect")
         .attr("x", -15).attr("y", wavePlotTop)
         .attr("width", 30).attr("height", wavePlotBottom - wavePlotTop)
@@ -218,9 +218,16 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         wavePlotLeft + (wavePlotRight - wavePlotLeft) * 0.25,
         wavePlotLeft + (wavePlotRight - wavePlotLeft) * 1.0,
       ])
+      const waveXScale = scaleLinear().range([wavePlotLeft, wavePlotRight])
+      const psiYScale = scaleLinear().range([wavePlotBottom, wavePlotTop])
+      const probYScale = scaleLinear().range([wavePlotBottom, wavePlotTop])
+      const psiPathGen = line<number>().x((point) => waveXScale(point))
+      const probAreaGen = d3area<number>().x((point) => waveXScale(point)).y0(wavePlotBottom)
+      const probLineGen = line<number>().x((point) => waveXScale(point))
+      let waveXs = range(0, liveRef.current.L + 0.001, liveRef.current.L / 200)
 
       // Draggable quantum number handle on energy diagram
-      const nHandle = g.append("g").attr("class", "n-drag-handle").style("cursor", "ns-resize")
+      const nHandle = g.append("g").attr("class", "n-drag-handle").style("cursor", "ns-resize").style("touch-action", "none")
       nHandle.append("rect")
         .attr("x", -20).attr("y", -15).attr("width", 40).attr("height", 30)
         .attr("fill", "transparent")
@@ -355,45 +362,39 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         const n = liveRef.current.n
         const L = liveRef.current.L
 
-        const xScale = scaleLinear().domain([0, L]).range([wavePlotLeft, wavePlotRight])
         const norm = Math.sqrt(2 / L)
         const energy = (n * n * Math.PI * Math.PI) / (2 * L * L)
         const omega = energy * 2
 
-        const xs = range(0, L + 0.001, L / 200)
-
         const psiMax = norm
-        const yScalePsi = scaleLinear().domain([-psiMax * 1.1, psiMax * 1.1]).range([wavePlotBottom, wavePlotTop])
-        const yScaleProb = scaleLinear().domain([0, psiMax * psiMax * 1.1]).range([wavePlotBottom, wavePlotTop])
+        waveXScale.domain([0, L])
+        psiYScale.domain([-psiMax * 1.1, psiMax * 1.1])
+        probYScale.domain([0, psiMax * psiMax * 1.1])
 
         // Wave function path (time-dependent)
-        const psiPath = line<number>()
-          .x(d => xScale(d))
-          .y(d => {
-            const spatial = norm * Math.sin((n * Math.PI * d) / L)
+        const psiPath = psiPathGen
+          .y((point) => {
+            const spatial = norm * Math.sin((n * Math.PI * point) / L)
             const temporal = Math.cos(omega * time)
-            return yScalePsi(spatial * temporal)
-          })(xs) ?? ""
+            return psiYScale(spatial * temporal)
+          })(waveXs) ?? ""
 
         g.select(".psi-path").attr("d", psiPath)
 
         // Probability density (time-independent)
-        const probAreaPath = d3area<number>()
-          .x(d => xScale(d))
-          .y0(wavePlotBottom)
-          .y1(d => {
-            const spatial = norm * Math.sin((n * Math.PI * d) / L)
-            return yScaleProb(spatial * spatial)
-          })(xs) ?? ""
+        const probAreaPath = probAreaGen
+          .y1((point) => {
+            const spatial = norm * Math.sin((n * Math.PI * point) / L)
+            return probYScale(spatial * spatial)
+          })(waveXs) ?? ""
 
         g.select(".prob-area").attr("d", probAreaPath)
 
-        const probLinePath = line<number>()
-          .x(d => xScale(d))
-          .y(d => {
-            const spatial = norm * Math.sin((n * Math.PI * d) / L)
-            return yScaleProb(spatial * spatial)
-          })(xs) ?? ""
+        const probLinePath = probLineGen
+          .y((point) => {
+            const spatial = norm * Math.sin((n * Math.PI * point) / L)
+            return probYScale(spatial * spatial)
+          })(waveXs) ?? ""
 
         g.select(".prob-line").attr("d", probLinePath)
       }
@@ -401,6 +402,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       // ── updateGeometry: repositions all static elements from n, L WITHOUT React ──
       function updateGeometry(nVal: number, LVal: number) {
         const dur = 160
+        waveXs = range(0, LVal + 0.001, LVal / 200)
 
         const energyLevels = range(1, 6).map(n => ({
           n,

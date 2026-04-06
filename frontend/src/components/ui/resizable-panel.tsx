@@ -41,9 +41,13 @@ export function ResizablePanel({
 }: ResizablePanelProps): ReactElement {
   const [width, setWidth] = useState(() => {
     if (typeof window !== "undefined" && storageKey) {
-      const stored = localStorage.getItem(storageKey)
-      const parsed = Number(stored)
-      if (Number.isFinite(parsed)) return Math.max(minWidth, Math.min(maxWidth, parsed))
+      try {
+        const stored = localStorage.getItem(storageKey)
+        const parsed = Number(stored)
+        if (Number.isFinite(parsed)) return Math.max(minWidth, Math.min(maxWidth, parsed))
+      } catch {
+        // Ignore storage access failures such as iOS private browsing.
+      }
     }
     return defaultWidth
   })
@@ -62,7 +66,11 @@ export function ResizablePanel({
   // Persist width
   useEffect(() => {
     if (typeof window !== "undefined" && storageKey && open) {
-      localStorage.setItem(storageKey, String(width))
+      try {
+        localStorage.setItem(storageKey, String(width))
+      } catch {
+        // Keep the in-memory width even if persistence is unavailable.
+      }
     }
   }, [width, storageKey, open])
 
@@ -156,6 +164,10 @@ export function ResizablePanel({
       data-resize-handle
       role="separator"
       aria-label="Resize panel"
+      aria-orientation="vertical"
+      aria-valuenow={width}
+      aria-valuemin={minWidth}
+      aria-valuemax={maxWidth}
       tabIndex={0}
       onPointerDown={handlePointerDown}
       onKeyDown={handleKeyDown}

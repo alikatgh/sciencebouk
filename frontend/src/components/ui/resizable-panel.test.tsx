@@ -1,5 +1,5 @@
-import { fireEvent, render } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { ResizablePanel } from "./resizable-panel"
 
 describe("ResizablePanel", () => {
@@ -24,5 +24,28 @@ describe("ResizablePanel", () => {
     fireEvent.pointerMove(window, { clientX: 140 })
 
     expect(handleWidthChange).toHaveBeenLastCalledWith(260)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("falls back to the default width when storage access throws", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => {
+        throw new Error("Storage blocked")
+      }),
+      setItem: vi.fn(() => {
+        throw new Error("Storage blocked")
+      }),
+    })
+
+    render(
+      <ResizablePanel edge="right" defaultWidth={220} storageKey="panel-width">
+        <div>Storage-safe panel</div>
+      </ResizablePanel>,
+    )
+
+    expect(screen.getByText("Storage-safe panel")).toBeInTheDocument()
   })
 })

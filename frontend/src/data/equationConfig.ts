@@ -32,14 +32,16 @@ function mapLesson(l: EquationLesson): LessonStep {
     id: l.id,
     instruction: l.instruction,
     hint: l.hint,
-    highlightElements: l.unlocked,
+    // Raw JSON lessons only declare unlocked variables. Scene-specific
+    // highlight elements live with the scene definitions themselves.
+    highlightElements: [],
     unlockedVariables: l.unlocked,
     successCondition: {
       type: l.successType as LessonStep['successCondition']['type'],
       target: l.successTarget,
       value: l.successValue,
       tolerance: l.successTolerance,
-      duration: (l as unknown as Record<string, unknown>).successDuration as number | undefined,
+      duration: l.successDuration,
     },
     celebration: l.celebration as LessonStep['celebration'],
     insight: l.insight,
@@ -62,7 +64,7 @@ export function getEquationConfig(id: number): EquationConfig | null {
     variables: eq.variables.map((v) => ({
       name: v.name,
       symbol: v.symbol,
-      latex: v.name,
+      latex: v.symbol,
       value: v.default,
       min: v.min,
       max: v.max,

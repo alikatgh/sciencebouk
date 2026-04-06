@@ -9,6 +9,7 @@ import {
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
+import { ErrorBoundary } from "./ErrorBoundary"
 import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 import { DeferredInlineMath } from "./math/DeferredInlineMath"
@@ -146,21 +147,23 @@ export function HomePage(): ReactElement {
                 </div>
                 {/* Animated equation demo */}
                 <div className="hidden flex-col items-center gap-2 md:flex">
-                  <Suspense
-                    fallback={
-                      <div className="w-56 rounded-2xl bg-white/10 px-5 py-5 backdrop-blur">
-                        <div className="h-4 w-24 rounded bg-white/20" />
-                        <div className="mt-4 h-8 w-full rounded bg-white/10" />
-                        <div className="mt-4 flex items-end justify-center gap-2">
-                          <div className="h-10 w-10 rounded bg-blue-400/20" />
-                          <div className="h-14 w-14 rounded bg-amber-400/20" />
-                          <div className="h-16 w-16 rounded bg-red-400/20" />
+                  <ErrorBoundary fallback={null}>
+                    <Suspense
+                      fallback={
+                        <div className="w-56 rounded-2xl bg-white/10 px-5 py-5 backdrop-blur">
+                          <div className="h-4 w-24 rounded bg-white/20" />
+                          <div className="mt-4 h-8 w-full rounded bg-white/10" />
+                          <div className="mt-4 flex items-end justify-center gap-2">
+                            <div className="h-10 w-10 rounded bg-blue-400/20" />
+                            <div className="h-14 w-14 rounded bg-amber-400/20" />
+                            <div className="h-16 w-16 rounded bg-red-400/20" />
+                          </div>
                         </div>
-                      </div>
-                    }
-                  >
-                    <HeroDemo />
-                  </Suspense>
+                      }
+                    >
+                      <HeroDemo />
+                    </Suspense>
+                  </ErrorBoundary>
                   <p className="text-[10px] text-slate-500">click to explore · auto-cycles</p>
                 </div>
               </div>

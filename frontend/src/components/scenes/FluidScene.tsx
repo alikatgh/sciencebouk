@@ -199,7 +199,6 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Navier-Stokes fluid flow around an obstacle")
 
@@ -232,7 +231,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       g.append("g").attr("class", "particles-group")
 
       // Draggable obstacle
-      const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab")
+      const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab").style("touch-action", "none")
         .attr("transform", `translate(${liveRef.current.obstacleX},${liveRef.current.obstacleY})`)
       obstacleGroup.append("circle").attr("r", OBSTACLE_R)
         .attr("fill", "#1e293b")

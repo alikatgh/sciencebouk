@@ -14,6 +14,7 @@ export function useEquation(id: number) {
   return useQuery({
     queryKey: ["equation", id],
     queryFn: () => api.equations.get(id),
+    enabled: id > 0,
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -22,6 +23,7 @@ export function useCourse(slug: string) {
   return useQuery({
     queryKey: ["course", slug],
     queryFn: () => api.courses.get(slug),
+    enabled: Boolean(slug),
     staleTime: 5 * 60 * 1000,
   })
 }

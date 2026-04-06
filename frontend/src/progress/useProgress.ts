@@ -34,7 +34,9 @@ let storageListenerAttached = false
 let serverProgressCache = new Map<number, ProgressItem>()
 let serverProgressPromise: Promise<Map<number, ProgressItem>> | null = null
 let hasFetchedServerProgress = false
+let serverProgressBackoffUntil = 0
 let activeServerUserId: number | null = null
+let serverSyncErrorState = false
 let progressVersion = 0
 
 function progressKey(equationId: number): string {
@@ -59,6 +61,13 @@ function normalizeProgress(progress?: Partial<EquationProgress>): EquationProgre
 function notifyProgressListeners() {
   progressVersion += 1
   for (const listener of progressListeners) listener()
+}
+
+function setServerSyncErrorState(next: boolean) {
+  if (serverSyncErrorState === next) return
+  serverSyncErrorState = next
+  progressSnapshotCache.delete("server")
+  notifyProgressListeners()
 }
 
 function parseEquationIdFromKey(key: string): number | null {
@@ -143,28 +152,42 @@ export function getLocalProgress(equationId: number): EquationProgress {
 }
 
 function setLocalProgress(equationId: number, progress: EquationProgress) {
-  if (equationId <= 0 || typeof localStorage === "undefined") return
+  if (equationId <= 0) return
 
   const normalized = normalizeProgress(progress)
   localProgressCache.set(equationId, normalized)
-  localStorage.setItem(progressKey(equationId), JSON.stringify(normalized))
+
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(progressKey(equationId), JSON.stringify(normalized))
+    } catch {
+      // Keep progress in memory even if persistent storage is unavailable.
+    }
+  }
+
   notifyProgressListeners()
 }
 
 export function clearStoredProgress() {
-  if (typeof localStorage === "undefined") return
-
   for (const timer of syncTimers.values()) clearTimeout(timer)
   syncTimers.clear()
 
   for (const equation of equationManifest) {
-    localStorage.removeItem(progressKey(equation.id))
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.removeItem(progressKey(equation.id))
+      } catch {
+        // Ignore storage cleanup failures; caches are still cleared below.
+      }
+    }
   }
 
   localProgressCache.clear()
   serverProgressCache = new Map()
   serverProgressPromise = null
   hasFetchedServerProgress = false
+  activeServerUserId = null
+  serverSyncErrorState = false
   progressSnapshotCache.clear()
   notifyProgressListeners()
 }
@@ -175,6 +198,8 @@ function resetServerProgressState() {
   serverProgressCache = new Map()
   serverProgressPromise = null
   hasFetchedServerProgress = false
+  serverProgressBackoffUntil = 0
+  serverSyncErrorState = false
   progressSnapshotCache.delete("server")
 }
 
@@ -229,12 +254,21 @@ function updateServerCache(eqId: number, progress: EquationProgress) {
 async function getServerProgressMap(): Promise<Map<number, ProgressItem>> {
   if (hasFetchedServerProgress) return serverProgressCache
 
+  // Exponential backoff: don't hammer the server on repeated failures.
+  if (Date.now() < serverProgressBackoffUntil) return serverProgressCache
+
   if (!serverProgressPromise) {
     serverProgressPromise = api.progress.getAll()
       .then((items) => {
         serverProgressCache = new Map(items.map((item) => [item.equation_id, item]))
         hasFetchedServerProgress = true
+        serverProgressBackoffUntil = 0
         return serverProgressCache
+      })
+      .catch((err) => {
+        // Back off for 30 seconds on failure so we don't fire a request on every render.
+        serverProgressBackoffUntil = Date.now() + 30_000
+        throw err
       })
       .finally(() => {
         serverProgressPromise = null
@@ -244,12 +278,11 @@ async function getServerProgressMap(): Promise<Map<number, ProgressItem>> {
   return serverProgressPromise
 }
 
-function debouncedSync(eqId: number, progress: EquationProgress) {
+// rollbackEntry must be captured BEFORE calling updateServerCache so it
+// represents the pre-optimistic server state, not the already-updated one.
+function debouncedSync(eqId: number, progress: EquationProgress, rollbackEntry: ProgressItem | undefined) {
   const existingTimer = syncTimers.get(eqId)
   if (existingTimer) clearTimeout(existingTimer)
-
-  // Capture the pre-optimistic cache entry so we can roll it back on failure.
-  const previousCacheEntry = serverProgressCache.get(eqId)
 
   const timer = setTimeout(() => {
     api.progress.update(eqId, toProgressPayload(progress))
@@ -260,8 +293,8 @@ function debouncedSync(eqId: number, progress: EquationProgress) {
       .catch(() => {
         // Roll back the optimistic cache write so the stale entry does not
         // override real server progress on the next mergeProgress call.
-        if (previousCacheEntry !== undefined) {
-          serverProgressCache.set(eqId, previousCacheEntry)
+        if (rollbackEntry !== undefined) {
+          serverProgressCache.set(eqId, rollbackEntry)
         } else {
           serverProgressCache.delete(eqId)
         }
@@ -337,7 +370,7 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
     progressByEquation,
     localSyncItems,
     localSyncSignature: JSON.stringify(localSyncItems),
-    serverSyncError: false,
+    serverSyncError: includeServer ? serverSyncErrorState : false,
   }
 
   progressSnapshotCache.set(cacheKey, { version: progressVersion, snapshot })
@@ -396,8 +429,10 @@ export function useProgress(equationId: number) {
 
       setLocalProgress(equationId, next)
       if (isPro && isAuthenticated) {
+        // Capture rollback BEFORE the optimistic write so failure restores real state.
+        const rollback = serverProgressCache.get(equationId)
         updateServerCache(equationId, next)
-        debouncedSync(equationId, next)
+        debouncedSync(equationId, next, rollback)
       }
       return next
     })
@@ -415,8 +450,10 @@ export function useProgress(equationId: number) {
 
       setLocalProgress(equationId, next)
       if (isPro && isAuthenticated) {
+        // Capture rollback BEFORE the optimistic write so failure restores real state.
+        const rollback = serverProgressCache.get(equationId)
         updateServerCache(equationId, next)
-        debouncedSync(equationId, next)
+        debouncedSync(equationId, next, rollback)
       }
       return next
     })
@@ -428,7 +465,6 @@ export function useProgress(equationId: number) {
 export function useAllProgress() {
   const { user, isAuthenticated, isPro } = useAuth()
   const includeServer = isAuthenticated && isPro
-  const [serverSyncError, setServerSyncError] = useState(false)
 
   useEffect(() => {
     ensureServerProgressUser(user?.id ?? null)
@@ -441,7 +477,10 @@ export function useAllProgress() {
   const snapshot = useSyncExternalStore(subscribeToProgress, getSnapshot, getSnapshot)
 
   useEffect(() => {
-    if (!includeServer) return
+    if (!includeServer) {
+      setServerSyncErrorState(false)
+      return
+    }
     if (hasFetchedServerProgress) {
       notifyProgressListeners()
       return
@@ -449,13 +488,13 @@ export function useAllProgress() {
 
     getServerProgressMap()
       .then(() => {
-        setServerSyncError(false)
+        setServerSyncErrorState(false)
         notifyProgressListeners()
       })
       .catch(() => {
-        setServerSyncError(true)
+        setServerSyncErrorState(true)
       })
   }, [includeServer])
 
-  return { ...snapshot, serverSyncError }
+  return snapshot
 }

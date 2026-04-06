@@ -96,9 +96,13 @@ export function TeachableEquation({
   const [stepCompleted, setStepCompleted] = useState(false)
   const prevVarsRef = useRef(vars)
   const progressRef = useRef(progress)
+  const resumeAppliedRef = useRef<number | null>(null)
+  const lessonModeWasToggledRef = useRef(false)
 
   useEffect(() => {
-    setLessonMode(appSettings.autoStartLesson)
+    if (!lessonModeWasToggledRef.current) {
+      setLessonMode(appSettings.autoStartLesson)
+    }
   }, [appSettings.autoStartLesson])
 
   const setVar = useCallback((name: string, value: number) => { setVars((p) => ({ ...p, [name]: value })) }, [])
@@ -125,18 +129,51 @@ export function TeachableEquation({
     })
   }, [lockedVarsMemo])
 
-  const currentVariables = initialVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value }))
+  const currentVariables = useMemo(
+    () => initialVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value })),
+    [initialVariables, vars],
+  )
+  const currentStep = lessonSteps[lessonStep]
 
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
 
   useEffect(() => {
-    if (!lessonMode || stepCompleted) return
-    const step = lessonSteps[lessonStep]
-    if (!step) return
-    const c = step.successCondition
+    if (!progressEnabled || !lessonMode || lessonSteps.length === 0) return
+    if (resumeAppliedRef.current === resolvedId) return
+
+    const savedStepId = progress.lessonStep
+    if (!savedStepId) return
+
+    const resumeIndex = lessonSteps.findIndex((step) => step.id === savedStepId)
+    if (resumeIndex >= 0) {
+      setLessonStep(resumeIndex)
+      setStepCompleted(false)
+    }
+    resumeAppliedRef.current = resolvedId
+  }, [progress.lessonStep, progressEnabled, lessonMode, lessonSteps, resolvedId])
+
+  // Single effect owns prevVarsRef so reads and writes are always in the same
+  // commit — eliminates the race condition where two sibling effects with
+  // different dep arrays could read/write prevVarsRef in different renders.
+  useEffect(() => {
     const previousVars = prevVarsRef.current
+    prevVarsRef.current = vars  // update immediately so next run sees fresh prev
+
+    // Track variable exploration
+    if (progressEnabled) {
+      for (const key of Object.keys(vars)) {
+        if (previousVars[key] !== vars[key]) {
+          markVariableExplored(key)
+        }
+      }
+    }
+
+    // Check success condition
+    if (!lessonMode || stepCompleted || !currentStep) return
+    const c = currentStep.successCondition
+    if (c.type === "time_elapsed") return
     switch (c.type) {
       case 'variable_changed': {
         if (c.target) { const prev = previousVars[c.target]; const curr = vars[c.target]; if (prev !== undefined && curr !== undefined && prev !== curr) setStepCompleted(true) }
@@ -146,12 +183,17 @@ export function TeachableEquation({
         if (c.target && c.value !== undefined) { const curr = vars[c.target]; if (curr !== undefined && Math.abs(curr - c.value) <= (c.tolerance ?? 0.5)) setStepCompleted(true) }
         break
       }
-      case 'time_elapsed': {
-        const timer = setTimeout(() => setStepCompleted(true), c.duration ?? 15000)
-        return () => clearTimeout(timer)
-      }
     }
-  }, [vars, lessonMode, lessonStep, lessonSteps, stepCompleted])
+  }, [vars, lessonMode, currentStep, stepCompleted, progressEnabled, markVariableExplored])
+
+  useEffect(() => {
+    if (!lessonMode || stepCompleted || !currentStep) return
+    const c = currentStep.successCondition
+    if (c.type !== "time_elapsed") return
+
+    const timer = setTimeout(() => setStepCompleted(true), c.duration ?? 15000)
+    return () => clearTimeout(timer)
+  }, [lessonMode, currentStep, stepCompleted])
 
   // Track time spent — tick every 5 seconds
   useEffect(() => {
@@ -162,31 +204,20 @@ export function TeachableEquation({
     return () => clearInterval(timer)
   }, [isDocumentVisible, progressEnabled, updateProgress])
 
-  // Track variable exploration
-  useEffect(() => {
-    if (!progressEnabled) return
-    const previousVars = prevVarsRef.current
-    for (const key of Object.keys(vars)) {
-      if (previousVars[key] !== vars[key]) {
-        markVariableExplored(key)
-      }
-    }
-    prevVarsRef.current = vars
-  }, [vars, progressEnabled, markVariableExplored])
-
   const advanceLesson = useCallback(() => {
     const completedStepIndex = lessonStep
     const isLastStep = lessonStep >= lessonSteps.length - 1
+    const nextStepId = isLastStep ? "" : lessonSteps[completedStepIndex + 1]?.id ?? ""
 
     if (!isLastStep) {
       setLessonStep((p) => p + 1)
       setStepCompleted(false)
     }
 
-    // Update progress with current lesson step
+    // Persist the next step to resume from, not the one just completed.
     if (progressEnabled) {
       updateProgress({
-        lessonStep: lessonSteps[completedStepIndex]?.id ?? "",
+        lessonStep: nextStepId,
         ...(isLastStep ? { completed: true } : {}),
       })
     }
@@ -201,19 +232,40 @@ export function TeachableEquation({
     setLessonStep(0); setStepCompleted(false)
     const r: Record<string, number> = {}
     for (const v of initialVariables) r[v.name] = v.value
+    prevVarsRef.current = r
     setVars(r)
   }, [initialVariables])
 
+  const disableLessonMode = useCallback(() => {
+    lessonModeWasToggledRef.current = true
+    setLessonMode(false)
+  }, [])
+
+  const restartLessonMode = useCallback(() => {
+    lessonModeWasToggledRef.current = true
+    setLessonMode(true)
+    resetLesson()
+  }, [resetLesson])
+
   // lockedVarsMemo is computed above (before applyPreset) and is the single source of truth.
-  const formulaVariables = currentVariables.map((v) => ({ ...v, locked: lockedVarsMemo.has(v.name) }))
+  const formulaVariables = useMemo(
+    () => currentVariables.map((v) => ({ ...v, locked: lockedVarsMemo.has(v.name) })),
+    [currentVariables, lockedVarsMemo],
+  )
   const hasLessons = lessonSteps.length > 0
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const letterFormula = appSettings.showFormulaLetters ? displayFormula : ""
-  const liveFormula = appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : ""
-  const resultLine = buildResultLine?.(vars)
-  const resultNote = appSettings.showResultNote ? describeResult?.(vars) : undefined
+  const liveFormula = useMemo(
+    () => appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : "",
+    [appSettings.showFormulaNumbers, buildLiveFormula, vars],
+  )
+  const resultLine = useMemo(() => buildResultLine?.(vars), [buildResultLine, vars])
+  const resultNote = useMemo(
+    () => appSettings.showResultNote ? describeResult?.(vars) : undefined,
+    [appSettings.showResultNote, describeResult, vars],
+  )
 
   const teachingContent = (
     <div className={`flex flex-col gap-2 overflow-y-auto ${isNarrow ? "px-2 py-1.5" : "h-full pl-2"}`}>
@@ -284,7 +336,7 @@ export function TeachableEquation({
               <CardTitle className="flex items-center gap-1.5 text-xs text-ocean">
                 <BookOpen className="h-3.5 w-3.5" /> Guided lesson
               </CardTitle>
-              <Button variant="ghost" size="xs" onClick={() => setLessonMode(false)} className="text-ocean/60 hover:text-ocean">
+              <Button variant="ghost" size="xs" onClick={disableLessonMode} className="text-ocean/60 hover:text-ocean">
                 Skip
               </Button>
             </CardHeader>
@@ -304,7 +356,7 @@ export function TeachableEquation({
         )}
 
         {hasLessons && !lessonMode && (
-          <Button variant="outline" className="w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean" onClick={() => { setLessonMode(true); resetLesson() }}>
+          <Button variant="outline" className="w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean" onClick={restartLessonMode}>
             <Sparkles className="h-3.5 w-3.5" /> Restart lesson
           </Button>
         )}

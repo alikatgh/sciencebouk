@@ -49,6 +49,26 @@ const DEFAULTS: Settings = {
   fontFamily: "STIX Two Text",
 }
 
+export const SETTINGS_STORAGE_KEY = "sciencebouk-settings"
+
+const FONT_IDS = new Set([
+  "STIX Two Text",
+  "Lora",
+  "Merriweather",
+  "EB Garamond",
+  "Crimson Text",
+  "Source Serif 4",
+  "Libre Baskerville",
+  "Playfair Display",
+  "Spectral",
+  "Inter",
+  "IBM Plex Sans",
+  "DM Sans",
+  "Manrope",
+])
+
+const SANS_FONT_IDS = new Set(["Inter", "IBM Plex Sans", "DM Sans", "Manrope"])
+
 interface SettingsContextValue {
   settings: Settings
   resolvedTheme: "light" | "dark"
@@ -65,9 +85,27 @@ export function useSettings(): SettingsContextValue {
 }
 
 function load(): Settings {
+  if (typeof localStorage === "undefined") return { ...DEFAULTS }
+
   try {
-    const raw = localStorage.getItem("sciencebouk-settings")
-    if (!raw) return { ...DEFAULTS }
+    return parseStoredSettings(localStorage.getItem(SETTINGS_STORAGE_KEY))
+  } catch { return { ...DEFAULTS } }
+}
+
+function save(s: Settings) {
+  if (typeof localStorage === "undefined") return
+
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(s))
+  } catch {
+    // Keep the in-memory settings even if persistent storage is unavailable.
+  }
+}
+
+export function parseStoredSettings(raw: string | null): Settings {
+  if (!raw) return { ...DEFAULTS }
+
+  try {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     const valid: Partial<Settings> = {}
     if (["light", "dark", "system"].includes(parsed.theme as string)) valid.theme = parsed.theme as Settings["theme"]
@@ -90,14 +128,36 @@ function load(): Settings {
     if (typeof parsed.showFormulaLetters === "boolean") valid.showFormulaLetters = parsed.showFormulaLetters
     if (typeof parsed.showFormulaNumbers === "boolean") valid.showFormulaNumbers = parsed.showFormulaNumbers
     if (typeof parsed.showResultNote === "boolean") valid.showResultNote = parsed.showResultNote
-    const FONT_IDS = ["STIX Two Text","Lora","Merriweather","EB Garamond","Crimson Text","Source Serif 4","Libre Baskerville","Playfair Display","Spectral","Inter","IBM Plex Sans","DM Sans","Manrope"]
-    if (typeof parsed.fontFamily === "string" && FONT_IDS.includes(parsed.fontFamily)) valid.fontFamily = parsed.fontFamily
+    if (typeof parsed.fontFamily === "string" && FONT_IDS.has(parsed.fontFamily)) valid.fontFamily = parsed.fontFamily
     return { ...DEFAULTS, ...valid }
-  } catch { return { ...DEFAULTS } }
+  } catch {
+    return { ...DEFAULTS }
+  }
 }
 
-function save(s: Settings) {
-  localStorage.setItem("sciencebouk-settings", JSON.stringify(s))
+export function resolveThemeMode(theme: Settings["theme"], systemDark: boolean): "light" | "dark" {
+  return theme === "system"
+    ? (systemDark ? "dark" : "light")
+    : theme
+}
+
+export function applySettingsToDocument(root: HTMLElement, settings: Settings, resolvedTheme: "light" | "dark"): void {
+  root.classList.toggle("dark", resolvedTheme === "dark")
+  root.classList.toggle("reduce-motion", settings.reducedMotion)
+  root.classList.toggle("high-contrast", settings.highContrast)
+  root.classList.toggle("color-blind", settings.colorBlindMode)
+
+  root.style.fontSize = { small: "14px", medium: "16px", large: "18px" }[settings.fontSize]
+  root.style.setProperty("--formula-scale", String(settings.formulaSize / 100))
+
+  const speeds = { off: "0", slow: "2", normal: "1", fast: "0.5" }
+  root.style.setProperty("--animation-speed", speeds[settings.animationSpeed])
+
+  const isSerif = !SANS_FONT_IDS.has(settings.fontFamily)
+  root.style.setProperty(
+    "--font-body",
+    `"${settings.fontFamily}", ${isSerif ? "serif" : "sans-serif"}`,
+  )
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }): ReactElement {
@@ -133,55 +193,23 @@ export function SettingsProvider({ children }: { children: ReactNode }): ReactEl
     return () => mediaQuery.removeEventListener("change", handleChange)
   }, [])
 
-  const resolvedTheme = settings.theme === "system"
-    ? (systemDark ? "dark" : "light")
-    : settings.theme
-
-  // === APPLY THEME ===
   useEffect(() => {
-    const root = document.documentElement
-    root.classList.toggle("dark", resolvedTheme === "dark")
-  }, [resolvedTheme])
+    if (typeof window === "undefined") return
 
-  // === APPLY FONT SIZE ===
-  useEffect(() => {
-    document.documentElement.style.fontSize = { small: "14px", medium: "16px", large: "18px" }[settings.fontSize]
-  }, [settings.fontSize])
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== SETTINGS_STORAGE_KEY && event.key !== null) return
+      setSettings(parseStoredSettings(event.newValue))
+    }
 
-  // === APPLY REDUCED MOTION ===
-  useEffect(() => {
-    document.documentElement.classList.toggle("reduce-motion", settings.reducedMotion)
-  }, [settings.reducedMotion])
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [])
 
-  // === APPLY HIGH CONTRAST ===
-  useEffect(() => {
-    document.documentElement.classList.toggle("high-contrast", settings.highContrast)
-  }, [settings.highContrast])
+  const resolvedTheme = resolveThemeMode(settings.theme, systemDark)
 
-  // === APPLY COLOR BLIND MODE ===
   useEffect(() => {
-    document.documentElement.classList.toggle("color-blind", settings.colorBlindMode)
-  }, [settings.colorBlindMode])
-
-  // === APPLY FORMULA SIZE as CSS variable ===
-  useEffect(() => {
-    document.documentElement.style.setProperty("--formula-scale", String(settings.formulaSize / 100))
-  }, [settings.formulaSize])
-
-  // === APPLY ANIMATION SPEED as CSS variable ===
-  useEffect(() => {
-    const speeds = { off: "0", slow: "2", normal: "1", fast: "0.5" }
-    document.documentElement.style.setProperty("--animation-speed", speeds[settings.animationSpeed])
-  }, [settings.animationSpeed])
-
-  // === APPLY FONT FAMILY as CSS variable ===
-  useEffect(() => {
-    const isSerif = !["Inter", "IBM Plex Sans", "DM Sans", "Manrope"].includes(settings.fontFamily)
-    document.documentElement.style.setProperty(
-      "--font-body",
-      `"${settings.fontFamily}", ${isSerif ? "serif" : "sans-serif"}`
-    )
-  }, [settings.fontFamily])
+    applySettingsToDocument(document.documentElement, settings, resolvedTheme)
+  }, [resolvedTheme, settings])
 
   const value = useMemo(() => ({ settings, resolvedTheme, update, reset }), [settings, resolvedTheme, update, reset])
 

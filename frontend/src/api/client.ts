@@ -1,6 +1,6 @@
-import { clearTokens, getAccessToken, refreshAccessToken } from "../auth/tokenStorage"
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+import { getAccessToken, refreshAccessToken } from "../auth/tokenStorage"
+import { API_BASE } from "../config/api"
+import { createHttpError } from "./httpError"
 
 async function readError(response: Response): Promise<Error> {
   const body = await response.json().catch(() => null) as
@@ -12,7 +12,7 @@ async function readError(response: Response): Promise<Error> {
     body?.message ??
     `API ${response.status}: ${response.statusText}`
 
-  return new Error(message)
+  return createHttpError(response.status, message)
 }
 
 function withAuthHeaders(options?: RequestInit, token?: string | null): Headers {
@@ -44,9 +44,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const refreshedToken = await refreshAccessToken()
     if (refreshedToken) {
       response = await doFetch(path, options, refreshedToken)
-    } else {
-      clearTokens()
     }
+    // Do NOT call clearTokens() here: tokenStorage.refreshAccessToken() already
+    // calls clearTokens() on genuine auth failures (expired token, HTTP 4xx).
+    // On network errors it intentionally returns null WITHOUT clearing so a
+    // momentary blip does not permanently log the user out.
   }
 
   if (!response.ok) {
@@ -56,6 +58,43 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     return undefined as T
   }
   return response.json() as Promise<T>
+}
+
+async function requestAllPages<T>(path: string): Promise<T[]> {
+  const items: T[] = []
+  let nextUrl: string | null = `${API_BASE}${path}`
+
+  while (nextUrl) {
+    const accessToken = getAccessToken()
+    let response = await fetch(nextUrl, {
+      method: "GET",
+      headers: withAuthHeaders(undefined, accessToken),
+    })
+
+    if (response.status === 401 && accessToken) {
+      const refreshedToken = await refreshAccessToken()
+      if (refreshedToken) {
+        response = await fetch(nextUrl, {
+          method: "GET",
+          headers: withAuthHeaders(undefined, refreshedToken),
+        })
+      }
+    }
+
+    if (!response.ok) {
+      throw await readError(response)
+    }
+
+    const payload = await response.json() as PaginatedResponse<T> | T[]
+    if (Array.isArray(payload)) {
+      return payload
+    }
+
+    items.push(...payload.results)
+    nextUrl = payload.next
+  }
+
+  return items
 }
 
 export interface EquationResponse {
@@ -173,10 +212,11 @@ export const api = {
       request<CourseResponse>(`/courses/${slug}/`),
   },
   search: (q: string) =>
-    request<EquationResponse[]>(`/search/?q=${encodeURIComponent(q)}`),
+    request<EquationResponse[] | PaginatedResponse<EquationResponse>>(`/search/?q=${encodeURIComponent(q)}`)
+      .then((payload) => Array.isArray(payload) ? payload : payload.results),
 
   progress: {
-    getAll: () => request<ProgressItem[]>('/progress/'),
+    getAll: () => requestAllPages<ProgressItem>('/progress/'),
     clear: () => request<{ ok: boolean }>('/progress/', { method: 'DELETE' }),
     update: (eqId: number, data: Partial<ProgressItem>) =>
       request<ProgressItem>(`/progress/${eqId}/`, { method: 'PATCH', body: JSON.stringify(data) }),

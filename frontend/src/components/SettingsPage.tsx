@@ -62,12 +62,13 @@ function SettingRow({ label, description, children }: { label: string; descripti
   )
 }
 
-function SegmentedControl({ value, onChange, options }: {
+function SegmentedControl({ value, onChange, options, label }: {
   value: string; onChange: (v: string) => void
   options: Array<{ value: string; label: string }>
+  label?: string
 }): ReactElement {
   return (
-    <div className="flex flex-shrink-0 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+    <div role="group" aria-label={label} className="flex flex-shrink-0 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -123,7 +124,7 @@ function FormulaPreview({ settings }: { settings: Settings }): ReactElement {
 }
 
 export default function SettingsPage(): ReactElement {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isPro } = useAuth()
   const { settings, update, reset } = useSettings()
   const [clearingProgress, setClearingProgress] = useState(false)
 
@@ -131,14 +132,14 @@ export default function SettingsPage(): ReactElement {
     if (!confirm("This will erase all your progress. Are you sure?")) return
     setClearingProgress(true)
     try {
-      if (isAuthenticated) {
+      if (isAuthenticated && isPro) {
         await api.progress.clear()
       }
       clearStoredProgress()
     } finally {
       setClearingProgress(false)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, isPro])
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950">

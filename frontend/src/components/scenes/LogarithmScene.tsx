@@ -135,7 +135,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
-      if (H < 200) return
+      if (H < 100) return
       currentW = W
       currentH = H
 
@@ -171,7 +171,6 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Logarithm product rule: bar chart and curve")
 
@@ -221,7 +220,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .attr("fill", "#f5b942")
 
       // Draggable handle on logx bar
-      const xDragHandle = g.append("g").attr("class", "x-drag-handle").style("cursor", "ew-resize")
+      const xDragHandle = g.append("g").attr("class", "x-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
       xDragHandle.append("rect")
         .attr("x", -15).attr("y", barY1 - 5).attr("width", 30).attr("height", barH + 10)
         .attr("fill", "transparent")
@@ -230,7 +229,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .attr("fill", "#6585ff").attr("stroke", "white").attr("stroke-width", 2)
 
       // Draggable handle on logy bar
-      const yDragHandle = g.append("g").attr("class", "y-drag-handle").style("cursor", "ew-resize")
+      const yDragHandle = g.append("g").attr("class", "y-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
       yDragHandle.append("rect")
         .attr("x", -15).attr("y", barY2 - 5).attr("width", 30).attr("height", barH + 10)
         .attr("fill", "transparent")
@@ -290,7 +289,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .attr("stroke", "#6585ff").attr("stroke-width", 1.5).attr("stroke-dasharray", "4 3")
 
       // Draggable curve dot
-      const curveDotGroup = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab")
+      const curveDotGroup = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab").style("touch-action", "none")
       curveDotGroup.append("circle").attr("r", 18).attr("fill", "transparent")
       curveDotGroup.append("circle").attr("class", "curve-dot").attr("r", 6)
         .attr("fill", "#6585ff").attr("stroke", "white").attr("stroke-width", 2)

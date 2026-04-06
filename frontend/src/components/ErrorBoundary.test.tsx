@@ -52,6 +52,7 @@ describe("ErrorBoundary", () => {
         <MaybeThrow />
       </ErrorBoundary>,
     )
+    expect(screen.getByText("Recovered")).toBeInTheDocument()
     vi.restoreAllMocks()
   })
 })

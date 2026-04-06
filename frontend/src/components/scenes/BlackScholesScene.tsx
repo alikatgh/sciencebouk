@@ -19,20 +19,23 @@ function normalPDF(x: number): number {
 }
 
 function blackScholes(S: number, K: number, T: number, r: number, sigma: number) {
+  const safeS = Math.max(S, 0.0001)
+  const safeK = Math.max(K, 0.0001)
+
   if (T <= 0.001 || sigma <= 0.001) {
     return {
-      call: Math.max(S - K, 0),
-      put: Math.max(K - S, 0),
-      delta: S > K ? 1 : S < K ? 0 : 0.5,
+      call: Math.max(safeS - safeK, 0),
+      put: Math.max(safeK - safeS, 0),
+      delta: safeS > safeK ? 1 : safeS < safeK ? 0 : 0.5,
       gamma: 0,
     }
   }
-  const d1 = (Math.log(S / K) + (r + sigma * sigma / 2) * T) / (sigma * Math.sqrt(T))
+  const d1 = (Math.log(safeS / safeK) + (r + sigma * sigma / 2) * T) / (sigma * Math.sqrt(T))
   const d2 = d1 - sigma * Math.sqrt(T)
-  const call = S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2)
-  const put = K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1)
+  const call = safeS * normalCDF(d1) - safeK * Math.exp(-r * T) * normalCDF(d2)
+  const put = safeK * Math.exp(-r * T) * normalCDF(-d2) - safeS * normalCDF(-d1)
   const delta = normalCDF(d1)
-  const gamma = normalPDF(d1) / (S * sigma * Math.sqrt(T))
+  const gamma = normalPDF(d1) / (safeS * sigma * Math.sqrt(T))
   return { call, put, delta, gamma }
 }
 

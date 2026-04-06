@@ -7,7 +7,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['tier', 'display_name', 'avatar_url', 'daily_goal_minutes', 'preferred_difficulty', 'onboarding_completed', 'created_at']
-        read_only_fields = ['tier', 'created_at']
+        read_only_fields = ['tier', 'avatar_url', 'created_at']
 
 
 class UserSettingsSerializer(serializers.ModelSerializer):
@@ -33,6 +33,15 @@ class RegisterSerializer(serializers.Serializer):
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+    def validate(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_password(value['password'])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({'password': list(e.messages)})
         return value
 
     def create(self, validated_data):

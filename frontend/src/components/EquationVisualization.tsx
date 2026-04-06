@@ -1,6 +1,5 @@
 import type { ReactElement } from "react"
 import { Suspense } from "react"
-import { ErrorBoundary } from "./ErrorBoundary"
 import { EquationIdProvider } from "./teaching/EquationContext"
 import { getScene } from "./sceneRegistry"
 
@@ -25,13 +24,12 @@ export function EquationVisualization({
     return <div className="flex h-80 items-center justify-center text-slate-400">No visualization available</div>
   }
 
+  // No ErrorBoundary here — App.tsx wraps us in one with a proper fallback UI.
   return (
-    <ErrorBoundary>
-      <Suspense fallback={<LoadingSkeleton />}>
-        <EquationIdProvider value={equationId}>
-          <SceneComponent />
-        </EquationIdProvider>
-      </Suspense>
-    </ErrorBoundary>
+    <Suspense fallback={<LoadingSkeleton />}>
+      <EquationIdProvider value={equationId}>
+        <SceneComponent />
+      </EquationIdProvider>
+    </Suspense>
   )
 }

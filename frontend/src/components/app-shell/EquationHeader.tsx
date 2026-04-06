@@ -98,6 +98,7 @@ function EquationHeaderComponent({
               void prefetchEquationScene(prevEquation.id)
             }}
             className="hidden text-slate-400 lg:inline-flex"
+            aria-label={`Previous equation: ${prevEquation.title}`}
           >
             {"←"}
           </Button>
@@ -114,6 +115,7 @@ function EquationHeaderComponent({
               void prefetchEquationScene(nextEquation.id)
             }}
             className="hidden text-slate-400 lg:inline-flex"
+            aria-label={`Next equation: ${nextEquation.title}`}
           >
             {"→"}
           </Button>

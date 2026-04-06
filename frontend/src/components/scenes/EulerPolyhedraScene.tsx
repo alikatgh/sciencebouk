@@ -312,7 +312,6 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
       .attr("width", W)
       .attr("height", H)
       .style("display", "block")
-      .style("touch-action", "none")
       .attr("role", "img")
       .attr("aria-label", "Euler polyhedra formula -- interactive 3D wireframes")
 

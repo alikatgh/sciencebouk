@@ -1,9 +1,11 @@
-import type { ReactElement, ReactNode, KeyboardEvent } from "react"
-import { useEffect, useRef, useState } from "react"
+import type { ReactElement, ReactNode } from "react"
+import { Suspense, lazy, useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { LogOut, User, ArrowLeft, Crown, BarChart2, Settings, ChevronDown, Info } from "lucide-react"
+import { User, ArrowLeft, Crown, ChevronDown } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { LazyAuthModal } from "../auth/LazyAuthModal"
+import { SITE_BASE } from "../config/api"
+
+import { ErrorBoundary } from "./ErrorBoundary"
 import { Button } from "./ui/button"
 
 interface TopNavProps {
@@ -11,6 +13,14 @@ interface TopNavProps {
   showBack?: boolean
   onBack?: () => void
 }
+
+function loadTopNavAccountMenu() {
+  return import("./TopNavAccountMenu")
+}
+
+const TopNavAccountMenu = lazy(() =>
+  loadTopNavAccountMenu().then((module) => ({ default: module.TopNavAccountMenu })),
+)
 
 function getUserDisplayName(user: { email: string; profile: { display_name: string } }): string {
   if (user.profile.display_name) return user.profile.display_name
@@ -34,7 +44,6 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
   const navigate = useNavigate()
   const { user, isAuthenticated, isPro, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [showAuth, setShowAuth] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -90,9 +99,9 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
   const displayName = user ? getUserDisplayName(user) : ""
   const initials = user ? getUserInitials(user) : ""
-  const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace(/\/api$/, "")
   const rawAvatarUrl = user?.profile.avatar_url
-  const avatarUrl = rawAvatarUrl ? (rawAvatarUrl.startsWith("http") ? rawAvatarUrl : `${API_BASE}${rawAvatarUrl}`) : null
+  const avatarUrl = rawAvatarUrl ? (rawAvatarUrl.startsWith("http") ? rawAvatarUrl : `${SITE_BASE}${rawAvatarUrl}`) : null
+  const closeMenu = () => setMenuOpen(false)
 
   return (
     <header className="relative z-50 flex-shrink-0 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -139,6 +148,12 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
               <button
                 ref={triggerRef}
                 onClick={() => setMenuOpen(!menuOpen)}
+                onMouseEnter={() => {
+                  void loadTopNavAccountMenu()
+                }}
+                onFocus={() => {
+                  void loadTopNavAccountMenu()
+                }}
                 className="inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                 type="button"
                 aria-label="Open profile menu"
@@ -161,110 +176,22 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
               {/* Dropdown menu */}
               {menuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-[100] mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
-                  onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
-                    const items = Array.from(
-                      menuRef.current?.querySelectorAll<HTMLElement>("[role='menuitem']") ?? []
-                    )
-                    const current = document.activeElement
-                    const idx = items.indexOf(current as HTMLElement)
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault()
-                      items[(idx + 1) % items.length]?.focus()
-                    } else if (e.key === "ArrowUp") {
-                      e.preventDefault()
-                      items[(idx - 1 + items.length) % items.length]?.focus()
-                    }
-                  }}
-                >
-                  {/* User info header */}
-                  <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-700">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{displayName}</p>
-                    <p className="text-xs text-slate-400">{user.email}</p>
-                    {isPro && (
-                      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        <Crown className="h-2.5 w-2.5" /> Pro
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Menu items */}
-                  <div className="py-1">
-                    <button
-                      role="menuitem"
-                      tabIndex={-1}
-                      onClick={() => { setMenuOpen(false); navigate("/profile") }}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
-                      type="button"
-                    >
-                      <User className="h-4 w-4 text-slate-400" />
-                      Profile
-                    </button>
-
-                    {isPro && (
-                      <button
-                        role="menuitem"
-                        tabIndex={-1}
-                        onClick={() => { setMenuOpen(false); navigate("/dashboard") }}
-                        className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
-                        type="button"
-                      >
-                        <BarChart2 className="h-4 w-4 text-slate-400" />
-                        Dashboard
-                      </button>
-                    )}
-
-                    {!isPro && (
-                      <button
-                        role="menuitem"
-                        tabIndex={-1}
-                        onClick={() => { setMenuOpen(false); navigate("/pro") }}
-                        className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-ocean transition hover:bg-ocean/5"
-                        type="button"
-                      >
-                        <Crown className="h-4 w-4" />
-                        Upgrade to Pro
-                      </button>
-                    )}
-
-                    <button
-                      role="menuitem"
-                      tabIndex={-1}
-                      onClick={() => { setMenuOpen(false); navigate("/settings") }}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
-                      type="button"
-                    >
-                      <Settings className="h-4 w-4 text-slate-400" />
-                      Settings
-                    </button>
-                    <button
-                      role="menuitem"
-                      tabIndex={-1}
-                      onClick={() => { setMenuOpen(false); navigate("/about") }}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
-                      type="button"
-                    >
-                      <Info className="h-4 w-4 text-slate-400" />
-                      About
-                    </button>
-                  </div>
-
-                  {/* Logout */}
-                  <div className="border-t border-slate-100 py-1 dark:border-slate-700">
-                    <button
-                      role="menuitem"
-                      tabIndex={-1}
-                      onClick={() => { setMenuOpen(false); logout(); navigate("/") }}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/20"
-                      type="button"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign out
-                    </button>
-                  </div>
-                </div>
+                <ErrorBoundary fallback={null}>
+                  <Suspense fallback={null}>
+                    <TopNavAccountMenu
+                      displayName={displayName}
+                      email={user.email}
+                      isPro={isPro}
+                      onClose={closeMenu}
+                      onOpenProfile={() => navigate("/profile")}
+                      onOpenDashboard={() => navigate("/dashboard")}
+                      onOpenPro={() => navigate("/pro")}
+                      onOpenSettings={() => navigate("/settings")}
+                      onOpenAbout={() => navigate("/about")}
+                      onLogout={() => { logout(); navigate("/") }}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
               )}
             </div>
           ) : (
@@ -279,7 +206,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAuth(true)}
+                onClick={() => navigate("/login")}
                 className="h-7 gap-1 text-xs"
               >
                 <User className="h-3 w-3" /> Sign in
@@ -288,7 +215,6 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
           )}
         </div>
       </div>
-      <LazyAuthModal open={showAuth} onClose={() => setShowAuth(false)} />
     </header>
   )
 }

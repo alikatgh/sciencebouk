@@ -10,6 +10,8 @@ import "./index.css"
 const App = lazy(() => import("./App"))
 const HomePage = lazy(() => import("./components/HomePage").then((module) => ({ default: module.HomePage })))
 const ProPricingPage = lazy(() => import("./components/ProUpgrade").then((module) => ({ default: module.ProPricingPage })))
+const ProSuccessPage = lazy(() => import("./components/ProUpgrade").then((module) => ({ default: module.ProSuccessPage })))
+const ProCancelPage = lazy(() => import("./components/ProUpgrade").then((module) => ({ default: module.ProCancelPage })))
 const Dashboard = lazy(() => import("./components/Dashboard"))
 const ProfilePage = lazy(() => import("./components/ProfilePage"))
 const SettingsPage = lazy(() => import("./components/SettingsPage"))
@@ -17,12 +19,32 @@ const AboutPage = lazy(() => import("./components/AboutPage"))
 const PrivacyPage = lazy(() => import("./components/PrivacyPage"))
 const TermsPage = lazy(() => import("./components/TermsPage"))
 const ChangelogPage = lazy(() => import("./components/ChangelogPage"))
+const AuthPage = lazy(() => import("./auth/AuthPage"))
+
+function NotFoundPage(): React.ReactElement {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 text-center dark:bg-slate-950">
+      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">404</p>
+      <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">Page not found</h1>
+      <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">
+        That route does not exist in this atlas yet.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.assign("/")}
+        className="rounded-full bg-ocean px-5 py-2 text-sm font-semibold text-white transition hover:bg-ocean/90"
+      >
+        Back to home
+      </button>
+    </main>
+  )
+}
 
 function RequirePro({ children }: { children: React.ReactElement }): React.ReactElement {
   const { isAuthenticated, isPro, loading } = useAuth()
   const location = useLocation()
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-400 dark:bg-slate-950 dark:text-slate-500">Loading...</main>
-  if (!isAuthenticated) return <Navigate to={`/?next=${encodeURIComponent(location.pathname)}`} replace />
+  if (!isAuthenticated) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
   if (!isPro) return <Navigate to="/pro" replace />
   return children
 }
@@ -61,8 +83,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                   <Route path="/" element={<HomePage />} />
                   <Route path="/equation/:id" element={<App />} />
                   <Route path="/pro" element={<ProPricingPage />} />
-                  <Route path="/pro/success" element={<ProPricingPage />} />
-                  <Route path="/pro/cancel" element={<ProPricingPage />} />
+                  <Route path="/pro/success" element={<ProSuccessPage />} />
+                  <Route path="/pro/cancel" element={<ProCancelPage />} />
                   <Route path="/dashboard" element={<RequirePro><Dashboard /></RequirePro>} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
@@ -70,7 +92,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/changelog" element={<ChangelogPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="/login" element={<AuthPage mode="login" />} />
+                  <Route path="/signup" element={<AuthPage mode="signup" />} />
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
             </BrowserRouter>

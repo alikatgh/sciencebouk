@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom"
 import { Github, Crown, ArrowRight, Atom, FlaskConical, Cpu, Smartphone } from "lucide-react"
 import { TopNav } from "./TopNav"
+import { ErrorBoundary } from "./ErrorBoundary"
 import { Footer } from "./Footer"
 import { Button } from "./ui/button"
 import { equationManifest } from "../data/equationManifest"
@@ -55,9 +56,11 @@ export default function AboutPage(): ReactElement {
             {/* Live demo — the proof */}
             <div className="flex-shrink-0">
               <div className="rounded-2xl bg-slate-900 p-1 shadow-2xl shadow-slate-900/20">
-                <Suspense fallback={<div className="h-56 w-56 animate-pulse rounded-xl bg-slate-800" />}>
-                  <HeroDemo />
-                </Suspense>
+                <ErrorBoundary fallback={null}>
+                  <Suspense fallback={<div className="h-56 w-56 animate-pulse rounded-xl bg-slate-800" />}>
+                    <HeroDemo />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
               <p className="mt-2 text-center text-[10px] text-slate-400">Click to cycle through triples</p>
             </div>

@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext"
 import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
+import { SITE_BASE } from "../config/api"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
@@ -28,9 +29,8 @@ export default function ProfilePage(): ReactElement {
   const initials = user?.profile.display_name
     ? user.profile.display_name.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()
     : (user?.email[0]?.toUpperCase() ?? "?")
-  const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace(/\/api$/, "")
   const rawAvatarUrl = user?.profile.avatar_url
-  const avatarUrl = rawAvatarUrl ? (rawAvatarUrl.startsWith("http") ? rawAvatarUrl : `${API_BASE}${rawAvatarUrl}`) : null
+  const avatarUrl = rawAvatarUrl ? (rawAvatarUrl.startsWith("http") ? rawAvatarUrl : `${SITE_BASE}${rawAvatarUrl}`) : null
 
   if (!isAuthenticated || !user) {
     return (
@@ -186,7 +186,7 @@ export default function ProfilePage(): ReactElement {
                   ) : (
                     <div className="flex items-center gap-2">
                       <h1 className="truncate text-lg font-bold text-slate-900 dark:text-white">{displayName}</h1>
-                      <button onClick={() => { setNameInput(user.profile.display_name || ""); setEditingName(true) }} className="rounded p-1 text-slate-300 hover:text-slate-500" type="button"><Pencil className="h-3 w-3" /></button>
+                      <button onClick={() => { setNameInput(user.profile.display_name || ""); setEditingName(true) }} className="rounded p-1 text-slate-300 hover:text-slate-500" type="button" aria-label="Edit display name"><Pencil className="h-3 w-3" /></button>
                     </div>
                   )}
                   <p className="mt-0.5 text-xs text-slate-400">{user.email}</p>
@@ -236,7 +236,7 @@ export default function ProfilePage(): ReactElement {
                     <Crown className="h-3.5 w-3.5" /> Upgrade to Pro
                   </button>
                 )}
-                <button onClick={() => { logout(); navigate("/") }} className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-900/30" type="button">
+                <button onClick={() => { logout(); navigate("/") }} className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-900/30 [@media(pointer:coarse)]:min-h-[44px]" type="button">
                   <LogOut className="h-3.5 w-3.5" /> Sign out
                 </button>
               </div>
@@ -278,15 +278,15 @@ export default function ProfilePage(): ReactElement {
               <div className="grid grid-cols-3 gap-2">
                 <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-emerald-600">{completedCount}</p>
-                  <p className="text-[9px] text-slate-400">Done</p>
+                  <p className="text-[11px] text-slate-400">Done</p>
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-blue-600">{totalTimeMinutes}m</p>
-                  <p className="text-[9px] text-slate-400">Studied</p>
+                  <p className="text-[11px] text-slate-400">Studied</p>
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-purple-600">{inProgressCount}</p>
-                  <p className="text-[9px] text-slate-400">Exploring</p>
+                  <p className="text-[11px] text-slate-400">Exploring</p>
                 </div>
               </div>
             </div>
@@ -326,13 +326,13 @@ export default function ProfilePage(): ReactElement {
                       }`}>
                         {done ? "✓" : eq.id}
                       </span>
-                      {done && <span className="text-[9px] text-emerald-500">Done</span>}
-                      {started && !done && <span className="text-[9px] text-ocean">{mins}m</span>}
+                      {done && <span className="text-[11px] text-emerald-500">Done</span>}
+                      {started && !done && <span className="text-[11px] text-ocean">{mins}m</span>}
                     </div>
                     <p className={`mt-1 text-xs font-medium leading-tight ${done ? "text-emerald-700 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>
                       {eq.title}
                     </p>
-                    <p className="mt-0.5 text-[9px] text-slate-400">{eq.category}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">{eq.category}</p>
                   </button>
                 )
               })}

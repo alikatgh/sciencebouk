@@ -150,6 +150,8 @@ function cSquareCorners(
 }
 
 function computeLayout(a: number, b: number, W: number, H: number) {
+  a = Math.max(0.01, a)
+  b = Math.max(0.01, b)
   const c = Math.sqrt(a * a + b * b)
   const PAD = 40 // more padding for labels
 
@@ -267,7 +269,6 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
 
       svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
 
@@ -315,7 +316,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.result)
 
       // Drag handles
-      const hA = g.append("g").attr("class", "handle-a").style("cursor", "ns-resize")
+      const hA = g.append("g").attr("class", "handle-a").style("cursor", "ns-resize").style("touch-action", "none")
       hA.append("circle").attr("class", "handle-a-hit").attr("r", 30).attr("fill", "transparent")
       hA.append("circle").attr("class", "handle-a-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.primary).attr("stroke", "white").attr("stroke-width", 2.5)
@@ -323,7 +324,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         .attr("fill", "none").attr("stroke", VAR_COLORS.primary)
         .attr("stroke-width", 2).attr("stroke-dasharray", "5 3").attr("opacity", 0)
 
-      const hB = g.append("g").attr("class", "handle-b").style("cursor", "ew-resize")
+      const hB = g.append("g").attr("class", "handle-b").style("cursor", "ew-resize").style("touch-action", "none")
       hB.append("circle").attr("class", "handle-b-hit").attr("r", 30).attr("fill", "transparent")
       hB.append("circle").attr("class", "handle-b-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.secondary).attr("stroke", "white").attr("stroke-width", 2.5)
@@ -333,6 +334,8 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
 
       // ── updateGeometry: repositions everything from a,b WITHOUT React ──
       function updateGeometry(aVal: number, bVal: number) {
+        aVal = Math.max(0.01, aVal)
+        bVal = Math.max(0.01, bVal)
         const cVal = Math.sqrt(aVal * aVal + bVal * bVal)
         const { s, ox, oy } = computeLayout(aVal, bVal, W, H)
 
@@ -457,15 +460,16 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
       hB.call(dragB)
 
       // Hover cross-highlighting
-      hA.on("mouseenter", () => onHighlightRef.current('a'))
-        .on("mouseleave", () => onHighlightRef.current(null))
-      hB.on("mouseenter", () => onHighlightRef.current('b'))
-        .on("mouseleave", () => onHighlightRef.current(null))
+      hA.on("pointerenter", () => onHighlightRef.current('a'))
+        .on("pointerleave", () => onHighlightRef.current(null))
+      hB.on("pointerenter", () => onHighlightRef.current('b'))
+        .on("pointerleave", () => onHighlightRef.current(null))
     }
 
     buildSVG()
 
     let rebuildScheduled = false
+    let resizeRaf = 0
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
@@ -474,13 +478,14 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
       if (w !== currentW || h !== currentH) {
         if (!rebuildScheduled) {
           rebuildScheduled = true
-          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+          resizeRaf = requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
         }
       }
     })
     observer.observe(el)
 
     return () => {
+      cancelAnimationFrame(resizeRaf)
       observer.disconnect()
       select(el).select("svg").remove()
       updateRef.current = null

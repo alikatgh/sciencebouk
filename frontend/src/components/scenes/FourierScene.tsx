@@ -131,6 +131,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
   const rafRef = useRef(0)
   const timeRef = useRef(0)
   const lastTsRef = useRef(0)
+  const renderGenerationRef = useRef(0)
 
   // Sync React props into SVG when not dragging (handles presets, lesson steps, slider changes)
   useEffect(() => {
@@ -167,6 +168,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
     function buildSVG() {
       if (!el) return
+      const buildGeneration = ++renderGenerationRef.current
 
       // Stop animation before tearing down, then re-enable for the new loop
       animationRunning = false
@@ -211,6 +213,11 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       const spectrumAmpScale = scaleLinear().domain([0, 1]).range([spectrumBottom, spectrumTop])
 
       const pathGen = line<number>().curve(curveBasis)
+      const compositeYScale = scaleLinear().range([compositeBottom, compositeTop])
+      const harmonicYScales = range(0, 4).map((index) => {
+        const yMid = harmonicTop + index * (harmonicHeight + harmonicGap) + harmonicHeight / 2
+        return scaleLinear().domain([-1.2, 1.2]).range([yMid + harmonicHeight / 2, yMid - harmonicHeight / 2])
+      })
 
       // ── Create SVG ──
       const svg = select(el)
@@ -376,11 +383,11 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       for (let i = 0; i < 4; i++) {
         const name = HARMONIC_NAMES[i]
         g.select(`.harmonic-label-${i}`)
-          .on("mouseenter", () => onHighlightRef.current(name))
-          .on("mouseleave", () => onHighlightRef.current(null))
+          .on("pointerenter", () => onHighlightRef.current(name))
+          .on("pointerleave", () => onHighlightRef.current(null))
         g.select(`.harmonic-amp-${i}`)
-          .on("mouseenter", () => onHighlightRef.current(name))
-          .on("mouseleave", () => onHighlightRef.current(null))
+          .on("pointerenter", () => onHighlightRef.current(name))
+          .on("pointerleave", () => onHighlightRef.current(null))
       }
 
       // ── updateScene: repositions non-animated elements from amps WITHOUT React ──
@@ -418,7 +425,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
       // ── Animation loop: reads from refs, never from React state ──
       function animate(ts: number) {
-        if (!animationRunning) return
+        if (!animationRunning || buildGeneration !== renderGenerationRef.current) return
         if (!playingRef.current) return
 
         if (lastTsRef.current === 0) lastTsRef.current = ts
@@ -431,7 +438,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         const totalAmp = amps.reduce((s, a) => s + Math.abs(a), 0) || 1
 
         // Composite waveform
-        const compositeYScale = scaleLinear().domain([-totalAmp, totalAmp]).range([compositeBottom, compositeTop])
+        compositeYScale.domain([-totalAmp, totalAmp])
         const compositePath = pathGen
           .x(d => xScale(d))
           .y(d => {
@@ -445,8 +452,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
         // Individual harmonics
         for (let i = 0; i < 4; i++) {
-          const yMid = harmonicTop + i * (harmonicHeight + harmonicGap) + harmonicHeight / 2
-          const hYScale = scaleLinear().domain([-1.2, 1.2]).range([yMid + harmonicHeight / 2, yMid - harmonicHeight / 2])
+          const hYScale = harmonicYScales[i]
           const hPath = pathGen
             .x(d => xScale(d))
             .y(d => hYScale(amps[i] * Math.sin((i + 1) * omega * d + (i + 1) * t * 2)))(xs) ?? ""
@@ -502,6 +508,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
     return () => {
       animationRunning = false
+      renderGenerationRef.current += 1
       cancelAnimationFrame(rafRef.current)
       observer.disconnect()
       select(el).select("svg").remove()

@@ -37,6 +37,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
   const [inputValue, setInputValue] = useState(() => formatValue(variable.value, variable.step))
   const inputRef = useRef<HTMLInputElement>(null)
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelEditRef = useRef(false)
 
   // Re-initialise the controlled input value from the prop whenever it changes externally.
   // Only apply when NOT editing — if the user is actively typing we must not clobber their input.
@@ -67,6 +68,12 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
   }, [isDisabled, variable.value, variable.step])
 
   const handleValueSubmit = useCallback(() => {
+    if (cancelEditRef.current) {
+      cancelEditRef.current = false
+      setInputValue(formatValue(variable.value, variable.step))
+      setEditing(false)
+      return
+    }
     const val = Number(inputValue)
     if (!isNaN(val)) onChange(variable.name, clamp(val, variable.min, variable.max))
     setEditing(false)
@@ -77,8 +84,8 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
       <TooltipTrigger asChild>
         <div
           className={`rounded-lg px-2.5 py-2 transition-colors ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-          onMouseEnter={() => onHover(variable.name)}
-          onMouseLeave={() => onHover(null)}
+          onPointerEnter={() => onHover(variable.name)}
+          onPointerLeave={() => onHover(null)}
           style={{ opacity: variable.locked ? 0.4 : 1 }}
         >
           <div className="flex items-center justify-between">
@@ -93,7 +100,13 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
                 min={variable.min} max={variable.max} step={variable.step}
                 onChange={(e) => setInputValue(e.target.value)}
                 onBlur={handleValueSubmit}
-                onKeyDown={(e) => { if (e.key === "Enter") handleValueSubmit(); if (e.key === "Escape") setEditing(false) }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleValueSubmit()
+                  if (e.key === "Escape") {
+                    cancelEditRef.current = true
+                    setEditing(false)
+                  }
+                }}
                 className="h-6 w-20 text-right font-mono text-sm font-bold"
                 style={{ color: variable.color }}
                 autoFocus

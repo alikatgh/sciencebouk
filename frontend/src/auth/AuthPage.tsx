@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { InlineMath } from "react-katex"
 import "katex/dist/katex.min.css"
 import { useAuth } from "./AuthContext"
+import { sanitizeNextPath } from "./navigation"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader } from "../components/ui/card"
@@ -33,7 +34,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   // authLoading: only redirect if fully loaded AND already authenticated; show form while loading
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const nextUrl = searchParams.get("next") ?? "/"
+  const nextUrl = sanitizeNextPath(searchParams.get("next"))
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -157,7 +158,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           <Link to="/" className="mb-1 font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
             Sciencebouk
           </Link>
-          <span className="text-sm text-slate-400 dark:text-slate-500">
+          <span className="text-sm text-slate-400 dark:text-slate-500" aria-hidden="true">
             <InlineMath math="E=mc^2" />
           </span>
         </CardHeader>
@@ -202,7 +203,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -235,8 +236,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
                   <button
                     type="button"
                     onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                    aria-label={showConfirm ? "Hide password" : "Show password"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
+                    aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
                   >
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -291,7 +292,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
               <>
                 Don&apos;t have an account?{" "}
                 <Link
-                  to={`/signup${searchParams.get("next") ? `?next=${encodeURIComponent(searchParams.get("next")!)}` : ""}`}
+                  to={nextUrl === "/" ? "/signup" : `/signup?next=${encodeURIComponent(nextUrl)}`}
                   className="font-medium text-ocean hover:underline"
                 >
                   Sign up
@@ -301,7 +302,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
               <>
                 Already have an account?{" "}
                 <Link
-                  to={`/login${searchParams.get("next") ? `?next=${encodeURIComponent(searchParams.get("next")!)}` : ""}`}
+                  to={nextUrl === "/" ? "/login" : `/login?next=${encodeURIComponent(nextUrl)}`}
                   className="font-medium text-ocean hover:underline"
                 >
                   Sign in

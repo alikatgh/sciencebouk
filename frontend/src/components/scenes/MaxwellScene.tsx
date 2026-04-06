@@ -83,7 +83,7 @@ function traceFieldLine(
 }
 
 const variables: Variable[] = [
-  { name: 'wavelength', symbol: '\u03BB', latex: '\\lambda', value: 120, min: 60, max: 250, step: 5, color: VAR_COLORS.primary, unit: 'px', description: 'Wavelength of EM wave' },
+  { name: 'wavelength', symbol: '\u03BB', latex: '\\lambda', value: 120, min: 60, max: 300, step: 5, color: VAR_COLORS.primary, unit: 'px', description: 'Wavelength of EM wave' },
 ]
 
 const lessons: LessonStep[] = [
@@ -290,6 +290,11 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     } else {
       buildWaveMode(g)
     }
+
+    return () => {
+      runningRef.current = false
+      cancelAnimationFrame(rafRef.current)
+    }
   }, [mode, W, H])
 
   // Update field lines when charges move (mode 1 only, triggered by redrawFieldLines)
@@ -471,7 +476,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .attr("cy", wlY).attr("r", 8)
       .attr("fill", "white").attr("stroke", "#f59e0b").attr("stroke-width", 2.5)
 
-    const wlDragScale = scaleLinear().domain([wlStart + 60, wlStart + 250]).range([60, 250])
+    const wlDragScale = scaleLinear().domain([wlStart + 60, wlStart + 300]).range([60, 300])
     const wlDrag = drag<SVGGElement, unknown>()
       .on("start", function () {
         select(this).style("cursor", "grabbing")
@@ -479,7 +484,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
           .attr("r", 11).attr("stroke-width", 3)
       })
       .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-        const newWl = Math.max(60, Math.min(250, wlDragScale(event.x)))
+        const newWl = Math.max(60, Math.min(300, wlDragScale(event.x)))
         onVarChangeRef.current('wavelength', Math.round(newWl / 5) * 5)
       })
       .on("end", function () {

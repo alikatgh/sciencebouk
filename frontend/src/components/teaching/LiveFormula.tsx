@@ -86,19 +86,31 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
     setEditing(null)
   }, [editing, inputValue, variables, onVariableChange])
 
+  const hasInteractiveVars = (variables ?? []).some((v) => !v.constant && !v.locked)
+
   return (
-    <div className="relative space-y-1">
-      {/* Letter formula */}
+    <div className="relative space-y-2">
+      {/* Letter formula — secondary label when live exists, hero when alone */}
       {letterFormula && (
-        <div className="overflow-x-auto text-xs text-slate-400 dark:text-slate-500">
+        <div className={`overflow-x-auto ${
+          liveFormula
+            ? "text-sm text-slate-700 dark:text-slate-200"
+            : "text-center text-2xl text-slate-900 dark:text-slate-50"
+        }`}>
           <InlineMath math={letterFormula} />
         </div>
       )}
-      {/* Live formula — colored values are clickable */}
+      {/* Live formula — always the hero: big, centered, display-math style */}
       {liveFormula && (
-        <div ref={liveRef} className="overflow-x-auto text-base text-slate-800 dark:text-slate-200">
+        <div ref={liveRef} className="overflow-x-auto text-center text-2xl text-slate-900 dark:text-slate-50">
           <InlineMath math={liveFormula} />
         </div>
+      )}
+      {/* Interactive hint */}
+      {hasInteractiveVars && liveFormula && (
+        <p className="text-center text-[9px] text-slate-400 dark:text-slate-500">
+          tap colored values to edit
+        </p>
       )}
       {/* Inline edit overlay */}
       {editing && (
@@ -115,7 +127,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
               if (e.key === "Enter") handleSubmit()
               if (e.key === "Escape") setEditing(null)
             }}
-            className="w-20 rounded border-2 bg-white px-1.5 py-0.5 font-mono text-sm font-bold shadow-lg outline-none dark:bg-slate-700"
+            className="w-20 rounded border-2 bg-white px-1.5 py-0.5 font-mono text-sm font-bold shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:bg-slate-700"
             style={{ borderColor: editing.color, color: editing.color }}
             aria-label="Edit variable value"
             autoFocus
@@ -124,13 +136,13 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       )}
       {/* Result */}
       {resultLine && (
-        <div className="overflow-x-auto text-sm font-bold text-slate-700 dark:text-slate-300">
+        <div className="overflow-x-auto text-center text-sm text-slate-600 dark:text-slate-400">
           <InlineMath math={resultLine} />
         </div>
       )}
       {/* Note */}
       {resultNote && (
-        <p className="text-[10px] leading-tight text-slate-400 dark:text-slate-500">
+        <p className="text-center text-xs leading-tight text-slate-400 dark:text-slate-500">
           {resultNote}
         </p>
       )}

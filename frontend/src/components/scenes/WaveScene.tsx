@@ -122,6 +122,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
   const timeRef = useRef(0)
   const lastFrameRef = useRef(0)
   const rafRef = useRef(0)
+  const renderGenerationRef = useRef(0)
 
   // Store the update function so external effects can call it
   const updateRef = useRef<((freq: number, amp: number, wl: number) => void) | null>(null)
@@ -175,6 +176,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
     function buildSVG() {
       if (!el) return
+      const buildGeneration = ++renderGenerationRef.current
 
       // Stop the previous animation loop before tearing down SVG
       running = false
@@ -387,8 +389,11 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // ── Animation loop — reads from refs, never from React state ──
       function tick(now: number) {
-        if (!running) return
+        if (!running || buildGeneration !== renderGenerationRef.current) return
         if (!playingRef.current) return
+        if (lastFrameRef.current === 0) {
+          lastFrameRef.current = now
+        }
         const dt = (now - lastFrameRef.current) / 1000
         lastFrameRef.current = now
 
@@ -422,8 +427,8 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Hover cross-highlighting
       ampHandle
-        .on("mouseenter", () => onHighlightRef.current('amp'))
-        .on("mouseleave", () => onHighlightRef.current(null))
+        .on("pointerenter", () => onHighlightRef.current('amp'))
+        .on("pointerleave", () => onHighlightRef.current(null))
 
       // Initial render
       updateScene(liveRef.current.freq, liveRef.current.amp, liveRef.current.wl)
@@ -458,6 +463,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
     return () => {
       running = false
+      renderGenerationRef.current += 1
       observer.disconnect()
       cancelAnimationFrame(rafRef.current)
       select(el).select("svg").remove()

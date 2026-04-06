@@ -364,42 +364,44 @@ class SearchEquationsTests(BaseAPITest):
     def test_search_by_author_newton_returns_gravity(self):
         response = self.client.get("/api/search/?q=newton")
         self.assertEqual(response.status_code, 200)
-        results = response.json()
+        payload = response.json()
+        self.assertIn("results", payload)
+        results = payload["results"]
         titles = [eq["title"] for eq in results]
         self.assertIn("Law of Gravity", titles)
 
     def test_search_by_author_einstein_returns_relativity(self):
         response = self.client.get("/api/search/?q=einstein")
         self.assertEqual(response.status_code, 200)
-        results = response.json()
+        results = response.json()["results"]
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["title"], "Relativity")
 
     def test_search_by_title_substring(self):
         response = self.client.get("/api/search/?q=pythagoras")
         self.assertEqual(response.status_code, 200)
-        results = response.json()
+        results = response.json()["results"]
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["title"], "Pythagoras's Theorem")
 
     def test_search_by_category_term(self):
         response = self.client.get("/api/search/?q=physics")
         self.assertEqual(response.status_code, 200)
-        results = response.json()
+        results = response.json()["results"]
         for eq in results:
             self.assertEqual(eq["category"], "physics")
 
     def test_search_with_no_matches_returns_empty_list(self):
         response = self.client.get("/api/search/?q=zzznomatch")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(response.json()["results"], [])
 
     def test_search_is_case_insensitive(self):
         response_lower = self.client.get("/api/search/?q=newton")
         response_upper = self.client.get("/api/search/?q=NEWTON")
         self.assertEqual(
-            len(response_lower.json()),
-            len(response_upper.json()),
+            len(response_lower.json()["results"]),
+            len(response_upper.json()["results"]),
         )
 
     def test_search_with_whitespace_only_q_returns_400(self):
@@ -675,7 +677,7 @@ class AuthProgressBase(TestCase):
 
 class MyProgressListTests(AuthProgressBase):
     def test_list_progress_authenticated_returns_200(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         response = self.client.get('/api/progress/')
         self.assertEqual(response.status_code, 200)
 
@@ -683,37 +685,50 @@ class MyProgressListTests(AuthProgressBase):
         response = self.client.get('/api/progress/')
         self.assertEqual(response.status_code, 401)
 
-    def test_list_progress_returns_empty_list_for_new_user(self):
+    def test_list_progress_free_user_returns_403(self):
         self._auth_as(self.free_user)
         response = self.client.get('/api/progress/')
-        self.assertEqual(response.json(), [])
+        self.assertEqual(response.status_code, 403)
+
+    def test_list_progress_returns_empty_list_for_new_pro_user(self):
+        self._auth_as(self.pro_user)
+        response = self.client.get('/api/progress/')
+        self.assertEqual(response.json()["results"], [])
 
     def test_list_progress_returns_only_current_users_records(self):
-        UserProgress.objects.create(user=self.free_user, equation=self.eq1, completed=True)
-        UserProgress.objects.create(user=self.pro_user, equation=self.eq2, completed=False)
-        self._auth_as(self.free_user)
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, completed=True)
+        UserProgress.objects.create(user=self.free_user, equation=self.eq2, completed=False)
+        self._auth_as(self.pro_user)
         response = self.client.get('/api/progress/')
-        data = response.json()
+        data = response.json()["results"]
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['equation_id'], self.eq1.sort_order)
 
     def test_list_progress_record_has_expected_fields(self):
-        UserProgress.objects.create(user=self.free_user, equation=self.eq1)
-        self._auth_as(self.free_user)
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1)
+        self._auth_as(self.pro_user)
         response = self.client.get('/api/progress/')
-        record = response.json()[0]
+        payload = response.json()
+        self.assertIn("count", payload)
+        self.assertIn("results", payload)
+        record = payload["results"][0]
         for field in ['equation_id', 'completed', 'completed_at', 'lesson_step',
                       'time_spent_seconds', 'notes', 'bookmarked', 'last_viewed']:
             self.assertIn(field, record)
 
-    def test_delete_progress_authenticated_clears_only_current_users_records(self):
-        UserProgress.objects.create(user=self.free_user, equation=self.eq1, completed=True)
-        UserProgress.objects.create(user=self.pro_user, equation=self.eq2, completed=True)
-        self._auth_as(self.free_user)
+    def test_delete_progress_pro_user_clears_only_current_users_records(self):
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, completed=True)
+        UserProgress.objects.create(user=self.free_user, equation=self.eq2, completed=True)
+        self._auth_as(self.pro_user)
         response = self.client.delete('/api/progress/')
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(UserProgress.objects.filter(user=self.free_user).exists())
-        self.assertTrue(UserProgress.objects.filter(user=self.pro_user).exists())
+        self.assertFalse(UserProgress.objects.filter(user=self.pro_user).exists())
+        self.assertTrue(UserProgress.objects.filter(user=self.free_user).exists())
+
+    def test_delete_progress_free_user_returns_403(self):
+        self._auth_as(self.free_user)
+        response = self.client.delete('/api/progress/')
+        self.assertEqual(response.status_code, 403)
 
     def test_delete_progress_unauthenticated_returns_401(self):
         response = self.client.delete('/api/progress/')
@@ -726,7 +741,7 @@ class MyProgressListTests(AuthProgressBase):
 
 class UpdateMyProgressTests(AuthProgressBase):
     def test_patch_progress_authenticated_returns_200(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         response = self.client.patch('/api/progress/1/', {'completed': True}, format='json')
         self.assertEqual(response.status_code, 200)
 
@@ -734,58 +749,76 @@ class UpdateMyProgressTests(AuthProgressBase):
         response = self.client.patch('/api/progress/1/', {'completed': True}, format='json')
         self.assertEqual(response.status_code, 401)
 
-    def test_patch_progress_creates_record_on_first_call(self):
+    def test_patch_progress_free_user_returns_403(self):
         self._auth_as(self.free_user)
+        response = self.client.patch('/api/progress/1/', {'completed': True}, format='json')
+        self.assertEqual(response.status_code, 403)
+
+    def test_patch_progress_creates_record_on_first_call(self):
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'completed': True}, format='json')
         self.assertTrue(
-            UserProgress.objects.filter(user=self.free_user, equation=self.eq1).exists()
+            UserProgress.objects.filter(user=self.pro_user, equation=self.eq1).exists()
         )
 
-    def test_patch_progress_marks_completed(self):
-        self._auth_as(self.free_user)
+    def test_patch_progress_uses_blank_anon_id_for_authenticated_records(self):
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'completed': True}, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
+        self.assertEqual(progress.anon_id, '')
+
+    def test_patch_progress_clears_legacy_authenticated_anon_id(self):
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, anon_id=str(self.pro_user.id))
+        self._auth_as(self.pro_user)
+        self.client.patch('/api/progress/1/', {'completed': True}, format='json')
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
+        self.assertEqual(progress.anon_id, '')
+
+    def test_patch_progress_marks_completed(self):
+        self._auth_as(self.pro_user)
+        self.client.patch('/api/progress/1/', {'completed': True}, format='json')
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertTrue(progress.completed)
 
     def test_patch_progress_updates_time_spent(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'time_spent_seconds': 300}, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertEqual(progress.time_spent_seconds, 300)
 
     def test_patch_progress_updates_notes(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'notes': 'Very interesting!'}, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertEqual(progress.notes, 'Very interesting!')
 
     def test_patch_progress_updates_bookmarked(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'bookmarked': True}, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertTrue(progress.bookmarked)
 
     def test_patch_progress_sets_completed_at_when_completed(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'completed': True}, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertIsNotNone(progress.completed_at)
 
     def test_patch_progress_nonexistent_equation_returns_404(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         response = self.client.patch('/api/progress/999/', {'completed': True}, format='json')
         self.assertEqual(response.status_code, 404)
 
     def test_patch_progress_is_idempotent(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         self.client.patch('/api/progress/1/', {'completed': True}, format='json')
         self.client.patch('/api/progress/1/', {'completed': True}, format='json')
         self.assertEqual(
-            UserProgress.objects.filter(user=self.free_user, equation=self.eq1).count(), 1
+            UserProgress.objects.filter(user=self.pro_user, equation=self.eq1).count(), 1
         )
 
     def test_patch_progress_response_contains_expected_fields(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         response = self.client.patch('/api/progress/1/', {'completed': False}, format='json')
         data = response.json()
         for field in ['equation_id', 'completed', 'notes', 'bookmarked']:
@@ -798,7 +831,7 @@ class UpdateMyProgressTests(AuthProgressBase):
 
 class BulkSyncProgressTests(AuthProgressBase):
     def test_bulk_sync_authenticated_returns_200(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'completed': True}]}
         response = self.client.post('/api/progress/sync/', payload, format='json')
         self.assertEqual(response.status_code, 200)
@@ -807,8 +840,14 @@ class BulkSyncProgressTests(AuthProgressBase):
         response = self.client.post('/api/progress/sync/', {'items': []}, format='json')
         self.assertEqual(response.status_code, 401)
 
-    def test_bulk_sync_creates_multiple_records(self):
+    def test_bulk_sync_free_user_returns_403(self):
         self._auth_as(self.free_user)
+        payload = {'items': [{'equation_id': 1, 'completed': True}]}
+        response = self.client.post('/api/progress/sync/', payload, format='json')
+        self.assertEqual(response.status_code, 403)
+
+    def test_bulk_sync_creates_multiple_records(self):
+        self._auth_as(self.pro_user)
         payload = {
             'items': [
                 {'equation_id': 1, 'completed': True, 'time_spent_seconds': 120},
@@ -817,19 +856,34 @@ class BulkSyncProgressTests(AuthProgressBase):
         }
         response = self.client.post('/api/progress/sync/', payload, format='json')
         self.assertEqual(len(response.json()), 2)
-        self.assertEqual(UserProgress.objects.filter(user=self.free_user).count(), 2)
+        self.assertEqual(UserProgress.objects.filter(user=self.pro_user).count(), 2)
 
     def test_bulk_sync_upserts_existing_records(self):
-        UserProgress.objects.create(user=self.free_user, equation=self.eq1, completed=False)
-        self._auth_as(self.free_user)
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, completed=False)
+        self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'completed': True}]}
         self.client.post('/api/progress/sync/', payload, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertTrue(progress.completed)
-        self.assertEqual(UserProgress.objects.filter(user=self.free_user, equation=self.eq1).count(), 1)
+        self.assertEqual(UserProgress.objects.filter(user=self.pro_user, equation=self.eq1).count(), 1)
+
+    def test_bulk_sync_uses_blank_anon_id_for_authenticated_records(self):
+        self._auth_as(self.pro_user)
+        payload = {'items': [{'equation_id': 1, 'completed': True}]}
+        self.client.post('/api/progress/sync/', payload, format='json')
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
+        self.assertEqual(progress.anon_id, '')
+
+    def test_bulk_sync_clears_legacy_authenticated_anon_id(self):
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, anon_id=str(self.pro_user.id))
+        self._auth_as(self.pro_user)
+        payload = {'items': [{'equation_id': 1, 'completed': True}]}
+        self.client.post('/api/progress/sync/', payload, format='json')
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
+        self.assertEqual(progress.anon_id, '')
 
     def test_bulk_sync_skips_unknown_equation_ids(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         payload = {
             'items': [
                 {'equation_id': 1, 'completed': True},
@@ -841,12 +895,12 @@ class BulkSyncProgressTests(AuthProgressBase):
         self.assertEqual(len(response.json()), 1)
 
     def test_bulk_sync_empty_items_returns_empty_list(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         response = self.client.post('/api/progress/sync/', {'items': []}, format='json')
         self.assertEqual(response.json(), [])
 
     def test_bulk_sync_response_items_have_expected_fields(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'completed': True}]}
         response = self.client.post('/api/progress/sync/', payload, format='json')
         item = response.json()[0]
@@ -854,23 +908,23 @@ class BulkSyncProgressTests(AuthProgressBase):
             self.assertIn(field, item)
 
     def test_bulk_sync_updates_variables_explored(self):
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'variables_explored': ['a', 'b']}]}
         self.client.post('/api/progress/sync/', payload, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertEqual(progress.variables_explored, ['a', 'b'])
 
     def test_bulk_sync_clears_completed_at_when_completed_false(self):
         UserProgress.objects.create(
-            user=self.free_user,
+            user=self.pro_user,
             equation=self.eq1,
             completed=True,
             completed_at=timezone.now(),
         )
-        self._auth_as(self.free_user)
+        self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'completed': False}]}
         self.client.post('/api/progress/sync/', payload, format='json')
-        progress = UserProgress.objects.get(user=self.free_user, equation=self.eq1)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertFalse(progress.completed)
         self.assertIsNone(progress.completed_at)
 
