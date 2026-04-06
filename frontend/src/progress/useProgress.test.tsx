@@ -1,4 +1,5 @@
-import { act, renderHook, waitFor } from "@testing-library/react"
+import type { ReactElement } from "react"
+import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { clearStoredProgress, useAllProgress, useProgress } from "./useProgress"
 
@@ -101,5 +102,31 @@ describe("useProgress hooks", () => {
     rerender()
 
     expect(result.current.serverSyncError).toBe(true)
+  })
+
+  it("does not warn about cross-component updates when progress changes", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+
+    function Harness(): ReactElement {
+      useAllProgress()
+      const { updateProgress } = useProgress(1)
+
+      return (
+        <button type="button" onClick={() => updateProgress({ completed: true, lessonStep: "observe" })}>
+          Save progress
+        </button>
+      )
+    }
+
+    render(<Harness />)
+    fireEvent.click(screen.getByRole("button", { name: "Save progress" }))
+
+    expect(
+      consoleError.mock.calls.some((args) =>
+        args.some((value) => typeof value === "string" && value.includes("Cannot update a component")),
+      ),
+    ).toBe(false)
+
+    consoleError.mockRestore()
   })
 })

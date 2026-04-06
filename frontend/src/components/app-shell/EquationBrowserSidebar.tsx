@@ -102,7 +102,8 @@ function EquationBrowserSidebarComponent({
             open={sidebarOpen}
             onCollapse={onToggleSidebar}
             storageKey="sciencebouk-sidebar-width"
-            className="hidden flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex"
+            wrapperClassName="hidden lg:flex"
+            className="flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-800">
               <button onClick={onGoHome} className="text-sm font-semibold text-slate-900 transition hover:text-slate-600 dark:text-white" type="button">

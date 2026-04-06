@@ -109,53 +109,55 @@ const LABEL_STYLES = {
 
 export default function ChangelogPage(): ReactElement {
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Changelog</span>} />
 
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Changelog</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">What's new in Sciencebouk</p>
-        </div>
+      <div className="flex-1">
+        <div className="mx-auto max-w-2xl px-4 py-10">
+          <div className="mb-8">
+            <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Changelog</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">What's new in Sciencebouk</p>
+          </div>
 
-        <div className="space-y-10">
-          {RELEASES.map((release) => (
-            <div key={release.version} className="relative pl-6">
-              {/* Timeline line */}
-              <div className="absolute left-0 top-2 bottom-0 w-px bg-slate-200 dark:bg-slate-800" />
-              {/* Timeline dot */}
-              <div className="absolute left-[-4px] top-2 h-2 w-2 rounded-full bg-ocean" />
+          <div className="space-y-10">
+            {RELEASES.map((release) => (
+              <div key={release.version} className="relative pl-6">
+                {/* Timeline line */}
+                <div className="absolute left-0 top-2 bottom-0 w-px bg-slate-200 dark:bg-slate-800" />
+                {/* Timeline dot */}
+                <div className="absolute left-[-4px] top-2 h-2 w-2 rounded-full bg-ocean" />
 
-              <div className="mb-3 flex items-center gap-2.5">
-                <span className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-                  v{release.version}
-                </span>
-                {release.label && (
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${LABEL_STYLES[release.label]}`}>
-                    {release.label}
+                <div className="mb-3 flex items-center gap-2.5">
+                  <span className="font-display text-lg font-semibold text-slate-900 dark:text-white">
+                    v{release.version}
                   </span>
-                )}
-                <span className="text-xs text-slate-400 dark:text-slate-500">{release.date}</span>
-              </div>
+                  {release.label && (
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${LABEL_STYLES[release.label]}`}>
+                      {release.label}
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{release.date}</span>
+                </div>
 
-              <ul className="space-y-2">
-                {release.changes.map((change, i) => {
-                  const s = TYPE_STYLES[change.type]
-                  return (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <span className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${s.dot}`} />
-                      <span className="text-sm text-slate-600 dark:text-slate-300">
-                        <span className={`mr-1 text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
-                          {s.label}
+                <ul className="space-y-2">
+                  {release.changes.map((change, i) => {
+                    const s = TYPE_STYLES[change.type]
+                    return (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${s.dot}`} />
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                          <span className={`mr-1 text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
+                            {s.label}
+                          </span>
+                          {change.text}
                         </span>
-                        {change.text}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ))}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

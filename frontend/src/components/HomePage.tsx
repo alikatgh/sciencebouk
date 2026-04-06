@@ -82,7 +82,7 @@ export function HomePage(): ReactElement {
   const hasComingSoonSubjects = inactiveSubjects.length > 0
 
   return (
-    <main className="min-h-screen bg-white dark:bg-slate-950">
+    <main className="flex min-h-screen flex-col bg-white dark:bg-slate-950">
         {/* Header */}
         <TopNav
           showBack={!!activeSubject}
@@ -105,9 +105,10 @@ export function HomePage(): ReactElement {
             </div>
           }
         />
-        <div className="mx-auto max-w-5xl px-4 py-6">
-          {!activeSubject ? (
-            <>
+        <div className="flex-1">
+          <div className="mx-auto max-w-5xl px-4 py-6">
+            {!activeSubject ? (
+              <>
             {/* === HERO === */}
             <section className="mb-8 overflow-hidden rounded-2xl bg-slate-900 text-white">
               <div className="grid items-center gap-6 p-6 md:grid-cols-[1fr_auto] md:p-8">
@@ -264,68 +265,69 @@ export function HomePage(): ReactElement {
                 </div>
               </div>
             )}
-            </>
-          ) : (
+              </>
+            ) : (
             /* === FORMULA GRID VIEW (inside a subject) === */
-            <div>
-              <p className="mb-4 text-xs text-slate-400">{activeSubject!.description}</p>
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {activeSubject!.formulas.map((f: { id?: number; formula: string; title: string; author?: string; year?: string }, i: number) => {
-                  const isActive = activeSubject!.active && f.id != null
-                  const done = f.id != null && completedEquationIds.has(f.id)
+              <div>
+                <p className="mb-4 text-xs text-slate-400">{activeSubject!.description}</p>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {activeSubject!.formulas.map((f: { id?: number; formula: string; title: string; author?: string; year?: string }, i: number) => {
+                    const isActive = activeSubject!.active && f.id != null
+                    const done = f.id != null && completedEquationIds.has(f.id)
 
-                  return (
-                    <Card
-                      key={i}
-                      role={isActive ? "button" : undefined}
-                      tabIndex={isActive ? 0 : undefined}
-                      aria-label={isActive ? `Open ${f.title}` : undefined}
-                      className={`overflow-hidden transition-all ${
-                        isActive
-                          ? "cursor-pointer hover:border-slate-300 hover:shadow-md active:scale-[0.98]"
-                          : "border-dashed opacity-40"
-                      }`}
-                      onClick={isActive ? () => navigate(`/equation/${f.id}`) : undefined}
-                      onKeyDown={isActive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/equation/${f.id}`) } } : undefined}
-                      onMouseEnter={isActive ? () => {
-                        void prefetchEquationExperience(f.id!)
-                      } : undefined}
-                      onFocus={isActive ? () => {
-                        void prefetchEquationExperience(f.id!)
-                      } : undefined}
-                    >
-                      {/* Formula — the hero */}
-                      <div className="flex min-h-[72px] items-center justify-center border-b border-slate-100 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50">
-                        <div className="text-center text-base text-slate-700 dark:text-slate-300">
+                    return (
+                      <Card
+                        key={i}
+                        role={isActive ? "button" : undefined}
+                        tabIndex={isActive ? 0 : undefined}
+                        aria-label={isActive ? `Open ${f.title}` : undefined}
+                        className={`overflow-hidden transition-all ${
+                          isActive
+                            ? "cursor-pointer hover:border-slate-300 hover:shadow-md active:scale-[0.98]"
+                            : "border-dashed opacity-40"
+                        }`}
+                        onClick={isActive ? () => navigate(`/equation/${f.id}`) : undefined}
+                        onKeyDown={isActive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/equation/${f.id}`) } } : undefined}
+                        onMouseEnter={isActive ? () => {
+                          void prefetchEquationExperience(f.id!)
+                        } : undefined}
+                        onFocus={isActive ? () => {
+                          void prefetchEquationExperience(f.id!)
+                        } : undefined}
+                      >
+                        {/* Formula — the hero */}
+                        <div className="flex min-h-[72px] items-center justify-center border-b border-slate-100 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50">
+                          <div className="text-center text-base text-slate-700 dark:text-slate-300">
+                            {isActive ? (
+                              <FormulaPreview formula={f.formula} />
+                            ) : (
+                              <FormulaPreview formula={f.formula} muted />
+                            )}
+                          </div>
+                        </div>
+                        {/* Meta */}
+                        <div className="flex items-center gap-2 px-3 py-2">
                           {isActive ? (
-                            <FormulaPreview formula={f.formula} />
+                            <span className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${
+                              done ? "bg-emerald-100 text-emerald-600" : "text-slate-300"
+                            }`}>
+                              {done ? <CheckCircle2 className="h-3 w-3" /> : f.id}
+                            </span>
                           ) : (
-                            <FormulaPreview formula={f.formula} muted />
+                            <Lock className="h-3 w-3 text-slate-300" />
                           )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold text-slate-800 dark:text-white">{f.title}</p>
+                            {f.author && <p className="truncate text-[10px] text-slate-400">{f.author}{f.year ? `, ${f.year}` : ""}</p>}
+                          </div>
                         </div>
-                      </div>
-                      {/* Meta */}
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        {isActive ? (
-                          <span className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${
-                            done ? "bg-emerald-100 text-emerald-600" : "text-slate-300"
-                          }`}>
-                            {done ? <CheckCircle2 className="h-3 w-3" /> : f.id}
-                          </span>
-                        ) : (
-                          <Lock className="h-3 w-3 text-slate-300" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-semibold text-slate-800 dark:text-white">{f.title}</p>
-                          {f.author && <p className="truncate text-[10px] text-slate-400">{f.author}{f.year ? `, ${f.year}` : ""}</p>}
-                        </div>
-                      </div>
-                    </Card>
-                  )
-                })}
+                      </Card>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <Footer />

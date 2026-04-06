@@ -48,4 +48,23 @@ describe("ResizablePanel", () => {
 
     expect(screen.getByText("Storage-safe panel")).toBeInTheDocument()
   })
+
+  it("applies wrapper and content classes to the correct elements", () => {
+    const { container } = render(
+      <ResizablePanel
+        edge="right"
+        defaultWidth={220}
+        wrapperClassName="hidden lg:flex"
+        className="flex-col border-r"
+      >
+        <div>Panel content</div>
+      </ResizablePanel>,
+    )
+
+    const outer = container.firstElementChild
+    const inner = outer?.children[0]
+
+    expect(outer).toHaveClass("hidden", "lg:flex")
+    expect(inner).toHaveClass("flex-col", "border-r")
+  })
 })

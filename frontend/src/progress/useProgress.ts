@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"
 import type { BulkSyncItem, ProgressItem } from "../api/client"
@@ -391,6 +391,7 @@ export function getLocalProgressSyncSignature(): string {
 export function useProgress(equationId: number) {
   const { user, isAuthenticated, isPro } = useAuth()
   const [progress, setProgress] = useState<EquationProgress>(() => getLocalProgress(equationId))
+  const progressRef = useRef(progress)
 
   useEffect(() => {
     ensureServerProgressUser(user?.id ?? null)
@@ -399,7 +400,9 @@ export function useProgress(equationId: number) {
   useEffect(() => {
     let cancelled = false
 
-    setProgress(getLocalProgress(equationId))
+    const localProgress = getLocalProgress(equationId)
+    progressRef.current = localProgress
+    setProgress(localProgress)
 
     if (!isPro || !isAuthenticated || equationId <= 0) return
 
@@ -410,6 +413,7 @@ export function useProgress(equationId: number) {
         if (!match) return
         const merged = mergeProgress(readMergedProgress(equationId, false), match)
         setLocalProgress(equationId, merged)
+        progressRef.current = merged
         setProgress(merged)
       })
       .catch(() => {})
@@ -419,45 +423,46 @@ export function useProgress(equationId: number) {
     }
   }, [equationId, isAuthenticated, isPro, user?.id])
 
-  const updateProgress = useCallback((update: Partial<EquationProgress>) => {
-    setProgress((previous) => {
-      const next = normalizeProgress({
-        ...previous,
-        ...update,
-        lastViewed: new Date().toISOString(),
-      })
+  const persistProgress = useCallback((next: EquationProgress) => {
+    if (equationId <= 0) return
 
-      setLocalProgress(equationId, next)
-      if (isPro && isAuthenticated) {
-        // Capture rollback BEFORE the optimistic write so failure restores real state.
-        const rollback = serverProgressCache.get(equationId)
-        updateServerCache(equationId, next)
-        debouncedSync(equationId, next, rollback)
-      }
-      return next
-    })
+    setLocalProgress(equationId, next)
+    if (isPro && isAuthenticated) {
+      // Capture rollback BEFORE the optimistic write so failure restores real state.
+      const rollback = serverProgressCache.get(equationId)
+      updateServerCache(equationId, next)
+      debouncedSync(equationId, next, rollback)
+    }
   }, [equationId, isAuthenticated, isPro])
 
-  const markVariableExplored = useCallback((variableName: string) => {
-    setProgress((previous) => {
-      if (previous.variablesExplored.includes(variableName)) return previous
+  const commitProgress = useCallback((updater: (previous: EquationProgress) => EquationProgress | null) => {
+    const next = updater(progressRef.current)
+    if (!next) return
 
-      const next = normalizeProgress({
+    progressRef.current = next
+    setProgress(next)
+    persistProgress(next)
+  }, [persistProgress])
+
+  const updateProgress = useCallback((update: Partial<EquationProgress>) => {
+    commitProgress((previous) => normalizeProgress({
+      ...previous,
+      ...update,
+      lastViewed: new Date().toISOString(),
+    }))
+  }, [commitProgress])
+
+  const markVariableExplored = useCallback((variableName: string) => {
+    commitProgress((previous) => {
+      if (previous.variablesExplored.includes(variableName)) return null
+
+      return normalizeProgress({
         ...previous,
         variablesExplored: [...previous.variablesExplored, variableName],
         lastViewed: new Date().toISOString(),
       })
-
-      setLocalProgress(equationId, next)
-      if (isPro && isAuthenticated) {
-        // Capture rollback BEFORE the optimistic write so failure restores real state.
-        const rollback = serverProgressCache.get(equationId)
-        updateServerCache(equationId, next)
-        debouncedSync(equationId, next, rollback)
-      }
-      return next
     })
-  }, [equationId, isAuthenticated, isPro])
+  }, [commitProgress])
 
   return { progress, updateProgress, markVariableExplored }
 }

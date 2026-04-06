@@ -13,7 +13,7 @@ export function Footer(): ReactElement {
   const [hovered, setHovered] = useState(false)
 
   return (
-    <footer className="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-950">
+    <footer className="mt-auto border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-950">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-6 sm:flex-row sm:justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <span className="font-semibold text-slate-700 dark:text-slate-300">Formulas</span>

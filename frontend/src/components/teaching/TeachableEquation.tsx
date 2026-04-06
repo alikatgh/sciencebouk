@@ -15,9 +15,32 @@ import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
 import type { Variable, LessonStep, GlossaryTerm } from "./types"
 import { ErrorBoundary } from "../ErrorBoundary"
+import { VisualizationViewport } from "./VisualizationViewport"
+import { shouldUseStackedTeachingLayout } from "./layoutMode"
+import { AutoFitDeferredInlineMath } from "../math/AutoFitDeferredInlineMath"
 
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
+const TEACHING_PANEL_STORAGE_KEY = "sciencebouk-teaching-panel-width"
+const TEACHING_PANEL_DEFAULT_WIDTH = 272
+const TEACHING_PANEL_MIN_WIDTH = 200
+const TEACHING_PANEL_MAX_WIDTH = 400
+
+function readStoredTeachingPanelWidth(): number {
+  if (typeof window === "undefined") return TEACHING_PANEL_DEFAULT_WIDTH
+
+  try {
+    const stored = localStorage.getItem(TEACHING_PANEL_STORAGE_KEY)
+    const parsed = Number(stored)
+    if (Number.isFinite(parsed)) {
+      return Math.max(TEACHING_PANEL_MIN_WIDTH, Math.min(TEACHING_PANEL_MAX_WIDTH, parsed))
+    }
+  } catch {
+    // Fall back to the default width if storage is unavailable.
+  }
+
+  return TEACHING_PANEL_DEFAULT_WIDTH
+}
 
 export interface Preset {
   label: string
@@ -67,8 +90,7 @@ export function TeachableEquation({
   buildLiveFormula, buildResultLine, describeResult, presets, glossary, children,
 }: TeachableEquationProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { width: containerWidth } = useContainerSize(containerRef)
-  const isNarrow = containerWidth > 0 && containerWidth < 720
+  const { width: containerWidth, height: containerHeight } = useContainerSize(containerRef)
   const isMobile = containerWidth > 0 && containerWidth < 480
 
   const { isAuthenticated, isPro } = useAuth()
@@ -255,8 +277,19 @@ export function TeachableEquation({
   const hasLessons = lessonSteps.length > 0
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
+  const [teachingPanelWidth, setTeachingPanelWidth] = useState(readStoredTeachingPanelWidth)
+  const isNarrow = shouldUseStackedTeachingLayout({
+    containerWidth,
+    containerHeight,
+    teachingPanelOpen,
+    teachingPanelWidth,
+  })
+  const stackedVisualizationWrapperClass = isMobile
+    ? "max-h-[50vh] aspect-[4/3]"
+    : "aspect-[16/10] max-h-[62vh]"
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
-  const letterFormula = appSettings.showFormulaLetters ? displayFormula : ""
+  const introFormulaVisible = appSettings.showHookText && appSettings.showFormulaLetters && Boolean(displayFormula)
+  const letterFormula = introFormulaVisible ? "" : (appSettings.showFormulaLetters ? displayFormula : "")
   const liveFormula = useMemo(
     () => appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : "",
     [appSettings.showFormulaNumbers, buildLiveFormula, vars],
@@ -273,6 +306,14 @@ export function TeachableEquation({
         {/* Hook — conditionally shown, compact on mobile */}
         {appSettings.showHookText && (
           <div className={`rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}>
+            {introFormulaVisible && (
+              <div className="mb-3 text-center text-sm text-slate-700 dark:text-slate-200">
+                <AutoFitDeferredInlineMath
+                  math={displayFormula}
+                  className="inline-block whitespace-nowrap"
+                />
+              </div>
+            )}
             <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hook}</p>
             <p className="mt-1.5 text-xs font-bold text-ocean">{"\u2192"} {hookAction}</p>
           </div>
@@ -361,7 +402,9 @@ export function TeachableEquation({
           </Button>
         )}
       </div>
-  )
+	  )
+
+  const visualizationContent = children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })
 
   if (isNarrow) {
     // Vertical stack: visualization on top, teaching panel below
@@ -371,8 +414,10 @@ export function TeachableEquation({
     return (
       <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
         <div className="min-h-0 flex-1 flex items-center justify-center overflow-hidden">
-          <div className={`w-full ${isMobile ? "max-h-[50vh]" : "h-full"}`} style={isMobile ? { aspectRatio: "4/3", maxWidth: "100%" } : undefined}>
-            {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
+          <div className={`w-full max-w-full ${stackedVisualizationWrapperClass}`}>
+            <VisualizationViewport>
+              {visualizationContent}
+            </VisualizationViewport>
           </div>
         </div>
 
@@ -409,7 +454,9 @@ export function TeachableEquation({
   return (
     <div ref={containerRef} className="flex h-full gap-0">
       <div className="min-h-0 min-w-0 flex-1">
-        {children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })}
+        <VisualizationViewport>
+          {visualizationContent}
+        </VisualizationViewport>
       </div>
 
       {!teachingPanelOpen && (
@@ -425,12 +472,13 @@ export function TeachableEquation({
 
       <ResizablePanel
         edge="left"
-        defaultWidth={272}
-        minWidth={200}
-        maxWidth={400}
+        defaultWidth={TEACHING_PANEL_DEFAULT_WIDTH}
+        minWidth={TEACHING_PANEL_MIN_WIDTH}
+        maxWidth={TEACHING_PANEL_MAX_WIDTH}
         open={teachingPanelOpen}
         onCollapse={() => setTeachingPanelOpen(false)}
-        storageKey="sciencebouk-teaching-panel-width"
+        onWidthChange={setTeachingPanelWidth}
+        storageKey={TEACHING_PANEL_STORAGE_KEY}
       >
         {teachingContent}
       </ResizablePanel>

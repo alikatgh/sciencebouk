@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useDocumentVisibility } from "../hooks/useDocumentVisibility"
+import { cn } from "../lib/utils"
 
 // Only exact Pythagorean triples — c must be a whole number. No approximations on a math product.
 const PRESETS = [
@@ -11,7 +12,11 @@ const PRESETS = [
   { a: 20, b: 21 }, // c = 29
 ]
 
-export function HeroDemo(): ReactElement {
+interface HeroDemoProps {
+  className?: string
+}
+
+export function HeroDemo({ className }: HeroDemoProps): ReactElement {
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -63,7 +68,11 @@ export function HeroDemo(): ReactElement {
 
   return (
     <div
-      className="w-56 cursor-pointer select-none overflow-hidden rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]"
+      className={cn(
+        "cursor-pointer select-none overflow-hidden rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]",
+        "w-56",
+        className,
+      )}
       onClick={handleClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {

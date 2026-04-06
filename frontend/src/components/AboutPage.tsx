@@ -23,23 +23,23 @@ export default function AboutPage(): ReactElement {
       <TopNav showBack />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-4 py-12">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-12 lg:py-16">
 
           {/* ── HERO: text + live demo side by side ── */}
-          <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
-            <div className="max-w-xl flex-1">
-              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-4xl">
+          <section className="grid items-start gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(240px,300px)] md:gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,320px)] lg:gap-14">
+            <div className="max-w-2xl md:max-w-none">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-[2.6rem] md:leading-[0.95]">
                 Grab a variable. Drag it.<br />Watch the equation respond.
               </h1>
-              <p className="mt-4 text-base leading-relaxed text-slate-500 dark:text-slate-400">
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500 dark:text-slate-400">
                 {equationCount} equations that shaped the world, turned into interactive visualizations
                 you can touch and understand. No textbook. No video.
                 Just drag, change, and see why the formula works.
               </p>
-              <p className="mt-5 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <p className="mt-6 text-base font-semibold text-slate-900 dark:text-slate-100">
                 Built for people who gave up on math a long time ago.
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="max-w-xl text-sm leading-relaxed text-slate-500 dark:text-slate-400 md:max-w-none">
                 If you have to read to understand, we failed. If you can drag and discover, we succeeded.
               </p>
 
@@ -54,26 +54,28 @@ export default function AboutPage(): ReactElement {
             </div>
 
             {/* Live demo — the proof */}
-            <div className="flex-shrink-0">
-              <div className="rounded-2xl bg-slate-900 p-1 shadow-2xl shadow-slate-900/20">
+            <div className="w-full md:justify-self-end">
+              <div className="w-full max-w-[320px] rounded-2xl bg-slate-900 p-1 shadow-2xl shadow-slate-900/20 sm:max-w-[300px] md:ml-auto md:max-w-[320px]">
                 <ErrorBoundary fallback={null}>
-                  <Suspense fallback={<div className="h-56 w-56 animate-pulse rounded-xl bg-slate-800" />}>
-                    <HeroDemo />
+                  <Suspense fallback={<div className="h-56 w-full animate-pulse rounded-xl bg-slate-800" />}>
+                    <HeroDemo className="w-full" />
                   </Suspense>
                 </ErrorBoundary>
               </div>
-              <p className="mt-2 text-center text-[10px] text-slate-400">Click to cycle through triples</p>
+              <p className="mt-2 text-center text-[10px] text-slate-400 md:text-right">
+                Click to cycle through triples
+              </p>
             </div>
-          </div>
+          </section>
 
           {/* ── TWO-COLUMN GRID ── */}
-          <div className="mt-16 grid gap-12 lg:grid-cols-2">
+          <div className="mt-14 grid gap-10 md:grid-cols-2 md:items-start xl:gap-12">
 
             {/* Left: Free vs Pro */}
             <section>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Free vs Pro</h2>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 p-5 dark:border-slate-700">
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Free — forever</p>
                   <ul className="mt-3 space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
@@ -118,7 +120,7 @@ export default function AboutPage(): ReactElement {
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Same interactive format. New subjects.
                 </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
                   {[
                     { icon: <FlaskConical className="h-4 w-4" />, name: "Chemistry", count: 8, color: "text-emerald-500" },
                     { icon: <Atom className="h-4 w-4" />, name: "Biology", count: 8, color: "text-pink-500" },

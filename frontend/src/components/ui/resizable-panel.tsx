@@ -24,6 +24,8 @@ interface ResizablePanelProps {
   children: ReactNode
   /** Extra classes on the panel container */
   className?: string
+  /** Extra classes on the outer width-constrained wrapper */
+  wrapperClassName?: string
 }
 
 export function ResizablePanel({
@@ -38,6 +40,7 @@ export function ResizablePanel({
   storageKey,
   children,
   className = "",
+  wrapperClassName = "",
 }: ResizablePanelProps): ReactElement {
   const [width, setWidth] = useState(() => {
     if (typeof window !== "undefined" && storageKey) {
@@ -184,7 +187,7 @@ export function ResizablePanel({
   )
 
   return (
-    <div className="flex flex-shrink-0" style={{ width }}>
+    <div className={`flex flex-shrink-0 ${wrapperClassName}`.trim()} style={{ width }}>
       {edge === "left" && handle}
       <div className={`min-w-0 flex-1 overflow-hidden ${className}`}>
         {children}

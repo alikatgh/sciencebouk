@@ -142,10 +142,11 @@ export default function SettingsPage(): ReactElement {
   }, [isAuthenticated, isPro])
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Settings</span>} />
 
-      <div className="mx-auto max-w-4xl px-4 py-6 space-y-4">
+      <div className="flex-1">
+        <div className="mx-auto max-w-4xl px-4 py-6 space-y-4">
 
         {/* ── Learning Experience — full-width hero ── */}
         <Card className="border-blue-100 dark:border-blue-900/30">
@@ -332,6 +333,7 @@ export default function SettingsPage(): ReactElement {
           </CardContent>
         </Card>
 
+        </div>
       </div>
       <Footer />
     </main>

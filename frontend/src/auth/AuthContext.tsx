@@ -69,10 +69,15 @@ export function isAuthFailureError(error: unknown): boolean {
 export function AuthProvider({ children }: { children: ReactNode }): ReactElement {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const mountedRef = useRef(true)
+  const mountedRef = useRef(false)
 
-  useEffect(() => () => {
-    mountedRef.current = false
+  useEffect(() => {
+    // React StrictMode intentionally mounts, cleans up, and re-mounts effects in
+    // development. Reset the flag on setup so auth state updates remain enabled.
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
   }, [])
 
   const saveTokens = useCallback((tokens: Tokens) => {
