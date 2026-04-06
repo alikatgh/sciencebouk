@@ -13,7 +13,7 @@
     radial-gradient(circle at top left, rgba(115, 219, 200, 0.12), transparent 24%),
     radial-gradient(circle at top right, rgba(255, 213, 106, 0.12), transparent 22%),
     linear-gradient(180deg, #fbf8f1 0%, #f7f4ec 50%, #f3efe5 100%);
-  font-family: "Manrope", sans-serif;
+  font-family: "STIX Two Text", serif;
   font-size: 16px;
   line-height: 1.6;
   font-weight: 400;

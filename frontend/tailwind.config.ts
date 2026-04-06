@@ -18,7 +18,8 @@ const config: Config = {
       },
       fontFamily: {
         display: ['"STIX Two Text"', "serif"],
-        body: ['"Manrope"', "sans-serif"],
+        body: ['"STIX Two Text"', "serif"],
+        ui: ['"Manrope"', "sans-serif"],
       },
     },
   },
