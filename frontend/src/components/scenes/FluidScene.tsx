@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react"
 import "d3-transition"
 import { drag, type D3DragEvent } from "d3-drag"
 import { scaleLinear } from "d3-scale"
-import { select, type Selection } from "d3-selection"
+import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
@@ -152,6 +152,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
 
   // Store the arrow-update function so the sync effect can call it
   const updateArrowsRef = useRef<(() => void) | null>(null)
+  const runningRef = useRef(false)
 
   // Sync React props to live refs when not dragging (handles slider changes, presets)
   useEffect(() => {
@@ -175,6 +176,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
 
     function buildSVG() {
       if (!el) return
+      runningRef.current = false
       select(el).select("svg").remove()
       cancelAnimationFrame(rafRef.current)
       prevTimeRef.current = 0
@@ -385,9 +387,9 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       updateArrows()
 
       // ── Animation loop — reads from refs, never triggers React renders ──
-      let running = true
+      runningRef.current = true
       const animate = (ts: number) => {
-        if (!running) return
+        if (!runningRef.current) return
         if (prevTimeRef.current === 0) prevTimeRef.current = ts
         const dt = Math.min((ts - prevTimeRef.current) / 1000, 0.05)
         prevTimeRef.current = ts
@@ -441,29 +443,29 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         rafRef.current = requestAnimationFrame(animate)
       }
       rafRef.current = requestAnimationFrame(animate)
-
-      return () => {
-        running = false
-        cancelAnimationFrame(rafRef.current)
-      }
     }
 
-    const cleanup = buildSVG()
+    buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        cleanup?.()
-        requestAnimationFrame(() => { buildSVG() })
+        cancelAnimationFrame(rafRef.current)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
 
     return () => {
-      cleanup?.()
+      runningRef.current = false
+      cancelAnimationFrame(rafRef.current)
       observer.disconnect()
       select(el).select("svg").remove()
       updateArrowsRef.current = null
@@ -473,7 +475,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

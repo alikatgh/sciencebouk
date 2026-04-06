@@ -171,11 +171,16 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       .x(d => d.x)
       .y(d => d.y)
 
+    let running = true
+
     function buildSVG() {
       if (!el) return
 
-      // Cancel any running animation before tearing down SVG
+      // Stop the previous animation loop before tearing down SVG
+      running = false
       cancelAnimationFrame(rafRef.current)
+      running = true
+      lastFrameRef.current = 0
 
       select(el).select("svg").remove()
 
@@ -190,7 +195,6 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Wave visualization")
 
@@ -232,7 +236,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("fill", "none").attr("stroke", "#57b59a").attr("stroke-width", 3).attr("opacity", 0.85)
 
       // Draggable amplitude handle at wave peak
-      const ampHandle = g.append("g").attr("class", "amp-handle").style("cursor", "grab")
+      const ampHandle = g.append("g").attr("class", "amp-handle").style("cursor", "grab").style("touch-action", "none")
       ampHandle.append("circle").attr("class", "amp-handle-hit").attr("r", 28).attr("fill", "transparent")
       ampHandle.append("circle").attr("class", "amp-handle-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.secondary).attr("stroke", "white").attr("stroke-width", 3)
@@ -325,7 +329,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       }
 
       // ── drawWaves: updates wave paths and amplitude handle position ──
-      function drawWaves(freq: number, amp: number, wl: number, t: number) {
+      function drawWaves(_freq: number, amp: number, wl: number, t: number) {
         const xs = range(0, 801, 3)
 
         // Wave 1
@@ -383,6 +387,8 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // ── Animation loop — reads from refs, never from React state ──
       function tick(now: number) {
+        if (!running) return
+        if (!playingRef.current) return
         const dt = (now - lastFrameRef.current) / 1000
         lastFrameRef.current = now
 
@@ -433,18 +439,25 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        cancelAnimationFrame(rafRef.current)
+        lastFrameRef.current = 0
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
 
     return () => {
+      running = false
       observer.disconnect()
       cancelAnimationFrame(rafRef.current)
       select(el).select("svg").remove()
@@ -455,7 +468,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

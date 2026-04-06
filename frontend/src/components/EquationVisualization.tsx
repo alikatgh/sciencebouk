@@ -1,25 +1,8 @@
 import type { ReactElement } from "react"
-import { lazy, Suspense } from "react"
+import { Suspense } from "react"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { EquationIdProvider } from "./teaching/EquationContext"
-
-const PythagorasScene = lazy(() => import("./scenes/PythagorasScene").then((m) => ({ default: m.PythagorasScene })))
-const LogarithmScene = lazy(() => import("./scenes/LogarithmScene").then((m) => ({ default: m.LogarithmScene })))
-const CalculusScene = lazy(() => import("./scenes/CalculusScene").then((m) => ({ default: m.CalculusScene })))
-const GravityScene = lazy(() => import("./scenes/GravityScene").then((m) => ({ default: m.GravityScene })))
-const WaveScene = lazy(() => import("./scenes/WaveScene").then((m) => ({ default: m.WaveScene })))
-const ComplexScene = lazy(() => import("./scenes/ComplexScene").then((m) => ({ default: m.ComplexScene })))
-const EulerPolyhedraScene = lazy(() => import("./scenes/EulerPolyhedraScene").then((m) => ({ default: m.EulerPolyhedraScene })))
-const NormalDistributionScene = lazy(() => import("./scenes/NormalDistributionScene").then((m) => ({ default: m.NormalDistributionScene })))
-const FourierScene = lazy(() => import("./scenes/FourierScene").then((m) => ({ default: m.FourierScene })))
-const FluidScene = lazy(() => import("./scenes/FluidScene").then((m) => ({ default: m.FluidScene })))
-const MaxwellScene = lazy(() => import("./scenes/MaxwellScene").then((m) => ({ default: m.MaxwellScene })))
-const EntropyScene = lazy(() => import("./scenes/EntropyScene").then((m) => ({ default: m.EntropyScene })))
-const RelativityScene = lazy(() => import("./scenes/RelativityScene").then((m) => ({ default: m.RelativityScene })))
-const SchrodingerScene = lazy(() => import("./scenes/SchrodingerScene").then((m) => ({ default: m.SchrodingerScene })))
-const InformationScene = lazy(() => import("./scenes/InformationScene").then((m) => ({ default: m.InformationScene })))
-const ChaosScene = lazy(() => import("./scenes/ChaosScene").then((m) => ({ default: m.ChaosScene })))
-const BlackScholesScene = lazy(() => import("./scenes/BlackScholesScene").then((m) => ({ default: m.BlackScholesScene })))
+import { getScene } from "./sceneRegistry"
 
 function LoadingSkeleton(): ReactElement {
   return (
@@ -51,27 +34,4 @@ export function EquationVisualization({
       </Suspense>
     </ErrorBoundary>
   )
-}
-
-function getScene(id: number): React.LazyExoticComponent<React.ComponentType> | null {
-  switch (id) {
-    case 1: return PythagorasScene
-    case 2: return LogarithmScene
-    case 3: return CalculusScene
-    case 4: return GravityScene
-    case 5: return WaveScene
-    case 6: return ComplexScene
-    case 7: return EulerPolyhedraScene
-    case 8: return NormalDistributionScene
-    case 9: return FourierScene
-    case 10: return FluidScene
-    case 11: return MaxwellScene
-    case 12: return EntropyScene
-    case 13: return RelativityScene
-    case 14: return SchrodingerScene
-    case 15: return InformationScene
-    case 16: return ChaosScene
-    case 17: return BlackScholesScene
-    default: return null
-  }
 }

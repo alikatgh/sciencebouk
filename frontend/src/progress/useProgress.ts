@@ -248,13 +248,24 @@ function debouncedSync(eqId: number, progress: EquationProgress) {
   const existingTimer = syncTimers.get(eqId)
   if (existingTimer) clearTimeout(existingTimer)
 
+  // Capture the pre-optimistic cache entry so we can roll it back on failure.
+  const previousCacheEntry = serverProgressCache.get(eqId)
+
   const timer = setTimeout(() => {
     api.progress.update(eqId, toProgressPayload(progress))
       .then((serverItem) => {
         serverProgressCache.set(eqId, serverItem)
         notifyProgressListeners()
       })
-      .catch(() => {})
+      .catch(() => {
+        // Roll back the optimistic cache write so the stale entry does not
+        // override real server progress on the next mergeProgress call.
+        if (previousCacheEntry !== undefined) {
+          serverProgressCache.set(eqId, previousCacheEntry)
+        } else {
+          serverProgressCache.delete(eqId)
+        }
+      })
       .finally(() => {
         if (syncTimers.get(eqId) === timer) syncTimers.delete(eqId)
       })
@@ -268,6 +279,20 @@ export interface ProgressSnapshot {
   totalTimeMinutes: number
   total: number
   progressByEquation: Map<number, EquationProgress>
+  localSyncItems: BulkSyncItem[]
+  localSyncSignature: string
+  serverSyncError: boolean
+}
+
+function shouldSyncProgress(progress: EquationProgress): boolean {
+  return (
+    progress.completed ||
+    progress.timeSpentSeconds > 0 ||
+    progress.lessonStep !== "" ||
+    progress.variablesExplored.length > 0 ||
+    progress.notes !== "" ||
+    progress.bookmarked
+  )
 }
 
 function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
@@ -280,12 +305,29 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
   let completedCount = 0
   let totalTimeSeconds = 0
   const progressByEquation = new Map<number, EquationProgress>()
+  const localSyncItems: BulkSyncItem[] = []
 
   for (const equation of equationManifest) {
-    const progress = readMergedProgress(equation.id, includeServer)
+    const localProgress = readMergedProgress(equation.id, false)
+    const progress = includeServer
+      ? readMergedProgress(equation.id, true)
+      : localProgress
+
     progressByEquation.set(equation.id, progress)
     if (progress.completed) completedCount += 1
     totalTimeSeconds += progress.timeSpentSeconds
+
+    if (shouldSyncProgress(localProgress)) {
+      localSyncItems.push({
+        equation_id: equation.id,
+        completed: localProgress.completed,
+        lesson_step: localProgress.lessonStep,
+        time_spent_seconds: localProgress.timeSpentSeconds,
+        variables_explored: localProgress.variablesExplored,
+        notes: localProgress.notes,
+        bookmarked: localProgress.bookmarked,
+      })
+    }
   }
 
   const snapshot = {
@@ -293,6 +335,9 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
     totalTimeMinutes: Math.round(totalTimeSeconds / 60),
     total: equationManifest.length,
     progressByEquation,
+    localSyncItems,
+    localSyncSignature: JSON.stringify(localSyncItems),
+    serverSyncError: false,
   }
 
   progressSnapshotCache.set(cacheKey, { version: progressVersion, snapshot })
@@ -300,35 +345,14 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
 }
 
 export function getLocalProgressSyncItems(): BulkSyncItem[] {
-  return equationManifest.reduce<BulkSyncItem[]>((items, equation) => {
-    const progress = readMergedProgress(equation.id, false)
-
-    if (
-      !progress.completed &&
-      progress.timeSpentSeconds <= 0 &&
-      progress.lessonStep === "" &&
-      progress.variablesExplored.length === 0 &&
-      progress.notes === "" &&
-      !progress.bookmarked
-    ) {
-      return items
-    }
-
-    items.push({
-      equation_id: equation.id,
-      completed: progress.completed,
-      lesson_step: progress.lessonStep,
-      time_spent_seconds: progress.timeSpentSeconds,
-      variables_explored: progress.variablesExplored,
-      notes: progress.notes,
-      bookmarked: progress.bookmarked,
-    })
-    return items
-  }, [])
+  return getProgressSnapshot(false).localSyncItems.map((item) => ({
+    ...item,
+    variables_explored: [...(item.variables_explored ?? [])],
+  }))
 }
 
 export function getLocalProgressSyncSignature(): string {
-  return JSON.stringify(getLocalProgressSyncItems())
+  return getProgressSnapshot(false).localSyncSignature
 }
 
 export function useProgress(equationId: number) {
@@ -404,6 +428,7 @@ export function useProgress(equationId: number) {
 export function useAllProgress() {
   const { user, isAuthenticated, isPro } = useAuth()
   const includeServer = isAuthenticated && isPro
+  const [serverSyncError, setServerSyncError] = useState(false)
 
   useEffect(() => {
     ensureServerProgressUser(user?.id ?? null)
@@ -424,10 +449,13 @@ export function useAllProgress() {
 
     getServerProgressMap()
       .then(() => {
+        setServerSyncError(false)
         notifyProgressListeners()
       })
-      .catch(() => {})
+      .catch(() => {
+        setServerSyncError(true)
+      })
   }, [includeServer])
 
-  return snapshot
+  return { ...snapshot, serverSyncError }
 }

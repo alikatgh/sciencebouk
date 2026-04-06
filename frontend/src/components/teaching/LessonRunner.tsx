@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ArrowRight, CheckCircle2, RotateCcw, Trophy, Sparkles, ArrowRightCircle } from "lucide-react"
+import { ArrowRight, CheckCircle2, RotateCcw, Trophy, Sparkles } from "lucide-react"
 import { Button } from "../ui/button"
 import { Progress } from "../ui/progress"
 import { useSettings } from "../../settings/SettingsContext"
@@ -136,6 +136,11 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
   const [showInsight, setShowInsight] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const insightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoAdvancedRef = useRef(false)
+  const onAdvanceRef = useRef(onAdvance)
+  useEffect(() => { onAdvanceRef.current = onAdvance }, [onAdvance])
   const step = steps[currentStepIndex]
   const isLastStep = currentStepIndex >= steps.length - 1
   const isAllDone = isLastStep && stepCompleted
@@ -146,6 +151,12 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
     return linkTerms(text, variables, glossary, highlight, termHighlight)
   }, [variables, glossary, highlight, termHighlight])
 
+  useEffect(() => () => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+    if (insightTimerRef.current) clearTimeout(insightTimerRef.current)
+    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current)
+  }, [])
+
   useEffect(() => {
     setShowHint(false); setShowInsight(false)
     if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
@@ -154,22 +165,56 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
   }, [currentStepIndex, step, stepCompleted])
 
   useEffect(() => {
-    if (stepCompleted) {
-      setShowHint(false)
-      const t = setTimeout(() => {
-        setShowInsight(true)
-        if (isLastStep) {
-          onAdvance()
-          setTimeout(() => setShowCelebration(true), 400)
-        }
-      }, 300)
-      return () => clearTimeout(t)
+    if (insightTimerRef.current) {
+      clearTimeout(insightTimerRef.current)
+      insightTimerRef.current = null
     }
-    setShowInsight(false)
-    setShowCelebration(false)
-  }, [stepCompleted, isLastStep, onAdvance])
+    if (celebrationTimerRef.current) {
+      clearTimeout(celebrationTimerRef.current)
+      celebrationTimerRef.current = null
+    }
 
-  const handleAdvance = useCallback(() => { setShowInsight(false); setShowHint(false); onAdvance() }, [onAdvance])
+    if (!stepCompleted) {
+      autoAdvancedRef.current = false
+      setShowInsight(false)
+      setShowCelebration(false)
+      return
+    }
+
+    setShowHint(false)
+    insightTimerRef.current = setTimeout(() => {
+      setShowInsight(true)
+      if (isLastStep) {
+        if (!autoAdvancedRef.current) {
+          autoAdvancedRef.current = true
+          onAdvanceRef.current()
+        }
+        celebrationTimerRef.current = setTimeout(() => {
+          setShowCelebration(true)
+          celebrationTimerRef.current = null
+        }, 400)
+      }
+    }, 300)
+
+    return () => {
+      if (insightTimerRef.current) {
+        clearTimeout(insightTimerRef.current)
+        insightTimerRef.current = null
+      }
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current)
+        celebrationTimerRef.current = null
+      }
+    }
+  }, [stepCompleted, isLastStep])
+
+  const handleAdvance = useCallback(() => {
+    // Mark as advanced so any pending auto-advance timer (300ms after stepCompleted) skips.
+    autoAdvancedRef.current = true
+    setShowInsight(false)
+    setShowHint(false)
+    onAdvance()
+  }, [onAdvance])
 
   if (!step) return <div />
 

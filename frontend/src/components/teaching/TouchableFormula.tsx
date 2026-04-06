@@ -1,8 +1,8 @@
 import type { ReactElement } from "react"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Slider } from "../ui/slider"
 import { Input } from "../ui/input"
-import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip"
 import type { Variable } from "./types"
 
 interface TouchableFormulaProps {
@@ -34,19 +34,43 @@ interface SliderRowProps {
 function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProps): ReactElement {
   const isDisabled = variable.constant || variable.locked
   const [editing, setEditing] = useState(false)
+  const [inputValue, setInputValue] = useState(() => formatValue(variable.value, variable.step))
   const inputRef = useRef<HTMLInputElement>(null)
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Re-initialise the controlled input value from the prop whenever it changes externally.
+  // Only apply when NOT editing — if the user is actively typing we must not clobber their input.
+  useEffect(() => {
+    if (!editing) {
+      setInputValue(formatValue(variable.value, variable.step))
+    }
+  }, [variable.value, variable.step, editing])
+
+  useEffect(() => () => {
+    if (focusTimerRef.current) {
+      clearTimeout(focusTimerRef.current)
+      focusTimerRef.current = null
+    }
+  }, [])
 
   const handleValueClick = useCallback(() => {
     if (isDisabled) return
+    setInputValue(formatValue(variable.value, variable.step))
     setEditing(true)
-    setTimeout(() => inputRef.current?.select(), 10)
-  }, [isDisabled])
+    if (focusTimerRef.current) {
+      clearTimeout(focusTimerRef.current)
+    }
+    focusTimerRef.current = setTimeout(() => {
+      inputRef.current?.select()
+      focusTimerRef.current = null
+    }, 10)
+  }, [isDisabled, variable.value, variable.step])
 
   const handleValueSubmit = useCallback(() => {
-    const val = Number(inputRef.current?.value)
+    const val = Number(inputValue)
     if (!isNaN(val)) onChange(variable.name, clamp(val, variable.min, variable.max))
     setEditing(false)
-  }, [variable, onChange])
+  }, [inputValue, variable, onChange])
 
   return (
     <Tooltip>
@@ -65,8 +89,9 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
               <Input
                 ref={inputRef}
                 type="number"
-                defaultValue={formatValue(variable.value, variable.step)}
+                value={inputValue}
                 min={variable.min} max={variable.max} step={variable.step}
+                onChange={(e) => setInputValue(e.target.value)}
                 onBlur={handleValueSubmit}
                 onKeyDown={(e) => { if (e.key === "Enter") handleValueSubmit(); if (e.key === "Escape") setEditing(false) }}
                 className="h-6 w-20 text-right font-mono text-sm font-bold"
@@ -120,16 +145,18 @@ export function TouchableFormula({
   if (interactiveVars.length === 0) return <div />
 
   return (
-    <div className="space-y-0.5" role="group" aria-label="Variable controls">
-      {interactiveVars.map((v) => (
-        <SliderRow
-          key={v.name}
-          variable={v}
-          isHighlighted={highlightedVariable === v.name}
-          onChange={onVariableChange}
-          onHover={onVariableHover ?? (() => {})}
-        />
-      ))}
-    </div>
+    <TooltipProvider delayDuration={400}>
+      <div className="space-y-0.5" role="group" aria-label="Variable controls">
+        {interactiveVars.map((v) => (
+          <SliderRow
+            key={v.name}
+            variable={v}
+            isHighlighted={highlightedVariable === v.name}
+            onChange={onVariableChange}
+            onHover={onVariableHover ?? (() => {})}
+          />
+        ))}
+      </div>
+    </TooltipProvider>
   )
 }

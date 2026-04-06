@@ -1,12 +1,15 @@
 import type { ReactElement } from "react"
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Crown, LogOut, BarChart2, CreditCard, BookOpen, Clock, CheckCircle2, Camera, Pencil, Check, X, ArrowRight } from "lucide-react"
+import { Crown, LogOut, BarChart2, CreditCard, Camera, Pencil, Check, X, ArrowRight } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
+import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
+import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
 
 export default function ProfilePage(): ReactElement {
   const navigate = useNavigate()
@@ -23,7 +26,7 @@ export default function ProfilePage(): ReactElement {
 
   const displayName = user?.profile.display_name || user?.email.split("@")[0] || ""
   const initials = user?.profile.display_name
-    ? user.profile.display_name.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase()
+    ? user.profile.display_name.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()
     : (user?.email[0]?.toUpperCase() ?? "?")
   const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace(/\/api$/, "")
   const rawAvatarUrl = user?.profile.avatar_url
@@ -62,7 +65,7 @@ export default function ProfilePage(): ReactElement {
     setManagingSubscription(true)
     try {
       const { url } = await api.payments.portal()
-      window.location.href = url
+      safeRedirect(url)
     } catch { setManagingSubscription(false) }
   }
 
@@ -82,8 +85,50 @@ export default function ProfilePage(): ReactElement {
     }
   }
 
-  const eqProgress = equationManifest.map((eq) => ({ ...eq, progress: progressByEquation.get(eq.id) }))
-  const inProgressCount = eqProgress.filter((e) => !(e.progress?.completed ?? false) && (e.progress?.timeSpentSeconds ?? 0) > 0).length
+  const { inProgressCount, nextEquation, closestInProgress, sortedEquations } = useMemo(() => {
+    const eqProgress = equationManifest.map((equation) => ({
+      ...equation,
+      progress: progressByEquation.get(equation.id),
+    }))
+
+    let inProgressTotal = 0
+    let nextFresh: (typeof eqProgress)[number] | null = null
+
+    for (const equation of eqProgress) {
+      const completed = equation.progress?.completed ?? false
+      const timeSpent = equation.progress?.timeSpentSeconds ?? 0
+
+      if (!completed && timeSpent > 0) {
+        inProgressTotal += 1
+      } else if (!completed && timeSpent === 0 && nextFresh === null) {
+        nextFresh = equation
+      }
+    }
+
+    const inProgressEquations = eqProgress
+      .filter((equation) => !(equation.progress?.completed ?? false) && (equation.progress?.timeSpentSeconds ?? 0) > 0)
+      .sort((a, b) => (b.progress?.timeSpentSeconds ?? 0) - (a.progress?.timeSpentSeconds ?? 0))
+
+    const sortedEquationCards = [...eqProgress].sort((a, b) => {
+      const aDone = a.progress?.completed ?? false
+      const bDone = b.progress?.completed ?? false
+      const aStarted = (a.progress?.timeSpentSeconds ?? 0) > 0
+      const bStarted = (b.progress?.timeSpentSeconds ?? 0) > 0
+
+      if (aStarted && !aDone && !(bStarted && !bDone)) return -1
+      if (bStarted && !bDone && !(aStarted && !aDone)) return 1
+      if (!aDone && bDone) return -1
+      if (aDone && !bDone) return 1
+      return a.id - b.id
+    })
+
+    return {
+      inProgressCount: inProgressTotal,
+      closestInProgress: inProgressEquations[0] ?? null,
+      nextEquation: inProgressEquations[0] ?? nextFresh,
+      sortedEquations: sortedEquationCards,
+    }
+  }, [progressByEquation])
   const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
   return (
@@ -135,8 +180,8 @@ export default function ProfilePage(): ReactElement {
                         onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false) }}
                         className="w-full rounded-lg border border-ocean/30 bg-ocean/5 px-2 py-1 text-base font-bold text-slate-900 outline-none focus:border-ocean dark:bg-slate-700 dark:text-white"
                         placeholder="Your name" autoFocus disabled={saving} />
-                      <button onClick={handleSaveName} disabled={saving} className="rounded-lg bg-ocean p-1.5 text-white" type="button"><Check className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => setEditingName(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" type="button"><X className="h-3.5 w-3.5" /></button>
+                      <button onClick={handleSaveName} disabled={saving} className="rounded-lg bg-ocean p-1.5 text-white" type="button" aria-label="Save changes"><Check className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => setEditingName(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" type="button" aria-label="Cancel editing"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -162,7 +207,14 @@ export default function ProfilePage(): ReactElement {
                   <span>{completedCount}/{total} completed</span>
                   <span className="font-bold text-ocean">{pct}%</span>
                 </div>
-                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                <div
+                  className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"
+                  role="progressbar"
+                  aria-valuenow={completedCount}
+                  aria-valuemin={0}
+                  aria-valuemax={total}
+                  aria-label="Equations completed"
+                >
                   <div className="h-full rounded-full bg-ocean transition-all" style={{ width: `${pct}%` }} />
                 </div>
               </div>
@@ -193,35 +245,34 @@ export default function ProfilePage(): ReactElement {
             {/* Right: continue learning + stats */}
             <div className="flex flex-col gap-3">
               {/* Continue learning CTA */}
-              {(() => {
-                // Find the best "next" equation: most time spent but not completed, or first not started
-                const closest = eqProgress
-                  .filter((e) => !(e.progress?.completed ?? false) && (e.progress?.timeSpentSeconds ?? 0) > 0)
-                  .sort((a, b) => (b.progress?.timeSpentSeconds ?? 0) - (a.progress?.timeSpentSeconds ?? 0))[0]
-                const nextFresh = eqProgress.find((e) => !(e.progress?.completed ?? false) && (e.progress?.timeSpentSeconds ?? 0) === 0)
-                const next = closest ?? nextFresh
-                if (!next) return null
-                return (
-                  <button
-                    onClick={() => navigate(`/equation/${next.id}`)}
-                    className="flex items-center gap-3 rounded-2xl border-2 border-ocean bg-ocean/[0.04] p-4 text-left transition hover:bg-ocean/[0.08] active:scale-[0.99]"
-                    type="button"
-                  >
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-ocean text-white">
-                      <ArrowRight className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold uppercase tracking-wider text-ocean">
-                        {closest ? "Continue where you left off" : "Start here"}
+              {nextEquation && (
+                <button
+                  onClick={() => navigate(`/equation/${nextEquation.id}`)}
+                  onMouseEnter={() => {
+                    void prefetchEquationExperience(nextEquation.id)
+                  }}
+                  onFocus={() => {
+                    void prefetchEquationExperience(nextEquation.id)
+                  }}
+                  className="flex items-center gap-3 rounded-2xl border-2 border-ocean bg-ocean/[0.04] p-4 text-left transition hover:bg-ocean/[0.08] active:scale-[0.99]"
+                  type="button"
+                >
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-ocean text-white">
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-ocean">
+                      {closestInProgress ? "Continue where you left off" : "Start here"}
+                    </p>
+                    <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">{nextEquation.title}</p>
+                    {closestInProgress && (
+                      <p className="text-[10px] text-slate-400">
+                        {Math.round((closestInProgress.progress?.timeSpentSeconds ?? 0) / 60)}m studied — keep going
                       </p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">{next.title}</p>
-                      {closest && (
-                        <p className="text-[10px] text-slate-400">{Math.round((closest.progress?.timeSpentSeconds ?? 0) / 60)}m studied — keep going</p>
-                      )}
-                    </div>
-                  </button>
-                )
-              })()}
+                    )}
+                  </div>
+                </button>
+              )}
 
               {/* Stats row */}
               <div className="grid grid-cols-3 gap-2">
@@ -245,18 +296,7 @@ export default function ProfilePage(): ReactElement {
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">Your Equations</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {[...eqProgress].sort((a, b) => {
-                const aDone = a.progress?.completed ?? false
-                const bDone = b.progress?.completed ?? false
-                const aStarted = (a.progress?.timeSpentSeconds ?? 0) > 0
-                const bStarted = (b.progress?.timeSpentSeconds ?? 0) > 0
-                // In-progress first, not started second, completed last
-                if (aStarted && !aDone && !(bStarted && !bDone)) return -1
-                if (bStarted && !bDone && !(aStarted && !aDone)) return 1
-                if (!aDone && bDone) return -1
-                if (aDone && !bDone) return 1
-                return a.id - b.id
-              }).map((eq) => {
+              {sortedEquations.map((eq) => {
                 const progress = eq.progress
                 const done = progress?.completed ?? false
                 const started = (progress?.timeSpentSeconds ?? 0) > 0
@@ -265,6 +305,12 @@ export default function ProfilePage(): ReactElement {
                   <button
                     key={eq.id}
                     onClick={() => navigate(`/equation/${eq.id}`)}
+                    onMouseEnter={() => {
+                      void prefetchEquationExperience(eq.id)
+                    }}
+                    onFocus={() => {
+                      void prefetchEquationExperience(eq.id)
+                    }}
                     className={`group relative flex flex-col rounded-xl border p-2.5 text-left transition hover:shadow-sm ${
                       done
                         ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/20"
@@ -294,6 +340,7 @@ export default function ProfilePage(): ReactElement {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

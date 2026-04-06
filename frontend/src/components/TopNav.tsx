@@ -1,9 +1,9 @@
-import type { ReactElement, ReactNode } from "react"
-import { useRef, useState } from "react"
+import type { ReactElement, ReactNode, KeyboardEvent } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { LogOut, User, ArrowLeft, Crown, BarChart2, Settings, ChevronDown, Info } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { AuthModal } from "../auth/AuthModal"
+import { LazyAuthModal } from "../auth/LazyAuthModal"
 import { Button } from "./ui/button"
 
 interface TopNavProps {
@@ -36,13 +36,55 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
   const [menuOpen, setMenuOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    // Move focus to first menu item when menu opens
+    const firstItem = menuRef.current?.querySelector<HTMLElement>("[role='menuitem']")
+    firstItem?.focus()
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [menuOpen])
 
   // Close menu on outside click
   const handleBlur = () => {
-    setTimeout(() => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current)
+    }
+
+    blurTimerRef.current = setTimeout(() => {
       if (menuRef.current && !menuRef.current.contains(document.activeElement)) {
         setMenuOpen(false)
       }
+      blurTimerRef.current = null
     }, 150)
   }
 
@@ -95,9 +137,13 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
               {/* Avatar button — opens dropdown */}
               <button
+                ref={triggerRef}
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                 type="button"
+                aria-label="Open profile menu"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover"
@@ -115,7 +161,24 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
               {/* Dropdown menu */}
               {menuOpen && (
-                <div className="absolute right-0 top-full z-[100] mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-[100] mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+                  onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+                    const items = Array.from(
+                      menuRef.current?.querySelectorAll<HTMLElement>("[role='menuitem']") ?? []
+                    )
+                    const current = document.activeElement
+                    const idx = items.indexOf(current as HTMLElement)
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault()
+                      items[(idx + 1) % items.length]?.focus()
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault()
+                      items[(idx - 1 + items.length) % items.length]?.focus()
+                    }
+                  }}
+                >
                   {/* User info header */}
                   <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-700">
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{displayName}</p>
@@ -130,6 +193,8 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                   {/* Menu items */}
                   <div className="py-1">
                     <button
+                      role="menuitem"
+                      tabIndex={-1}
                       onClick={() => { setMenuOpen(false); navigate("/profile") }}
                       className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
                       type="button"
@@ -140,6 +205,8 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
                     {isPro && (
                       <button
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => { setMenuOpen(false); navigate("/dashboard") }}
                         className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
                         type="button"
@@ -151,6 +218,8 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
                     {!isPro && (
                       <button
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => { setMenuOpen(false); navigate("/pro") }}
                         className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-ocean transition hover:bg-ocean/5"
                         type="button"
@@ -161,6 +230,8 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                     )}
 
                     <button
+                      role="menuitem"
+                      tabIndex={-1}
                       onClick={() => { setMenuOpen(false); navigate("/settings") }}
                       className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
                       type="button"
@@ -169,6 +240,8 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                       Settings
                     </button>
                     <button
+                      role="menuitem"
+                      tabIndex={-1}
                       onClick={() => { setMenuOpen(false); navigate("/about") }}
                       className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
                       type="button"
@@ -181,6 +254,8 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                   {/* Logout */}
                   <div className="border-t border-slate-100 py-1 dark:border-slate-700">
                     <button
+                      role="menuitem"
+                      tabIndex={-1}
                       onClick={() => { setMenuOpen(false); logout(); navigate("/") }}
                       className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/20"
                       type="button"
@@ -213,7 +288,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
           )}
         </div>
       </div>
-      <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
+      <LazyAuthModal open={showAuth} onClose={() => setShowAuth(false)} />
     </header>
   )
 }

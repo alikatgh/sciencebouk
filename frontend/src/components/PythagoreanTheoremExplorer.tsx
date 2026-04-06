@@ -1,8 +1,9 @@
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BlockMath } from "react-katex";
 import { pointer, select } from "d3-selection";
 import { drag, type D3DragEvent } from "d3-drag";
+import "katex/dist/katex.min.css";
+import { InlineMath } from "react-katex";
 
 interface Point {
   x: number;
@@ -146,10 +147,10 @@ export function PythagoreanTheoremExplorer({
         {showEquation ? (
           <>
             <div className="w-full overflow-x-auto overflow-y-hidden pt-2 text-center text-4xl text-slate-950 md:text-6xl">
-              <BlockMath math="a^2 + b^2 = c^2" />
+              <InlineMath math="a^2 + b^2 = c^2" />
             </div>
             <div className="w-full overflow-x-auto overflow-y-hidden -mt-2 text-center text-2xl text-slate-500 md:text-3xl">
-              <BlockMath math={`${scene.a ** 2} + ${scene.b ** 2} = ${scene.c2}`} />
+              <InlineMath math={`${scene.a ** 2} + ${scene.b ** 2} = ${scene.c2}`} />
             </div>
           </>
         ) : null}

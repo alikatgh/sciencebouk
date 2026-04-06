@@ -1,4 +1,4 @@
-import { equations, type EquationEntry, type EquationLesson } from "./equations"
+import { equations, type EquationLesson } from "./equations"
 import type { Variable, LessonStep, GlossaryTerm } from "../components/teaching/types"
 import { VAR_COLORS } from "../components/teaching/types"
 import type { Preset } from "../components/teaching/TeachableEquation"

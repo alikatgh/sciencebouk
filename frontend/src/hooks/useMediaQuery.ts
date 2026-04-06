@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {

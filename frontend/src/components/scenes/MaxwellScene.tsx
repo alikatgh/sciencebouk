@@ -129,7 +129,7 @@ export function MaxwellScene(): ReactElement {
       lessonSteps={lessons}
       buildLiveFormula={(v) => {
         const freq = (3e8 / (v.wavelength * 1e-9)).toExponential(1)
-        return `c = {\\color{#3b82f6}\\lambda} \\cdot f, \\; \\lambda = {\\color{#3b82f6}${v.wavelength}} \\;\\text{px}`
+        return `c = {\\color{#3b82f6}${v.wavelength}\\text{nm}} \\cdot {\\color{#f59e0b}${freq}\\text{Hz}}`
       }}
       buildResultLine={(v) => {
         return `\\lambda = ${v.wavelength} \\;\\text{px}`
@@ -171,29 +171,40 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
   const modeRef = useRef<1 | 2>(1)
   modeRef.current = mode
 
-  const chargesRef = useRef<Charge[]>([
-    { x: 320, y: 210, sign: 1, id: 1 },
-    { x: 580, y: 210, sign: -1, id: 2 },
-  ])
-  const chargeIdRef = useRef(3)
+  const chargesRef = useRef<Charge[]>([])
+  const currentSizeRef = useRef({ w: 0, h: 0 })
   const wavelengthRef = useRef(wavelength)
   wavelengthRef.current = wavelength
 
   const timeRef = useRef(0)
   const rafRef = useRef(0)
   const prevTsRef = useRef(0)
+  const runningRef = useRef(false)
 
   // Setup -- rebuilds on resize
   useEffect(() => {
     const container = containerRef.current
     if (!container || W < 100 || H < 100) return
+
+    const prevW = currentSizeRef.current.w
+    const prevH = currentSizeRef.current.h
+    currentSizeRef.current = { w: W, h: H }
+
     select(container).select("svg").remove()
 
-    // Reposition charges proportionally on resize
-    chargesRef.current = [
-      { x: Math.round(W * 0.36), y: Math.round(H * 0.48), sign: 1, id: 1 },
-      { x: Math.round(W * 0.64), y: Math.round(H * 0.48), sign: -1, id: 2 },
-    ]
+    // On first build use default positions; on resize scale existing positions proportionally
+    if (chargesRef.current.length === 0 || prevW === 0 || prevH === 0) {
+      chargesRef.current = [
+        { x: Math.round(W * 0.36), y: Math.round(H * 0.48), sign: 1, id: 1 },
+        { x: Math.round(W * 0.64), y: Math.round(H * 0.48), sign: -1, id: 2 },
+      ]
+    } else {
+      chargesRef.current = chargesRef.current.map(ch => ({
+        ...ch,
+        x: Math.round(ch.x * (W / prevW)),
+        y: Math.round(ch.y * (H / prevH)),
+      }))
+    }
 
     const fs = Math.max(12, Math.min(18, H / 28))
 
@@ -202,7 +213,6 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .attr("width", W)
       .attr("height", H)
       .style("display", "block")
-      .style("touch-action", "none")
       .attr("role", "img")
       .attr("aria-label", "Maxwell's equations -- electric field lines and EM waves")
 
@@ -243,6 +253,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     g.append("g").attr("class", "wave-mode")
 
     return () => {
+      runningRef.current = false
       cancelAnimationFrame(rafRef.current)
       select(container).select("svg").remove()
     }
@@ -271,6 +282,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     g.select(".field-mode").selectAll("*").remove()
     g.select(".wave-mode").selectAll("*").remove()
 
+    runningRef.current = false
     cancelAnimationFrame(rafRef.current)
 
     if (mode === 1) {
@@ -347,7 +359,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     cGroup.selectAll("*").remove()
 
     for (const c of charges) {
-      const cg = cGroup.append("g").style("cursor", "grab")
+      const cg = cGroup.append("g").style("cursor", "grab").style("touch-action", "none")
 
       // Glow ring (hidden by default)
       cg.append("circle").attr("class", `glow-${c.id}`)
@@ -449,7 +461,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
 
     // Draggable wavelength handle on the right tick
     const wlStart = waveLeft + Math.round(W * 0.089)
-    const wlHandleG = wm.append("g").attr("class", "wl-handle").style("cursor", "grab")
+    const wlHandleG = wm.append("g").attr("class", "wl-handle").style("cursor", "grab").style("touch-action", "none")
     // Invisible hit area (min 30px wide)
     wlHandleG.append("rect").attr("class", "wl-hit")
       .attr("x", -15).attr("y", wlY - 18).attr("width", 30).attr("height", 36)
@@ -490,11 +502,11 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     // Start animation
     prevTsRef.current = 0
     timeRef.current = 0
-    let running = true
+    runningRef.current = true
     const waveXs = range(0, waveRight - waveLeft, 2)
 
     const animate = (ts: number) => {
-      if (!running) return
+      if (!runningRef.current) return
       if (prevTsRef.current === 0) prevTsRef.current = ts
       const dt = (ts - prevTsRef.current) / 1000
       prevTsRef.current = ts
@@ -537,8 +549,6 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       rafRef.current = requestAnimationFrame(animate)
     }
     rafRef.current = requestAnimationFrame(animate)
-
-    return () => { running = false }
   }
 
   // Update wavelength ref for wave animation
@@ -549,7 +559,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

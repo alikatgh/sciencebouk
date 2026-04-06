@@ -1,18 +1,23 @@
 from datetime import timedelta
 
+from django.db import IntegrityError
 from django.db.models import Q, Sum
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Course, Equation, LearningEvent, UserProgress
 from .serializers import (
+    AuthProgressUpdateSerializer,
+    BulkProgressItemSerializer,
     CourseDetailSerializer,
     EquationSerializer,
+    LogEventSerializer,
     ProgressUpdateSerializer,
     UserProgressSerializer,
 )
@@ -26,6 +31,7 @@ class EquationViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "sort_order"
     lookup_url_kwarg = "id"
     filterset_fields = ["category"]
+    permission_classes = [AllowAny]
 
     @method_decorator(cache_page(60 * 5))
     def list(self, request, *args, **kwargs):
@@ -33,6 +39,7 @@ class EquationViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 @api_view(["PATCH"])
+@permission_classes([AllowAny])
 def update_progress(request, id):
     """Mark progress on a single equation identified by sort_order."""
     try:
@@ -44,20 +51,27 @@ def update_progress(request, id):
     serializer.is_valid(raise_exception=True)
 
     anon_id = serializer.validated_data["user_id"]
-    progress, _ = UserProgress.objects.get_or_create(
-        anon_id=anon_id,
-        equation=equation,
-    )
-    if "completed" in serializer.validated_data:
-        progress.completed = serializer.validated_data["completed"]
-    if "notes" in serializer.validated_data:
-        progress.notes = serializer.validated_data["notes"]
+    try:
+        progress, _ = UserProgress.objects.get_or_create(
+            anon_id=anon_id,
+            equation=equation,
+            user=None,
+        )
+    except IntegrityError:
+        # Two concurrent requests raced past get_or_create; retrieve the winner's row.
+        progress = UserProgress.objects.get(anon_id=anon_id, equation=equation, user=None)
+    vd = serializer.validated_data
+    for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
+        if field in vd:
+            setattr(progress, field, vd[field])
+    progress.last_viewed = timezone.now()
     progress.save()
 
     return Response(UserProgressSerializer(progress).data)
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def course_detail(request, slug):
     """Retrieve a course with its nested lessons."""
     try:
@@ -68,6 +82,7 @@ def course_detail(request, slug):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def search_equations(request):
     """Search equations by title, author, or category using ?q=<term>."""
     q = request.query_params.get("q", "").strip()
@@ -80,10 +95,16 @@ def search_equations(request):
     equations = Equation.objects.filter(
         Q(title__icontains=q) | Q(author__icontains=q) | Q(category__icontains=q)
     )
+    paginator = PageNumberPagination()
+    paginator.page_size = 20
+    page = paginator.paginate_queryset(equations, request)
+    if page is not None:
+        return paginator.get_paginated_response(EquationSerializer(page, many=True).data)
     return Response(EquationSerializer(equations, many=True).data)
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def health(request):
     """Health check endpoint."""
     return Response({"status": "ok"})
@@ -91,6 +112,7 @@ def health(request):
 
 @cache_page(60 * 5)
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def equation_atlas_legacy(request):
     """Legacy alias that returns the full equation atlas in the original envelope shape.
 
@@ -153,25 +175,30 @@ def my_progress(request):
 @permission_classes([IsAuthenticated])
 def update_my_progress(request, equation_id):
     """Update progress for a specific equation. Pro users only for sync."""
+    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+        return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         equation = Equation.objects.get(sort_order=equation_id)
     except Equation.DoesNotExist:
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    serializer = AuthProgressUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    vd = serializer.validated_data
+
     progress, _ = UserProgress.objects.get_or_create(
         user=request.user, equation=equation,
         defaults={"anon_id": str(request.user.id)},
     )
-    for field in [
-        "completed", "lesson_step", "time_spent_seconds",
-        "variables_explored", "notes", "bookmarked",
-    ]:
-        if field in request.data:
-            setattr(progress, field, request.data[field])
-    if request.data.get("completed") and not progress.completed_at:
+    for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
+        if field in vd:
+            setattr(progress, field, vd[field])
+    if vd.get("completed") and not progress.completed_at:
         progress.completed_at = timezone.now()
-    elif request.data.get("completed") is False:
+    elif vd.get("completed") is False:
         progress.completed_at = None
+    progress.last_viewed = timezone.now()
     progress.save()
     return Response(UserProgressSerializer(progress).data)
 
@@ -180,30 +207,50 @@ def update_my_progress(request, equation_id):
 @permission_classes([IsAuthenticated])
 def bulk_sync_progress(request):
     """Bulk sync progress from localStorage when user signs up for Pro."""
-    items = request.data.get("items", [])
+    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+        return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
+
+    raw_items = request.data.get("items", [])
+    if not isinstance(raw_items, list):
+        return Response({"error": "'items' must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate all items first so we can pre-fetch equations in one query (M14).
+    valid_items = []
+    errors = []
+    for index, raw_item in enumerate(raw_items):
+        item_serializer = BulkProgressItemSerializer(data=raw_item)
+        if not item_serializer.is_valid():
+            errors.append({"index": index, "errors": item_serializer.errors})
+        else:
+            valid_items.append((index, item_serializer.validated_data))
+
+    equation_ids = [vd["equation_id"] for _, vd in valid_items]
+    equations = {eq.sort_order: eq for eq in Equation.objects.filter(sort_order__in=equation_ids)}
+
     results = []
-    for item in items:
-        eq_id = item.get("equation_id")
-        try:
-            equation = Equation.objects.get(sort_order=eq_id)
-        except Equation.DoesNotExist:
+    for index, vd in valid_items:
+        equation = equations.get(vd["equation_id"])
+        if equation is None:
+            errors.append({"index": index, "errors": {"equation_id": "Not found"}})
             continue
+
         progress, _ = UserProgress.objects.get_or_create(
             user=request.user, equation=equation,
             defaults={"anon_id": str(request.user.id)},
         )
-        for field in [
-            "completed", "lesson_step", "time_spent_seconds", "variables_explored",
-            "notes", "bookmarked",
-        ]:
-            if field in item:
-                setattr(progress, field, item[field])
-        if item.get("completed") and not progress.completed_at:
+        for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
+            if field in vd:
+                setattr(progress, field, vd[field])
+        if vd.get("completed") and not progress.completed_at:
             progress.completed_at = timezone.now()
-        elif item.get("completed") is False:
+        elif vd.get("completed") is False:
             progress.completed_at = None
+        progress.last_viewed = timezone.now()
         progress.save()
         results.append(UserProgressSerializer(progress).data)
+
+    if errors:
+        return Response({"results": results, "errors": errors}, status=status.HTTP_207_MULTI_STATUS)
     return Response(results)
 
 
@@ -265,17 +312,15 @@ def learning_dashboard(request):
 @permission_classes([IsAuthenticated])
 def log_event(request):
     """Log a learning event for analytics. Pro users only."""
-    if not hasattr(request.user, "profile") or not request.user.profile.is_pro:
+    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
         return Response({"error": "Pro subscription required"}, status=status.HTTP_403_FORBIDDEN)
 
-    eq_id = request.data.get("equation_id")
-    event_type = request.data.get("event_type")
-    data = request.data.get("data", {})
-
-    if not event_type:
-        return Response({"error": "event_type is required"}, status=status.HTTP_400_BAD_REQUEST)
+    serializer = LogEventSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    vd = serializer.validated_data
 
     equation = None
+    eq_id = vd.get("equation_id")
     if eq_id is not None:
         try:
             equation = Equation.objects.get(sort_order=eq_id)
@@ -285,7 +330,7 @@ def log_event(request):
     LearningEvent.objects.create(
         user=request.user,
         equation=equation,
-        event_type=event_type,
-        data=data,
+        event_type=vd["event_type"],
+        data=vd["data"],
     )
     return Response({"ok": True}, status=status.HTTP_201_CREATED)

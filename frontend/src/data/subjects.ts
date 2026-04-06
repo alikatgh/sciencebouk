@@ -1,5 +1,3 @@
-import { equationManifest } from "./equationManifest"
-
 export interface SubjectFormula {
   title: string
   formula: string
@@ -192,3 +190,15 @@ export const subjects: Subject[] = [
     ],
   },
 ]
+
+export const subjectsBySlug = new Map<string, Subject>(
+  subjects.map((subject) => [subject.slug, subject]),
+)
+
+export const activeSubjects = subjects.filter((subject) => subject.active)
+
+export const inactiveSubjects = subjects.filter((subject) => !subject.active)
+
+export function getSubject(slug: string): Subject | null {
+  return subjectsBySlug.get(slug) ?? null
+}

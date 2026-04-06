@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useDocumentVisibility } from "../hooks/useDocumentVisibility"
 
 // Only exact Pythagorean triples — c must be a whole number. No approximations on a math product.
 const PRESETS = [
@@ -15,6 +16,7 @@ export function HeroDemo(): ReactElement {
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isVisible = useDocumentVisibility()
 
   const { a, b } = PRESETS[idx]
   const c = Math.round(Math.sqrt(a * a + b * b))  // always exact for our triples
@@ -24,12 +26,12 @@ export function HeroDemo(): ReactElement {
 
   // Auto-cycle every 3s unless paused
   useEffect(() => {
-    if (paused) return
+    if (paused || !isVisible) return
     const timer = setInterval(() => {
       setIdx((prev) => (prev + 1) % PRESETS.length)
     }, 3000)
     return () => clearInterval(timer)
-  }, [paused])
+  }, [isVisible, paused])
 
   useEffect(() => () => {
     if (resumeTimeoutRef.current) {
@@ -49,15 +51,20 @@ export function HeroDemo(): ReactElement {
     }, 8000)
   }, [])
 
-  // Square sizes proportional to area (sqrt for visual)
+  // Square sizes proportional to area (sqrt for visual), scaled to fit container
   const maxArea = 50
-  const sqA = Math.max(20, Math.sqrt(a2 / maxArea) * 52)
-  const sqB = Math.max(20, Math.sqrt(b2 / maxArea) * 52)
-  const sqC = Math.max(20, Math.sqrt(c2 / maxArea) * 52)
+  const rawA = Math.max(20, Math.sqrt(a2 / maxArea) * 52)
+  const rawB = Math.max(20, Math.sqrt(b2 / maxArea) * 52)
+  const rawC = Math.max(20, Math.sqrt(c2 / maxArea) * 52)
+  const maxTotal = 140 // fits inside w-56 (224px) minus padding and operators
+  const scale = Math.min(1, maxTotal / (rawA + rawB + rawC))
+  const sqA = rawA * scale
+  const sqB = rawB * scale
+  const sqC = rawC * scale
 
   return (
     <div
-      className="w-56 cursor-pointer select-none rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]"
+      className="w-56 cursor-pointer select-none overflow-hidden rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]"
       onClick={handleClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -105,10 +112,15 @@ export function HeroDemo(): ReactElement {
       </div>
 
       {/* Cycle indicator dots */}
-      <div className="mt-3 flex justify-center gap-1.5">
+      <div
+        className="mt-3 flex justify-center gap-1.5"
+        aria-live="polite"
+        aria-label={`Example ${idx + 1} of ${PRESETS.length}: ${a}² + ${b}² = ${c}²`}
+      >
         {PRESETS.map((_, i) => (
           <div
             key={i}
+            aria-hidden="true"
             className={`h-1 rounded-full transition-all duration-500 ${
               i === idx ? "w-4 bg-ocean" : "w-1 bg-white/20"
             }`}

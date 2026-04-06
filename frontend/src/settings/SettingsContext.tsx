@@ -65,7 +65,30 @@ export function useSettings(): SettingsContextValue {
 function load(): Settings {
   try {
     const raw = localStorage.getItem("sciencebouk-settings")
-    return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : { ...DEFAULTS }
+    if (!raw) return { ...DEFAULTS }
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const valid: Partial<Settings> = {}
+    if (["light", "dark", "system"].includes(parsed.theme as string)) valid.theme = parsed.theme as Settings["theme"]
+    if (["small", "medium", "large"].includes(parsed.fontSize as string)) valid.fontSize = parsed.fontSize as Settings["fontSize"]
+    if (typeof parsed.reducedMotion === "boolean") valid.reducedMotion = parsed.reducedMotion
+    if (["off", "slow", "normal", "fast"].includes(parsed.animationSpeed as string)) valid.animationSpeed = parsed.animationSpeed as Settings["animationSpeed"]
+    if (typeof parsed.soundEnabled === "boolean") valid.soundEnabled = parsed.soundEnabled
+    if (typeof parsed.soundVolume === "number" && Number.isFinite(parsed.soundVolume)) valid.soundVolume = parsed.soundVolume
+    if (typeof parsed.showHints === "boolean") valid.showHints = parsed.showHints
+    if (typeof parsed.showHookText === "boolean") valid.showHookText = parsed.showHookText
+    if (typeof parsed.autoStartLesson === "boolean") valid.autoStartLesson = parsed.autoStartLesson
+    if (["beginner", "intermediate", "advanced"].includes(parsed.difficulty as string)) valid.difficulty = parsed.difficulty as Settings["difficulty"]
+    if (typeof parsed.dailyGoalMinutes === "number" && Number.isFinite(parsed.dailyGoalMinutes)) valid.dailyGoalMinutes = parsed.dailyGoalMinutes
+    if (typeof parsed.showKeyboardShortcuts === "boolean") valid.showKeyboardShortcuts = parsed.showKeyboardShortcuts
+    if (typeof parsed.highContrast === "boolean") valid.highContrast = parsed.highContrast
+    if (typeof parsed.colorBlindMode === "boolean") valid.colorBlindMode = parsed.colorBlindMode
+    if (typeof parsed.language === "string" && parsed.language.length > 0) valid.language = parsed.language
+    if (typeof parsed.formulaSize === "number" && Number.isFinite(parsed.formulaSize)) valid.formulaSize = parsed.formulaSize
+    if (typeof parsed.sidebarCollapsed === "boolean") valid.sidebarCollapsed = parsed.sidebarCollapsed
+    if (typeof parsed.showFormulaLetters === "boolean") valid.showFormulaLetters = parsed.showFormulaLetters
+    if (typeof parsed.showFormulaNumbers === "boolean") valid.showFormulaNumbers = parsed.showFormulaNumbers
+    if (typeof parsed.showResultNote === "boolean") valid.showResultNote = parsed.showResultNote
+    return { ...DEFAULTS, ...valid }
   } catch { return { ...DEFAULTS } }
 }
 

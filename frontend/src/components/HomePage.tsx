@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { lazy, Suspense, useState } from "react"
+import { lazy, Suspense, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Lock, ArrowRight, CheckCircle2,
@@ -10,11 +10,11 @@ import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
 import { TopNav } from "./TopNav"
-import { subjects } from "../data/subjects"
-import { AuthModal } from "../auth/AuthModal"
+import { Footer } from "./Footer"
+import { DeferredInlineMath } from "./math/DeferredInlineMath"
+import { activeSubjects, getSubject, inactiveSubjects } from "../data/subjects"
+import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { useAllProgress } from "../progress/useProgress"
-import "katex/dist/katex.min.css"
-import { InlineMath } from "react-katex"
 
 const HeroDemo = lazy(() =>
   import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
@@ -36,19 +36,49 @@ const iconMap: Record<string, ReactElement> = {
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
     <span className={muted ? "opacity-30" : ""}>
-      <InlineMath math={formula} />
+      <DeferredInlineMath math={formula} />
     </span>
   )
 }
 
 export function HomePage(): ReactElement {
   const navigate = useNavigate()
-  const [showAuth, setShowAuth] = useState(false)
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
   const { completedCount, total, progressByEquation } = useAllProgress()
 
-  const activeSubject = selectedSubject ? subjects.find((s) => s.slug === selectedSubject) : null
-  const isCompleted = (id: number): boolean => progressByEquation.get(id)?.completed ?? false
+  const completedEquationIds = useMemo(() => {
+    const completedIds = new Set<number>()
+
+    for (const [equationId, progress] of progressByEquation) {
+      if (progress.completed) completedIds.add(equationId)
+    }
+
+    return completedIds
+  }, [progressByEquation])
+
+  const activeSubject = useMemo(
+    () => (selectedSubject ? getSubject(selectedSubject) : null),
+    [selectedSubject],
+  )
+
+  const continueLearningFormulas = useMemo(
+    () => activeSubjects
+      .flatMap((subject) => subject.formulas.filter((formula) => formula.id != null && !completedEquationIds.has(formula.id)))
+      .slice(0, 4),
+    [completedEquationIds],
+  )
+
+  const activeSubjectCards = useMemo(
+    () => activeSubjects.map((subject) => ({
+      subject,
+      completedInSubject: subject.formulas.reduce((count, formula) => (
+        formula.id != null && completedEquationIds.has(formula.id) ? count + 1 : count
+      ), 0),
+    })),
+    [completedEquationIds],
+  )
+
+  const hasComingSoonSubjects = inactiveSubjects.length > 0
 
   return (
     <main className="min-h-screen bg-white dark:bg-slate-950">
@@ -63,16 +93,17 @@ export function HomePage(): ReactElement {
               </span>
               {completedCount > 0 && !activeSubject && (
                 <div className="flex items-center gap-2">
-                  <Progress value={(completedCount / total) * 100} className="h-1 w-16" />
+                  <Progress
+                    value={(completedCount / total) * 100}
+                    className="h-1 w-16"
+                    aria-label={`${completedCount} of ${total} equations completed`}
+                  />
                   <span className="text-[10px] text-slate-400">{completedCount}/{total}</span>
                 </div>
               )}
             </div>
           }
         />
-
-        <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
-
         <div className="mx-auto max-w-5xl px-4 py-6">
           {!activeSubject ? (
             <>
@@ -80,10 +111,10 @@ export function HomePage(): ReactElement {
             <section className="mb-8 overflow-hidden rounded-2xl bg-slate-900 text-white">
               <div className="grid items-center gap-6 p-6 md:grid-cols-[1fr_auto] md:p-8">
                 <div>
-                  <h2 className="font-display text-2xl font-bold tracking-tight md:text-3xl">
+                  <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">
                     Grab a variable. Drag it.<br />
                     <span className="text-ocean">Watch the equation respond.</span>
-                  </h2>
+                  </h1>
                   <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-400">
                     {total} equations that shaped the world — turned into interactive visualizations
                     you can touch and understand. No textbook. No video.
@@ -91,6 +122,12 @@ export function HomePage(): ReactElement {
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <Button
                       onClick={() => navigate("/equation/1")}
+                      onMouseEnter={() => {
+                        void prefetchEquationExperience(1)
+                      }}
+                      onFocus={() => {
+                        void prefetchEquationExperience(1)
+                      }}
                       className="bg-ocean text-white hover:bg-ocean/90"
                     >
                       Try Pythagoras <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -130,18 +167,20 @@ export function HomePage(): ReactElement {
             </section>
 
             {/* === CONTINUE / FEATURED === */}
-            {completedCount > 0 && completedCount < total && (
+            {completedCount > 0 && completedCount < total && continueLearningFormulas.length > 0 && (
               <section className="mb-6">
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Continue learning</h3>
                 <div className="flex gap-3 overflow-x-auto pb-1">
-                  {subjects
-                    .filter((s) => s.active)
-                    .flatMap((s) => s.formulas.filter((f) => f.id != null && !isCompleted(f.id)))
-                    .slice(0, 4)
-                    .map((f) => (
+                  {continueLearningFormulas.map((f) => (
                       <button
                         key={f.id}
                         onClick={() => navigate(`/equation/${f.id}`)}
+                        onMouseEnter={() => {
+                          void prefetchEquationExperience(f.id!)
+                        }}
+                        onFocus={() => {
+                          void prefetchEquationExperience(f.id!)
+                        }}
                         className="flex flex-shrink-0 flex-col rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ocean/30 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800"
                         type="button"
                       >
@@ -157,13 +196,16 @@ export function HomePage(): ReactElement {
 
             {/* === FEATURED: 17 Equations === */}
             <div id="subjects-section">
-              {subjects.filter((s) => s.active).map((subject) => {
-                const completedInSubject = subject.formulas.filter((f) => f.id != null && isCompleted(f.id!)).length
+              {activeSubjectCards.map(({ subject, completedInSubject }) => {
                 return (
                   <Card
                     key={subject.slug}
+                    role="button"
+                    tabIndex={0}
                     className="group cursor-pointer overflow-hidden border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
                     onClick={() => setSelectedSubject(subject.slug)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSubject(subject.slug) } }}
+                    aria-label={`Open ${subject.name}`}
                   >
                     <div className="flex items-center gap-4 p-5">
                       <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white text-slate-900">
@@ -196,14 +238,15 @@ export function HomePage(): ReactElement {
             </div>
 
             {/* === COMING NEXT === */}
-            {subjects.some((s) => !s.active) && (
+            {hasComingSoonSubjects && (
               <div className="mt-8">
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">Coming next</h3>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {subjects.filter((s) => !s.active).map((subject) => (
-                    <div
+                  {inactiveSubjects.map((subject) => (
+                    <button
                       key={subject.slug}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:hover:border-slate-600 dark:hover:bg-slate-800/50"
+                      type="button"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:hover:border-slate-600 dark:hover:bg-slate-800/50"
                       onClick={() => setSelectedSubject(subject.slug)}
                     >
                       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
@@ -213,7 +256,7 @@ export function HomePage(): ReactElement {
                         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subject.name}</p>
                         <p className="text-[10px] text-slate-400">{subject.formulas.length} formulas</p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -226,17 +269,27 @@ export function HomePage(): ReactElement {
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {activeSubject!.formulas.map((f: { id?: number; formula: string; title: string; author?: string; year?: string }, i: number) => {
                   const isActive = activeSubject!.active && f.id != null
-                  const done = f.id != null && isCompleted(f.id)
+                  const done = f.id != null && completedEquationIds.has(f.id)
 
                   return (
                     <Card
                       key={i}
+                      role={isActive ? "button" : undefined}
+                      tabIndex={isActive ? 0 : undefined}
+                      aria-label={isActive ? `Open ${f.title}` : undefined}
                       className={`overflow-hidden transition-all ${
                         isActive
                           ? "cursor-pointer hover:border-slate-300 hover:shadow-md active:scale-[0.98]"
                           : "border-dashed opacity-40"
                       }`}
                       onClick={isActive ? () => navigate(`/equation/${f.id}`) : undefined}
+                      onKeyDown={isActive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/equation/${f.id}`) } } : undefined}
+                      onMouseEnter={isActive ? () => {
+                        void prefetchEquationExperience(f.id!)
+                      } : undefined}
+                      onFocus={isActive ? () => {
+                        void prefetchEquationExperience(f.id!)
+                      } : undefined}
                     >
                       {/* Formula — the hero */}
                       <div className="flex min-h-[72px] items-center justify-center border-b border-slate-100 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50">
@@ -271,6 +324,8 @@ export function HomePage(): ReactElement {
             </div>
           )}
         </div>
+
+        <Footer />
     </main>
   )
 }

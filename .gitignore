@@ -8,6 +8,37 @@ backend/staticfiles
 .DS_Store
 .env
 
-# Claude Code local (not shared)
-.claude/settings.local.json
+# Legal pages (private, not open source)
+frontend/src/components/PrivacyPage.tsx
+frontend/src/components/TermsPage.tsx
+privacy_and_terms.txt
+
+# User uploads
+backend/media/
+
+# Claude Code — internal dev tooling, not the product
+.claude/
+.mcp.json
+CLAUDE.md
 CLAUDE.local.md
+
+# Internal audit docs
+VISUALIZATION_AUDIT.md
+
+# Deployment & infra (private)
+docker-compose.yml
+docker-compose.prod.yml
+nginx.prod.conf
+backend/Dockerfile
+frontend/Dockerfile
+
+# Build artifacts
+frontend/tsconfig.tsbuildinfo
+frontend/tsconfig.node.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/tailwind.config.js
+frontend/tailwind.config.d.ts
+
+# Orphaned root lockfile (no root package.json)
+/package-lock.json

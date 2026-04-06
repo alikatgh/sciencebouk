@@ -94,13 +94,6 @@ export interface LessonResponse {
   sort_order: number
 }
 
-export interface ProgressResponse {
-  equation_id: number
-  completed: boolean
-  last_viewed: string
-  notes: string
-}
-
 export interface ProgressItem {
   equation_id: number
   completed: boolean
@@ -110,8 +103,11 @@ export interface ProgressItem {
   variables_explored: string[]
   notes: string
   bookmarked: boolean
-  last_viewed: string
+  last_viewed: string | null
 }
+
+/** @deprecated Use ProgressItem directly */
+export type ProgressResponse = ProgressItem
 
 export interface BulkSyncItem {
   equation_id: number
@@ -156,11 +152,21 @@ export const api = {
     },
     get: (id: number) =>
       request<EquationResponse>(`/equations/${id}/`),
-    updateProgress: (id: number, data: { user_id: string; completed?: boolean; notes?: string }) =>
-      request<ProgressResponse>(`/equations/${id}/progress/`, {
+    updateProgress: (id: number, data: { user_id: string; completed?: boolean; notes?: string }) => {
+      // Authenticated users must use the canonical progress endpoint.
+      // Anonymous users (no access token) fall back to the legacy route.
+      if (getAccessToken()) {
+        const { user_id: _user_id, ...progressData } = data
+        return request<ProgressResponse>(`/progress/${id}/`, {
+          method: "PATCH",
+          body: JSON.stringify(progressData),
+        })
+      }
+      return request<ProgressResponse>(`/equations/${id}/progress/`, {
         method: "PATCH",
         body: JSON.stringify(data),
-      }),
+      })
+    },
   },
   courses: {
     get: (slug: string) =>

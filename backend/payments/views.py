@@ -1,5 +1,8 @@
+import os
+
 import stripe
 from django.conf import settings
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -23,10 +26,22 @@ def create_checkout_session(request):
         profile.stripe_customer_id = customer.id
         profile.save()
 
+    price_type = request.data.get("price_type", "monthly")
+    if price_type == "yearly":
+        price_id = os.environ.get("STRIPE_PRO_YEARLY_PRICE_ID", "")
+    else:
+        price_id = os.environ.get(
+            "STRIPE_PRO_MONTHLY_PRICE_ID",
+            os.environ.get("STRIPE_PRO_PRICE_ID", ""),
+        )
+
+    if not price_id:
+        return Response({'error': 'Payments not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
     session = stripe.checkout.Session.create(
         customer=profile.stripe_customer_id,
         payment_method_types=['card'],
-        line_items=[{'price': settings.STRIPE_PRO_PRICE_ID, 'quantity': 1}],
+        line_items=[{'price': price_id, 'quantity': 1}],
         mode='subscription',
         success_url=settings.FRONTEND_URL + '/pro/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url=settings.FRONTEND_URL + '/pro/cancel',
@@ -62,21 +77,27 @@ def subscription_status(request):
 
 
 @csrf_exempt
-@api_view(['POST'])
-@permission_classes([AllowAny])
 def stripe_webhook(request):
-    """Handle incoming Stripe webhook events to keep subscription state in sync."""
+    """Handle incoming Stripe webhook events to keep subscription state in sync.
+
+    Implemented as a plain Django view (not @api_view) so that request.body is
+    read before any DRF middleware can consume it, preserving the raw payload
+    required for Stripe signature verification.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
     sig = request.META.get('HTTP_STRIPE_SIGNATURE', '')
 
     if not settings.STRIPE_WEBHOOK_SECRET:
-        return Response({'error': 'Webhooks not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return JsonResponse({'error': 'Webhooks not configured'}, status=503)
 
     try:
         event = stripe.Webhook.construct_event(
             request.body, sig, settings.STRIPE_WEBHOOK_SECRET
         )
     except (ValueError, stripe.error.SignatureVerificationError):
-        return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'error': 'Invalid signature'}, status=400)
 
     from accounts.models import Profile
 
@@ -103,4 +124,4 @@ def stripe_webhook(request):
         except Profile.DoesNotExist:
             pass
 
-    return Response({'received': True})
+    return JsonResponse({'received': True})

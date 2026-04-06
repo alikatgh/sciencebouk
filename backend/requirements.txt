@@ -4,3 +4,4 @@ djangorestframework==3.16.0
 django-filter==25.1
 djangorestframework-simplejwt==5.4.0
 stripe==12.2.0
+dj-database-url==2.2.0

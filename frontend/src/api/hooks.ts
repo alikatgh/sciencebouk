@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
 import { api } from "./client"
 
 export function useEquations(category?: string) {
@@ -26,10 +27,19 @@ export function useCourse(slug: string) {
 }
 
 export function useSearchEquations(query: string) {
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
   return useQuery({
-    queryKey: ["search", query],
-    queryFn: () => api.search(query),
-    enabled: query.length >= 2,
+    queryKey: ["search", debouncedQuery],
+    queryFn: () => api.search(debouncedQuery),
+    enabled: debouncedQuery.length >= 2,
     staleTime: 30 * 1000,
   })
 }

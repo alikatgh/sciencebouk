@@ -40,53 +40,112 @@ export function ResizablePanel({
   className = "",
 }: ResizablePanelProps): ReactElement {
   const [width, setWidth] = useState(() => {
-    if (storageKey) {
+    if (typeof window !== "undefined" && storageKey) {
       const stored = localStorage.getItem(storageKey)
-      if (stored) return Math.max(minWidth, Math.min(maxWidth, Number(stored)))
+      const parsed = Number(stored)
+      if (Number.isFinite(parsed)) return Math.max(minWidth, Math.min(maxWidth, parsed))
     }
     return defaultWidth
   })
   const [isDragging, setIsDragging] = useState(false)
   const startX = useRef(0)
   const startWidth = useRef(0)
+  const prevOpenRef = useRef(open)
+
+  useEffect(() => {
+    if (!prevOpenRef.current && open) {
+      onExpand?.()
+    }
+    prevOpenRef.current = open
+  }, [open, onExpand])
 
   // Persist width
   useEffect(() => {
-    if (storageKey && open) {
+    if (typeof window !== "undefined" && storageKey && open) {
       localStorage.setItem(storageKey, String(width))
     }
   }, [width, storageKey, open])
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-    startX.current = e.clientX
-    startWidth.current = width
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-  }, [width])
+  const restoreDragStyles = useCallback(() => {
+    if (typeof document !== "undefined") {
+      document.body.style.userSelect = ""
+      document.body.style.cursor = ""
+    }
+  }, [])
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return
-    const dx = e.clientX - startX.current
+  const stopDragging = useCallback(() => {
+    setIsDragging(false)
+    restoreDragStyles()
+  }, [restoreDragStyles])
+
+  const updateWidth = useCallback((clientX: number) => {
+    const dx = clientX - startX.current
     const newWidth = edge === "right"
       ? startWidth.current + dx
       : startWidth.current - dx
 
     if (newWidth < minWidth * 0.6) {
-      // Collapse
       onCollapse?.()
-      setIsDragging(false)
+      stopDragging()
       return
     }
 
     const clamped = Math.max(minWidth, Math.min(maxWidth, newWidth))
     setWidth(clamped)
     onWidthChange?.(clamped)
-  }, [isDragging, edge, minWidth, maxWidth, onCollapse, onWidthChange])
+  }, [edge, maxWidth, minWidth, onCollapse, onWidthChange, stopDragging])
 
-  const handlePointerUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    startX.current = e.clientX
+    startWidth.current = width
+    if (typeof document !== "undefined") {
+      document.body.style.userSelect = "none"
+      document.body.style.cursor = "col-resize"
+    }
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }, [width])
+
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handlePointerMove = (event: PointerEvent) => {
+      updateWidth(event.clientX)
+    }
+
+    const handlePointerEnd = () => {
+      stopDragging()
+    }
+
+    window.addEventListener("pointermove", handlePointerMove)
+    window.addEventListener("pointerup", handlePointerEnd)
+    window.addEventListener("pointercancel", handlePointerEnd)
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerup", handlePointerEnd)
+      window.removeEventListener("pointercancel", handlePointerEnd)
+      restoreDragStyles()
+    }
+  }, [isDragging, restoreDragStyles, stopDragging, updateWidth])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const step = 20
+    if (e.key === "ArrowLeft") {
+      e.preventDefault()
+      const newWidth = edge === "right" ? width - step : width + step
+      const clamped = Math.max(minWidth, Math.min(maxWidth, newWidth))
+      setWidth(clamped)
+      onWidthChange?.(clamped)
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault()
+      const newWidth = edge === "right" ? width + step : width - step
+      const clamped = Math.max(minWidth, Math.min(maxWidth, newWidth))
+      setWidth(clamped)
+      onWidthChange?.(clamped)
+    }
+  }, [edge, width, minWidth, maxWidth, onWidthChange])
 
   if (!open) return <></>
 
@@ -94,10 +153,12 @@ export function ResizablePanel({
     <div
       className={`group relative z-10 flex-shrink-0 ${edge === "right" ? "-mr-1" : "-ml-1"}`}
       style={{ width: 8 }}
+      data-resize-handle
+      role="separator"
+      aria-label="Resize panel"
+      tabIndex={0}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      onKeyDown={handleKeyDown}
     >
       {/* Visible handle line */}
       <div className={`absolute inset-y-0 ${edge === "right" ? "right-0" : "left-0"} flex w-2 cursor-col-resize items-center justify-center`}>

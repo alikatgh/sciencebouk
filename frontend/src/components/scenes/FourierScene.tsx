@@ -59,7 +59,7 @@ export function FourierScene(): ReactElement {
     <TeachableEquation
       hook="Every sound your phone plays is just a recipe of pure tones mixed together. This is how MP3 compression, voice recognition, and autotune work."
       hookAction="Toggle individual tones on and off to see how they combine."
-      formula="{signal} = {a_1}\u00D7sin(t) + {a_2}\u00D7sin(2t) + {a_3}\u00D7sin(3t) + {a_4}\u00D7sin(4t)"
+      formula="{a1}\u00D7sin(t) + {a2}\u00D7sin(2t) + {a3}\u00D7sin(3t) + {a4}\u00D7sin(4t)"
       variables={variables}
       lessonSteps={lessons}
       buildLiveFormula={(v) => {
@@ -168,8 +168,10 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
     function buildSVG() {
       if (!el) return
 
-      // Stop animation before tearing down
+      // Stop animation before tearing down, then re-enable for the new loop
+      animationRunning = false
       cancelAnimationFrame(rafRef.current)
+      animationRunning = true
       lastTsRef.current = 0
 
       select(el).select("svg").remove()
@@ -216,7 +218,6 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Fourier decomposition showing harmonics and composite signal")
 
@@ -308,7 +309,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
           .text(`${i + 1}f`)
 
         // Drag handle on top of each bar
-        const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab")
+        const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab").style("touch-action", "none")
         // Invisible hit area (min 30px)
         handleG.append("rect").attr("class", `spectrum-hit-${i}`)
           .attr("x", bx - 4).attr("width", spectrumBarW + 8).attr("height", Math.max(30, spectrumH))
@@ -482,13 +483,19 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        animationRunning = false
+        cancelAnimationFrame(rafRef.current)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
@@ -506,7 +513,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

@@ -1,7 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BlockMath } from "react-katex";
 import {
   ArrowRight,
   CheckCircle2,
@@ -11,6 +10,8 @@ import {
   Scale,
   Split,
 } from "lucide-react";
+import "katex/dist/katex.min.css";
+import { InlineMath } from "react-katex";
 
 type LessonStep = "start" | "afterSubtract" | "solved";
 type ActionId = "subtract-4" | "divide-2";
@@ -196,7 +197,7 @@ export function InteractiveEquation({
             Current equation
           </p>
           <div className="mt-3 text-3xl font-semibold">
-            <BlockMath math={activeState.equation} />
+            <InlineMath math={activeState.equation} />
           </div>
           <p className="mt-2 max-w-xl text-sm text-slate-300">{activeState.prompt}</p>
         </div>

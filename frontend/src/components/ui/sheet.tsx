@@ -27,6 +27,7 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      aria-describedby={undefined}
       className={cn(
         "fixed inset-y-0 z-50 flex flex-col gap-0 border-r border-slate-200 bg-white shadow-2xl transition duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-900",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -36,6 +37,12 @@ const SheetContent = React.forwardRef<
       )}
       {...props}
     >
+      <SheetClose
+        aria-label="Close menu"
+        className="absolute right-3 top-3 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ocean focus:ring-offset-2 dark:ring-offset-slate-900"
+      >
+        <X className="h-4 w-4" />
+      </SheetClose>
       {children}
     </DialogPrimitive.Content>
   </DialogPrimitive.Portal>

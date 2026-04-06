@@ -7,6 +7,7 @@
 :root {
   --slider-color: #4f73ff;
   --slider-glow: #25a67f;
+  --slider-unfilled: rgb(226 232 240);
   color: #112236;
   background:
     radial-gradient(circle at top left, rgba(115, 219, 200, 0.12), transparent 24%),
@@ -47,6 +48,14 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: transparent;
+}
+
+/* Protect KaTeX from Tailwind Preflight resets — DO NOT REMOVE */
+.katex,
+.katex * {
+  border-width: revert;
+  border-style: revert;
+  line-height: revert;
 }
 
 .katex-display {
@@ -106,6 +115,15 @@ section .katex {
   outline: none;
 }
 
+.science-slider:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.dark .science-slider {
+  --slider-unfilled: rgb(51 65 85);
+}
+
 .science-slider::-webkit-slider-runnable-track {
   height: 0.72rem;
   border-radius: 999px;
@@ -137,33 +155,6 @@ section .katex {
   border: 3px solid var(--slider-color);
   background: white;
   box-shadow: 0 8px 18px rgba(17, 34, 54, 0.18);
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid currentColor;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  cursor: grab;
-}
-
-input[type="range"]::-webkit-slider-thumb:active {
-  cursor: grabbing;
-  transform: scale(1.2);
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid currentColor;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  cursor: grab;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -201,8 +192,8 @@ input[type="range"]::-moz-range-thumb {
 .color-blind .bg-emerald-100 { background-image: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 6px); }
 .color-blind .bg-ocean { background-image: repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.15) 3px, rgba(255,255,255,0.15) 6px); }
 
-/* Settings: formula scale */
-.katex { transform: scale(var(--formula-scale, 1)); transform-origin: left center; }
+/* Settings: formula scale — scoped to visualization area only, prevents sidebar/card overlap */
+.equation-content .katex { transform: scale(var(--formula-scale, 1)); transform-origin: left center; }
 
 /* Settings: animation speed multiplier */
 :root { --animation-speed: 1; }

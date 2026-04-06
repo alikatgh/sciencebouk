@@ -255,7 +255,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
   }), [frame.xScale, frame.yScale, secantData])
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}>
+    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
       <div className="flex h-full flex-col">
         {/* Info bar — clickable badges */}
         <div className="flex flex-wrap items-center gap-2 px-4 pt-3">

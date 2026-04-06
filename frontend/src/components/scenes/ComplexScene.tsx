@@ -1,12 +1,11 @@
 import type { ReactElement } from "react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { drag, type D3DragEvent } from "d3-drag"
 import { scaleLinear } from "d3-scale"
-import { select, type Selection } from "d3-selection"
+import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
-import { useContainerSize } from "../../hooks/useContainerSize"
 
 const F = "Manrope, sans-serif"
 
@@ -170,9 +169,10 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       currentW = W
       currentH = H
 
-      const CX = W * 0.42
+      const isNarrow = W < 500
+      const CX = isNarrow ? W * 0.5 : W * 0.42
       const CY = H * 0.5
-      const RADIUS = Math.min(W, H) * 0.32
+      const RADIUS = Math.min(W, H) * (isNarrow ? 0.36 : 0.32)
 
       const xScale = scaleLinear().domain([-3, 3]).range([CX - RADIUS * 1.5, CX + RADIUS * 1.5])
       const yScale = scaleLinear().domain([-3, 3]).range([CY + RADIUS * 1.5, CY - RADIUS * 1.5])
@@ -253,29 +253,31 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       g.append("text").attr("class", "point-label")
         .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
 
-      // Info panel
-      const infoX = W * 0.73
-      const infoTxtX = infoX + 18
-      g.append("rect").attr("x", infoX).attr("y", H * 0.07).attr("width", W * 0.24).attr("height", H * 0.41).attr("rx", 14)
-        .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-      g.append("text").attr("x", infoTxtX).attr("y", H * 0.13)
-        .attr("font-size", 17).attr("fill", "#1e293b").attr("font-weight", 700).attr("font-family", F)
-        .text("Complex Number")
+      // Info panel — hidden on narrow screens (redundant with live formula below)
+      if (!isNarrow) {
+        const infoX = W * 0.73
+        const infoTxtX = infoX + 18
+        g.append("rect").attr("x", infoX).attr("y", H * 0.07).attr("width", W * 0.24).attr("height", H * 0.41).attr("rx", 14)
+          .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+        g.append("text").attr("x", infoTxtX).attr("y", H * 0.13)
+          .attr("font-size", 17).attr("fill", "#1e293b").attr("font-weight", 700).attr("font-family", F)
+          .text("Complex Number")
 
-      g.append("text").attr("x", infoTxtX).attr("y", H * 0.19)
-        .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Rectangular:")
-      g.append("text").attr("class", "info-rect").attr("x", infoTxtX).attr("y", H * 0.23)
-        .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+        g.append("text").attr("x", infoTxtX).attr("y", H * 0.19)
+          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Rectangular:")
+        g.append("text").attr("class", "info-rect").attr("x", infoTxtX).attr("y", H * 0.23)
+          .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
 
-      g.append("text").attr("x", infoTxtX).attr("y", H * 0.29)
-        .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Polar:")
-      g.append("text").attr("class", "info-polar").attr("x", infoTxtX).attr("y", H * 0.33)
-        .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+        g.append("text").attr("x", infoTxtX).attr("y", H * 0.29)
+          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Polar:")
+        g.append("text").attr("class", "info-polar").attr("x", infoTxtX).attr("y", H * 0.33)
+          .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
 
-      g.append("text").attr("x", infoTxtX).attr("y", H * 0.39)
-        .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Magnitude:")
-      g.append("text").attr("class", "info-mag").attr("x", infoTxtX).attr("y", H * 0.43)
-        .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+        g.append("text").attr("x", infoTxtX).attr("y", H * 0.39)
+          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Magnitude:")
+        g.append("text").attr("class", "info-mag").attr("x", infoTxtX).attr("y", H * 0.43)
+          .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+      }
 
       // D3 action buttons inside SVG
       const btnLabels = ["x i", "x (-1)", "Conj", "Reset"]
@@ -339,10 +341,12 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
           .attr("x", px + 16).attr("y", py - 16)
           .text(`z = ${formatComplex(aVal, bVal)}`)
 
-        // Info panel
-        g.select(".info-rect").text(`z = ${formatComplex(aVal, bVal)}`)
-        g.select(".info-polar").text(`|z| = ${magnitude.toFixed(3)}, \u03B8 = ${angleDeg.toFixed(1)}\u00B0`)
-        g.select(".info-mag").text(`|z| = \u221A(${aVal.toFixed(2)}\u00B2 + ${bVal.toFixed(2)}\u00B2) = ${magnitude.toFixed(3)}`)
+        // Info panel — only exists when !isNarrow
+        if (!isNarrow) {
+          g.select(".info-rect").text(`z = ${formatComplex(aVal, bVal)}`)
+          g.select(".info-polar").text(`|z| = ${magnitude.toFixed(3)}, \u03B8 = ${angleDeg.toFixed(1)}\u00B0`)
+          g.select(".info-mag").text(`|z| = \u221A(${aVal.toFixed(2)}\u00B2 + ${bVal.toFixed(2)}\u00B2) = ${magnitude.toFixed(3)}`)
+        }
       }
 
       // Expose for external sync
@@ -417,13 +421,17 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
@@ -438,7 +446,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

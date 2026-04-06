@@ -69,7 +69,6 @@ export function SchrodingerScene(): ReactElement {
         return `E_{${v.n}} = ${energy.toFixed(2)} \\;\\text{(natural units)}`
       }}
       describeResult={(v) => {
-        const energy = (v.n * v.n * Math.PI * Math.PI) / (2 * v.L * v.L)
         if (v.n === 1) return "Ground state -- lowest possible energy"
         if (v.n >= 4) return `Highly excited -- ${v.n} nodes in the wave function`
         return `Energy level ${v.n} -- ${v.n - 1} node${v.n > 2 ? 's' : ''} in the wave function`
@@ -120,6 +119,10 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
   // Store the play/pause visual update function
   const updatePlayBtnRef = useRef<((isPlaying: boolean) => void) | null>(null)
+
+  // yScale invert ref so the drag handler can use accurate energy→n mapping
+  // Updated inside updateGeometry on every geometry rebuild
+  const yScaleInvertRef = useRef<((y: number) => number) | null>(null)
 
   // Sync React props -> SVG when not dragging (handles presets, lesson steps)
   useEffect(() => {
@@ -339,7 +342,8 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         if (playingRef.current) {
-          // Restart animation loop
+          // Cancel any previous loop before starting a new one
+          cancelAnimationFrame(rafRef.current)
           lastTimeRef.current = 0
           rafRef.current = requestAnimationFrame(animateLoop)
         }
@@ -405,6 +409,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
         const maxE = energyLevels[4].energy
         const yScale = scaleLinear().domain([0, maxE * 1.1]).range([energyBottom, energyTop + H * 0.023])
+        yScaleInvertRef.current = (y: number) => yScale.invert(y)
 
         const currentEnergy = (nVal * nVal * Math.PI * Math.PI) / (2 * LVal * LVal)
 
@@ -510,10 +515,10 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
           select(this).select("circle").transition().duration(100).attr("r", 10)
         })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-          // Map y position to nearest quantum number (1-5)
-          const yFrac = (event.y - energyTop) / (energyBottom - energyTop)
-          // top = high n, bottom = low n (energy increases upward)
-          const rawN = Math.round(5 - yFrac * 4)
+          // Map y position to energy via yScale.invert, then compute n = round(sqrt(E / E1))
+          const baseEnergy = (Math.PI * Math.PI) / (2 * liveRef.current.L * liveRef.current.L)
+          const energy = yScaleInvertRef.current ? yScaleInvertRef.current(event.y) : 0
+          const rawN = Math.round(Math.sqrt(Math.max(0, energy) / baseEnergy))
           const clamped = Math.max(1, Math.min(5, rawN))
           liveRef.current.n = clamped
           updateGeometry(clamped, liveRef.current.L)
@@ -555,13 +560,18 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        cancelAnimationFrame(rafRef.current)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
@@ -579,7 +589,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

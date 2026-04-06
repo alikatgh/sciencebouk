@@ -60,15 +60,18 @@ export function RelativityScene(): ReactElement {
       variables={variables}
       lessonSteps={lessons}
       buildLiveFormula={(v) => {
-        const gamma = 1 / Math.sqrt(1 - v.v * v.v)
+        const safeV = Math.min(v.v, 0.999)
+        const gamma = 1 / Math.sqrt(1 - safeV * safeV)
         return `{\\color{#ef4444}\\gamma} = \\frac{1}{\\sqrt{1 - {\\color{#3b82f6}${v.v.toFixed(2)}}^2}} = {\\color{#ef4444}${gamma.toFixed(2)}}`
       }}
       buildResultLine={(v) => {
-        const gamma = 1 / Math.sqrt(1 - v.v * v.v)
+        const safeV = Math.min(v.v, 0.999)
+        const gamma = 1 / Math.sqrt(1 - safeV * safeV)
         return `\\gamma = ${gamma.toFixed(4)}`
       }}
       describeResult={(v) => {
-        const gamma = 1 / Math.sqrt(1 - v.v * v.v)
+        const safeV = Math.min(v.v, 0.999)
+        const gamma = 1 / Math.sqrt(1 - safeV * safeV)
         const pct = ((1 - 1 / gamma) * 100)
         if (v.v < 0.01) return "At rest -- no relativistic effects"
         if (v.v < 0.1) return "Everyday speed -- effects negligible"
@@ -102,7 +105,8 @@ function RelativityBridge({ vars, setVar, highlightedVar, setHighlightedVar }: {
   highlightedVar: string | null
   setHighlightedVar: (name: string | null) => void
 }): ReactElement {
-  const gamma = 1 / Math.sqrt(1 - vars.v * vars.v)
+  const safeV = Math.min(vars.v, 0.999)
+  const gamma = 1 / Math.sqrt(1 - safeV * safeV)
 
   useEffect(() => {
     if (Math.abs(vars.gamma - gamma) > 0.01) {
@@ -222,7 +226,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const lpLeft = Math.round(W * 0.022)
       const lpWidth = Math.round(W * 0.433)
       const lpTop = Math.round(H * 0.037)
-      const lpHeight = Math.round(H * 0.79)
+      const lpHeight = Math.round(H * 0.88)
       g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
@@ -317,7 +321,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
       // --- Time Dilation panel ---
       const tdTop = lpTop
-      const tdHeight = Math.round(H * 0.42)
+      const tdHeight = Math.round(H * 0.52)
       g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
@@ -365,7 +369,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
       // --- Length Contraction panel ---
       const lcTop = tdTop + tdHeight + Math.round(H * 0.023)
-      const lcHeight = Math.round(H * 0.23)
+      const lcHeight = Math.round(H * 0.30)
       g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
@@ -391,41 +395,15 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("fill", "#92400e")
         .attr("font-family", F).attr("font-weight", 600)
 
-      // --- Values panel ---
-      const vpTop = lcTop + lcHeight + Math.round(H * 0.023)
-      const vpHeight = Math.round(H * 0.23)
-      g.append("rect").attr("x", rpLeft).attr("y", vpTop).attr("width", rpWidth).attr("height", vpHeight)
-        .attr("rx", 12).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-
-      const valX1 = Math.round(rpLeft + rpWidth * 0.24)
-      const valX2 = Math.round(rpLeft + rpWidth * 0.69)
-      const valY1 = vpTop + Math.round(vpHeight * 0.3)
-      g.append("text").attr("class", "val-v").attr("x", valX1).attr("y", valY1)
-        .attr("font-size", fs * 1.2).attr("font-weight", 700).attr("font-family", F)
-        .attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
-      g.select(".val-v")
-        .on("mouseenter", () => onHighlightRef.current('v'))
-        .on("mouseleave", () => onHighlightRef.current(null))
-
-      g.append("text").attr("class", "val-gamma").attr("x", valX2).attr("y", valY1)
-        .attr("font-size", fs * 1.3).attr("font-weight", 800).attr("font-family", F)
-        .attr("fill", VAR_COLORS.result).style("cursor", "pointer")
-      g.select(".val-gamma")
-        .on("mouseenter", () => onHighlightRef.current('gamma'))
-        .on("mouseleave", () => onHighlightRef.current(null))
-
-      g.append("text").attr("class", "val-time").attr("x", valX1).attr("y", valY1 + Math.round(vpHeight * 0.26))
-        .attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-      g.append("text").attr("class", "val-length").attr("x", valX1).attr("y", valY1 + Math.round(vpHeight * 0.46))
-        .attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-
-      // Extreme annotation
-      g.append("text").attr("class", "extreme-label").attr("x", rpCenter).attr("y", valY1 + Math.round(vpHeight * 0.66))
-        .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("font-family", F).attr("font-weight", 600)
+      // Extreme annotation (below contraction panel)
+      g.append("text").attr("class", "extreme-label")
+        .attr("x", rpCenter).attr("y", lcTop + lcHeight + Math.round(H * 0.05))
+        .attr("text-anchor", "middle").attr("font-size", fs * 0.85).attr("font-family", F).attr("font-weight", 600)
 
       // ── updateScene: repositions all dynamic elements from velocity WITHOUT React ──
       function updateScene(vel: number) {
-        const gam = 1 / Math.sqrt(1 - vel * vel)
+        const safeVel = Math.min(vel, 0.999)
+        const gam = 1 / Math.sqrt(1 - safeVel * safeVel)
 
         // Update gammaRef so the clock animation picks up the new value immediately
         gammaRef.current = gam
@@ -452,12 +430,6 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         g.select(".contract-label")
           .attr("x", barX + contractedWidth / 2)
           .text(`L' = ${(1 / gam).toFixed(3)}`)
-
-        // Values
-        g.select(".val-v").text(`v/c = ${vel.toFixed(3)}`)
-        g.select(".val-gamma").text(`\u03B3 = ${gam.toFixed(4)}`)
-        g.select(".val-time").text(`Time dilation: \u0394t' = ${gam.toFixed(3)} \u0394t`)
-        g.select(".val-length").text(`Length contraction: L' = ${(1 / gam).toFixed(4)} L`)
 
         // Extreme annotations
         if (gam > 7) {
@@ -506,13 +478,18 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        cancelAnimationFrame(rafRef.current)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
@@ -529,7 +506,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

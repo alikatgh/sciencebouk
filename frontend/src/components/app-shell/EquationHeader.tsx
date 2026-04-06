@@ -1,11 +1,50 @@
-import type { ReactElement } from "react"
-import { useState } from "react"
+import type { ReactElement, ReactNode } from "react"
+import { Component, lazy, memo, Suspense, useEffect, useRef, useState } from "react"
 import { Menu, User } from "lucide-react"
-import { ScientistModal } from "../ScientistModal"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 import type { EquationSummary } from "../../data/equationManifest"
+import { prefetchEquationScene } from "../sceneRegistry"
+
+const ScientistModal = lazy(() =>
+  import("../ScientistModal").then((module) => ({ default: module.ScientistModal })),
+)
+
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { failed: false }
+  }
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true }
+  }
+
+  override render(): ReactNode {
+    if (this.state.failed) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                disabled
+                className="hidden cursor-not-allowed text-[11px] text-slate-300 sm:inline"
+                type="button"
+                aria-label="Scientist info unavailable"
+              >
+                Info
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Info unavailable</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    }
+    return this.props.children
+  }
+}
 
 interface EquationHeaderProps {
   equation: EquationSummary
@@ -20,7 +59,7 @@ interface EquationHeaderProps {
   onSelectEquation: (id: number) => void
 }
 
-export function EquationHeader({
+function EquationHeaderComponent({
   equation,
   sidebarOpen,
   prevEquation,
@@ -33,29 +72,53 @@ export function EquationHeader({
   onSelectEquation,
 }: EquationHeaderProps): ReactElement {
   return (
-    <div className="flex flex-shrink-0 items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-800">
-      <Button variant="ghost" size="icon-sm" onClick={onOpenDrawer} className="lg:hidden">
+    <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-slate-200 px-2 py-1.5 sm:gap-2 sm:px-3 sm:py-2 dark:border-slate-800">
+      <Button variant="ghost" size="icon-sm" onClick={onOpenDrawer} className="lg:hidden" aria-label="Open equation browser">
         <Menu className="h-4 w-4" />
       </Button>
-      <h2 className="min-w-0 truncate font-display text-sm font-bold tracking-tight text-slate-900 dark:text-white md:text-base">
+      <h2 className="min-w-0 truncate font-display text-xs font-bold tracking-tight text-slate-900 dark:text-white sm:text-sm md:text-base">
         {equation.title}
       </h2>
       <Badge variant="secondary" className="hidden sm:inline-flex">
         {equation.category}
       </Badge>
-      <ScientistButton equationId={equation.id} author={equation.author} year={equation.year} />
+      <span className="hidden sm:inline-flex">
+        <ScientistButton equationId={equation.id} author={equation.author} year={equation.year} />
+      </span>
       <div className="ml-auto flex items-center gap-1">
         {!sidebarOpen && prevEquation && (
-          <Button variant="ghost" size="xs" onClick={() => onSelectEquation(prevEquation.id)} className="hidden text-slate-400 lg:inline-flex">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => onSelectEquation(prevEquation.id)}
+            onMouseEnter={() => {
+              void prefetchEquationScene(prevEquation.id)
+            }}
+            onFocus={() => {
+              void prefetchEquationScene(prevEquation.id)
+            }}
+            className="hidden text-slate-400 lg:inline-flex"
+          >
             {"←"}
           </Button>
         )}
         {!sidebarOpen && nextEquation && (
-          <Button variant="ghost" size="xs" onClick={() => onSelectEquation(nextEquation.id)} className="hidden text-slate-400 lg:inline-flex">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => onSelectEquation(nextEquation.id)}
+            onMouseEnter={() => {
+              void prefetchEquationScene(nextEquation.id)
+            }}
+            onFocus={() => {
+              void prefetchEquationScene(nextEquation.id)
+            }}
+            className="hidden text-slate-400 lg:inline-flex"
+          >
             {"→"}
           </Button>
         )}
-        <Button variant="ghost" size="icon-sm" onClick={isAuthenticated ? onOpenProfile : onOpenAuth} className="lg:hidden">
+        <Button variant="ghost" size="icon-sm" onClick={isAuthenticated ? onOpenProfile : onOpenAuth} className="lg:hidden" aria-label={isAuthenticated ? "Open profile" : "Sign in"}>
           {isAuthenticated ? (
             <Avatar className="h-5 w-5">
               <AvatarFallback className="text-[9px]">{userInitial}</AvatarFallback>
@@ -69,8 +132,16 @@ export function EquationHeader({
   )
 }
 
+export const EquationHeader = memo(EquationHeaderComponent)
+
 function ScientistButton({ equationId, author, year }: { equationId: number; author: string; year: string }): ReactElement {
   const [open, setOpen] = useState(false)
+  const mountedRef = useRef(false)
+
+  useEffect(() => {
+    if (open) mountedRef.current = true
+  }, [open])
+
   return (
     <>
       <button
@@ -81,7 +152,13 @@ function ScientistButton({ equationId, author, year }: { equationId: number; aut
       >
         {author}, {year}
       </button>
-      <ScientistModal open={open} onClose={() => setOpen(false)} equationId={equationId} />
+      {mountedRef.current && (
+        <ChunkErrorBoundary>
+          <Suspense fallback={null}>
+            <ScientistModal open={open} onClose={() => setOpen(false)} equationId={equationId} />
+          </Suspense>
+        </ChunkErrorBoundary>
+      )}
     </>
   )
 }

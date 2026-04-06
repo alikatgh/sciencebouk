@@ -1,5 +1,6 @@
 import type { ReactElement } from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 import type { Variable } from "./types"
 
@@ -21,49 +22,58 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
   const [editing, setEditing] = useState<{ varName: string; color: string; rect: DOMRect } | null>(null)
   const [inputValue, setInputValue] = useState("")
 
-  // After KaTeX renders, attach click handlers to colored number spans
+  const colorLookup = useMemo(() => {
+    return new Map((variables ?? []).map((variable) => [variable.color.toLowerCase(), variable]))
+  }, [variables])
+
+  // Click handler for colored spans inside KaTeX-rendered live formula
   useEffect(() => {
-    const el = liveRef.current
-    if (!el || !variables || !onVariableChange) return
+    const container = liveRef.current
+    if (!container || !variables || !onVariableChange) return
 
-    // Find all colored spans in the rendered KaTeX
-    const coloredSpans = el.querySelectorAll<HTMLSpanElement>('span.mord[style*="color"]')
-    coloredSpans.forEach((span) => {
-      const color = span.style.color
-      if (!color) return
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      // KaTeX renders \color{} as <span style="color: ...">
+      const colorEl = target.closest<HTMLElement>("[style*='color']")
+      if (!colorEl) return
 
-      // Match color to variable
-      const matchedVar = variables.find((v) => {
-        const varColor = v.color.toLowerCase()
-        // Compare rgb values
-        const temp = document.createElement("div")
-        temp.style.color = varColor
-        document.body.appendChild(temp)
-        const computed = getComputedStyle(temp).color
-        document.body.removeChild(temp)
-        return computed === color || varColor === color
+      const style = colorEl.style.color
+      if (!style) return
+
+      // Normalize color to hex for lookup
+      const normalized = normalizeColor(style)
+      const matchedVar = colorLookup.get(normalized)
+      if (!matchedVar || matchedVar.constant || matchedVar.locked) return
+
+      const parentRect = container.getBoundingClientRect()
+      const rect = colorEl.getBoundingClientRect()
+      setEditing({
+        varName: matchedVar.name,
+        color: matchedVar.color,
+        rect: new DOMRect(rect.left - parentRect.left, rect.top - parentRect.top, rect.width, rect.height),
       })
+      setInputValue(String(matchedVar.value))
+    }
 
+    container.addEventListener("click", handleClick)
+    return () => container.removeEventListener("click", handleClick)
+  }, [variables, onVariableChange, colorLookup])
+
+  // Add cursor pointer to colored spans
+  useEffect(() => {
+    const container = liveRef.current
+    if (!container || !variables || !onVariableChange) return
+
+    const coloredSpans = container.querySelectorAll<HTMLElement>("[style*='color']")
+    for (const span of coloredSpans) {
+      const normalized = normalizeColor(span.style.color)
+      const matchedVar = colorLookup.get(normalized)
       if (matchedVar && !matchedVar.constant && !matchedVar.locked) {
         span.style.cursor = "pointer"
-        span.style.borderBottom = `1.5px dashed ${matchedVar.color}`
-        span.style.paddingBottom = "1px"
-        span.title = `Click to edit ${matchedVar.symbol}`
-
-        span.onclick = (e) => {
-          e.stopPropagation()
-          const rect = span.getBoundingClientRect()
-          const parentRect = el.getBoundingClientRect()
-          setEditing({
-            varName: matchedVar.name,
-            color: matchedVar.color,
-            rect: new DOMRect(rect.left - parentRect.left, rect.top - parentRect.top, rect.width, rect.height),
-          })
-          setInputValue(String(matchedVar.value))
-        }
+        span.style.borderBottom = "1px dashed currentColor"
       }
-    })
-  }, [liveFormula, variables, onVariableChange])
+    }
+  }, [liveFormula, variables, onVariableChange, colorLookup])
 
   const handleSubmit = useCallback(() => {
     if (!editing || !variables || !onVariableChange) return
@@ -79,13 +89,17 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
   return (
     <div className="relative space-y-1">
       {/* Letter formula */}
-      <div className="overflow-x-auto text-xs text-slate-400 dark:text-slate-500">
-        <InlineMath math={letterFormula} />
-      </div>
-      {/* Live formula — numbers are clickable */}
-      <div ref={liveRef} className="overflow-x-auto text-base text-slate-800 dark:text-slate-200">
-        <InlineMath math={liveFormula} />
-      </div>
+      {letterFormula && (
+        <div className="overflow-x-auto text-xs text-slate-400 dark:text-slate-500">
+          <InlineMath math={letterFormula} />
+        </div>
+      )}
+      {/* Live formula — colored values are clickable */}
+      {liveFormula && (
+        <div ref={liveRef} className="overflow-x-auto text-base text-slate-800 dark:text-slate-200">
+          <InlineMath math={liveFormula} />
+        </div>
+      )}
       {/* Inline edit overlay */}
       {editing && (
         <div
@@ -103,6 +117,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
             }}
             className="w-20 rounded border-2 bg-white px-1.5 py-0.5 font-mono text-sm font-bold shadow-lg outline-none dark:bg-slate-700"
             style={{ borderColor: editing.color, color: editing.color }}
+            aria-label="Edit variable value"
             autoFocus
           />
         </div>
@@ -121,4 +136,16 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       )}
     </div>
   )
+}
+
+/** Normalize CSS color (rgb/hex) to lowercase hex for map lookup */
+function normalizeColor(cssColor: string): string {
+  const rgb = cssColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+  if (rgb) {
+    const r = Number(rgb[1]).toString(16).padStart(2, "0")
+    const g = Number(rgb[2]).toString(16).padStart(2, "0")
+    const b = Number(rgb[3]).toString(16).padStart(2, "0")
+    return `#${r}${g}${b}`
+  }
+  return cssColor.toLowerCase()
 }

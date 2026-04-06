@@ -16,6 +16,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "moduleDetection": "force",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "types": ["vite/client", "vitest/globals"]
   },
   "include": ["src"],

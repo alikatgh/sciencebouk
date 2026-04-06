@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   const refreshUser = useCallback(async () => {
     const access = getAccessToken()
     if (!access) {
+      clearStoredTokens()
       setUser(null)
       return
     }
@@ -87,13 +88,27 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     try {
       await fetchMe(access)
       return
-    } catch {
-      const newAccess = await refreshAccessToken()
-      if (!newAccess) {
+    } catch (firstError) {
+      // Only attempt token refresh for auth failures; treat network errors as transient
+      const isAuthError = firstError instanceof Error && /^Error 40(1|3)/.test(firstError.message)
+      if (!isAuthError) {
+        console.warn("[AuthContext] refreshUser: non-auth error, skipping token refresh", firstError)
         setUser(null)
         return
       }
-      await fetchMe(newAccess)
+      try {
+        const newAccess = await refreshAccessToken()
+        if (!newAccess) {
+          clearStoredTokens()
+          setUser(null)
+          return
+        }
+        await fetchMe(newAccess)
+      } catch (refreshError) {
+        console.warn("[AuthContext] refreshUser: token refresh failed", refreshError)
+        clearStoredTokens()
+        setUser(null)
+      }
     }
   }, [fetchMe, getAccessToken])
 

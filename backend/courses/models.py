@@ -74,7 +74,8 @@ class UserProgress(models.Model):
     anon_id = models.CharField(max_length=100, blank=True, default="", help_text="Legacy anonymous identifier")
     equation = models.ForeignKey(Equation, on_delete=models.CASCADE, related_name="progress")
     completed = models.BooleanField(default=False)
-    last_viewed = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_viewed = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True, default="")
     time_spent_seconds = models.IntegerField(default=0)
     lesson_step = models.CharField(max_length=50, blank=True)
@@ -84,8 +85,16 @@ class UserProgress(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user", "equation"], name="unique_user_equation",
-                                     condition=models.Q(user__isnull=False)),
+            models.UniqueConstraint(
+                fields=["user", "equation"],
+                name="unique_user_equation",
+                condition=models.Q(user__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["anon_id", "equation"],
+                name="unique_anon_equation",
+                condition=models.Q(user__isnull=True),
+            ),
         ]
 
     def __str__(self):

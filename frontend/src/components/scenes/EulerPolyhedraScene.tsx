@@ -268,7 +268,7 @@ export function EulerPolyhedraScene(): ReactElement {
         { label: "Icosahedron", values: { V: 12, E: 30, F: 20 } },
       ]}
     >
-      {({ vars, setVar }) => (
+      {({ setVar }) => (
         <D3EulerVisual onUpdateVars={setVar} />
       )}
     </TeachableEquation>
@@ -293,11 +293,18 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
   const angleXRef = useRef(0.3)
   const autoRotateRef = useRef(true)
   const rafRef = useRef(0)
+  const wRef = useRef(W)
+  const hRef = useRef(H)
+  // Shared running flag in a ref so cleanup can stop a stale animation frame
+  // even if it fires after the effect has already returned its cleanup function.
+  const runningRef = useRef(false)
 
   // Setup -- rebuilds on resize
   useEffect(() => {
     const container = containerRef.current
     if (!container || W < 100 || H < 100) return
+    wRef.current = W
+    hRef.current = H
     select(container).select("svg").remove()
 
     const svg = select(container)
@@ -317,17 +324,18 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     gRef.current = g
 
     // Shape selector buttons (these are D3 elements, not React)
+    const btnW = Math.min(160, Math.floor(W * 0.22))
     for (let i = 0; i < solids.length; i++) {
       const bx = W * 0.04
       const by = H * 0.07 + i * (H * 0.1)
       const btnG = svg.append("g").style("cursor", "pointer")
       btnG.append("rect")
         .attr("class", `btn-bg-${i}`)
-        .attr("x", bx).attr("y", by).attr("width", 160).attr("height", 36)
+        .attr("x", bx).attr("y", by).attr("width", btnW).attr("height", 36)
         .attr("rx", 10)
       btnG.append("text")
         .attr("class", `btn-txt-${i}`)
-        .attr("x", bx + 80).attr("y", by + 24).attr("text-anchor", "middle")
+        .attr("x", bx + btnW / 2).attr("y", by + 24).attr("text-anchor", "middle")
         .attr("font-size", 15).attr("font-family", F)
         .text(solids[i].name)
       btnG.on("click", () => {
@@ -398,10 +406,17 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
       .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
       .text("Drag the shape to rotate it in 3D")
 
+    // Stop any previously running animation loop before starting a new one.
+    // runningRef is shared across renders, so a stale rAF callback checks it
+    // and exits even if it fires in the brief window before cancelAnimationFrame
+    // takes effect (possible when the browser coalesces multiple rAF handles).
+    runningRef.current = false
+    cancelAnimationFrame(rafRef.current)
+
     // Animation loop
-    let running = true
+    runningRef.current = true
     const animate = () => {
-      if (!running) return
+      if (!runningRef.current) return
       if (autoRotateRef.current) {
         angleRef.current += 0.008
       }
@@ -411,7 +426,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     rafRef.current = requestAnimationFrame(animate)
 
     return () => {
-      running = false
+      runningRef.current = false
       cancelAnimationFrame(rafRef.current)
       select(container).select("svg").remove()
     }
@@ -446,6 +461,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     const idx = selectedIdxRef.current
     const solid = solids[idx]
     const angle = angleRef.current
+    const W = wRef.current
+    const H = hRef.current
     const cx = W * 0.6
     const cy = H * 0.45
     const baseScale = Math.min(W, H) * 0.22
@@ -516,7 +533,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

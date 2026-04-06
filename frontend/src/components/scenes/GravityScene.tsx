@@ -19,13 +19,13 @@ const variables: Variable[] = [
 const lessons: LessonStep[] = [
   {
     id: 'touch',
-    instruction: "Grab the blue mass and drag it left/right to change the distance.",
-    highlightElements: ['m1'],
-    unlockedVariables: ['m1'],
-    lockedVariables: ['m2', 'r'],
-    successCondition: { type: 'variable_changed', target: 'm1' },
+    instruction: "Drag the distance between the bodies to see how gravity changes.",
+    highlightElements: ['r'],
+    unlockedVariables: ['r'],
+    lockedVariables: ['m1', 'm2'],
+    successCondition: { type: 'variable_changed', target: 'r' },
     celebration: 'subtle',
-    insight: "See the force arrow grow? More mass means more gravitational pull.",
+    insight: "See the force arrow change? Closer bodies pull harder — gravity falls off with distance squared.",
   },
   {
     id: 'distance',
@@ -98,7 +98,7 @@ interface Props {
   onHighlight: (name: string | null) => void
 }
 
-function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHighlight }: Props): ReactElement {
+function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar, onHighlight }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const onVarChangeRef = useRef(onVarChange)
   const onHighlightRef = useRef(onHighlight)
@@ -158,12 +158,14 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
       currentW = W
       currentH = H
 
+      // Skip rendering if the container is too narrow to accommodate the layout
+      if (W < 300) return
+
       const svg = select(el)
         .append("svg")
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .style("touch-action", "none")
         .attr("role", "img")
         .attr("aria-label", "Two masses with gravitational force — drag to explore")
 
@@ -206,7 +208,7 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
         .attr("stroke", VAR_COLORS.primary).attr("stroke-width", 2.5).attr("stroke-dasharray", "6 4").attr("opacity", 0)
 
       // Mass 1 group — draggable
-      const m1G = g.append("g").attr("class", "m1-group").style("cursor", "grab")
+      const m1G = g.append("g").attr("class", "m1-group").style("cursor", "grab").style("touch-action", "none")
       m1G.append("circle").attr("class", "m1-hit").attr("cy", cy).attr("r", 50).attr("fill", "transparent")
       m1G.append("circle").attr("class", "m1-circle").attr("cy", cy)
         .attr("fill", "#93bbfd").attr("stroke", VAR_COLORS.primary).attr("stroke-width", 3)
@@ -221,7 +223,7 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
         .attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 2.5).attr("stroke-dasharray", "6 4").attr("opacity", 0)
 
       // Mass 2 group — draggable
-      const m2G = g.append("g").attr("class", "m2-group").style("cursor", "grab")
+      const m2G = g.append("g").attr("class", "m2-group").style("cursor", "grab").style("touch-action", "none")
       m2G.append("circle").attr("class", "m2-hit").attr("cy", cy).attr("r", 50).attr("fill", "transparent")
       m2G.append("circle").attr("class", "m2-circle").attr("cy", cy)
         .attr("fill", "#fcd88e").attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 3)
@@ -242,11 +244,11 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
         const forceVal = (m1Val * m2Val) / (rVal * rVal)
 
         const rNorm = (rVal - 1.5) / (10 - 1.5)
-        const gap = 140 + rNorm * (W - 420)
-        const x1 = cx - gap / 2
-        const x2 = cx + gap / 2
         const r1 = 24 + m1Val * 5
         const r2 = 24 + m2Val * 5
+        const gap = Math.max(r1 + r2 + 40, 140 + rNorm * (W - 420))
+        const x1 = cx - gap / 2
+        const x2 = cx + gap / 2
 
         const maxForce = (10 * 10) / (1.5 * 1.5)
         const forceNorm = Math.min(forceVal / maxForce, 1)
@@ -312,6 +314,7 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
         })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
           const availW = W - 280
+          if (availW <= 0) return
           const gap = Math.abs(event.x - W / 2) * 2
           const newR = 1.5 + (gap / availW) * (10 - 1.5)
           const snapped = Math.round(Math.max(1.5, Math.min(10, newR)) * 10) / 10
@@ -336,6 +339,7 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
           const cx = W / 2
           const gap = Math.abs(event.x - cx) * 2
           const totalRange = W - 280
+          if (totalRange <= 0) return
           const newR = 1.5 + (gap / totalRange) * (10 - 1.5)
           const snapped = Math.round(Math.max(1.5, Math.min(10, newR)) * 10) / 10
           liveRef.current.r = snapped
@@ -358,13 +362,17 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
@@ -379,7 +387,7 @@ function D3GravityVisual({ m1, m2, r, force, onVarChange, highlightedVar, onHigh
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

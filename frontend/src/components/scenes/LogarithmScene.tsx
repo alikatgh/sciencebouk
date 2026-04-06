@@ -135,6 +135,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
+      if (H < 200) return
       currentW = W
       currentH = H
 
@@ -298,7 +299,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       const panelX = curveLeft
       const panelY = curveBottom + 30
       const panelW = curveRight - curveLeft
-      const panelH = H * 0.28
+      const panelH = Math.min(H * 0.28, H - panelY - 10)
       g.append("rect")
         .attr("x", panelX).attr("y", panelY).attr("width", panelW).attr("height", panelH)
         .attr("rx", 12).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
@@ -447,13 +448,17 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)
@@ -468,7 +473,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" style={{ maxHeight: "75vh" }}
+      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     />
   )
 }

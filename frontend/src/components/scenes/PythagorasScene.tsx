@@ -3,13 +3,42 @@ import { useEffect, useRef } from "react"
 import { select } from "d3-selection"
 import { drag, type D3DragEvent } from "d3-drag"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import type { Variable, LessonStep } from "../teaching/types"
+import type { Variable, LessonStep, GlossaryTerm } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
-import { getEquationConfig } from "../../data/equationConfig"
 
 const FONT = "Manrope, sans-serif"
-
-const eqConfig = getEquationConfig(1)
+const glossary: GlossaryTerm[] = [
+  {
+    words: ["hypotenuse"],
+    highlightClass: "sq-c",
+    color: "#ef4444",
+    tooltip: "The longest side, opposite the right angle",
+  },
+  {
+    words: ["right angle", "right triangle"],
+    highlightClass: "right-angle",
+    color: "#64748b",
+    tooltip: "The 90° corner",
+  },
+  {
+    words: ["square", "squares", "area"],
+    highlightClass: "all-squares",
+    color: "#8b5cf6",
+    tooltip: "Area squares attached to each side",
+  },
+  {
+    words: ["triangle"],
+    highlightClass: "tri",
+    color: "#334155",
+    tooltip: "The right triangle",
+  },
+  {
+    words: ["ramp"],
+    highlightClass: "sq-c",
+    color: "#ef4444",
+    tooltip: "The ramp length equals the hypotenuse",
+  },
+]
 
 const variables: Variable[] = [
   { name: 'a', symbol: 'a', latex: 'a', value: 3, min: 1, max: 12, step: 0.5, color: VAR_COLORS.primary, description: 'Vertical side' },
@@ -75,7 +104,7 @@ export function PythagorasScene(): ReactElement {
         { label: "5-12-13", values: { a: 5, b: 12 } },
         { label: "Ladder", values: { a: 2, b: 6 } },
       ]}
-      glossary={eqConfig?.glossary}
+      glossary={glossary}
     >
       {({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm }) => {
         const c = Math.sqrt(vars.a * vars.a + vars.b * vars.b)
@@ -159,7 +188,7 @@ function computeLayout(a: number, b: number, W: number, H: number) {
   return { s, ox, oy, c }
 }
 
-function D3Pythagoras({ a, b, c, highlightedTerm, onVarChange, highlightedVar, onHighlight }: Props): ReactElement {
+function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHighlight }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const onVarChangeRef = useRef(onVarChange)
   const onHighlightRef = useRef(onHighlight)
@@ -228,6 +257,8 @@ function D3Pythagoras({ a, b, c, highlightedTerm, onVarChange, highlightedVar, o
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
+
+      if (W < 100 || H < 100) return
       currentW = W
       currentH = H
 
@@ -434,13 +465,17 @@ function D3Pythagoras({ a, b, c, highlightedTerm, onVarChange, highlightedVar, o
 
     buildSVG()
 
+    let rebuildScheduled = false
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
       if (w !== currentW || h !== currentH) {
-        requestAnimationFrame(buildSVG)
+        if (!rebuildScheduled) {
+          rebuildScheduled = true
+          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+        }
       }
     })
     observer.observe(el)

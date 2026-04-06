@@ -1,13 +1,15 @@
 import type { ReactElement } from "react"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Check, Sparkles, Zap } from "lucide-react"
+import { Check, Loader2, Sparkles, Zap, CheckCircle, XCircle } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { AuthModal } from "../auth/AuthModal"
+import { LazyAuthModal } from "../auth/LazyAuthModal"
 import { api } from "../api/client"
 import { equationManifest } from "../data/equationManifest"
+import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
 
 const EQUATION_COUNT = equationManifest.length
 
@@ -21,18 +23,34 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "Everything in Free",
   "Progress sync across devices",
-  "Personal notes & bookmarks",
   "Learning analytics dashboard",
   "Streak tracking",
   "Smart recommendations",
 ]
 
 export function ProPricingPage(): ReactElement {
-  const { isAuthenticated, isPro } = useAuth()
+  const { isAuthenticated, isPro, loading: authLoading, refreshUser } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [loading, setLoading] = useState(false)
   const [yearly, setYearly] = useState(true)
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // H8 + M15: on the success path, refresh the user immediately and again
+  // after 2 s to account for Stripe webhook latency.
+  useEffect(() => {
+    if (pathname !== "/pro/success") return
+    void refreshUser()
+    const t = setTimeout(() => { void refreshUser() }, 2000)
+    return () => clearTimeout(t)
+  }, [pathname, refreshUser])
+
+  // M15: redirect unauthenticated visitors away from the success page.
+  useEffect(() => {
+    if (pathname !== "/pro/success") return
+    if (authLoading) return
+    if (!isAuthenticated) navigate("/", { replace: true })
+  }, [pathname, authLoading, isAuthenticated, navigate])
 
   const handleUpgrade = async () => {
     if (!isAuthenticated) {
@@ -42,15 +60,57 @@ export function ProPricingPage(): ReactElement {
     setLoading(true)
     try {
       const { url } = await api.payments.checkout(yearly ? "yearly" : "monthly")
-      window.location.href = url
+      safeRedirect(url)
     } catch {
       setLoading(false)
     }
   }
 
+  if (pathname === "/pro/success") {
+    // Still loading auth state or waiting for webhook — show a spinner.
+    if (authLoading || !isPro) {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-ocean" />
+            <p className="mt-4 text-slate-500">Verifying payment&hellip;</p>
+          </div>
+        </main>
+      )
+    }
+
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-center">
+          <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
+          <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment successful!</h1>
+          <p className="mt-2 text-slate-500">Your Pro subscription is now active. Welcome aboard.</p>
+          <button onClick={() => navigate("/dashboard")} className="mt-6 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white" type="button">
+            Go to Dashboard
+          </button>
+        </div>
+      </main>
+    )
+  }
+
+  if (pathname === "/pro/cancel") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
+        <div className="text-center">
+          <XCircle className="mx-auto h-12 w-12 text-slate-400" />
+          <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment cancelled</h1>
+          <p className="mt-2 text-slate-500">No charge was made. You can upgrade whenever you're ready.</p>
+          <button onClick={() => navigate("/pro")} className="mt-6 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white" type="button">
+            Back to pricing
+          </button>
+        </div>
+      </main>
+    )
+  }
+
   if (isPro) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f3f5f7] dark:bg-slate-900">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
         <div className="text-center">
           <Sparkles className="mx-auto h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">You're Pro!</h1>
@@ -64,7 +124,7 @@ export function ProPricingPage(): ReactElement {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-[#f3f5f7] dark:bg-slate-900">
+    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
       <TopNav showBack />
       <div className="flex flex-1 flex-col items-center px-4 py-8">
       <h1 className="font-display text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
@@ -154,8 +214,9 @@ export function ProPricingPage(): ReactElement {
           Back to equations
         </button>
 
-        <AuthModal open={showAuth} onClose={() => setShowAuth(false)} initialMode="register" />
+        <LazyAuthModal open={showAuth} onClose={() => setShowAuth(false)} initialMode="register" />
       </div>
+      <Footer />
     </main>
   )
 }
@@ -166,7 +227,7 @@ interface SoftPromptProps {
 }
 
 export function ConversionPrompt({ equationTitle, completedCount }: SoftPromptProps): ReactElement | null {
-  const { isPro, isAuthenticated } = useAuth()
+  const { isPro } = useAuth()
   const [dismissed, setDismissed] = useState(false)
   const navigate = useNavigate()
 
