@@ -95,8 +95,6 @@ DEPLOY_NAMECHEAP.md
 # =========================
 # Private legal/content files
 # =========================
-frontend/src/components/PrivacyPage.tsx
-frontend/src/components/TermsPage.tsx
 privacy_and_terms.txt
 
 # =========================
