@@ -6,13 +6,12 @@ import { TopNav } from "./TopNav"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Footer } from "./Footer"
 import { Button } from "./ui/button"
+import { GITHUB_URL } from "../config/site"
 import { equationManifest } from "../data/equationManifest"
 
 const HeroDemo = lazy(() =>
   import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
 )
-
-const GITHUB_URL = "https://github.com/alikatgh/sciencebouk"
 
 export default function AboutPage(): ReactElement {
   const navigate = useNavigate()

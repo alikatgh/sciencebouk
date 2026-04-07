@@ -8,6 +8,7 @@ import { sanitizeNextPath } from "./navigation"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader } from "../components/ui/card"
+import { SUPPORT_EMAIL } from "../config/site"
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ""
 
@@ -282,7 +283,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
             <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
               Forgot password?{" "}
               <span className="text-slate-500 dark:text-slate-400">
-                Contact support at hello@sciencebo.uk
+                Contact support at {SUPPORT_EMAIL}
               </span>
             </p>
           )}

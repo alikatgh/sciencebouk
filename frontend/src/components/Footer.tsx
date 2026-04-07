@@ -1,8 +1,7 @@
 import type { ReactElement } from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
-
-const GITHUB_URL = "https://github.com/alikatgh/sciencebouk"
+import { GITHUB_URL, SITE_DOMAIN } from "../config/site"
 
 const EASTER_EGG_LINES = [
   "\"Read serious bouks — life will do the rest.\" — Fyodor Dostoevsky",
@@ -23,7 +22,7 @@ export function Footer(): ReactElement {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
           >
-            sciencebo.uk
+            {SITE_DOMAIN}
             {hovered && (
               <span className="absolute bottom-full left-1/2 mb-2 w-56 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-center text-[11px] leading-snug text-slate-500 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 {easterEgg}
