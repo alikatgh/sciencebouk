@@ -12,5 +12,5 @@ urlpatterns = [
     path("api/payments/", include("payments.urls")),
 ]
 
-if settings.DEBUG:
+if settings.SERVE_MEDIA_FROM_DJANGO:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -71,6 +71,27 @@ const rootErrorFallback = (
   </main>
 )
 
+async function clearStaleLocalDevServiceWorkers(): Promise<void> {
+  if (!import.meta.env.DEV) return
+  if (typeof window === "undefined" || typeof navigator === "undefined") return
+  if (!("serviceWorker" in navigator)) return
+  if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    await Promise.all(registrations.map((registration) => registration.unregister()))
+
+    if ("caches" in window) {
+      const cacheKeys = await caches.keys()
+      await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey)))
+    }
+  } catch {
+    // Best-effort cleanup for stale localhost app shells from older builds.
+  }
+}
+
+void clearStaleLocalDevServiceWorkers()
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ErrorBoundary fallback={rootErrorFallback}>

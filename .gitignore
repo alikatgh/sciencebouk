@@ -1,48 +1,103 @@
-frontend/node_modules
-frontend/dist
-backend/.venv
-backend/__pycache__
-backend/db.sqlite3
-backend/staticfiles
-*.pyc
+# =========================
+# OS / Editor
+# =========================
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.pycache/
+__pycache__/
+
+# =========================
+# Root environment (backend config)
+# =========================
 .env
+.env.*
+!.env.example
 
-# Legal pages (private, not open source)
-frontend/src/components/PrivacyPage.tsx
-frontend/src/components/TermsPage.tsx
-privacy_and_terms.txt
+# =========================
+# Backend (Django / Python)
+# =========================
+backend/.env
+backend/.env.*
+!backend/.env.example
 
-# User uploads
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+
+backend/.venv/
+backend/venv/
+
+backend/db.sqlite3
 backend/media/
+backend/staticfiles/
 
-# Claude Code — internal dev tooling, not the product
-.claude/
-.mcp.json
-CLAUDE.md
-CLAUDE.local.md
+# Python build artifacts
+*.egg-info/
+dist/
+build/
 
-# Internal audit docs
-VISUALIZATION_AUDIT.md
+# =========================
+# Frontend (Vite / React)
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/dist.zip
+frontend/*.d.ts
+frontend/*.js
 
-# Local setup guide and per-service setup notes (contain credentials)
-SETUP.md
-setup/
+# Env files (frontend)
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
-# Deployment & infra (private)
+# TypeScript build cache
+frontend/*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+frontend/tsconfig.node.tsbuildinfo
+
+# =========================
+# Logs
+# =========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Docker / Deployment (private infra)
+# =========================
 docker-compose.yml
 docker-compose.prod.yml
 nginx.prod.conf
 backend/Dockerfile
 frontend/Dockerfile
 
-# Build artifacts
-frontend/tsconfig.tsbuildinfo
-frontend/tsconfig.node.tsbuildinfo
-frontend/vite.config.js
-frontend/vite.config.d.ts
-frontend/tailwind.config.js
-frontend/tailwind.config.d.ts
+# =========================
+# Local setup / secrets / internal docs
+# =========================
+setup/
+SETUP.md
 
-# Orphaned root lockfile (no root package.json)
-/package-lock.json
+.claude/
+.mcp.json
+CLAUDE.md
+CLAUDE.local.md
+
+VISUALIZATION_AUDIT.md
+NCSERVER.MD
+
+# =========================
+# Private legal/content files
+# =========================
+frontend/src/components/PrivacyPage.tsx
+frontend/src/components/TermsPage.tsx
+privacy_and_terms.txt
+
+# =========================
+# Misc
+# =========================
+package-lock.json

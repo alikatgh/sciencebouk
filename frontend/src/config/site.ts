@@ -1,4 +1,4 @@
-export const SITE_DOMAIN = "scienbo.uk"
+export const SITE_DOMAIN = "sciencebo.uk"
 export const SITE_URL = `https://${SITE_DOMAIN}`
 export const SUPPORT_EMAIL = `hello@${SITE_DOMAIN}`
 

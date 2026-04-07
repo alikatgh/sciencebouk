@@ -1,4 +1,5 @@
 from datetime import timedelta
+from importlib.util import find_spec
 from pathlib import Path
 import os
 
@@ -36,8 +37,9 @@ def load_env_file(path: Path) -> None:
         return
 
 
-load_env_file(BASE_DIR.parent / ".env")
+# Prefer service-specific backend/.env over the repo-root fallback file.
 load_env_file(BASE_DIR / ".env")
+load_env_file(BASE_DIR.parent / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-key-change-in-production")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
@@ -89,6 +91,8 @@ if not DEBUG and SECRET_KEY == _DEV_SECRET_KEY:
 # Google OAuth
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
+SERVE_MEDIA_FROM_DJANGO = DEBUG or os.getenv("DJANGO_SERVE_MEDIA", "0") == "1"
+HAS_WHITENOISE = find_spec("whitenoise") is not None
 
 # Stripe
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
@@ -135,6 +139,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if HAS_WHITENOISE:
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
 ROOT_URLCONF = "formulas_backend.urls"
 
@@ -191,6 +198,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+if HAS_WHITENOISE:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

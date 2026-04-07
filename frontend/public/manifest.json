@@ -1,0 +1,17 @@
+{
+  "name": "Formulas",
+  "short_name": "Formulas",
+  "description": "Interactive equations you can drag, not just read.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#5a79ff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

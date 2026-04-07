@@ -4,7 +4,7 @@ An interactive web application that brings 17 landmark mathematical equations to
 
 ## Live Demo
 
-**Try it now:** [scienbo.uk](https://scienbo.uk)
+**Try it now:** [sciencebo.uk](https://sciencebo.uk)
 
 The fastest way to understand the project is to open a formula and drag something. Start with Pythagoras, Gravity, or Fourier. No signup is required to explore the core experience.
 

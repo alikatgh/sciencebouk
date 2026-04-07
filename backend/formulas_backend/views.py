@@ -1,9 +1,12 @@
+from django.conf import settings
 from django.http import HttpResponse
 
 
 def backend_home(_: object) -> HttpResponse:
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://127.0.0.1:5173")
+    frontend_label = frontend_url.replace("https://", "").replace("http://", "")
     return HttpResponse(
-        """<!doctype html>
+        f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -30,7 +33,7 @@ def backend_home(_: object) -> HttpResponse:
 </head>
 <body>
   <h1>Sciencebouk API Server</h1>
-  <p class="sub">Backend is running. The frontend app is at <a href="http://127.0.0.1:5173">127.0.0.1:5173</a></p>
+  <p class="sub">Backend is running. The frontend app is at <a href="{frontend_url}">{frontend_label}</a></p>
 
   <div class="grid">
     <div class="card">
@@ -71,7 +74,7 @@ def backend_home(_: object) -> HttpResponse:
     </div>
   </div>
 
-  <a class="cta" href="http://127.0.0.1:5173">Open the app &rarr;</a>
+  <a class="cta" href="{frontend_url}">Open the app &rarr;</a>
 </body>
 </html>"""
     )

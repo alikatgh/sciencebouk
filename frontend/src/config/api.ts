@@ -1,7 +1,7 @@
 if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   throw new Error(
     "[config] VITE_API_URL is not set. Add it to your .env.production or build environment. " +
-    "Example: VITE_API_URL=https://scienbo.uk/api"
+    "Example: VITE_API_URL=https://sciencebo.uk/api"
   )
 }
 

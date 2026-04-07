@@ -10,19 +10,26 @@ import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader } from "../components/ui/card"
 import { SUPPORT_EMAIL } from "../config/site"
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ""
+function getGoogleClientId(): string {
+  return import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ""
+}
+
+interface GoogleCredentialResponse {
+  credential: string
+}
 
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
-          initialize: (config: { client_id: string; callback: (r: { credential: string }) => void }) => void
+          initialize: (config: { client_id: string; callback: (r: GoogleCredentialResponse) => void }) => void
           renderButton: (el: HTMLElement, config: object) => void
           prompt: () => void
         }
       }
     }
+    __formulasGoogleInitClientId?: string
   }
 }
 
@@ -32,6 +39,7 @@ interface AuthPageProps {
 
 export default function AuthPage({ mode }: AuthPageProps) {
   const { login, register, loginWithGoogle, isAuthenticated, loading: authLoading } = useAuth()
+  const googleClientId = getGoogleClientId()
   // authLoading: only redirect if fully loaded AND already authenticated; show form while loading
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -48,11 +56,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   const emailRef = useRef<HTMLInputElement>(null)
   const googleBtnRef = useRef<HTMLDivElement>(null)
+  const googleCallbackRef = useRef<(response: GoogleCredentialResponse) => Promise<void>>(async () => {})
   const [googleError, setGoogleError] = useState("")
 
   // Load Google Identity Services script once
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return
+    if (!googleClientId) return
     if (document.getElementById("google-gsi")) return
     const script = document.createElement("script")
     script.id = "google-gsi"
@@ -60,25 +69,37 @@ export default function AuthPage({ mode }: AuthPageProps) {
     script.async = true
     script.defer = true
     document.head.appendChild(script)
-  }, [])
+  }, [googleClientId])
+
+  useEffect(() => {
+    googleCallbackRef.current = async ({ credential }: GoogleCredentialResponse) => {
+      setGoogleError("")
+      try {
+        await loginWithGoogle(credential)
+        navigate(nextUrl, { replace: true })
+      } catch {
+        setGoogleError("Google sign-in failed. Please try again.")
+      }
+    }
+  }, [loginWithGoogle, navigate, nextUrl])
 
   // Initialise Google button whenever the script loads or mode changes
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return
+    if (!googleClientId) return
     const init = () => {
       if (!window.google || !googleBtnRef.current) return
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async ({ credential }) => {
-          setGoogleError("")
-          try {
-            await loginWithGoogle(credential)
-            navigate(nextUrl, { replace: true })
-          } catch {
-            setGoogleError("Google sign-in failed. Please try again.")
-          }
-        },
-      })
+
+      if (window.__formulasGoogleInitClientId !== googleClientId) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: (response) => {
+            void googleCallbackRef.current(response)
+          },
+        })
+        window.__formulasGoogleInitClientId = googleClientId
+      }
+
+      googleBtnRef.current.innerHTML = ""
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         type: "standard",
         theme: "outline",
@@ -96,7 +117,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
       if (script) script.addEventListener("load", init)
       return () => script?.removeEventListener("load", init)
     }
-  }, [mode, loginWithGoogle, navigate, nextUrl])
+  }, [googleClientId, mode])
 
   useEffect(() => {
     emailRef.current?.focus()
@@ -265,7 +286,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
             </Button>
           </form>
 
-          {GOOGLE_CLIENT_ID && (
+          {googleClientId && (
             <>
               <div className="relative my-5 flex items-center gap-3">
                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />

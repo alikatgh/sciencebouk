@@ -17,13 +17,18 @@ vi.mock("./AuthContext", () => ({
 
 describe("AuthPage", () => {
   beforeEach(() => {
+    vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "test-google-client-id")
     authState.login.mockClear()
     authState.register.mockClear()
     authState.isAuthenticated = false
     authState.loading = false
+    authState.loginWithGoogle.mockReset()
+    window.__formulasGoogleInitClientId = undefined
+    window.google = undefined
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     vi.restoreAllMocks()
   })
 
@@ -73,6 +78,42 @@ describe("AuthPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Profile target")).toBeInTheDocument()
+    })
+  })
+
+  it("initializes Google Identity Services only once for the same client id", async () => {
+    const initialize = vi.fn()
+    const renderButton = vi.fn()
+    window.google = {
+      accounts: {
+        id: {
+          initialize,
+          renderButton,
+          prompt: vi.fn(),
+        },
+      },
+    }
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <AuthPage mode="login" />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(initialize).toHaveBeenCalledTimes(1)
+      expect(renderButton).toHaveBeenCalledTimes(1)
+    })
+
+    rerender(
+      <MemoryRouter>
+        <AuthPage mode="signup" />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(initialize).toHaveBeenCalledTimes(1)
+      expect(renderButton).toHaveBeenCalledTimes(2)
     })
   })
 })
