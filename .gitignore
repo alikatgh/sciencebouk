@@ -96,6 +96,8 @@ DEPLOY_NAMECHEAP.md
 # Private legal/content files
 # =========================
 privacy_and_terms.txt
+frontend/public/legal/privacy.html
+frontend/public/legal/terms.html
 
 # =========================
 # Misc
