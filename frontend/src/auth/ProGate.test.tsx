@@ -21,6 +21,14 @@ vi.mock("./AuthContext", () => ({
   useAuth: () => authState,
 }))
 
+vi.mock("../config/billing", () => ({
+  BILLING_ENABLED: true,
+  BILLING_DISABLED_COPY: {
+    badge: "Free beta",
+    detail: "No subscriptions yet.",
+  },
+}))
+
 describe("ProGate", () => {
   beforeEach(() => {
     navigateMock.mockReset()

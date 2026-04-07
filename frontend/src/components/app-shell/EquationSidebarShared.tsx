@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
 import { prefetchEquationScene } from "../sceneRegistry"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../../config/billing"
 
 interface EquationListProps {
   equations: EquationSummary[]
@@ -144,9 +145,15 @@ export const SidebarAccount = memo(function SidebarAccount({
             <p className="text-[10px] text-slate-400">{isPro ? "Pro" : "Free"}</p>
           </button>
           {!isPro && (
-            <Button variant="outline" size="xs" onClick={onOpenPro}>
-              <Crown className="h-3 w-3 text-amber-500" />
-              Pro
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={onOpenPro}
+              disabled={!BILLING_ENABLED}
+              title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
+            >
+              <Crown className={`h-3 w-3 ${BILLING_ENABLED ? "text-amber-500" : "text-slate-400"}`} />
+              {BILLING_ENABLED ? "Pro" : "Later"}
             </Button>
           )}
           <Button variant="ghost" size="icon-sm" onClick={onLogout} aria-label="Sign out">

@@ -7,6 +7,7 @@ import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import { SITE_BASE } from "../config/api"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
@@ -62,6 +63,7 @@ export default function ProfilePage(): ReactElement {
   }
 
   const handleManageSubscription = async () => {
+    if (!BILLING_ENABLED) return
     setManagingSubscription(true)
     try {
       const { url } = await api.payments.portal()
@@ -226,14 +228,24 @@ export default function ProfilePage(): ReactElement {
                     <BarChart2 className="h-3.5 w-3.5 text-ocean" /> Dashboard
                   </button>
                 )}
-                {isPro && (
+                {isPro && BILLING_ENABLED && (
                   <button onClick={handleManageSubscription} disabled={managingSubscription} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300" type="button">
                     <CreditCard className="h-3.5 w-3.5" /> Billing
                   </button>
                 )}
                 {!isPro && (
-                  <button onClick={() => navigate("/pro")} className="flex items-center gap-1.5 rounded-lg border-2 border-ocean px-3 py-1.5 text-xs font-bold text-ocean hover:bg-ocean/5" type="button">
-                    <Crown className="h-3.5 w-3.5" /> Upgrade to Pro
+                  <button
+                    onClick={() => navigate("/pro")}
+                    disabled={!BILLING_ENABLED}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${
+                      BILLING_ENABLED
+                        ? "border-2 border-ocean text-ocean hover:bg-ocean/5"
+                        : "border border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                    }`}
+                    type="button"
+                    title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
+                  >
+                    <Crown className="h-3.5 w-3.5" /> {BILLING_ENABLED ? "Upgrade to Pro" : "Pro later"}
                   </button>
                 )}
                 <button onClick={() => { logout(); navigate("/") }} className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-900/30 [@media(pointer:coarse)]:min-h-[44px]" type="button">

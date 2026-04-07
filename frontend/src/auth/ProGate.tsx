@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react"
 import { Lock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 import { useAuth } from "./AuthContext"
 
 interface ProGateProps {
@@ -21,6 +22,29 @@ export function ProGate({ children, feature }: ProGateProps): ReactElement {
   }
 
   if (isPro) return <>{children}</>
+
+  if (!BILLING_ENABLED) {
+    return (
+      <div
+        className="relative rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 opacity-80 dark:border-slate-700 dark:bg-slate-800/60"
+        aria-label={`${feature}: unavailable during the free beta`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-300/40 dark:bg-slate-700/70">
+            <Lock className="h-4 w-4 text-slate-500" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {feature}
+            </p>
+            <p className="text-xs text-slate-400">
+              {BILLING_DISABLED_COPY.badge}: available after launch
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div

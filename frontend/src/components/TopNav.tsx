@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { User, ArrowLeft, Crown, ChevronDown } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { SITE_BASE } from "../config/api"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Button } from "./ui/button"
@@ -138,9 +139,15 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                   variant="outline"
                   size="xs"
                   onClick={() => navigate("/pro")}
-                  className="mr-1 gap-1 border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400"
+                  disabled={!BILLING_ENABLED}
+                  className={`mr-1 gap-1 ${
+                    BILLING_ENABLED
+                      ? "border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400"
+                      : "border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                  }`}
+                  title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
                 >
-                  <Crown className="h-3 w-3" /> Pro
+                  <Crown className="h-3 w-3" /> {BILLING_ENABLED ? "Pro" : "Beta"}
                 </Button>
               )}
 

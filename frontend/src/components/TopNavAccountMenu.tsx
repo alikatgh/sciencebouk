@@ -1,5 +1,6 @@
 import type { KeyboardEvent, ReactElement } from "react"
 import { BarChart2, Crown, Info, LogOut, Settings, User } from "lucide-react"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 
 interface TopNavAccountMenuProps {
   displayName: string
@@ -88,11 +89,17 @@ export function TopNavAccountMenu({
             role="menuitem"
             tabIndex={-1}
             onClick={() => { onClose(); onOpenPro() }}
-            className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-ocean transition hover:bg-ocean/5"
+            disabled={!BILLING_ENABLED}
+            className={`flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition ${
+              BILLING_ENABLED
+                ? "text-ocean hover:bg-ocean/5"
+                : "text-slate-400"
+            }`}
             type="button"
+            title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
           >
             <Crown className="h-4 w-4" />
-            Upgrade to Pro
+            {BILLING_ENABLED ? "Upgrade to Pro" : "Pro later"}
           </button>
         )}
 

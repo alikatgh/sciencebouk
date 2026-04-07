@@ -95,6 +95,7 @@ SERVE_MEDIA_FROM_DJANGO = DEBUG or os.getenv("DJANGO_SERVE_MEDIA", "0") == "1"
 HAS_WHITENOISE = find_spec("whitenoise") is not None
 
 # Stripe
+BILLING_ENABLED = os.getenv("DJANGO_BILLING_ENABLED", "0") == "1"
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 # Legacy single price ID — kept for backward compatibility

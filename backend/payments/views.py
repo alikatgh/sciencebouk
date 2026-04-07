@@ -12,6 +12,13 @@ from rest_framework.response import Response
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
+def billing_disabled_response():
+    return Response(
+        {'detail': 'Billing is paused during the free beta'},
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+    )
+
+
 def downgrade_profile(profile):
     profile.tier = 'free'
     profile.stripe_subscription_id = ''
@@ -28,6 +35,9 @@ def upgrade_profile(profile, subscription_id: str = ''):
 @permission_classes([IsAuthenticated])
 def create_checkout_session(request):
     """Create a Stripe Checkout session for the Pro subscription."""
+    if not settings.BILLING_ENABLED:
+        return billing_disabled_response()
+
     if not hasattr(request.user, 'profile'):
         return Response({'error': 'Profile not found'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     profile = request.user.profile
@@ -67,6 +77,9 @@ def create_checkout_session(request):
 @permission_classes([IsAuthenticated])
 def create_portal_session(request):
     """Create a Stripe Billing Portal session for subscription management."""
+    if not settings.BILLING_ENABLED:
+        return billing_disabled_response()
+
     if not hasattr(request.user, 'profile'):
         return Response({'error': 'Profile not found'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     profile = request.user.profile
@@ -94,6 +107,7 @@ def subscription_status(request):
     return Response({
         'tier': profile.tier,
         'is_pro': profile.is_pro,
+        'billing_enabled': settings.BILLING_ENABLED,
     })
 
 
@@ -107,6 +121,9 @@ def stripe_webhook(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    if not settings.BILLING_ENABLED:
+        return JsonResponse({'received': True, 'billing_enabled': False})
 
     sig = request.META.get('HTTP_STRIPE_SIGNATURE', '')
 

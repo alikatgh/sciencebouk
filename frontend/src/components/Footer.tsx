@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 import { GITHUB_URL, SITE_DOMAIN } from "../config/site"
 
 const EASTER_EGG_LINES = [
@@ -34,7 +35,9 @@ export function Footer(): ReactElement {
 
         <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-slate-400 dark:text-slate-500">
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition hover:text-slate-600 dark:hover:text-slate-300">GitHub</a>
-          <Link to="/pro" className="transition hover:text-slate-600 dark:hover:text-slate-300">Pro</Link>
+          <Link to="/pro" className="transition hover:text-slate-600 dark:hover:text-slate-300">
+            {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
+          </Link>
           <Link to="/about" className="transition hover:text-slate-600 dark:hover:text-slate-300">About</Link>
           <Link to="/changelog" className="transition hover:text-slate-600 dark:hover:text-slate-300">Changelog</Link>
           <Link to="/privacy" className="transition hover:text-slate-600 dark:hover:text-slate-300">Privacy</Link>

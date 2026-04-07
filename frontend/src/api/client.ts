@@ -239,7 +239,7 @@ export const api = {
     portal: () =>
       request<{ url: string }>('/payments/portal/', { method: 'POST' }),
     status: () =>
-      request<{ tier: string; is_pro: boolean }>('/payments/status/'),
+      request<{ tier: string; is_pro: boolean; billing_enabled?: boolean }>('/payments/status/'),
   },
 
   profile: {

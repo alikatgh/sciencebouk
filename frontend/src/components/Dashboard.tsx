@@ -7,6 +7,7 @@ import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import type { DashboardData } from "../api/client"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { Button } from "./ui/button"
@@ -32,6 +33,7 @@ export default function Dashboard(): ReactElement {
   }, [isPro, isAuthenticated])
 
   const handleManageSubscription = useCallback(async () => {
+    if (!BILLING_ENABLED) return
     setPortalLoading(true)
     try { const { url } = await api.payments.portal(); safeRedirect(url) } catch { setPortalLoading(false) }
   }, [])
@@ -97,10 +99,24 @@ export default function Dashboard(): ReactElement {
         <div className="flex flex-1 flex-col items-center justify-center px-4">
           <Trophy className="h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">Learning Dashboard</h1>
-          <p className="mt-2 text-center text-sm text-slate-500">Track your progress with Pro.</p>
+          <p className="mt-2 max-w-md text-center text-sm text-slate-500">
+            {BILLING_ENABLED
+              ? "Track your progress with Pro."
+              : `${BILLING_DISABLED_COPY.badge}: dashboards and streaks arrive after the beta.`}
+          </p>
           <div className="mt-6 flex gap-3">
             <Button variant="outline" onClick={() => navigate("/")}>Back</Button>
-            <Button onClick={() => navigate("/pro")} className="bg-ocean text-white hover:bg-ocean/90">Upgrade</Button>
+            <Button
+              onClick={() => navigate("/pro")}
+              disabled={!BILLING_ENABLED}
+              className={
+                BILLING_ENABLED
+                  ? "bg-ocean text-white hover:bg-ocean/90"
+                  : "border border-slate-200 bg-white text-slate-400 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+              }
+            >
+              {BILLING_ENABLED ? "Upgrade" : "Pro later"}
+            </Button>
           </div>
         </div>
       </main>

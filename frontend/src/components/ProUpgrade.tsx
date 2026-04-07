@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Check, Loader2, Sparkles, Zap, CheckCircle, XCircle } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 
 import { api } from "../api/client"
 import { equationManifest } from "../data/equationManifest"
@@ -48,6 +49,10 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   const [verificationAttempt, setVerificationAttempt] = useState(0)
   const [verificationTimedOut, setVerificationTimedOut] = useState(false)
   const navigate = useNavigate()
+
+  if (!BILLING_ENABLED) {
+    return <FreeBetaPage isPro={isPro} />
+  }
 
   // Refresh immediately and keep a bounded wait window so /pro/success
   // never spins forever when the Stripe webhook is delayed or misconfigured.
@@ -292,12 +297,91 @@ interface SoftPromptProps {
   completedCount: number
 }
 
+function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
+  const navigate = useNavigate()
+
+  return (
+    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
+      <TopNav showBack />
+      <div className="flex flex-1 flex-col items-center px-4 py-8">
+        <span className="rounded-full bg-ocean/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-ocean">
+          {BILLING_DISABLED_COPY.badge}
+        </span>
+        <h1 className="mt-4 font-display text-center text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
+          {isPro ? "Your Pro access stays active" : BILLING_DISABLED_COPY.headline}
+        </h1>
+        <p className="mt-3 max-w-2xl text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          {isPro
+            ? "You already have Pro access. New purchases are paused while the free beta is running."
+            : BILLING_DISABLED_COPY.body}
+        </p>
+
+        <div className="mt-8 grid max-w-3xl gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Free beta</h3>
+            <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">$0</p>
+            <p className="text-sm text-slate-400">for everyone right now</p>
+            <ul className="mt-4 space-y-2">
+              {FREE_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => navigate("/")}
+              className="mt-6 w-full rounded-xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+              type="button"
+            >
+              Continue exploring
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-100/70 p-6 dark:border-slate-700 dark:bg-slate-800/70">
+            <div className="inline-flex rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+              Paused for beta
+            </div>
+            <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">Pro later</h3>
+            <p className="mt-1 text-3xl font-bold text-slate-400">
+              ${"4"}<span className="text-lg">.99</span>
+            </p>
+            <p className="text-sm text-slate-400">subscriptions will return after launch</p>
+            <ul className="mt-4 space-y-2">
+              {PRO_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+                  <Zap className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <button
+              disabled
+              className="mt-6 w-full rounded-xl border border-slate-300 bg-white/80 py-2.5 text-sm font-bold text-slate-400 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-500"
+              type="button"
+            >
+              {BILLING_DISABLED_COPY.button}
+            </button>
+            <p className="mt-2 text-center text-xs text-slate-400">{BILLING_DISABLED_COPY.detail}</p>
+          </div>
+        </div>
+
+        <button onClick={() => navigate("/")} className="mt-8 text-sm text-slate-400 hover:underline" type="button">
+          Back to equations
+        </button>
+      </div>
+      <Footer />
+    </main>
+  )
+}
+
 export function ConversionPrompt({ equationTitle, completedCount }: SoftPromptProps): ReactElement | null {
   const { isPro } = useAuth()
   const [dismissed, setDismissed] = useState(false)
   const navigate = useNavigate()
 
   if (isPro || dismissed) return null
+  if (!BILLING_ENABLED) return null
   if (completedCount < 3) return null
 
   return (

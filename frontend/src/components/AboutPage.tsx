@@ -6,6 +6,7 @@ import { TopNav } from "./TopNav"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Footer } from "./Footer"
 import { Button } from "./ui/button"
+import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 import { GITHUB_URL } from "../config/site"
 import { equationManifest } from "../data/equationManifest"
 
@@ -87,26 +88,40 @@ export default function AboutPage(): ReactElement {
                 </div>
 
                 <div className="rounded-xl border-2 border-ocean bg-ocean/[0.03] p-5">
-                  <p className="text-sm font-bold text-ocean">Pro — $4.99/month</p>
+                  <p className="text-sm font-bold text-ocean">
+                    {BILLING_ENABLED ? "Pro — $4.99/month" : "Pro later"}
+                  </p>
                   <ul className="mt-3 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
                     <li>Everything free, plus:</li>
                     <li>Progress sync across devices</li>
                     <li>Learning dashboard + streaks</li>
                     <li>Settings sync</li>
                   </ul>
-                  <Button onClick={() => navigate("/pro")} size="sm" className="mt-4 bg-ocean text-white hover:bg-ocean/90">
-                    <Crown className="mr-1.5 h-3.5 w-3.5" /> Go Pro
+                  <Button
+                    onClick={() => navigate("/pro")}
+                    size="sm"
+                    disabled={!BILLING_ENABLED}
+                    className={`mt-4 ${
+                      BILLING_ENABLED
+                        ? "bg-ocean text-white hover:bg-ocean/90"
+                        : "border border-slate-200 bg-white text-slate-400 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+                    }`}
+                  >
+                    <Crown className="mr-1.5 h-3.5 w-3.5" /> {BILLING_ENABLED ? "Go Pro" : "Pro later"}
                   </Button>
                 </div>
               </div>
 
               <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-900">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Pro funds the next wave of subjects and keeps the servers running.
+                  {BILLING_ENABLED
+                    ? "Pro funds the next wave of subjects and keeps the servers running."
+                    : "We are running a free beta first so the core learning experience can harden before payments turn on."}
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Chemistry, Biology, Computer Science — all coming.
-                  Everything core stays free. We're building for the long term.
+                  {BILLING_ENABLED
+                    ? "Chemistry, Biology, Computer Science — all coming. Everything core stays free. We're building for the long term."
+                    : `${BILLING_DISABLED_COPY.detail} Chemistry, Biology, and Computer Science are still on the roadmap.`}
                 </p>
               </div>
             </section>
