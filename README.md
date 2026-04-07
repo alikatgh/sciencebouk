@@ -2,6 +2,22 @@
 
 An interactive web application that brings 17 landmark mathematical equations to life through rich visualizations, hands-on exploration, and guided lessons.
 
+## Live Demo
+
+**Try it now:** [scienbo.uk](https://scienbo.uk)
+
+The fastest way to understand the project is to open a formula and drag something. Start with Pythagoras, Gravity, or Fourier. No signup is required to explore the core experience.
+
+## Watch It Work
+
+![Short interaction tour showing draggable math visualizations](docs/readme-demo.gif)
+
+A short loop of the core interaction: move one variable, watch the visualization respond, and understand the idea by touch instead of by lecture.
+
+## Why This Exists
+
+Most people do not actually hate math. They hate being asked to memorize symbols before they are allowed to see what the symbols do. Formulas exists to flip that order: make the idea move first, let curiosity kick in, and only then make the equation feel earned instead of imposed.
+
 ## Quick Start
 
 ### Development (local)
