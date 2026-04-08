@@ -189,6 +189,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
+      const compact = W < 460 || H < 420
       currentW = W
       currentH = H
 
@@ -218,12 +219,12 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       // Wave 1 label
       g.append("text").attr("class", "wave1-label").attr("x", mx).attr("y", H * 0.06)
         .attr("font-size", 14).attr("fill", "#5a79ff").attr("font-family", F).attr("font-weight", 600)
-        .text("Wave 1")
+        .text(compact ? "1" : "Wave 1")
 
       // Wave 2 label
-      g.append("text").attr("class", "wave2-label").attr("x", mx + 80).attr("y", H * 0.06)
+      g.append("text").attr("class", "wave2-label").attr("x", mx + (compact ? 34 : 80)).attr("y", H * 0.06)
         .attr("font-size", 14).attr("fill", "#57b59a").attr("font-family", F).attr("font-weight", 600)
-        .text("Wave 2")
+        .text(compact ? "2" : "Wave 2")
 
       // Wave 1 axis
       g.append("line").attr("x1", mx).attr("y1", wave1Y).attr("x2", W - mx).attr("y2", wave1Y)
@@ -262,7 +263,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       // Superposition section
       g.append("text").attr("x", mx).attr("y", H * 0.47)
         .attr("font-size", 14).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text("Superposition")
+        .text(compact ? "Sum" : "Superposition")
 
       // Super axis
       g.append("line").attr("x1", mx).attr("y1", superY).attr("x2", W - mx).attr("y2", superY)
@@ -275,8 +276,8 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       // Legend — compact bottom row
       const legY = H * 0.88
       const legItems = [
-        { x: mx, color: "#5a79ff", label: "Wave 1" },
-        { x: mx + W * 0.2, color: "#57b59a", label: "Wave 2" },
+        { x: mx, color: "#5a79ff", label: compact ? "1" : "Wave 1" },
+        { x: mx + W * 0.2, color: "#57b59a", label: compact ? "2" : "Wave 2" },
         { x: mx + W * 0.4, color: "#1e293b", label: "Sum" },
       ]
       legItems.forEach(({ x, color, label }) => {
@@ -286,12 +287,12 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // D3 play/pause button
       const playBtnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
-        .attr("transform", `translate(${W - 170}, ${H - 38})`)
-      playBtnG.append("rect").attr("class", "play-btn-bg").attr("width", 70).attr("height", 26).attr("rx", 13)
+        .attr("transform", `translate(${W - (compact ? 140 : 170)}, ${H - 38})`)
+      playBtnG.append("rect").attr("class", "play-btn-bg").attr("width", compact ? 58 : 70).attr("height", 26).attr("rx", 13)
         .attr("fill", "#ef4444").attr("stroke", "#ef4444").attr("stroke-width", 1.5)
-      playBtnG.append("text").attr("class", "play-btn-text").attr("x", 35).attr("y", 17).attr("text-anchor", "middle")
+      playBtnG.append("text").attr("class", "play-btn-text").attr("x", compact ? 29 : 35).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "white")
-        .text("Pause")
+        .text(compact ? "On" : "Pause")
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         updatePlayButton()
@@ -305,12 +306,12 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // D3 reset button
       const resetBtnG = g.append("g").attr("class", "reset-btn").style("cursor", "pointer")
-        .attr("transform", `translate(${W - 90}, ${H - 38})`)
-      resetBtnG.append("rect").attr("width", 70).attr("height", 26).attr("rx", 13)
+        .attr("transform", `translate(${W - (compact ? 72 : 90)}, ${H - 38})`)
+      resetBtnG.append("rect").attr("width", compact ? 52 : 70).attr("height", 26).attr("rx", 13)
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-      resetBtnG.append("text").attr("x", 35).attr("y", 17).attr("text-anchor", "middle")
+      resetBtnG.append("text").attr("x", compact ? 26 : 35).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text("Reset")
+        .text(compact ? "\u21BA" : "Reset")
       resetBtnG.on("click", () => {
         timeRef.current = 0
         playingRef.current = false
@@ -327,7 +328,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
           .attr("stroke", playing ? "#ef4444" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", playing ? "white" : "#64748b")
-          .text(playing ? "Pause" : "Play")
+          .text(compact ? (playing ? "On" : "Off") : (playing ? "Pause" : "Play"))
       }
 
       // ── drawWaves: updates wave paths and amplitude handle position ──
@@ -367,7 +368,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
           .attr("x2", mx + 60).attr("y2", wave1Y - amp)
         g.select(".amp-text")
           .attr("x", mx + 72).attr("y", wave1Y - amp / 2)
-          .text(`A = ${Math.round(amp)}`)
+          .text(compact ? `A ${Math.round(amp)}` : `A = ${Math.round(amp)}`)
 
         // Wavelength annotation
         const wlPx = wl * ((W - mx * 2) / 800)
@@ -376,7 +377,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
           .attr("x2", mx + wlPx).attr("y2", wave1Y - amp - 10)
         g.select(".wl-text")
           .attr("x", mx + wlPx / 2).attr("y", wave1Y - amp - 16)
-          .text(`\u03BB = ${Math.round(wl)}`)
+          .text(compact ? `\u03BB ${Math.round(wl)}` : `\u03BB = ${Math.round(wl)}`)
 
         // Also redraw waves at current time when paused
         if (!playingRef.current) {

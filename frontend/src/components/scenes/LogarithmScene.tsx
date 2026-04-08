@@ -135,6 +135,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
+      const compact = W < 460 || H < 420
       if (H < 100) return
       currentW = W
       currentH = H
@@ -253,7 +254,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       g.append("text")
         .attr("x", (curveLeft + curveRight) / 2).attr("y", curveTop - H * 0.028)
         .attr("text-anchor", "middle").attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-        .text("y = log\u2081\u2080(x)")
+        .text(compact ? "log\u2081\u2080(x)" : "y = log\u2081\u2080(x)")
 
       // Axes
       g.append("line")
@@ -264,7 +265,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
 
       // Tick labels
-      ;[1, 10, 50, 100].forEach(v => {
+      ;(compact ? [1, 10, 100] : [1, 10, 50, 100]).forEach(v => {
         g.append("line")
           .attr("x1", cxScale(v)).attr("y1", cyScale(0) - 3)
           .attr("x2", cxScale(v)).attr("y2", cyScale(0) + 3)
@@ -307,7 +308,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       g.append("text")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.2)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-        .text("Current Values")
+        .text(compact ? "Values" : "Current Values")
 
       g.append("text").attr("class", "val-logx")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.4)
@@ -324,13 +325,13 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       g.append("text").attr("class", "val-confirm")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.92)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#16a34a")
-        .text("Product rule confirmed")
+        .text(compact ? "Rule confirmed" : "Product rule confirmed")
 
       // Drag hint
       g.append("text")
         .attr("x", W / 2).attr("y", H - H * 0.033)
         .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-        .text("Drag the dots on the bars or curve to change x and y")
+        .text(compact ? "Drag bars or dot" : "Drag the dots on the bars or curve to change x and y")
 
       // ── updateGeometry: repositions everything from x,y WITHOUT React ──
       function updateGeometry(xv: number, yv: number) {
@@ -348,10 +349,10 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         g.select(".logxy-divider").attr("x1", divX).attr("x2", divX)
 
         // Labels
-        g.select(".logx-label").text(`log(${xv}) = ${logX.toFixed(3)}`)
-        g.select(".logy-label").text(`log(${yv}) = ${logY.toFixed(3)}`)
-        g.select(".logxy-label").text(`log(${xv * yv}) = ${logXY.toFixed(3)}`)
-        g.select(".verify-label").text(`${logX.toFixed(3)} + ${logY.toFixed(3)} = ${(logX + logY).toFixed(3)} (verified)`)
+        g.select(".logx-label").text(compact ? `log ${xv} = ${logX.toFixed(2)}` : `log(${xv}) = ${logX.toFixed(3)}`)
+        g.select(".logy-label").text(compact ? `log ${yv} = ${logY.toFixed(2)}` : `log(${yv}) = ${logY.toFixed(3)}`)
+        g.select(".logxy-label").text(compact ? `log ${xv * yv} = ${logXY.toFixed(2)}` : `log(${xv * yv}) = ${logXY.toFixed(3)}`)
+        g.select(".verify-label").text(compact ? `${logX.toFixed(2)} + ${logY.toFixed(2)} = ${(logX + logY).toFixed(2)}` : `${logX.toFixed(3)} + ${logY.toFixed(3)} = ${(logX + logY).toFixed(3)} (verified)`)
 
         // Curve dot + vertical line
         const dotCx = cxScale(Math.min(xv, 100))
@@ -371,9 +372,9 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
           .attr("transform", `translate(${yHandlePos},0)`)
 
         // Values panel text
-        g.select(".val-logx").text(`log\u2081\u2080(${xv}) = ${logX.toFixed(4)}`)
-        g.select(".val-logy").text(`log\u2081\u2080(${yv}) = ${logY.toFixed(4)}`)
-        g.select(".val-logxy").text(`log\u2081\u2080(${xv * yv}) = ${logXY.toFixed(4)}`)
+        g.select(".val-logx").text(compact ? `x ${xv} -> ${logX.toFixed(3)}` : `log\u2081\u2080(${xv}) = ${logX.toFixed(4)}`)
+        g.select(".val-logy").text(compact ? `y ${yv} -> ${logY.toFixed(3)}` : `log\u2081\u2080(${yv}) = ${logY.toFixed(4)}`)
+        g.select(".val-logxy").text(compact ? `xy ${xv * yv} -> ${logXY.toFixed(3)}` : `log\u2081\u2080(${xv * yv}) = ${logXY.toFixed(4)}`)
       }
 
       // Expose for external sync
