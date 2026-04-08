@@ -128,8 +128,9 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
   const tails = flips.length - heads
   const surpriseH = prob > 0 ? -Math.log2(prob) : Infinity
   const surpriseT = q > 0 ? -Math.log2(q) : Infinity
-  const xTicks = useMemo(() => getTicks([0, 1], 5), [])
-  const yTicks = useMemo(() => getTicks([0, 1.1], 5), [])
+  const compact = frame.width < 420
+  const xTicks = useMemo(() => getTicks([0, 1], compact ? 4 : 5), [compact])
+  const yTicks = useMemo(() => getTicks([0, 1.1], compact ? 4 : 5), [compact])
   const fillPath = useMemo(() => buildAreaPath({
     data,
     xScale: frame.xScale,
@@ -154,13 +155,13 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
           {editingVar === "p" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-              className="w-20 rounded-lg border-2 px-2 py-1 text-sm font-bold outline-none" style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
+              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("p", prob)} className="cursor-text rounded-lg border px-3 py-1 text-sm font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800" style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button onClick={() => handleBadgeClick("p", prob)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
               p = {prob.toFixed(2)}
             </button>
           )}
-          <span className="ml-auto rounded-lg border border-slate-200 px-3 py-1 text-sm font-extrabold dark:border-slate-600" style={{ color: VAR_COLORS.result }}>
+          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
             H = {entropy.toFixed(4)} bits
           </span>
         </div>
@@ -208,7 +209,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={7} fill="#ef4444" stroke="white" strokeWidth={2} />
 
             <text x={frame.plotRight - 4} y={frame.yScale(1) - 6} textAnchor="end" fontSize="11" fontWeight="600" fill="#f59e0b">
-              max = 1 bit
+              {compact ? "max 1b" : "max = 1 bit"}
             </text>
 
             {xTicks.map((tick) => (
@@ -229,7 +230,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             ))}
 
             <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#94a3b8">
-              Probability p
+              {compact ? "p" : "Probability p"}
             </text>
             <text
               x={16}
@@ -239,13 +240,13 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
               fill="#94a3b8"
               transform={`rotate(-90 16 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              H (bits)
+              {compact ? "H" : "H (bits)"}
             </text>
           </svg>
         </div>
 
         {/* Coin flip simulator + entropy display */}
-        <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-4 py-3 dark:border-slate-700">
+        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3 dark:border-slate-700">
           {/* Coin display */}
           <div
             className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white"
@@ -260,28 +261,28 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
           {/* Buttons */}
           <button
             onClick={handleFlip}
-            className="rounded-lg bg-ocean px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-900"
+            className={`rounded-lg bg-ocean font-semibold text-white transition-colors hover:bg-blue-900 ${compact ? "px-3 py-1.5 text-xs" : "px-4 py-1.5 text-sm"}`}
           >
             Flip
           </button>
           <button
             onClick={handleReset}
-            className="rounded-lg bg-slate-500 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-slate-600"
+            className={`rounded-lg bg-slate-500 font-semibold text-white transition-colors hover:bg-slate-600 ${compact ? "px-3 py-1.5 text-xs" : "px-4 py-1.5 text-sm"}`}
           >
             Reset
           </button>
 
           {/* Tally */}
-          <div className="flex gap-3 text-sm font-semibold">
+          <div className={`flex flex-wrap gap-3 font-semibold ${compact ? "text-xs" : "text-sm"}`}>
             <span className="text-blue-600">H: {heads}</span>
             <span className="text-emerald-600">T: {tails}</span>
-            <span className="text-slate-500">Total: {flips.length}</span>
+            <span className="text-slate-500">{compact ? `n: ${flips.length}` : `Total: ${flips.length}`}</span>
           </div>
 
           {/* Surprise */}
-          <div className="ml-auto flex flex-col text-xs">
-            <span className="text-blue-600">Surprise(H): {surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)} bits</span>
-            <span className="text-emerald-600">Surprise(T): {surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)} bits</span>
+          <div className={`ml-auto flex flex-col ${compact ? "w-full text-[11px]" : "text-xs"}`}>
+            <span className="text-blue-600">{compact ? `H info: ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)}b` : `Surprise(H): ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)} bits`}</span>
+            <span className="text-emerald-600">{compact ? `T info: ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)}b` : `Surprise(T): ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)} bits`}</span>
           </div>
         </div>
       </div>

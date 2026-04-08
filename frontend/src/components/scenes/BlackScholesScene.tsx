@@ -184,15 +184,16 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
     yDomain: [0, Math.ceil(maxPrice)],
     y2Domain: showGreeks ? [0, 1.2] : undefined,
   })
+  const compact = frame.width < 420
   const handleChartClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (!onVarChange) return
     const s = frame.clientXToX(event.clientX)
     if (s == null) return
     onVarChange("K", Math.max(50, Math.min(150, Math.round(s))))
   }, [frame, onVarChange])
-  const xTicks = useMemo(() => getTicks([20, 200], 10), [])
-  const yTicks = useMemo(() => getTicks([0, Math.ceil(maxPrice)], 6), [maxPrice])
-  const y2Ticks = useMemo(() => (showGreeks ? getTicks([0, 1.2], 5) : []), [showGreeks])
+  const xTicks = useMemo(() => getTicks([20, 200], compact ? 6 : 10), [compact])
+  const yTicks = useMemo(() => getTicks([0, Math.ceil(maxPrice)], compact ? 5 : 6), [compact, maxPrice])
+  const y2Ticks = useMemo(() => (showGreeks ? getTicks([0, 1.2], compact ? 4 : 5) : []), [compact, showGreeks])
   const y2Scale = frame.y2Scale
   const intrinsicCallPath = useMemo(() => buildLinePath({
     data,
@@ -250,11 +251,11 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
       return (
         <input key={varName} type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-          className="w-20 rounded-lg border-2 px-2 py-1 text-xs font-bold outline-none" style={{ borderColor: color, color }} />
+          className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} />
       )
     }
     return (
-      <button key={varName} onClick={() => handleBadgeClick(varName, value)} className="cursor-text rounded-lg border px-2 py-1 text-xs font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800" style={{ borderColor: color, color }} type="button" title="Click to type a value">
+      <button key={varName} onClick={() => handleBadgeClick(varName, value)} className={`cursor-text rounded-lg border px-2 py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} type="button" title="Click to type a value">
         {label} = {format(value)}
       </button>
     )
@@ -316,7 +317,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
 
             <line x1={frame.xScale(K)} x2={frame.xScale(K)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeWidth={1.5} strokeDasharray="6 4" />
             <text x={frame.xScale(K)} y={frame.plotTop + 14} textAnchor="middle" fontSize="14" fontWeight="700" fill={VAR_COLORS.primary}>
-              K = {K}
+              {compact ? `K ${K}` : `K = ${K}`}
             </text>
 
             {xTicks.map((tick) => (
@@ -338,14 +339,14 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
             {showGreeks && y2Scale && y2Ticks.map((tick) => (
               <g key={`tick-y2-${tick}`}>
                 <line x1={frame.plotRight} x2={frame.plotRight + 6} y1={y2Scale(tick)} y2={y2Scale(tick)} stroke="#f59e0b" />
-                <text x={frame.plotRight + 10} y={y2Scale(tick) + 4} textAnchor="start" fontSize="10" fill="#f59e0b">
+                <text x={frame.plotRight + 10} y={y2Scale(tick) + 4} textAnchor="start" fontSize={compact ? "9" : "10"} fill="#f59e0b">
                   {tick.toFixed(1)}
                 </text>
               </g>
             ))}
 
             <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
-              Underlying Price (S)
+              {compact ? "Price (S)" : "Underlying Price (S)"}
             </text>
             <text
               x={18}
@@ -356,13 +357,13 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               fontWeight="600"
               transform={`rotate(-90 18 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              Option Price
+              {compact ? "Price" : "Option Price"}
             </text>
           </svg>
         </div>
 
         {/* Legend + Greeks toggle */}
-        <div className="flex items-center gap-4 border-t border-slate-100 px-4 py-2 dark:border-slate-700">
+        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-2 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 bg-[#5a79ff]" style={{ height: 3 }} />
             <span className="text-xs font-semibold text-[#5a79ff]">Call</span>
@@ -384,7 +385,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               color: showGreeks ? "white" : "#64748b",
             }}
           >
-            {showGreeks ? "Hide Greeks" : "Show Greeks"}
+            {compact ? (showGreeks ? "Hide" : "Greeks") : (showGreeks ? "Hide Greeks" : "Show Greeks")}
           </button>
         </div>
       </div>
