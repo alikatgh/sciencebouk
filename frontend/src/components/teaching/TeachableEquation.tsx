@@ -25,6 +25,9 @@ const TEACHING_PANEL_STORAGE_KEY = "sciencebouk-teaching-panel-width"
 const TEACHING_PANEL_DEFAULT_WIDTH = 272
 const TEACHING_PANEL_MIN_WIDTH = 200
 const TEACHING_PANEL_MAX_WIDTH = 400
+const MOBILE_PANEL_DRAG_THRESHOLD = 36
+const MOBILE_PANEL_PEEK_HEIGHT = "min(38vh, 22rem)"
+const MOBILE_PANEL_EXPANDED_HEIGHT = "min(72vh, 40rem)"
 
 function readStoredTeachingPanelWidth(): number {
   if (typeof window === "undefined") return TEACHING_PANEL_DEFAULT_WIDTH
@@ -85,6 +88,7 @@ function LessonFallback(): ReactElement {
 }
 
 type MobileTeachingTab = "learn" | "controls" | "lesson"
+type MobilePanelState = "peek" | "expanded"
 
 export function TeachableEquation({
   equationId, hook, hookAction, formula, latexFormula,
@@ -279,7 +283,9 @@ export function TeachableEquation({
   const hasLessons = lessonSteps.length > 0
 
   const [teachingPanelOpen, setTeachingPanelOpen] = useState(true)
+  const [mobilePanelState, setMobilePanelState] = useState<MobilePanelState>("peek")
   const [teachingPanelWidth, setTeachingPanelWidth] = useState(readStoredTeachingPanelWidth)
+  const dragStartYRef = useRef<number | null>(null)
   const isNarrow = shouldUseStackedTeachingLayout({
     containerWidth,
     containerHeight,
@@ -316,6 +322,11 @@ export function TeachableEquation({
     if (mobileTabOrder.includes(mobileTeachingTab)) return
     setMobileTeachingTab(mobileTabOrder[0] ?? "controls")
   }, [mobileTeachingTab, mobileTabOrder])
+
+  useEffect(() => {
+    if (!isMobile || !isNarrow || !teachingPanelOpen) return
+    setMobilePanelState("peek")
+  }, [isMobile, isNarrow, teachingPanelOpen, resolvedId])
 
   const hookBlock = appSettings.showHookText ? (
     <div className={`rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}>
@@ -483,9 +494,39 @@ export function TeachableEquation({
 
   const visualizationContent = children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })
 
+  const handleMobilePanelGestureStart = useCallback((clientY: number) => {
+    dragStartYRef.current = clientY
+  }, [])
+
+  const handleMobilePanelGestureEnd = useCallback((clientY: number) => {
+    const startY = dragStartYRef.current
+    dragStartYRef.current = null
+    if (startY === null) return
+
+    const deltaY = clientY - startY
+    if (Math.abs(deltaY) < MOBILE_PANEL_DRAG_THRESHOLD) {
+      setMobilePanelState((current) => current === "peek" ? "expanded" : "peek")
+      return
+    }
+
+    if (deltaY < 0) {
+      setMobilePanelState("expanded")
+      return
+    }
+
+    if (mobilePanelState === "expanded") {
+      setMobilePanelState("peek")
+      return
+    }
+
+    setTeachingPanelOpen(false)
+  }, [mobilePanelState])
+
   if (isNarrow) {
     // Vertical stack: visualization on top, teaching panel below
-    const panelMaxHeight = isMobile ? "min(42vh, 24rem)" : "45vh"
+    const panelMaxHeight = isMobile
+      ? (mobilePanelState === "expanded" ? MOBILE_PANEL_EXPANDED_HEIGHT : MOBILE_PANEL_PEEK_HEIGHT)
+      : "45vh"
 
     return (
       <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
@@ -501,14 +542,17 @@ export function TeachableEquation({
 
         {!teachingPanelOpen ? (
           <button
-            onClick={() => setTeachingPanelOpen(true)}
+            onClick={() => {
+              setTeachingPanelOpen(true)
+              setMobilePanelState("peek")
+            }}
             className="mb-1 flex-shrink-0 self-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             type="button"
             aria-label="Open teaching panel"
           >
             <span className="flex items-center gap-1.5">
               <PanelBottomOpen className="h-3.5 w-3.5" />
-              {isMobile ? "Show" : "Show panel"}
+              {isMobile ? "Open controls" : "Show panel"}
             </span>
           </button>
         ) : (
@@ -516,14 +560,34 @@ export function TeachableEquation({
             className="flex-shrink-0 rounded-t-[28px] border border-b-0 border-slate-200 bg-white shadow-[0_-10px_35px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
             style={{ maxHeight: panelMaxHeight, overflowY: "auto" }}
           >
-            <button
-              onClick={() => setTeachingPanelOpen(false)}
-              className="sticky top-0 z-10 flex min-h-[44px] w-full items-center justify-center rounded-t-[28px] border-b border-slate-100 bg-white/92 text-[10px] font-medium text-slate-400 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92"
-              type="button"
-              aria-label="Collapse teaching panel"
+            <div
+              className="sticky top-0 z-10 rounded-t-[28px] border-b border-slate-100 bg-white/92 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92"
+              onPointerUp={(event) => handleMobilePanelGestureEnd(event.clientY)}
+              onTouchEnd={(event) => handleMobilePanelGestureEnd(event.changedTouches[0]?.clientY ?? 0)}
             >
-              <span className="h-1 w-8 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true" />
-            </button>
+              <div className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
+                <button
+                  onPointerDown={(event) => handleMobilePanelGestureStart(event.clientY)}
+                  onTouchStart={(event) => handleMobilePanelGestureStart(event.touches[0]?.clientY ?? 0)}
+                  className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full py-1 text-[10px] font-medium text-slate-400"
+                  type="button"
+                  aria-label="Resize teaching panel"
+                >
+                  <span className="h-1 w-8 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true" />
+                  <span className="text-[10px] tracking-wide text-slate-400">
+                    {mobilePanelState === "expanded" ? "Swipe down to tuck away" : "Swipe up for more"}
+                  </span>
+                </button>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="min-h-[36px] shrink-0 rounded-full px-3 text-[11px] text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  onClick={() => setTeachingPanelOpen(false)}
+                >
+                  Hide
+                </Button>
+              </div>
+            </div>
             {teachingContent}
           </div>
         )}
