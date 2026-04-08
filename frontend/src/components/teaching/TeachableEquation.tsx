@@ -285,8 +285,8 @@ export function TeachableEquation({
     teachingPanelWidth,
   })
   const stackedVisualizationWrapperClass = isMobile
-    ? "max-h-[50vh] aspect-[4/3]"
-    : "aspect-[16/10] max-h-[62vh]"
+    ? "aspect-square min-h-[18rem] max-h-[24rem]"
+    : "aspect-[4/3] max-h-[56vh]"
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const introFormulaVisible = appSettings.showHookText && appSettings.showFormulaLetters && Boolean(displayFormula)
   const letterFormula = introFormulaVisible ? "" : (appSettings.showFormulaLetters ? displayFormula : "")
@@ -409,15 +409,17 @@ export function TeachableEquation({
   if (isNarrow) {
     // Vertical stack: visualization on top, teaching panel below
     // On mobile (<480px), panel is max 35vh and starts collapsed
-    const panelMaxHeight = isMobile ? "35vh" : "45vh"
+    const panelMaxHeight = isMobile ? "min(38vh, 21rem)" : "45vh"
 
     return (
       <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
-        <div className="min-h-0 flex-1 flex items-center justify-center overflow-hidden">
-          <div className={`w-full max-w-full ${stackedVisualizationWrapperClass}`}>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <div className="flex h-full items-start justify-center overflow-hidden px-1 pt-1.5 sm:px-0 sm:pt-0">
+            <div className={`w-full max-w-full ${stackedVisualizationWrapperClass}`}>
             <VisualizationViewport>
               {visualizationContent}
             </VisualizationViewport>
+            </div>
           </div>
         </div>
 

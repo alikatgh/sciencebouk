@@ -153,7 +153,8 @@ function computeLayout(a: number, b: number, W: number, H: number) {
   a = Math.max(0.01, a)
   b = Math.max(0.01, b)
   const c = Math.sqrt(a * a + b * b)
-  const PAD = 40 // more padding for labels
+  const compact = W < 430 || H < 360
+  const PAD = compact ? 18 : 40
 
   // Bounding box in data coords (right-angle at origin, a up, b right)
   // sq-a extends left by a, sq-b extends down by b
@@ -169,7 +170,7 @@ function computeLayout(a: number, b: number, W: number, H: number) {
   const allY = [-a, 0, b, ...cSq.map(p => p.y)]
 
   // Add extra margin for labels (labels extend ~30px beyond geometry)
-  const labelMargin = 2 // data units extra
+  const labelMargin = compact ? 0.85 : 2 // data units extra
 
   const minX = Math.min(...allX) - labelMargin
   const maxX = Math.max(...allX) + labelMargin
@@ -187,7 +188,7 @@ function computeLayout(a: number, b: number, W: number, H: number) {
   const ox = PAD + (availW - totalW * s) / 2 + (-minX) * s
   const oy = PAD + (availH - totalH * s) / 2 + (-minY) * s
 
-  return { s, ox, oy, c }
+  return { s, ox, oy, c, compact }
 }
 
 function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHighlight }: Props): ReactElement {
@@ -337,10 +338,14 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         aVal = Math.max(0.01, aVal)
         bVal = Math.max(0.01, bVal)
         const cVal = Math.sqrt(aVal * aVal + bVal * bVal)
-        const { s, ox, oy } = computeLayout(aVal, bVal, W, H)
+        const { s, ox, oy, compact } = computeLayout(aVal, bVal, W, H)
 
-        const fs = Math.max(12, Math.min(20, Math.min(W, H) / 30))
-        const lfs = Math.max(14, Math.min(20, fs * 1.1))
+        const fs = compact
+          ? Math.max(9, Math.min(12, Math.min(W, H) / 34))
+          : Math.max(12, Math.min(20, Math.min(W, H) / 30))
+        const lfs = compact
+          ? Math.max(11, Math.min(14, fs * 1.08))
+          : Math.max(14, Math.min(20, fs * 1.1))
 
         const p0 = { x: ox, y: oy }
         const p1 = { x: ox + bVal * s, y: oy }
@@ -353,7 +358,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
           .attr("width", aVal * s).attr("height", aVal * s)
         g.select(".sq-a-text")
           .attr("x", p0.x - aVal * s / 2).attr("y", p0.y - aVal * s / 2)
-          .attr("font-size", fs).text(`a² = ${fmt(aVal * aVal)}`)
+          .attr("font-size", fs).text(compact ? "a²" : `a² = ${fmt(aVal * aVal)}`)
 
         // Square b
         g.select(".sq-b")
@@ -361,7 +366,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
           .attr("width", bVal * s).attr("height", bVal * s)
         g.select(".sq-b-text")
           .attr("x", p0.x + bVal * s / 2).attr("y", p0.y + bVal * s / 2)
-          .attr("font-size", fs).text(`b² = ${fmt(bVal * bVal)}`)
+          .attr("font-size", fs).text(compact ? "b²" : `b² = ${fmt(bVal * bVal)}`)
 
         // Square c
         g.select(".sq-c")
@@ -369,7 +374,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         const cCenter = { x: avg(cSq, 'x'), y: avg(cSq, 'y') }
         g.select(".sq-c-text")
           .attr("x", cCenter.x).attr("y", cCenter.y)
-          .attr("font-size", fs).text(`c² = ${fmt(cVal * cVal)}`)
+          .attr("font-size", fs).text(compact ? "c²" : `c² = ${fmt(cVal * cVal)}`)
 
         // Triangle
         g.select(".tri")
@@ -382,28 +387,30 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
 
         // Side labels — positioned OUTSIDE the triangle, away from squares
         // a label: right of the vertical side, inside the triangle
-        const aLabelOffset = Math.max(20, s * 0.8)
+        const aLabelOffset = compact ? Math.max(14, s * 0.5) : Math.max(20, s * 0.8)
         g.select(".label-a")
           .attr("x", p0.x + aLabelOffset).attr("y", (p0.y + p2.y) / 2)
           .attr("text-anchor", "start")
-          .attr("font-size", lfs).text(`a = ${fmt(aVal)}`)
+          .attr("font-size", lfs).text(compact ? `a ${fmt(aVal)}` : `a = ${fmt(aVal)}`)
 
         // b label: above the horizontal side, centered
         g.select(".label-b")
-          .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - Math.max(14, s * 0.5))
+          .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - (compact ? Math.max(10, s * 0.35) : Math.max(14, s * 0.5)))
           .attr("text-anchor", "middle")
-          .attr("font-size", lfs).text(`b = ${fmt(bVal)}`)
+          .attr("font-size", lfs).text(compact ? `b ${fmt(bVal)}` : `b = ${fmt(bVal)}`)
 
         // c label: on the hypotenuse, offset INTO the triangle (away from c² square)
         const cNormX = -(aVal / cVal)  // normal pointing into triangle
         const cNormY = (bVal / cVal)
-        const cOffset = Math.max(20, s * 0.8)
+        const cOffset = compact ? Math.max(12, s * 0.45) : Math.max(20, s * 0.8)
         const cMidX = (p1.x + p2.x) / 2 + cNormX * cOffset
         const cMidY = (p1.y + p2.y) / 2 + cNormY * cOffset
         g.select(".label-c")
           .attr("x", cMidX).attr("y", cMidY)
           .attr("text-anchor", "middle")
-          .attr("font-size", lfs).text(`c = ${cVal.toFixed(1)}`)
+          .attr("font-size", lfs)
+          .attr("opacity", compact ? 0 : 1)
+          .text(compact ? "" : `c = ${cVal.toFixed(1)}`)
 
         // Handle positions
         g.select(".handle-a-hit").attr("cx", p2.x).attr("cy", p2.y)

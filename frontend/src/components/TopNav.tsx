@@ -106,48 +106,51 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
 
   return (
     <header className="relative z-50 flex-shrink-0 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-start justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:flex-nowrap sm:items-center">
         {/* Left */}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 basis-0 items-start gap-2 sm:items-center">
           {showBack && (
             <button
               onClick={onBack ?? (() => navigate("/"))}
-              className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+              className="mt-0.5 flex-shrink-0 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 sm:mt-0"
               type="button"
               aria-label="Go back"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
           )}
-          {left ?? (
-            <button
-              onClick={() => navigate("/")}
-              className="text-base font-bold text-slate-900 transition hover:text-ocean dark:text-white"
-              type="button"
-            >
-              Formulas
-            </button>
-          )}
+          <div className="min-w-0 flex-1">
+            {left ?? (
+              <button
+                onClick={() => navigate("/")}
+                className="truncate text-base font-bold text-slate-900 transition hover:text-ocean dark:text-white"
+                type="button"
+              >
+                Formulas
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex flex-shrink-0 items-center gap-1 pl-2 sm:gap-2">
           {isAuthenticated && user ? (
-            <div className="relative" ref={menuRef} onBlur={handleBlur}>
+            <div className="relative flex items-center gap-1 sm:gap-2" ref={menuRef} onBlur={handleBlur}>
               {!isPro && (
                 <Button
                   variant="outline"
                   size="xs"
                   onClick={() => navigate("/pro")}
                   disabled={!BILLING_ENABLED}
-                  className={`mr-1 gap-1 ${
+                  className={`h-10 min-w-10 rounded-full px-0 [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:px-0 sm:h-8 sm:min-w-0 sm:rounded-md sm:px-2 sm:[@media(pointer:coarse)]:min-h-8 ${
                     BILLING_ENABLED
                       ? "border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400"
                       : "border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500"
                   }`}
                   title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
                 >
-                  <Crown className="h-3 w-3" /> {BILLING_ENABLED ? "Pro" : "Beta"}
+                  <Crown className="h-3 w-3" />
+                  <span className="hidden sm:inline">{BILLING_ENABLED ? "Pro" : "Beta"}</span>
                 </Button>
               )}
 
@@ -161,24 +164,24 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                 onFocus={() => {
                   void loadTopNavAccountMenu()
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full py-1 pl-1 pr-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-800 [@media(pointer:coarse)]:min-h-[44px] sm:h-8 sm:min-h-0 sm:justify-start sm:pr-2"
                 type="button"
                 aria-label="Open profile menu"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover"
+                  <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover sm:h-7 sm:w-7"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
                 ) : (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ocean/15 text-[11px] font-bold text-ocean">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ocean/15 text-[10px] font-bold text-ocean sm:h-7 sm:w-7 sm:text-[11px]">
                     {initials}
                   </span>
                 )}
                 <span className="hidden text-sm font-medium text-slate-700 dark:text-slate-300 sm:inline">
                   {displayName}
                 </span>
-                <ChevronDown className={`h-3 w-3 text-slate-400 transition ${menuOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`hidden h-3 w-3 text-slate-400 transition sm:block ${menuOpen ? "rotate-180" : ""}`} />
               </button>
 
               {/* Dropdown menu */}

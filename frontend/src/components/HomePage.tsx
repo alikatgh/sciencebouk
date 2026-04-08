@@ -88,18 +88,18 @@ export function HomePage(): ReactElement {
           showBack={!!activeSubject}
           onBack={activeSubject ? () => setSelectedSubject(null) : undefined}
           left={
-            <div className="flex items-center gap-3">
-              <span className="text-base font-bold text-slate-900 dark:text-white">
+            <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
+              <span className="max-w-full break-words text-[15px] font-bold leading-tight text-slate-900 dark:text-white sm:truncate sm:text-base">
                 {activeSubject ? activeSubject.name : "Formulas"}
               </span>
               {completedCount > 0 && !activeSubject && (
-                <div className="flex items-center gap-2">
+                <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
                   <Progress
                     value={(completedCount / total) * 100}
-                    className="h-1 w-16"
+                    className="h-1 w-full max-w-[6rem] sm:w-16"
                     aria-label={`${completedCount} of ${total} equations completed`}
                   />
-                  <span className="text-[10px] text-slate-400">{completedCount}/{total}</span>
+                  <span className="shrink-0 text-[10px] text-slate-400">{completedCount}/{total}</span>
                 </div>
               )}
             </div>
@@ -211,26 +211,26 @@ export function HomePage(): ReactElement {
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSubject(subject.slug) } }}
                     aria-label={`Open ${subject.name}`}
                   >
-                    <div className="flex items-center gap-4 p-5">
-                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white text-slate-900">
+                    <div className="flex items-start gap-3 p-4 sm:items-center sm:gap-4 sm:p-5">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-slate-900 sm:h-12 sm:w-12">
                         {iconMap[subject.icon] ?? <Pi className="h-6 w-6" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-lg font-bold">{subject.name}</h2>
-                        <p className="mt-0.5 text-sm text-slate-400">{subject.description}</p>
-                        <div className="mt-2 flex items-center gap-3">
+                        <h2 className="text-base font-bold leading-tight sm:text-lg">{subject.name}</h2>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:mt-0.5 sm:text-sm">{subject.description}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="text-xs font-medium text-slate-400">{subject.formulas.length} interactive equations</span>
                           {completedInSubject > 0 && (
                             <span className="text-xs font-medium text-emerald-400">{completedInSubject} completed</span>
                           )}
                         </div>
                       </div>
-                      <ArrowRight className="h-5 w-5 text-slate-500 transition group-hover:text-white" />
+                      <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-500 transition group-hover:text-white sm:h-5 sm:w-5" />
                     </div>
-                    <div className="border-t border-slate-700 bg-slate-800/50 px-5 py-2.5 dark:bg-slate-900/50">
-                      <div className="flex flex-wrap gap-x-5 gap-y-1 overflow-hidden" style={{ maxHeight: 28 }}>
+                    <div className="border-t border-slate-700 bg-slate-800/50 px-4 py-2 sm:px-5 sm:py-2.5 dark:bg-slate-900/50">
+                      <div className="flex gap-x-4 gap-y-1 overflow-x-auto pb-1 md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0">
                         {subject.formulas.slice(0, 5).map((f, i) => (
-                          <span key={i} className="text-xs text-slate-400">
+                          <span key={i} className="shrink-0 text-[11px] text-slate-400 md:shrink md:text-xs">
                             <FormulaPreview formula={f.formula} />
                           </span>
                         ))}
