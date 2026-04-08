@@ -82,7 +82,7 @@ export function HomePage(): ReactElement {
   const hasComingSoonSubjects = inactiveSubjects.length > 0
 
   return (
-    <main className="flex min-h-screen flex-col bg-white dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] flex-col bg-white dark:bg-slate-950">
         {/* Header */}
         <TopNav
           showBack={!!activeSubject}
@@ -106,14 +106,14 @@ export function HomePage(): ReactElement {
           }
         />
         <div className="flex-1">
-          <div className="mx-auto max-w-5xl px-4 py-6">
+          <div className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
             {!activeSubject ? (
               <>
             {/* === HERO === */}
-            <section className="mb-8 overflow-hidden rounded-2xl bg-slate-900 text-white">
-              <div className="grid items-center gap-6 p-6 md:grid-cols-[1fr_auto] md:p-8">
+            <section className="mb-7 overflow-hidden rounded-[28px] bg-slate-900 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
+              <div className="grid items-center gap-6 p-5 sm:p-6 md:grid-cols-[1fr_auto] md:p-8">
                 <div>
-                  <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">
+                  <h1 className="font-display text-[1.75rem] font-bold tracking-tight leading-tight md:text-3xl">
                     Grab a variable. Drag it.<br />
                     <span className="text-ocean">Watch the equation respond.</span>
                   </h1>
@@ -121,7 +121,7 @@ export function HomePage(): ReactElement {
                     {total} equations that shaped the world — turned into interactive visualizations
                     you can touch and understand. No textbook. No video.
                   </p>
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <div className="mt-5 flex flex-col items-stretch gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                     <Button
                       onClick={() => navigate("/equation/1")}
                       onMouseEnter={() => {
@@ -130,7 +130,7 @@ export function HomePage(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(1)
                       }}
-                      className="bg-ocean text-white hover:bg-ocean/90"
+                      className="min-h-[46px] justify-center bg-ocean text-white hover:bg-ocean/90 sm:min-h-0"
                     >
                       Try Pythagoras <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
@@ -139,7 +139,7 @@ export function HomePage(): ReactElement {
                         const el = document.getElementById("subjects-section")
                         el?.scrollIntoView({ behavior: "smooth" })
                       }}
-                      className="text-sm text-slate-400 transition hover:text-white"
+                      className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white sm:border-0 sm:px-0 sm:py-0"
                       type="button"
                     >
                       See all equations
@@ -174,7 +174,7 @@ export function HomePage(): ReactElement {
             {completedCount > 0 && completedCount < total && continueLearningFormulas.length > 0 && (
               <section className="mb-6">
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Continue learning</h3>
-                <div className="flex gap-3 overflow-x-auto pb-1">
+                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
                   {continueLearningFormulas.map((f) => (
                       <button
                         key={f.id}
@@ -185,7 +185,7 @@ export function HomePage(): ReactElement {
                         onFocus={() => {
                           void prefetchEquationExperience(f.id!)
                         }}
-                        className="flex flex-shrink-0 flex-col rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ocean/30 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                        className="flex min-w-[15rem] snap-start flex-shrink-0 flex-col rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ocean/30 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0"
                         type="button"
                       >
                         <span className="text-sm text-slate-600 dark:text-slate-300">
@@ -206,7 +206,7 @@ export function HomePage(): ReactElement {
                     key={subject.slug}
                     role="button"
                     tabIndex={0}
-                    className="group cursor-pointer overflow-hidden border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
+                    className="group cursor-pointer overflow-hidden rounded-[26px] border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
                     onClick={() => setSelectedSubject(subject.slug)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSubject(subject.slug) } }}
                     aria-label={`Open ${subject.name}`}
@@ -228,9 +228,9 @@ export function HomePage(): ReactElement {
                       <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-500 transition group-hover:text-white sm:h-5 sm:w-5" />
                     </div>
                     <div className="border-t border-slate-700 bg-slate-800/50 px-4 py-2 sm:px-5 sm:py-2.5 dark:bg-slate-900/50">
-                      <div className="flex gap-x-4 gap-y-1 overflow-x-auto pb-1 md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0">
+                      <div className="flex snap-x snap-mandatory gap-x-4 gap-y-1 overflow-x-auto pb-1 md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0">
                         {subject.formulas.slice(0, 5).map((f, i) => (
-                          <span key={i} className="shrink-0 text-[11px] text-slate-400 md:shrink md:text-xs">
+                          <span key={i} className="shrink-0 snap-start text-[11px] text-slate-400 md:shrink md:text-xs">
                             <FormulaPreview formula={f.formula} />
                           </span>
                         ))}

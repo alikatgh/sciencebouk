@@ -35,7 +35,7 @@ export default function ProfilePage(): ReactElement {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#f3f5f7] dark:bg-slate-900">
+      <div className="flex min-h-[100dvh] flex-col bg-[#f3f5f7] dark:bg-slate-900">
         <TopNav />
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center">
@@ -134,7 +134,7 @@ export default function ProfilePage(): ReactElement {
   const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#f3f5f7] dark:bg-slate-900">
+    <div className="flex min-h-[100dvh] flex-col overflow-hidden bg-[#f3f5f7] dark:bg-slate-900">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Profile</span>} />
 
       <div className="flex-1 overflow-y-auto">

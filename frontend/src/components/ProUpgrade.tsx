@@ -111,7 +111,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   if (mode === "success") {
     if (!isPro && !verificationTimedOut) {
       return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
           <div className="text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-ocean" />
             <p className="mt-4 text-slate-500">
@@ -124,7 +124,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
     if (!isPro) {
       return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
           <div className="max-w-md text-center">
             <Loader2 className="mx-auto h-10 w-10 text-ocean" />
             <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Still checking your subscription</h1>
@@ -154,7 +154,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
     }
 
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment successful!</h1>
@@ -169,7 +169,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
   if (mode === "cancel") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <XCircle className="mx-auto h-12 w-12 text-slate-400" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment cancelled</h1>
@@ -198,9 +198,9 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
+    <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-900">
       <TopNav showBack />
-      <div className="flex flex-1 flex-col items-center px-4 py-8">
+      <div className="flex flex-1 flex-col items-center px-4 py-6 sm:py-8">
       <h1 className="font-display text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
         Go Pro
       </h1>
@@ -301,9 +301,9 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
   const navigate = useNavigate()
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
+    <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-900">
       <TopNav showBack />
-      <div className="flex flex-1 flex-col items-center px-4 py-8">
+      <div className="flex flex-1 flex-col items-center px-4 py-6 sm:py-8">
         <span className="rounded-full bg-ocean/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-ocean">
           {BILLING_DISABLED_COPY.badge}
         </span>
