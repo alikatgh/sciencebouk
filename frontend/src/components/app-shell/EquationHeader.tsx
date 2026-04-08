@@ -72,13 +72,21 @@ function EquationHeaderComponent({
   onSelectEquation,
 }: EquationHeaderProps): ReactElement {
   return (
-    <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-slate-200 px-2 py-1.5 sm:gap-2 sm:px-3 sm:py-2 dark:border-slate-800">
+    <div
+      className="flex flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 pb-2 pt-2 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:gap-2 sm:px-3 sm:py-2"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
+    >
       <Button variant="ghost" size="icon-sm" onClick={onOpenDrawer} className="lg:hidden" aria-label="Open equation browser">
         <Menu className="h-4 w-4" />
       </Button>
-      <h2 className="min-w-0 truncate font-display text-xs font-bold tracking-tight text-slate-900 dark:text-white sm:text-sm md:text-base">
-        {equation.title}
-      </h2>
+      <div className="min-w-0 flex-1">
+        <h2 className="min-w-0 truncate font-display text-sm font-bold tracking-tight text-slate-900 dark:text-white sm:text-sm md:text-base">
+          {equation.title}
+        </h2>
+        <p className="truncate text-[10px] text-slate-400 sm:hidden">
+          {equation.author}, {equation.year}
+        </p>
+      </div>
       <Badge variant="secondary" className="hidden sm:inline-flex">
         {equation.category}
       </Badge>
@@ -120,9 +128,9 @@ function EquationHeaderComponent({
             {"→"}
           </Button>
         )}
-        <Button variant="ghost" size="icon-sm" onClick={isAuthenticated ? onOpenProfile : onOpenAuth} className="lg:hidden" aria-label={isAuthenticated ? "Open profile" : "Sign in"}>
+        <Button variant="ghost" size="icon-sm" onClick={isAuthenticated ? onOpenProfile : onOpenAuth} className="rounded-full lg:hidden" aria-label={isAuthenticated ? "Open profile" : "Sign in"}>
           {isAuthenticated ? (
-            <Avatar className="h-5 w-5">
+            <Avatar className="h-7 w-7">
               <AvatarFallback className="text-[9px]">{userInitial}</AvatarFallback>
             </Avatar>
           ) : (

@@ -236,17 +236,21 @@ function EquationBrowserSidebarComponent({
             <EquationBrowserDrawer
               open={drawerOpen}
               equations={equations}
+              filteredEquations={filteredEquations}
               selectedId={selectedId}
               completedCount={completedCount}
               total={total}
               totalTimeMinutes={totalTimeMinutes}
               progressByEquation={progressByEquation}
+              searchQuery={searchQuery}
               isAuthenticated={isAuthenticated}
               isPro={isPro}
               userEmail={userEmail}
               userInitial={userInitial}
               onOpenChange={onOpenDrawer}
               onSelectEquation={onSelectEquation}
+              onSearchChange={onSearchChange}
+              onClearSearch={onClearSearch}
               onOpenProfile={onOpenProfile}
               onOpenAuth={onOpenAuth}
               onOpenPro={onOpenPro}

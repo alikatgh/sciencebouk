@@ -11,10 +11,54 @@ const EASTER_EGG_LINES = [
 export function Footer(): ReactElement {
   const [easterEgg] = useState(() => EASTER_EGG_LINES[Math.floor(Math.random() * EASTER_EGG_LINES.length)])
   const [hovered, setHovered] = useState(false)
+  const [mobileExpanded, setMobileExpanded] = useState(false)
 
   return (
     <footer className="mt-auto border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-950">
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-6 sm:flex-row sm:justify-between">
+      <div className="mx-auto max-w-5xl sm:hidden">
+        <div
+          className="px-4 pb-5 pt-4"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Formulas</p>
+              <p className="text-[11px] text-slate-400">{SITE_DOMAIN}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileExpanded((current) => !current)}
+              className="rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              {mobileExpanded ? "Less" : "More"}
+            </button>
+          </div>
+
+          <nav className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+            <Link to="/about" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">About</Link>
+            <Link to="/privacy" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Privacy</Link>
+            <Link to="/terms" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Terms</Link>
+            <Link to="/pro" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+              {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
+            </Link>
+            {mobileExpanded && (
+              <>
+                <Link to="/changelog" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Changelog</Link>
+                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">GitHub</a>
+                <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Report a bug</a>
+              </>
+            )}
+          </nav>
+
+          {mobileExpanded && (
+            <p className="mt-3 text-[11px] text-slate-400">
+              Open source interactive math learning.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mx-auto hidden max-w-5xl flex-col items-center gap-3 px-4 py-6 sm:flex sm:flex-row sm:justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <span className="font-semibold text-slate-700 dark:text-slate-300">Formulas</span>
           <span className="text-slate-300 dark:text-slate-600">/</span>

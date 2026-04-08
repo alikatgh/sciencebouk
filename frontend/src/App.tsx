@@ -288,7 +288,10 @@ export default function App(): ReactElement {
   }
 
   return (
-      <main className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <main
+        className="flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="flex flex-1 gap-0 overflow-hidden">
           <EquationBrowserSidebar
             equations={equationManifest}
@@ -336,7 +339,7 @@ export default function App(): ReactElement {
               onSelectEquation={selectEquation}
             />
 
-            <div className="equation-content min-h-0 flex-1 overflow-hidden px-2 pt-2 sm:p-2">
+            <div className="equation-content min-h-0 flex-1 overflow-hidden px-0 pt-0 sm:p-2">
               <FormulaProvider value={selectedEquation.formula}>
                 <ErrorBoundary fallback={<VisualizationFallback />}>
                   <Suspense fallback={<VisualizationFallback />}>

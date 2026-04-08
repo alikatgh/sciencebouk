@@ -301,7 +301,7 @@ export function TeachableEquation({
   )
 
   const teachingContent = (
-    <div className={`flex flex-col gap-2 overflow-y-auto ${isNarrow ? "px-2 py-1.5" : "h-full pl-2"}`}>
+    <div className={`flex flex-col gap-2.5 overflow-y-auto ${isNarrow ? "px-3 py-2.5" : "h-full pl-2"}`}>
 
         {/* Hook — conditionally shown, compact on mobile */}
         {appSettings.showHookText && (
@@ -408,17 +408,16 @@ export function TeachableEquation({
 
   if (isNarrow) {
     // Vertical stack: visualization on top, teaching panel below
-    // On mobile (<480px), panel is max 35vh and starts collapsed
-    const panelMaxHeight = isMobile ? "min(38vh, 21rem)" : "45vh"
+    const panelMaxHeight = isMobile ? "min(42vh, 24rem)" : "45vh"
 
     return (
       <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-hidden">
-          <div className="flex h-full items-start justify-center overflow-hidden px-1 pt-1.5 sm:px-0 sm:pt-0">
+          <div className="flex h-full items-start justify-center overflow-hidden px-0 pt-0.5 sm:px-0 sm:pt-0">
             <div className={`w-full max-w-full ${stackedVisualizationWrapperClass}`}>
-            <VisualizationViewport>
-              {visualizationContent}
-            </VisualizationViewport>
+              <VisualizationViewport>
+                {visualizationContent}
+              </VisualizationViewport>
             </div>
           </div>
         </div>
@@ -426,7 +425,7 @@ export function TeachableEquation({
         {!teachingPanelOpen ? (
           <button
             onClick={() => setTeachingPanelOpen(true)}
-            className="flex-shrink-0 self-center rounded-t-lg border border-b-0 border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:bg-slate-800"
+            className="mb-1 flex-shrink-0 self-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             type="button"
             aria-label="Open teaching panel"
           >
@@ -436,10 +435,13 @@ export function TeachableEquation({
             </span>
           </button>
         ) : (
-          <div className="flex-shrink-0 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" style={{ maxHeight: panelMaxHeight, overflowY: "auto" }}>
+          <div
+            className="flex-shrink-0 rounded-t-[28px] border border-b-0 border-slate-200 bg-white shadow-[0_-10px_35px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
+            style={{ maxHeight: panelMaxHeight, overflowY: "auto" }}
+          >
             <button
               onClick={() => setTeachingPanelOpen(false)}
-              className="sticky top-0 z-10 flex min-h-[44px] w-full items-center justify-center border-b border-slate-100 bg-white/90 text-[10px] font-medium text-slate-400 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90"
+              className="sticky top-0 z-10 flex min-h-[44px] w-full items-center justify-center rounded-t-[28px] border-b border-slate-100 bg-white/92 text-[10px] font-medium text-slate-400 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92"
               type="button"
               aria-label="Collapse teaching panel"
             >
