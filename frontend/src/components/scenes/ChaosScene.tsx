@@ -113,6 +113,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
     xDomain: [0, 59],
     yDomain: [0, 1],
   })
+  const compact = Math.min(bifurcationFrame.width, timeFrame.width) < 420
 
   const handleBadgeClick = useCallback((varName: string, currentValue: number) => {
     setEditingVar(varName)
@@ -171,10 +172,16 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
   else if (r < 3.5644) periodText = "Period 8"
   else if (r < 3.82) periodText = "Chaos"
   else if (r < 3.86) periodText = "Period 3 window"
-  const bifurcationXTicks = useMemo(() => getTicks([2.5, 4], 7), [])
-  const bifurcationYTicks = useMemo(() => getTicks([0, 1], 6), [])
-  const timeXTicks = useMemo(() => getTicks([0, 59], 7), [])
-  const timeYTicks = useMemo(() => getTicks([0, 1], 6), [])
+  const compactPeriodText = periodText
+    .replace("Period 1 (stable)", "P1 stable")
+    .replace("Period 2", "P2")
+    .replace("Period 4", "P4")
+    .replace("Period 8", "P8")
+    .replace("Period 3 window", "P3 window")
+  const bifurcationXTicks = useMemo(() => getTicks([2.5, 4], compact ? 5 : 7), [compact])
+  const bifurcationYTicks = useMemo(() => getTicks([0, 1], compact ? 4 : 6), [compact])
+  const timeXTicks = useMemo(() => getTicks([0, 59], compact ? 5 : 7), [compact])
+  const timeYTicks = useMemo(() => getTicks([0, 1], compact ? 4 : 6), [compact])
   const timeSeriesPath = useMemo(() => buildLinePath({
     data: timeSeriesData,
     xScale: timeFrame.xScale,
@@ -187,27 +194,27 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
     <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
       <div className="flex h-full flex-col">
         {/* Header with clickable badges */}
-        <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-          <span className="text-sm font-bold text-ink">Bifurcation Diagram</span>
-          <span className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-ink dark:border-slate-600 dark:bg-slate-700">
-            {periodText}
+        <div className={`flex flex-wrap items-center ${compact ? "gap-1.5 px-3 pt-2.5" : "gap-2 px-4 pt-3"}`}>
+          <span className={`${compact ? "text-xs" : "text-sm"} font-bold text-ink`}>{compact ? "Bifurcation" : "Bifurcation Diagram"}</span>
+          <span className={`rounded-lg border border-slate-200 bg-white ${compact ? "px-2 py-1 text-[11px]" : "px-3 py-1 text-xs"} font-bold text-ink dark:border-slate-600 dark:bg-slate-700`}>
+            {compact ? compactPeriodText : periodText}
           </span>
           {editingVar === "r" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-              className="ml-auto w-20 rounded-lg border-2 px-2 py-1 text-sm font-bold outline-none" style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
+              className={`${compact ? "w-16 text-xs" : "ml-auto w-20 text-sm"} rounded-lg border-2 px-2 py-1 font-bold outline-none`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("r", r)} className="ml-auto cursor-text rounded-lg border px-3 py-1 text-sm font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800" style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
-              r = {r.toFixed(3)}
+            <button onClick={() => handleBadgeClick("r", r)} className={`${compact ? "px-2.5 text-xs" : "ml-auto px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+              {compact ? `r ${r.toFixed(3)}` : `r = ${r.toFixed(3)}`}
             </button>
           )}
           {editingVar === "x0" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-              className="w-20 rounded-lg border-2 px-2 py-1 text-sm font-bold outline-none" style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
+              className={`${compact ? "w-16 text-xs" : "w-20 text-sm"} rounded-lg border-2 px-2 py-1 font-bold outline-none`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("x0", x0)} className="cursor-text rounded-lg border px-3 py-1 text-sm font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800" style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
-              x&#8320; = {x0.toFixed(2)}
+            <button onClick={() => handleBadgeClick("x0", x0)} className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
+              {compact ? `x₀ ${x0.toFixed(2)}` : `x₀ = ${x0.toFixed(2)}`}
             </button>
           )}
         </div>
@@ -268,7 +275,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
             {bifurcationXTicks.map((tick) => (
               <g key={`bif-tick-x-${tick}`}>
                 <line x1={bifurcationFrame.xScale(tick)} x2={bifurcationFrame.xScale(tick)} y1={bifurcationFrame.plotBottom} y2={bifurcationFrame.plotBottom + 6} stroke="#cbd5e1" />
-                <text x={bifurcationFrame.xScale(tick)} y={bifurcationFrame.plotBottom + 18} textAnchor="middle" fontSize="11" fill="#94a3b8">
+                <text x={bifurcationFrame.xScale(tick)} y={bifurcationFrame.plotBottom + 18} textAnchor="middle" fontSize={compact ? "10" : "11"} fill="#94a3b8">
                   {tick.toFixed(1)}
                 </text>
               </g>
@@ -276,19 +283,19 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
             {bifurcationYTicks.map((tick) => (
               <g key={`bif-tick-y-${tick}`}>
                 <line x1={bifurcationFrame.plotLeft - 6} x2={bifurcationFrame.plotLeft} y1={bifurcationFrame.yScale(tick)} y2={bifurcationFrame.yScale(tick)} stroke="#cbd5e1" />
-                <text x={bifurcationFrame.plotLeft - 10} y={bifurcationFrame.yScale(tick) + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
+                <text x={bifurcationFrame.plotLeft - 10} y={bifurcationFrame.yScale(tick) + 4} textAnchor="end" fontSize={compact ? "10" : "11"} fill="#94a3b8">
                   {tick.toFixed(1)}
                 </text>
               </g>
             ))}
-            <text x={(bifurcationFrame.plotLeft + bifurcationFrame.plotRight) / 2} y={bifurcationFrame.height - 8} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
+            <text x={(bifurcationFrame.plotLeft + bifurcationFrame.plotRight) / 2} y={bifurcationFrame.height - 8} textAnchor="middle" fontSize={compact ? "11" : "13"} fill="#64748b" fontWeight="600">
               r
             </text>
             <text
               x={16}
               y={(bifurcationFrame.plotTop + bifurcationFrame.plotBottom) / 2}
               textAnchor="middle"
-              fontSize="13"
+              fontSize={compact ? "11" : "13"}
               fill="#64748b"
               fontWeight="600"
               transform={`rotate(-90 16 ${(bifurcationFrame.plotTop + bifurcationFrame.plotBottom) / 2})`}
@@ -300,8 +307,8 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
 
         {/* Time series -- bottom half */}
         <div className="min-h-0 flex-1 border-t border-slate-100 dark:border-slate-700" style={{ minHeight: 200 }}>
-          <div className="px-4 pt-1">
-            <span className="text-sm font-bold text-ink">Time Series</span>
+          <div className={`${compact ? "px-3 pt-1.5" : "px-4 pt-1"}`}>
+            <span className={`${compact ? "text-xs" : "text-sm"} font-bold text-ink`}>{compact ? "Series" : "Time Series"}</span>
           </div>
           <div ref={timeFrame.containerRef} className="h-[85%] min-h-0">
             <svg width={timeFrame.width} height={timeFrame.height} viewBox={`0 0 ${timeFrame.width} ${timeFrame.height}`}>
@@ -331,13 +338,13 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
               <line x1={timeFrame.plotLeft} x2={timeFrame.plotLeft} y1={timeFrame.plotTop} y2={timeFrame.plotBottom} stroke="#cbd5e1" />
               <path d={timeSeriesPath} fill="none" stroke="#5a79ff" strokeWidth={2} />
               {timeSeriesData.map((point) => (
-                <circle key={`time-point-${point.t}`} cx={timeFrame.xScale(point.t)} cy={timeFrame.yScale(point.x)} r={1.5} fill="#5a79ff" />
+                <circle key={`time-point-${point.t}`} cx={timeFrame.xScale(point.t)} cy={timeFrame.yScale(point.x)} r={compact ? 1.2 : 1.5} fill="#5a79ff" />
               ))}
 
               {timeXTicks.map((tick) => (
                 <g key={`time-tick-x-${tick}`}>
                   <line x1={timeFrame.xScale(tick)} x2={timeFrame.xScale(tick)} y1={timeFrame.plotBottom} y2={timeFrame.plotBottom + 6} stroke="#cbd5e1" />
-                  <text x={timeFrame.xScale(tick)} y={timeFrame.plotBottom + 18} textAnchor="middle" fontSize="11" fill="#94a3b8">
+                  <text x={timeFrame.xScale(tick)} y={timeFrame.plotBottom + 18} textAnchor="middle" fontSize={compact ? "10" : "11"} fill="#94a3b8">
                     {tick.toFixed(0)}
                   </text>
                 </g>
@@ -345,13 +352,13 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
               {timeYTicks.map((tick) => (
                 <g key={`time-tick-y-${tick}`}>
                   <line x1={timeFrame.plotLeft - 6} x2={timeFrame.plotLeft} y1={timeFrame.yScale(tick)} y2={timeFrame.yScale(tick)} stroke="#cbd5e1" />
-                  <text x={timeFrame.plotLeft - 10} y={timeFrame.yScale(tick) + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
+                  <text x={timeFrame.plotLeft - 10} y={timeFrame.yScale(tick) + 4} textAnchor="end" fontSize={compact ? "10" : "11"} fill="#94a3b8">
                     {tick.toFixed(1)}
                   </text>
                 </g>
               ))}
-              <text x={(timeFrame.plotLeft + timeFrame.plotRight) / 2} y={timeFrame.height - 8} textAnchor="middle" fontSize="12" fill="#94a3b8">
-                iteration t
+              <text x={(timeFrame.plotLeft + timeFrame.plotRight) / 2} y={timeFrame.height - 8} textAnchor="middle" fontSize={compact ? "10" : "12"} fill="#94a3b8">
+                {compact ? "t" : "iteration t"}
               </text>
             </svg>
           </div>
