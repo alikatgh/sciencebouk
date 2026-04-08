@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { BookOpen, Sparkles, PanelRightOpen, PanelBottomOpen } from "lucide-react"
+import { BookOpen, PanelBottomOpen, PanelRightOpen, SlidersHorizontal, Sparkles } from "lucide-react"
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { useAuth } from "../../auth/AuthContext"
@@ -83,6 +83,8 @@ function LessonFallback(): ReactElement {
     </div>
   )
 }
+
+type MobileTeachingTab = "learn" | "controls" | "lesson"
 
 export function TeachableEquation({
   equationId, hook, hookAction, formula, latexFormula,
@@ -289,6 +291,8 @@ export function TeachableEquation({
     : "aspect-[4/3] max-h-[56vh]"
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const introFormulaVisible = appSettings.showHookText && appSettings.showFormulaLetters && Boolean(displayFormula)
+  const hasPresets = Boolean(presets && presets.length > 0)
+  const hasLearnSurface = appSettings.showHookText || formulaCardVisible
   const letterFormula = introFormulaVisible ? "" : (appSettings.showFormulaLetters ? displayFormula : "")
   const liveFormula = useMemo(
     () => appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : "",
@@ -299,113 +303,183 @@ export function TeachableEquation({
     () => appSettings.showResultNote ? describeResult?.(vars) : undefined,
     [appSettings.showResultNote, describeResult, vars],
   )
+  const mobileTabOrder = useMemo<MobileTeachingTab[]>(() => {
+    const tabs: MobileTeachingTab[] = []
+    if (hasLearnSurface) tabs.push("learn")
+    tabs.push("controls")
+    if (hasLessons) tabs.push("lesson")
+    return tabs
+  }, [hasLearnSurface, hasLessons])
+  const [mobileTeachingTab, setMobileTeachingTab] = useState<MobileTeachingTab>(mobileTabOrder[0] ?? "controls")
 
-  const teachingContent = (
-    <div className={`native-scroll flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2.5 pl-2"}`}>
+  useEffect(() => {
+    if (mobileTabOrder.includes(mobileTeachingTab)) return
+    setMobileTeachingTab(mobileTabOrder[0] ?? "controls")
+  }, [mobileTeachingTab, mobileTabOrder])
 
-        {/* Hook — conditionally shown, compact on mobile */}
-        {appSettings.showHookText && (
-          <div className={`rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}>
-            {introFormulaVisible && (
-              <div className="mb-3 text-center text-sm text-slate-700 dark:text-slate-200">
-                <AutoFitDeferredInlineMath
-                  math={displayFormula}
-                  className="inline-block whitespace-nowrap"
-                />
-              </div>
-            )}
-            <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hook}</p>
-            <p className="mt-1.5 text-xs font-bold text-ocean">{"\u2192"} {hookAction}</p>
-          </div>
-        )}
+  const hookBlock = appSettings.showHookText ? (
+    <div className={`rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}>
+      {introFormulaVisible && (
+        <div className="mb-3 text-center text-sm text-slate-700 dark:text-slate-200">
+          <AutoFitDeferredInlineMath
+            math={displayFormula}
+            className="inline-block whitespace-nowrap"
+          />
+        </div>
+      )}
+      <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hook}</p>
+      <p className="mt-1.5 text-xs font-bold text-ocean">{"\u2192"} {hookAction}</p>
+    </div>
+  ) : null
 
-        {/* Live formula — in its own prominent rounded box */}
-        {formulaCardVisible && (
-          <div className={`${isMobile ? "rounded-[20px] border border-ocean/25 px-3.5 py-3" : "rounded-xl border-2 px-4 py-4"} border-ocean/30 bg-white dark:border-ocean/40 dark:bg-slate-900`}>
-            <ErrorBoundary fallback={<FormulaFallback />}>
-              <Suspense fallback={<FormulaFallback />}>
-                {buildLiveFormula ? (
-                  <LiveFormula
-                    letterFormula={letterFormula}
-                    liveFormula={liveFormula}
-                    resultLine={resultLine}
-                    resultNote={resultNote}
-                    variables={formulaVariables}
-                    onVariableChange={setVar}
-                    compact={isMobile}
-                  />
-                ) : displayFormula && appSettings.showFormulaLetters ? (
-                  <LiveFormula
-                    letterFormula={displayFormula}
-                    liveFormula={displayFormula}
-                    variables={formulaVariables}
-                    onVariableChange={setVar}
-                    compact={isMobile}
-                  />
-                ) : null}
-              </Suspense>
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {/* Variables */}
-        <Card className={isMobile ? "rounded-[20px]" : undefined}>
-          <CardHeader className={isMobile ? "p-3 pb-1.5" : "p-3 pb-1"}>
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Variables</CardTitle>
-          </CardHeader>
-          <CardContent className={isMobile ? "px-1.5 pb-2.5" : "px-1 pb-2"}>
-            <TouchableFormula
-              variables={formulaVariables} onVariableChange={setVar}
-              highlightedVariable={highlightedVar} onVariableHover={setHighlightedVar} formula={formula}
+  const formulaBlock = formulaCardVisible ? (
+    <div className={`${isMobile ? "rounded-[20px] border border-ocean/25 px-3.5 py-3" : "rounded-xl border-2 px-4 py-4"} border-ocean/30 bg-white dark:border-ocean/40 dark:bg-slate-900`}>
+      <ErrorBoundary fallback={<FormulaFallback />}>
+        <Suspense fallback={<FormulaFallback />}>
+          {buildLiveFormula ? (
+            <LiveFormula
+              letterFormula={letterFormula}
+              liveFormula={liveFormula}
+              resultLine={resultLine}
+              resultNote={resultNote}
+              variables={formulaVariables}
+              onVariableChange={setVar}
+              compact={isMobile}
             />
-          </CardContent>
-        </Card>
+          ) : displayFormula && appSettings.showFormulaLetters ? (
+            <LiveFormula
+              letterFormula={displayFormula}
+              liveFormula={displayFormula}
+              variables={formulaVariables}
+              onVariableChange={setVar}
+              compact={isMobile}
+            />
+          ) : null}
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  ) : null
 
-        {/* Presets */}
-        {presets && presets.length > 0 && (
-          <div className={`flex ${isMobile ? "-mx-1 overflow-x-auto px-1 pb-1" : "flex-wrap"} gap-1.5`}>
-            {presets.map((p) => (
-              <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className={`${isMobile ? "h-9 shrink-0 rounded-full px-3.5 text-[11px]" : "text-[10px]"}`}>
-                {p.label}
-              </Button>
-            ))}
-          </div>
+  const variablesBlock = (
+    <Card className={isMobile ? "rounded-[20px]" : undefined}>
+      <CardHeader className={isMobile ? "p-3 pb-1.5" : "p-3 pb-1"}>
+        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Variables</CardTitle>
+      </CardHeader>
+      <CardContent className={isMobile ? "px-1.5 pb-2.5" : "px-1 pb-2"}>
+        <TouchableFormula
+          variables={formulaVariables} onVariableChange={setVar}
+          highlightedVariable={highlightedVar} onVariableHover={setHighlightedVar} formula={formula}
+        />
+      </CardContent>
+    </Card>
+  )
+
+  const presetsBlock = hasPresets ? (
+    <div className={`flex ${isMobile ? "-mx-1 overflow-x-auto px-1 pb-1" : "flex-wrap"} gap-1.5`}>
+      {presets?.map((p) => (
+        <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className={`${isMobile ? "h-9 shrink-0 rounded-full px-3.5 text-[11px]" : "text-[10px]"}`}>
+          {p.label}
+        </Button>
+      ))}
+    </div>
+  ) : null
+
+  const lessonBlock = hasLessons && lessonMode ? (
+    <Card className={`${isMobile ? "rounded-[22px]" : ""} border-ocean/30 bg-ocean/5 dark:border-ocean/40 dark:bg-ocean/10`}>
+      <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3.5 pb-2.5" : "p-3 pb-2"}`}>
+        <CardTitle className="flex items-center gap-1.5 text-xs text-ocean">
+          <BookOpen className="h-3.5 w-3.5" /> Guided lesson
+        </CardTitle>
+        <Button variant="ghost" size="xs" onClick={disableLessonMode} className={`${isMobile ? "min-h-[36px] rounded-full px-3 text-[11px]" : ""} text-ocean/60 hover:text-ocean`}>
+          Skip
+        </Button>
+      </CardHeader>
+      <CardContent className={isMobile ? "px-3.5 pb-3.5" : "px-3 pb-3"}>
+        <ErrorBoundary fallback={<LessonFallback />}>
+          <Suspense fallback={<LessonFallback />}>
+            <LessonRunner
+              steps={lessonSteps} currentStepIndex={lessonStep}
+              onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
+              variables={formulaVariables} onHighlight={setHighlightedVar}
+              glossary={glossary} onTermHighlight={setHighlightedTerm}
+              compact={isMobile}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      </CardContent>
+    </Card>
+  ) : null
+
+  const restartLessonBlock = hasLessons && !lessonMode ? (
+    <Button variant="outline" className={`${isMobile ? "min-h-[46px] rounded-[18px]" : ""} w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean`} onClick={restartLessonMode}>
+      <Sparkles className="h-3.5 w-3.5" /> Restart lesson
+    </Button>
+  ) : null
+
+  const teachingContent = isMobile && isNarrow ? (
+    <div className="native-scroll flex h-full flex-col overflow-y-auto">
+      <div className="flex flex-1 flex-col gap-2 px-3 py-2.5 pb-24">
+        {mobileTeachingTab === "learn" && (
+          <>
+            {hookBlock}
+            {formulaBlock}
+          </>
         )}
-
-        {/* Lesson — at bottom, after presets */}
-        {hasLessons && lessonMode && (
-          <Card className={`${isMobile ? "rounded-[22px]" : ""} border-ocean/30 bg-ocean/5 dark:border-ocean/40 dark:bg-ocean/10`}>
-            <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3.5 pb-2.5" : "p-3 pb-2"}`}>
-              <CardTitle className="flex items-center gap-1.5 text-xs text-ocean">
-                <BookOpen className="h-3.5 w-3.5" /> Guided lesson
-              </CardTitle>
-              <Button variant="ghost" size="xs" onClick={disableLessonMode} className={`${isMobile ? "min-h-[36px] rounded-full px-3 text-[11px]" : ""} text-ocean/60 hover:text-ocean`}>
-                Skip
-              </Button>
-            </CardHeader>
-            <CardContent className={isMobile ? "px-3.5 pb-3.5" : "px-3 pb-3"}>
-              <ErrorBoundary fallback={<LessonFallback />}>
-                <Suspense fallback={<LessonFallback />}>
-                  <LessonRunner
-                    steps={lessonSteps} currentStepIndex={lessonStep}
-                    onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
-                    variables={formulaVariables} onHighlight={setHighlightedVar}
-                    glossary={glossary} onTermHighlight={setHighlightedTerm}
-                    compact={isMobile}
-                  />
-                </Suspense>
-              </ErrorBoundary>
-            </CardContent>
-          </Card>
+        {mobileTeachingTab === "controls" && (
+          <>
+            {variablesBlock}
+            {presetsBlock}
+          </>
         )}
-
-        {hasLessons && !lessonMode && (
-          <Button variant="outline" className={`${isMobile ? "min-h-[46px] rounded-[18px]" : ""} w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean`} onClick={restartLessonMode}>
-            <Sparkles className="h-3.5 w-3.5" /> Restart lesson
-          </Button>
+        {mobileTeachingTab === "lesson" && (
+          <>
+            {lessonBlock}
+            {restartLessonBlock}
+          </>
         )}
       </div>
-	  )
+      <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-2 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/92 dark:shadow-none">
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${mobileTabOrder.length}, minmax(0, 1fr))` }}
+        >
+          {mobileTabOrder.map((tab) => {
+            const tabMeta = tab === "learn"
+              ? { label: "Learn", icon: Sparkles }
+              : tab === "controls"
+                ? { label: "Controls", icon: SlidersHorizontal }
+                : { label: "Lesson", icon: BookOpen }
+            const Icon = tabMeta.icon
+
+            return (
+              <Button
+                key={tab}
+                type="button"
+                variant={mobileTeachingTab === tab ? "secondary" : "ghost"}
+                size="sm"
+                className={mobileTeachingTab === tab
+                  ? "min-h-[44px] rounded-2xl bg-slate-900 text-white shadow-sm hover:bg-slate-900/95 dark:bg-white dark:text-slate-950 dark:hover:bg-white"
+                  : "min-h-[44px] rounded-2xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}
+                onClick={() => setMobileTeachingTab(tab)}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {tabMeta.label}
+              </Button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className={`native-scroll flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2.5 pl-2"}`}>
+      {hookBlock}
+      {formulaBlock}
+      {variablesBlock}
+      {presetsBlock}
+      {lessonBlock}
+      {restartLessonBlock}
+    </div>
+  )
 
   const visualizationContent = children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })
 
@@ -418,7 +492,7 @@ export function TeachableEquation({
         <div className="min-h-0 flex-1 overflow-hidden">
           <div className="flex h-full items-start justify-center overflow-hidden px-0 pt-0.5 sm:px-0 sm:pt-0">
             <div className={`w-full max-w-full ${stackedVisualizationWrapperClass}`}>
-              <VisualizationViewport>
+              <VisualizationViewport mobileOptimized={isMobile}>
                 {visualizationContent}
               </VisualizationViewport>
             </div>
@@ -461,7 +535,7 @@ export function TeachableEquation({
   return (
     <div ref={containerRef} className="flex h-full gap-0">
       <div className="min-h-0 min-w-0 flex-1">
-        <VisualizationViewport>
+        <VisualizationViewport mobileOptimized={isMobile}>
           {visualizationContent}
         </VisualizationViewport>
       </div>

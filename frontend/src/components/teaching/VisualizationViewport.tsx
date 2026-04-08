@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode, WheelEvent } from "react"
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Minus, Plus, RotateCcw } from "lucide-react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from "lucide-react"
 import { Button } from "../ui/button"
 import { cn } from "../../lib/utils"
 
@@ -17,13 +17,16 @@ function clampZoom(value: number): number {
 interface VisualizationViewportProps {
   children: ReactNode
   className?: string
+  mobileOptimized?: boolean
 }
 
 export function VisualizationViewport({
   children,
   className,
+  mobileOptimized = false,
 }: VisualizationViewportProps): ReactElement {
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pendingAnchorRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -118,8 +121,41 @@ export function VisualizationViewport({
     updateZoom((previous) => previous * (1 + delta))
   }, [updateZoom])
 
+  useEffect(() => {
+    if (!isFullscreen || typeof document === "undefined") return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isFullscreen])
+
+  useEffect(() => {
+    if (!isFullscreen || typeof window === "undefined") return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isFullscreen])
+
   return (
-    <div className={cn("relative h-full min-h-0", className)}>
+    <div
+      data-testid="visualization-viewport"
+      data-fullscreen={isFullscreen ? "true" : "false"}
+      className={cn(
+        "relative h-full min-h-0",
+        isFullscreen && "fixed inset-0 z-[90] h-[100dvh] bg-slate-950/96 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]",
+        className,
+      )}
+    >
+      <div className={cn("relative h-full min-h-0", isFullscreen && "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950 shadow-2xl")}>
       <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center px-3 sm:inset-x-auto sm:right-3 sm:top-3 sm:px-0">
         <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-slate-700/55 bg-slate-900/82 px-1.5 py-1 shadow-lg backdrop-blur sm:gap-1 sm:border-slate-200/80 sm:bg-white/95 sm:p-1 dark:border-slate-700 dark:bg-slate-900/90">
           <Button
@@ -161,12 +197,27 @@ export function VisualizationViewport({
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
+          {mobileOptimized && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="h-10 w-10 rounded-full text-slate-100 hover:bg-white/10 hover:text-white sm:hidden"
+              aria-label={isFullscreen ? "Exit focused visualization mode" : "Enter focused visualization mode"}
+              onClick={() => setIsFullscreen((previous) => !previous)}
+            >
+              {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            </Button>
+          )}
         </div>
       </div>
 
       <div
         ref={scrollRef}
-        className="native-scroll h-full overflow-auto overscroll-contain"
+        className={cn(
+          "native-scroll h-full overflow-auto overscroll-contain",
+          isFullscreen && "rounded-[28px]",
+        )}
         onWheel={handleWheel}
       >
         <div
@@ -192,6 +243,7 @@ export function VisualizationViewport({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

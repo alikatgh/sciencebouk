@@ -63,4 +63,26 @@ describe("VisualizationViewport", () => {
     fireEvent.wheel(scrollArea, { deltaY: 100, ctrlKey: true })
     expect(Number(frame.getAttribute("data-zoom-scale"))).toBeLessThanOrEqual(100)
   })
+
+  it("enters and exits focused mobile visualization mode", () => {
+    render(
+      <div style={{ width: 420, height: 320 }}>
+        <VisualizationViewport mobileOptimized>
+          <div className="h-full w-full">Scene</div>
+        </VisualizationViewport>
+      </div>,
+    )
+
+    const viewport = screen.getByTestId("visualization-viewport")
+    const fullscreenToggle = screen.getByRole("button", { name: "Enter focused visualization mode" })
+
+    expect(viewport).toHaveAttribute("data-fullscreen", "false")
+
+    fireEvent.click(fullscreenToggle)
+    expect(viewport).toHaveAttribute("data-fullscreen", "true")
+    expect(screen.getByRole("button", { name: "Exit focused visualization mode" })).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: "Escape" })
+    expect(viewport).toHaveAttribute("data-fullscreen", "false")
+  })
 })
