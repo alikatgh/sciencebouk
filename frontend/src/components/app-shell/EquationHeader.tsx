@@ -73,19 +73,30 @@ function EquationHeaderComponent({
 }: EquationHeaderProps): ReactElement {
   return (
     <div
-      className="flex flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 pb-2 pt-2 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:gap-2 sm:px-3 sm:py-2"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
+      className="sticky top-0 z-20 flex flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-white/88 px-3.5 pb-2.5 pt-2 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/88 sm:gap-2 sm:px-3 sm:py-2"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.65rem)" }}
     >
-      <Button variant="ghost" size="icon-sm" onClick={onOpenDrawer} className="lg:hidden" aria-label="Open equation browser">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={onOpenDrawer}
+        className="rounded-full bg-slate-100/90 text-slate-600 shadow-sm hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/90 dark:text-slate-200 dark:hover:bg-slate-700 lg:hidden"
+        aria-label="Open equation browser"
+      >
         <Menu className="h-4 w-4" />
       </Button>
       <div className="min-w-0 flex-1">
-        <h2 className="min-w-0 truncate font-display text-sm font-bold tracking-tight text-slate-900 dark:text-white sm:text-sm md:text-base">
+        <h2 className="min-w-0 truncate font-display text-[15px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-sm md:text-base">
           {equation.title}
         </h2>
-        <p className="truncate text-[10px] text-slate-400 sm:hidden">
-          {equation.author}, {equation.year}
-        </p>
+        <div className="mt-1 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap sm:hidden">
+          <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-semibold text-slate-500 dark:text-slate-300">
+            {equation.category}
+          </Badge>
+          <p className="truncate text-[10px] text-slate-400">
+            {equation.author}, {equation.year}
+          </p>
+        </div>
       </div>
       <Badge variant="secondary" className="hidden sm:inline-flex">
         {equation.category}
@@ -128,9 +139,15 @@ function EquationHeaderComponent({
             {"→"}
           </Button>
         )}
-        <Button variant="ghost" size="icon-sm" onClick={isAuthenticated ? onOpenProfile : onOpenAuth} className="rounded-full lg:hidden" aria-label={isAuthenticated ? "Open profile" : "Sign in"}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
+          className="rounded-full bg-slate-100/90 text-slate-600 shadow-sm hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/90 dark:text-slate-200 dark:hover:bg-slate-700 lg:hidden"
+          aria-label={isAuthenticated ? "Open profile" : "Sign in"}
+        >
           {isAuthenticated ? (
-            <Avatar className="h-7 w-7">
+            <Avatar className="h-8 w-8">
               <AvatarFallback className="text-[9px]">{userInitial}</AvatarFallback>
             </Avatar>
           ) : (

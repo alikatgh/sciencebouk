@@ -62,20 +62,23 @@ export function EquationBrowserDrawer({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="lg:hidden">
-        <SheetHeader className="px-4 pb-2">
-          <div className="pr-10">
+        <SheetHeader className="sticky top-0 z-10 border-b border-slate-100 bg-white/92 px-4 pb-3 pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92">
+          <div className="w-full pr-10">
+            <div className="mb-3 flex justify-center">
+              <span className="h-1.5 w-10 rounded-full bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+            </div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
               Equation atlas
             </p>
             <SheetTitle className="mt-1 text-lg">{equations.length} equations</SheetTitle>
-            <p className="mt-1 text-xs text-slate-400">Fast thumb-friendly navigation on mobile.</p>
+            <p className="mt-1 text-xs text-slate-400">Browse, jump, and pick up where you left off.</p>
           </div>
         </SheetHeader>
         <div className="px-4 pb-3">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+          <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-3.5 py-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
             <div className="flex items-center justify-between text-[11px]">
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">{completedCount}/{total} complete</span>
-              <span className="text-slate-400">{totalTimeMinutes}m explored</span>
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] text-slate-400 shadow-sm dark:bg-slate-900">{totalTimeMinutes}m explored</span>
             </div>
             <Progress
               value={completionPercent}
@@ -94,7 +97,7 @@ export function EquationBrowserDrawer({
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search equations"
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="h-12 w-full rounded-[22px] border border-slate-200 bg-slate-50 py-2 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
             {searchQuery && (
               <button
@@ -110,7 +113,7 @@ export function EquationBrowserDrawer({
         </div>
         <ScrollArea className="flex-1 px-4">
           {visibleEquations.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-700">
+            <div className="rounded-[22px] border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-700">
               No equations match that search yet.
             </div>
           ) : (
@@ -126,7 +129,7 @@ export function EquationBrowserDrawer({
           )}
         </ScrollArea>
         <Separator />
-        <div className="px-4 pt-3">
+        <div className="bg-white/92 px-4 pt-3 backdrop-blur dark:bg-slate-900/92">
           <SidebarAccount
             compact
             isAuthenticated={isAuthenticated}

@@ -72,7 +72,7 @@ const EquationListItem = memo(function EquationListItem({
   if (variant === "mobile") {
     return (
       <button
-        className={`group flex min-h-[60px] w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all ${
+        className={`group flex min-h-[68px] w-full items-center gap-3 rounded-[22px] border px-3.5 py-3 text-left transition-all active:scale-[0.99] ${
           active
             ? "border-ocean/30 bg-ocean/5 shadow-sm dark:border-ocean/40 dark:bg-ocean/10"
             : "border-transparent bg-slate-50/80 hover:border-slate-200 hover:bg-white dark:bg-slate-800/70 dark:hover:border-slate-700 dark:hover:bg-slate-800"
@@ -96,7 +96,7 @@ const EquationListItem = memo(function EquationListItem({
         </span>
         <span className="min-w-0 flex-1">
           <span
-            className={`block truncate text-sm ${
+            className={`block truncate text-[15px] ${
               active
                 ? "font-semibold text-slate-900 dark:text-white"
                 : "font-medium text-slate-700 group-hover:text-slate-900 dark:text-slate-200 dark:group-hover:text-white"
@@ -108,12 +108,12 @@ const EquationListItem = memo(function EquationListItem({
             {equation.author}, {equation.year}
           </span>
         </span>
-        <div className="flex flex-shrink-0 items-center gap-2">
-          {done && (
-            <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
-              Done
-            </span>
-          )}
+          <div className="flex flex-shrink-0 items-center gap-2">
+            {done && (
+              <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+                Done
+              </span>
+            )}
           <ChevronRight className={`h-4 w-4 ${active ? "text-ocean" : "text-slate-300 dark:text-slate-600"}`} />
         </div>
       </button>
@@ -191,10 +191,10 @@ export const SidebarAccount = memo(function SidebarAccount({
   if (compact) {
     if (isAuthenticated) {
       return (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+        <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-3.5 py-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
           <div className="flex items-center gap-3">
             <button onClick={onOpenProfile} type="button" className="flex-shrink-0" aria-label="Open profile">
-              <Avatar className="h-10 w-10 transition hover:ring-2 hover:ring-ocean/50">
+              <Avatar className="h-11 w-11 transition hover:ring-2 hover:ring-ocean/50">
                 <AvatarFallback>{userInitial}</AvatarFallback>
               </Avatar>
             </button>
@@ -211,13 +211,13 @@ export const SidebarAccount = memo(function SidebarAccount({
                 onClick={onOpenPro}
                 disabled={!BILLING_ENABLED}
                 title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
-                className="flex-1 justify-center"
+                className="h-10 flex-1 justify-center rounded-full"
               >
                 <Crown className={`h-3 w-3 ${BILLING_ENABLED ? "text-amber-500" : "text-slate-400"}`} />
                 {BILLING_ENABLED ? "Pro" : "Beta only"}
               </Button>
             )}
-            <Button variant="ghost" size="icon-sm" onClick={onLogout} aria-label="Sign out" className={isPro ? "ml-auto" : ""}>
+            <Button variant="ghost" size="icon-sm" onClick={onLogout} aria-label="Sign out" className={`${isPro ? "ml-auto" : ""} rounded-full bg-white shadow-sm hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700`}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -226,8 +226,8 @@ export const SidebarAccount = memo(function SidebarAccount({
     }
 
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
-        <Button variant="ghost" className="w-full justify-start gap-2 px-0 text-sm" onClick={onOpenAuth}>
+      <div className="rounded-[22px] border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3.5 dark:border-slate-700 dark:bg-slate-800/60">
+        <Button variant="ghost" className="min-h-[44px] w-full justify-start gap-2 rounded-full px-3 text-sm" onClick={onOpenAuth}>
           <User className="h-4 w-4" />
           Sign in to save progress
         </Button>
