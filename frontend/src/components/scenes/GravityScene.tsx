@@ -156,6 +156,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       const viewportW = Math.round(rect.width) || 800
       const W = Math.max(420, viewportW)
       const H = Math.round(rect.height) || 500
+      const compact = viewportW < 460 || H < 420
       currentW = viewportW
       currentH = H
 
@@ -183,7 +184,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
 
       // Distance label
       g.append("text").attr("class", "dist-label").attr("y", cy - 55)
-        .attr("text-anchor", "middle").attr("font-size", 18).attr("font-weight", 700).attr("font-family", F).attr("fill", VAR_COLORS.tertiary)
+        .attr("text-anchor", "middle").attr("font-size", compact ? 16 : 18).attr("font-weight", 700).attr("font-family", F).attr("fill", VAR_COLORS.tertiary)
 
       // Force arrows (right from m1)
       g.append("line").attr("class", "arrow-r").attr("y1", cy).attr("y2", cy)
@@ -199,11 +200,11 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       g.append("rect").attr("class", "force-box").attr("y", cy + 55).attr("height", 40).attr("rx", 14)
         .attr("fill", "white").attr("stroke-width", 2.5)
       g.append("text").attr("class", "force-label").attr("y", cy + 81)
-        .attr("text-anchor", "middle").attr("font-size", 20).attr("font-weight", 800).attr("font-family", F)
+        .attr("text-anchor", "middle").attr("font-size", compact ? 18 : 20).attr("font-weight", 800).attr("font-family", F)
 
       // Extreme annotation
       g.append("text").attr("class", "extreme-label").attr("y", cy + 120)
-        .attr("text-anchor", "middle").attr("font-size", 15).attr("font-weight", 600).attr("font-family", F)
+        .attr("text-anchor", "middle").attr("font-size", compact ? 13 : 15).attr("font-weight", 600).attr("font-family", F)
 
       // Mass 1 glow ring
       g.append("circle").attr("class", "m1-glow").attr("cy", cy).attr("fill", "none")
@@ -218,7 +219,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         .attr("text-anchor", "middle").attr("font-size", 20).attr("font-weight", 700).attr("font-family", F).attr("fill", "white")
         .style("pointer-events", "none").text("m\u2081")
       g.append("text").attr("class", "m1-val").attr("y", cy)
-        .attr("text-anchor", "middle").attr("font-size", 16).attr("font-weight", 600).attr("font-family", F).attr("fill", VAR_COLORS.primary)
+        .attr("text-anchor", "middle").attr("font-size", compact ? 14 : 16).attr("font-weight", 600).attr("font-family", F).attr("fill", VAR_COLORS.primary)
 
       // Mass 2 glow ring
       g.append("circle").attr("class", "m2-glow").attr("cy", cy).attr("fill", "none")
@@ -233,12 +234,12 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         .attr("text-anchor", "middle").attr("font-size", 20).attr("font-weight", 700).attr("font-family", F).attr("fill", "white")
         .style("pointer-events", "none").text("m\u2082")
       g.append("text").attr("class", "m2-val").attr("y", cy)
-        .attr("text-anchor", "middle").attr("font-size", 16).attr("font-weight", 600).attr("font-family", F).attr("fill", VAR_COLORS.secondary)
+        .attr("text-anchor", "middle").attr("font-size", compact ? 14 : 16).attr("font-weight", 600).attr("font-family", F).attr("fill", VAR_COLORS.secondary)
 
       // Drag hint
       g.append("text").attr("x", W / 2).attr("y", H - 18).attr("text-anchor", "middle")
         .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-        .text("\u2190 drag masses to change distance \u2192")
+        .text(compact ? "Drag bodies" : "\u2190 drag masses to change distance \u2192")
 
       // ── updateGeometry: repositions everything from m1,m2,r WITHOUT React ──
       function updateGeometry(m1Val: number, m2Val: number, rVal: number) {
@@ -259,7 +260,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
 
         // Distance line
         g.select(".dist-line").attr("x1", x1).attr("x2", x2)
-        g.select(".dist-label").attr("x", cx).text(`r = ${rVal.toFixed(1)} m`)
+        g.select(".dist-label").attr("x", cx).text(compact ? `r ${rVal.toFixed(1)}m` : `r = ${rVal.toFixed(1)} m`)
 
         // Force arrows
         const ar = x1 + r1 + 10
@@ -271,14 +272,15 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         g.select(".arrow-l-head").attr("points", `${al - arrowLen + 2},${cy - 8} ${al - arrowLen - 14},${cy} ${al - arrowLen + 2},${cy + 8}`).attr("fill", arrowColor)
 
         // Force label
-        g.select(".force-box").attr("x", cx - 80).attr("width", 160).attr("stroke", arrowColor)
-        g.select(".force-label").attr("x", cx).attr("fill", arrowColor).text(`F = ${forceVal.toFixed(2)} N`)
+        const forceBoxW = compact ? 126 : 160
+        g.select(".force-box").attr("x", cx - forceBoxW / 2).attr("width", forceBoxW).attr("stroke", arrowColor)
+        g.select(".force-label").attr("x", cx).attr("fill", arrowColor).text(compact ? `${forceVal.toFixed(2)} N` : `F = ${forceVal.toFixed(2)} N`)
 
         // Extreme labels
         if (forceVal > 20) {
-          g.select(".extreme-label").attr("x", cx).attr("fill", "#ef4444").text("Black-hole territory!")
+          g.select(".extreme-label").attr("x", cx).attr("fill", "#ef4444").text(compact ? "Extreme pull" : "Black-hole territory!")
         } else if (forceVal < 0.05) {
-          g.select(".extreme-label").attr("x", cx).attr("fill", "#94a3b8").text("Barely any pull.")
+          g.select(".extreme-label").attr("x", cx).attr("fill", "#94a3b8").text(compact ? "Tiny pull" : "Barely any pull.")
         } else {
           g.select(".extreme-label").text("")
         }
@@ -289,7 +291,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         g.select(".m1-hit").attr("cx", 0)
         g.select(".m1-sym").attr("x", 0)
         g.select(".m1-glow").attr("cx", x1).attr("r", r1 + 12)
-        g.select(".m1-val").attr("x", x1).attr("y", cy + r1 + 26).text(`${m1Val.toFixed(1)} kg`)
+        g.select(".m1-val").attr("x", x1).attr("y", cy + r1 + 26).text(compact ? `${m1Val.toFixed(1)}kg` : `${m1Val.toFixed(1)} kg`)
 
         // Mass 2 position
         g.select(".m2-group").attr("transform", `translate(${x2}, 0)`)
@@ -297,7 +299,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         g.select(".m2-hit").attr("cx", 0)
         g.select(".m2-sym").attr("x", 0)
         g.select(".m2-glow").attr("cx", x2).attr("r", r2 + 12)
-        g.select(".m2-val").attr("x", x2).attr("y", cy + r2 + 26).text(`${m2Val.toFixed(1)} kg`)
+        g.select(".m2-val").attr("x", x2).attr("y", cy + r2 + 26).text(compact ? `${m2Val.toFixed(1)}kg` : `${m2Val.toFixed(1)} kg`)
       }
 
       // Expose for external sync

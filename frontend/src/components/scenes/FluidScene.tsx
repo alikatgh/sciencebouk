@@ -184,6 +184,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       const rect = el.getBoundingClientRect()
       const W = Math.round(rect.width) || 800
       const H = Math.round(rect.height) || 500
+      const compact = W < 460 || H < 420
       if (W < 100 || H < 100) return
       currentW = W
       currentH = H
@@ -221,8 +222,8 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
 
       // Title
       g.append("text").attr("x", W / 2).attr("y", 28).attr("text-anchor", "middle")
-        .attr("font-size", 18).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
-        .text("Navier-Stokes: Flow Around an Obstacle")
+        .attr("font-size", compact ? 16 : 18).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
+        .text(compact ? "Flow Around Obstacle" : "Navier-Stokes: Flow Around an Obstacle")
 
       // Vector field group
       g.append("g").attr("class", "arrows-group")
@@ -242,7 +243,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         .attr("fill", "transparent")
       obstacleGroup.append("text").attr("y", -OBSTACLE_R - 10).attr("text-anchor", "middle")
         .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
-        .text("drag me")
+        .text(compact ? "drag" : "drag me")
 
       // Flow direction indicator
       const flowIndicatorY = H * 0.45
@@ -250,22 +251,22 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
       g.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
         .attr("font-size", 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-        .text("Flow")
+        .text(compact ? "flow" : "Flow")
 
       // Color legend
-      const legendX = W * 0.75
-      const legendW = W * 0.16
+      const legendX = compact ? W * 0.68 : W * 0.75
+      const legendW = compact ? W * 0.2 : W * 0.16
       g.append("rect").attr("x", legendX).attr("y", H - 50).attr("width", legendW).attr("height", 10)
         .attr("rx", 5).attr("fill", "url(#velGrad-d3)")
       g.append("text").attr("x", legendX).attr("y", H - 54).attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Slow")
       g.append("text").attr("x", legendX + legendW).attr("y", H - 54).attr("text-anchor", "end").attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Fast")
       g.append("text").attr("x", legendX + legendW / 2).attr("y", H - 28).attr("text-anchor", "middle")
-        .attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Velocity magnitude")
+        .attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text(compact ? "Speed" : "Velocity magnitude")
 
       // Hint
       g.append("text").attr("x", W / 2).attr("y", H - 8).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-        .text("Drag the obstacle to move it -- adjust viscosity and speed above")
+        .text(compact ? "Drag obstacle" : "Drag the obstacle to move it -- adjust viscosity and speed above")
 
       // ── updateArrows: recomputes vector field from current live values ──
       function updateArrows() {
@@ -276,7 +277,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         const visc = live.viscosity
 
         const arrowData: Array<{ x: number; y: number; vx: number; vy: number; mag: number }> = []
-        const step = 50
+        const step = compact ? 62 : 50
         for (let gx = 50; gx < W - 30; gx += step) {
           for (let gy = 50; gy < H - 50; gy += step) {
             const dx = gx - obsX

@@ -213,6 +213,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const g = svg.append("g")
 
       const fs = Math.max(12, Math.min(18, H / 28))
+      const compact = W < 430 || H < 430
 
       // Curve panel geometry
       const leftPanelLeft = Math.round(W * 0.05)
@@ -235,8 +236,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text("Lorentz Factor")
+        .attr("font-size", fs * (compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text(compact ? "Gamma" : "Lorentz Factor")
 
       // Axes
       const axLeft = xScale(0)
@@ -254,6 +255,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
       // X axis ticks
       for (const v of [0, 0.25, 0.5, 0.75, 1.0]) {
+        if (compact && ![0, 0.5, 1.0].includes(v)) continue
         g.append("line").attr("x1", xScale(v)).attr("y1", axBottom - 2).attr("x2", xScale(v)).attr("y2", axBottom + 4)
           .attr("stroke", "#94a3b8").attr("stroke-width", 1)
         g.append("text").attr("x", xScale(v)).attr("y", axBottom + Math.round(H * 0.037)).attr("text-anchor", "middle")
@@ -261,6 +263,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       }
       // Y axis ticks
       for (const gv of [1, 2, 4, 6, 8, 10, 12]) {
+        if (compact && ![1, 4, 8, 12].includes(gv)) continue
         const yp = yScale(gv)
         if (yp >= axTop && yp <= axBottom) {
           g.append("line").attr("x1", axLeft - 4).attr("y1", yp).attr("x2", axLeft + 2).attr("y2", yp)
@@ -330,8 +333,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text("Time Dilation")
+        .attr("font-size", fs * (compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text(compact ? "Clocks" : "Time Dilation")
 
       // Clock 1 (stationary)
       const cr = Math.round(Math.min(rpWidth * 0.1, tdHeight * 0.2))
@@ -351,7 +354,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", "#1e293b")
       g.append("text").attr("x", c1x).attr("y", c1y + cr + 20).attr("text-anchor", "middle")
         .attr("font-size", fs).attr("fill", "#475569").attr("font-family", F).attr("font-weight", 600)
-        .text("Stationary")
+        .text(compact ? "Rest" : "Stationary")
 
       // Clock 2 (moving)
       const c2x = Math.round(rpLeft + rpWidth * 0.64)
@@ -378,8 +381,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * 1.2).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text("Length Contraction")
+        .attr("font-size", fs * (compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text(compact ? "Length" : "Length Contraction")
 
       // Rest length bar
       const barX = Math.round(rpLeft + rpWidth * 0.16)
@@ -390,7 +393,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .attr("rx", 5).attr("fill", "#dbeafe").attr("stroke", "#3b82f6").attr("stroke-width", 1.5)
       g.append("text").attr("x", barX + barW / 2).attr("y", barY1 + barH * 0.73).attr("text-anchor", "middle")
         .attr("font-size", fs * 0.9).attr("fill", "#1e40af").attr("font-family", F).attr("font-weight", 600)
-        .text("Rest: L = 1.00")
+        .text(compact ? "L = 1.00" : "Rest: L = 1.00")
 
       // Contracted bar (will update)
       const barY2 = barY1 + barH + 8
@@ -423,10 +426,10 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
         // Velocity label on curve
         g.select(".v-curve-label")
-          .attr("x", cx).text(`v = ${vel.toFixed(2)}c`)
+          .attr("x", cx).text(compact ? `${vel.toFixed(2)}c` : `v = ${vel.toFixed(2)}c`)
 
         // Clock 2 label
-        g.select(".clock2-label").text(`Moving (${(1 / gam).toFixed(2)}x)`)
+        g.select(".clock2-label").text(compact ? `${(1 / gam).toFixed(2)}x` : `Moving (${(1 / gam).toFixed(2)}x)`)
 
         // Length contraction
         const contractedWidth = barW / gam
@@ -434,15 +437,15 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
           .attr("x", barX).attr("width", contractedWidth)
         g.select(".contract-label")
           .attr("x", barX + contractedWidth / 2)
-          .text(`L' = ${(1 / gam).toFixed(3)}`)
+          .text(compact ? `${(1 / gam).toFixed(2)}x` : `L' = ${(1 / gam).toFixed(3)}`)
 
         // Extreme annotations
         if (gam > 7) {
           g.select(".extreme-label").attr("fill", "#ef4444")
-            .text("Extreme relativistic regime -- time nearly stops for the traveler.")
+            .text(compact ? "Extreme regime" : "Extreme relativistic regime -- time nearly stops for the traveler.")
         } else if (vel < 0.1) {
           g.select(".extreme-label").attr("fill", "#94a3b8")
-            .text("At everyday speeds, relativity effects are negligible.")
+            .text(compact ? "Everyday speeds" : "At everyday speeds, relativity effects are negligible.")
         } else {
           g.select(".extreme-label").text("")
         }

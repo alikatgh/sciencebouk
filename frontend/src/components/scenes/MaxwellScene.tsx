@@ -300,6 +300,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
   // Update field lines when charges move (mode 1 only, triggered by redrawFieldLines)
   function buildFieldMode(g: Selection<SVGGElement, unknown, null, undefined>) {
     const fm = g.select(".field-mode")
+    const compact = W < 500
 
     // Field lines group
     fm.append("g").attr("class", "field-lines")
@@ -310,13 +311,13 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     const hintFs = Math.max(11, Math.min(14, H / 32))
     fm.append("text").attr("x", Math.round(W * 0.044)).attr("y", H - 20)
       .attr("font-size", hintFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-      .text("Drag charges to reposition")
+      .text(compact ? "Move charges" : "Drag charges to reposition")
 
     // Legend
     fm.append("circle").attr("cx", Math.round(W * 0.467)).attr("cy", Math.round(H * 0.059)).attr("r", 5).attr("fill", "#1e40af")
     fm.append("text").attr("x", Math.round(W * 0.48)).attr("y", Math.round(H * 0.068))
       .attr("font-size", hintFs).attr("font-family", F).attr("fill", "#64748b")
-      .text("E field lines (gray)")
+      .text(compact ? "field lines" : "E field lines (gray)")
 
     drawFieldScene(g)
   }
@@ -452,7 +453,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .attr("fill", "#1e293b")
     wm.append("text").attr("x", (arrowX1 + arrowX2) / 2).attr("y", arrowY + 22).attr("text-anchor", "middle")
       .attr("font-size", waveFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-      .text("Propagation (k)")
+      .text(compact ? "k" : "Propagation (k)")
 
     // Wavelength indicator
     const wlY = waveCenter + Math.round(H * 0.273)
@@ -462,7 +463,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     wm.append("line").attr("class", "wl-tick2").attr("stroke", "#f59e0b").attr("stroke-width", 2)
     wm.append("text").attr("class", "wl-text").attr("y", wlY - 4).attr("text-anchor", "middle")
       .attr("font-size", waveFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#f59e0b")
-      .text("lambda")
+      .text(compact ? "\u03BB" : "lambda")
 
     // Draggable wavelength handle on the right tick
     const wlStart = waveLeft + Math.round(W * 0.089)

@@ -166,6 +166,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       const energyTop = H * 0.19
       const energyBottom = H * 0.72
 
+      const compact = W < 460 || H < 420
       const fontSize = Math.max(12, Math.min(18, H / 28))
       const fontSizeSm = Math.max(10, Math.min(15, H / 32))
 
@@ -184,7 +185,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       // Title
       g.append("text").attr("x", W / 2).attr("y", H * 0.07).attr("text-anchor", "middle")
         .attr("font-size", Math.max(14, Math.min(22, H / 22))).attr("fill", "#1e293b").attr("font-family", "Newsreader, serif").attr("font-weight", 700)
-        .text("Particle in a Box")
+        .text(compact ? "Quantum Box" : "Particle in a Box")
 
       // Wave function plot background
       const wavePad = W * 0.012
@@ -267,11 +268,11 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       g.append("line").attr("x1", wavePlotLeft + legendOff1).attr("y1", wavePlotTop - 6).attr("x2", wavePlotLeft + legendOff2).attr("y2", wavePlotTop - 6)
         .attr("stroke", "#3b82f6").attr("stroke-width", 3)
       g.append("text").attr("x", wavePlotLeft + legendOff3).attr("y", wavePlotTop - 2)
-        .attr("font-size", fontSizeSm).attr("fill", "#3b82f6").attr("font-family", F).attr("font-weight", 600).text("\u03C8(x,t)")
+        .attr("font-size", fontSizeSm).attr("fill", "#3b82f6").attr("font-family", F).attr("font-weight", 600).text(compact ? "\u03C8" : "\u03C8(x,t)")
       g.append("line").attr("x1", wavePlotLeft + legendOff4).attr("y1", wavePlotTop - 6).attr("x2", wavePlotLeft + legendOff5).attr("y2", wavePlotTop - 6)
         .attr("stroke", "#10b981").attr("stroke-width", 2)
       g.append("text").attr("x", wavePlotLeft + legendOff6).attr("y", wavePlotTop - 2)
-        .attr("font-size", fontSizeSm).attr("fill", "#10b981").attr("font-family", F).attr("font-weight", 600).text("|\u03C8(x)|\u00B2")
+        .attr("font-size", fontSizeSm).attr("fill", "#10b981").attr("font-family", F).attr("font-weight", 600).text(compact ? "|\u03C8|\u00B2" : "|\u03C8(x)|\u00B2")
 
       // Energy level diagram background
       const ePad = W * 0.012
@@ -281,7 +282,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
       g.append("text").attr("x", (energyLeft + energyRight) / 2).attr("y", energyTop - 2)
         .attr("text-anchor", "middle").attr("font-size", fontSize).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text("Energy Levels")
+        .text(compact ? "Levels" : "Energy Levels")
 
       // Energy axis
       const eAxisOff = W * 0.012
@@ -317,13 +318,16 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("x", vpX + vpW * 0.04).attr("y", vpY + vpH * 0.75).attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#ef4444")
 
       // D3 buttons inside SVG: quantum number selector + play/pause
+      const btnStep = compact ? 32 : 36
+      const btnWidth = compact ? 26 : 30
+      const playButtonWidth = compact ? 58 : 70
       const btnBaseY = H - 38
       for (let n = 1; n <= 5; n++) {
         const nbg = g.append("g").attr("class", `n-btn-${n}`).style("cursor", "pointer")
-          .attr("transform", `translate(${14 + (n - 1) * 36}, ${btnBaseY})`)
-        nbg.append("rect").attr("class", `n-btn-bg-${n}`).attr("width", 30).attr("height", 26).attr("rx", 8)
+          .attr("transform", `translate(${14 + (n - 1) * btnStep}, ${btnBaseY})`)
+        nbg.append("rect").attr("class", `n-btn-bg-${n}`).attr("width", btnWidth).attr("height", 26).attr("rx", 8)
           .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-        nbg.append("text").attr("x", 15).attr("y", 17).attr("text-anchor", "middle")
+        nbg.append("text").attr("x", btnWidth / 2).attr("y", 17).attr("text-anchor", "middle")
           .attr("font-size", 12).attr("font-family", F).attr("font-weight", 700).attr("fill", "#64748b")
           .text(String(n))
         nbg.on("click", () => {
@@ -340,12 +344,12 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
       // Play/pause button
       const playBtnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
-        .attr("transform", `translate(${14 + 5 * 36 + 10}, ${btnBaseY})`)
-      playBtnG.append("rect").attr("class", "play-btn-bg").attr("width", 70).attr("height", 26).attr("rx", 13)
+        .attr("transform", `translate(${14 + 5 * btnStep + 10}, ${btnBaseY})`)
+      playBtnG.append("rect").attr("class", "play-btn-bg").attr("width", playButtonWidth).attr("height", 26).attr("rx", 13)
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-      playBtnG.append("text").attr("class", "play-btn-text").attr("x", 35).attr("y", 17).attr("text-anchor", "middle")
+      playBtnG.append("text").attr("class", "play-btn-text").attr("x", playButtonWidth / 2).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text("Pause")
+        .text(compact ? "On" : "Pause")
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         if (playingRef.current) {
@@ -442,6 +446,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
             .transition().duration(dur)
             .attr("x", energyRight - eW * 0.038).attr("y", y - 6)
             .attr("fill", isSelected ? "#ef4444" : "#94a3b8")
+            .attr("opacity", compact && !isSelected ? 0 : 1)
             .text(energy.toFixed(1))
 
           g.select(`.elevel-dot-${n}`)
@@ -487,7 +492,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
           .attr("stroke", isPlaying ? "#059669" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", isPlaying ? "white" : "#64748b")
-          .text(isPlaying ? "Pause" : "Play")
+          .text(compact ? (isPlaying ? "On" : "Off") : (isPlaying ? "Pause" : "Play"))
       }
 
       // ── D3 drag — updates SVG directly, syncs React only on end ──

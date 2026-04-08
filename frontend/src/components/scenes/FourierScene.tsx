@@ -199,6 +199,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       const spectrumTop = H * 0.19
       const spectrumBottom = H * 0.62
 
+      const compact = W < 460 || H < 420
       const fontSize = Math.max(12, Math.min(18, H / 28))
       const fontSizeSm = Math.max(10, Math.min(15, H / 32))
 
@@ -236,7 +237,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       g.append("text")
         .attr("x", plotLeft).attr("y", compositeTop - 4)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-        .text("Composite Signal")
+        .text(compact ? "Composite" : "Composite Signal")
 
       // Zero line
       g.append("line")
@@ -252,7 +253,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       g.append("text")
         .attr("x", plotLeft).attr("y", harmonicTop - 6)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
-        .text("Harmonics")
+        .text(compact ? "Parts" : "Harmonics")
 
       for (let i = 0; i < 4; i++) {
         const yMid = harmonicTop + i * (harmonicHeight + harmonicGap) + harmonicHeight / 2
@@ -278,7 +279,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         labelG.append("text")
           .attr("x", plotLeft - W * 0.007).attr("y", yMid + 5)
           .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
-          .text(`n=${i + 1}`)
+          .text(compact ? `${i + 1}` : `n=${i + 1}`)
         labelG.append("rect")
           .attr("x", plotLeft - W * 0.055).attr("y", yMid - 18).attr("width", W * 0.055).attr("height", 36)
           .attr("fill", "transparent")
@@ -313,7 +314,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         g.append("text")
           .attr("x", bx + spectrumBarW / 2).attr("y", spectrumBottom + H * 0.038)
           .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#64748b")
-          .text(`${i + 1}f`)
+          .text(compact ? `${i + 1}` : `${i + 1}f`)
 
         // Drag handle on top of each bar
         const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab").style("touch-action", "none")
@@ -357,19 +358,21 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
 
       // Description
-      g.append("text")
-        .attr("x", W / 2).attr("y", H - H * 0.024)
-        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
-        .text("Fourier Decomposition: any signal = sum of sine waves")
+      if (!compact) {
+        g.append("text")
+          .attr("x", W / 2).attr("y", H - H * 0.024)
+          .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
+          .text("Fourier Decomposition: any signal = sum of sine waves")
+      }
 
       // D3 play/pause button inside SVG
       const btnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
-        .attr("transform", `translate(${W - 100}, ${H - 38})`)
-      btnG.append("rect").attr("class", "play-btn-bg").attr("width", 80).attr("height", 26).attr("rx", 13)
+        .attr("transform", `translate(${W - (compact ? 84 : 100)}, ${H - 38})`)
+      btnG.append("rect").attr("class", "play-btn-bg").attr("width", compact ? 64 : 80).attr("height", 26).attr("rx", 13)
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-      btnG.append("text").attr("class", "play-btn-text").attr("x", 40).attr("y", 17).attr("text-anchor", "middle")
+      btnG.append("text").attr("class", "play-btn-text").attr("x", compact ? 32 : 40).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text("Pause")
+        .text(compact ? "On" : "Pause")
       btnG.on("click", () => {
         playingRef.current = !playingRef.current
         updatePlayButton()
@@ -394,12 +397,14 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       function updateScene(amps: number[]) {
         // Amplitude labels
         for (let i = 0; i < 4; i++) {
-          g.select(`.amp-text-${i}`).text(`${HARMONIC_LABELS[i]}=${amps[i].toFixed(2)}`)
+          g.select(`.amp-text-${i}`).text(compact ? `${HARMONIC_LABELS[i]} ${amps[i].toFixed(2)}` : `${HARMONIC_LABELS[i]}=${amps[i].toFixed(2)}`)
         }
 
         // Equation readout
         g.select(".equation-readout")
-          .text(`f(t) = ${amps[0].toFixed(2)}sin(t) + ${amps[1].toFixed(2)}sin(2t) + ${amps[2].toFixed(2)}sin(3t) + ${amps[3].toFixed(2)}sin(4t)`)
+          .text(compact
+            ? `mix: ${amps.map((amp) => amp.toFixed(2)).join(" · ")}`
+            : `f(t) = ${amps[0].toFixed(2)}sin(t) + ${amps[1].toFixed(2)}sin(2t) + ${amps[2].toFixed(2)}sin(3t) + ${amps[3].toFixed(2)}sin(4t)`)
 
         // Spectrum bars + knobs (static position based on amplitude)
         for (let i = 0; i < 4; i++) {
@@ -420,7 +425,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
           .attr("stroke", playing ? "#4f73ff" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", playing ? "white" : "#64748b")
-          .text(playing ? "Pause" : "Play")
+          .text(compact ? (playing ? "On" : "Off") : (playing ? "Pause" : "Play"))
       }
 
       // ── Animation loop: reads from refs, never from React state ──
