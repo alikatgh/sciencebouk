@@ -120,13 +120,13 @@ export function VisualizationViewport({
 
   return (
     <div className={cn("relative h-full min-h-0", className)}>
-      <div className="pointer-events-none absolute right-3 top-3 z-10 flex justify-end sm:right-3 sm:top-3">
-        <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-slate-700/55 bg-slate-900/82 p-1 shadow-lg backdrop-blur sm:gap-1 sm:border-slate-200/80 sm:bg-white/95 sm:p-1 dark:border-slate-700 dark:bg-slate-900/90">
+      <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center px-3 sm:inset-x-auto sm:right-3 sm:top-3 sm:px-0">
+        <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-slate-700/55 bg-slate-900/82 px-1.5 py-1 shadow-lg backdrop-blur sm:gap-1 sm:border-slate-200/80 sm:bg-white/95 sm:p-1 dark:border-slate-700 dark:bg-slate-900/90">
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="h-7 w-7 text-slate-100 hover:bg-white/10 hover:text-white sm:h-7 sm:w-7 sm:text-slate-500 sm:hover:bg-slate-100 sm:hover:text-slate-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white dark:sm:text-slate-200 dark:sm:hover:bg-slate-800"
+            className="h-10 w-10 rounded-full text-slate-100 hover:bg-white/10 hover:text-white sm:h-7 sm:w-7 sm:rounded-lg sm:text-slate-500 sm:hover:bg-slate-100 sm:hover:text-slate-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white dark:sm:text-slate-200 dark:sm:hover:bg-slate-800"
             aria-label="Zoom out visualization"
             disabled={!canZoomOut}
             onClick={() => adjustZoom(-BUTTON_ZOOM_STEP)}
@@ -134,7 +134,7 @@ export function VisualizationViewport({
             <Minus className="h-3.5 w-3.5" />
           </Button>
           <span
-            className="min-w-[2.8rem] text-center text-[10px] font-semibold text-slate-100 sm:min-w-[3.1rem] sm:text-slate-500 dark:text-slate-200"
+            className="min-w-[3.25rem] text-center text-xs font-semibold text-slate-100 sm:min-w-[3.1rem] sm:text-[10px] sm:text-slate-500 dark:text-slate-200"
             aria-live="polite"
           >
             {zoomPercent}%
@@ -143,7 +143,7 @@ export function VisualizationViewport({
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="h-7 w-7 text-slate-100 hover:bg-white/10 hover:text-white sm:h-7 sm:w-7 sm:text-slate-500 sm:hover:bg-slate-100 sm:hover:text-slate-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white dark:sm:text-slate-200 dark:sm:hover:bg-slate-800"
+            className="h-10 w-10 rounded-full text-slate-100 hover:bg-white/10 hover:text-white sm:h-7 sm:w-7 sm:rounded-lg sm:text-slate-500 sm:hover:bg-slate-100 sm:hover:text-slate-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white dark:sm:text-slate-200 dark:sm:hover:bg-slate-800"
             aria-label="Zoom in visualization"
             disabled={!canZoomIn}
             onClick={() => adjustZoom(BUTTON_ZOOM_STEP)}
@@ -154,7 +154,7 @@ export function VisualizationViewport({
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="h-7 w-7 text-slate-100 hover:bg-white/10 hover:text-white sm:h-7 sm:w-7 sm:text-slate-500 sm:hover:bg-slate-100 sm:hover:text-slate-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white dark:sm:text-slate-200 dark:sm:hover:bg-slate-800"
+            className="h-10 w-10 rounded-full text-slate-100 hover:bg-white/10 hover:text-white sm:h-7 sm:w-7 sm:rounded-lg sm:text-slate-500 sm:hover:bg-slate-100 sm:hover:text-slate-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white dark:sm:text-slate-200 dark:sm:hover:bg-slate-800"
             aria-label="Reset visualization zoom"
             disabled={!canReset}
             onClick={resetZoom}

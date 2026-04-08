@@ -83,7 +83,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`rounded-lg px-2.5 py-2 transition-colors ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+          className={`rounded-lg px-2.5 py-2 transition-colors [@media(pointer:coarse)]:rounded-xl [@media(pointer:coarse)]:px-3 [@media(pointer:coarse)]:py-3 ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           onPointerEnter={() => onHover(variable.name)}
           onPointerLeave={() => onHover(null)}
           style={{ opacity: variable.locked ? 0.4 : 1 }}
@@ -107,14 +107,14 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
                     setEditing(false)
                   }
                 }}
-                className="h-6 w-20 text-right font-mono text-sm font-bold"
+                className="h-6 w-20 text-right font-mono text-sm font-bold [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-24"
                 style={{ color: variable.color }}
                 autoFocus
               />
             ) : (
               <button
                 onClick={handleValueClick}
-                className={`rounded px-1.5 py-0.5 font-mono text-sm font-bold tabular-nums transition ${
+                className={`rounded px-1.5 py-0.5 font-mono text-sm font-bold tabular-nums transition [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5 ${
                   isDisabled ? "cursor-default" : "cursor-text hover:bg-slate-100 dark:hover:bg-slate-600"
                 }`}
                 style={{ color: variable.color }}
@@ -127,7 +127,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
           </div>
           {!isDisabled && (
             <Slider
-              className="mt-1.5"
+              className="mt-1.5 [@media(pointer:coarse)]:mt-2"
               min={variable.min}
               max={variable.max}
               step={variable.step}

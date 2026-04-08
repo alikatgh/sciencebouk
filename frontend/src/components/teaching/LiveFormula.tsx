@@ -11,13 +11,14 @@ interface LiveFormulaProps {
   resultNote?: string
   variables?: Variable[]
   onVariableChange?: (name: string, value: number) => void
+  compact?: boolean
 }
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max)
 }
 
-export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote, variables, onVariableChange }: LiveFormulaProps): ReactElement {
+export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote, variables, onVariableChange, compact = false }: LiveFormulaProps): ReactElement {
   const liveRef = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState<{ varName: string; color: string; rect: DOMRect } | null>(null)
   const [inputValue, setInputValue] = useState("")
@@ -89,26 +90,26 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
   const hasInteractiveVars = (variables ?? []).some((v) => !v.constant && !v.locked)
 
   return (
-    <div className="relative space-y-2">
+    <div className={`relative ${compact ? "space-y-1.5" : "space-y-2"}`}>
       {/* Letter formula — secondary label when live exists, hero when alone */}
       {letterFormula && (
         <div className={`overflow-x-auto ${
           liveFormula
-            ? "text-sm text-slate-700 dark:text-slate-200"
-            : "text-center text-2xl text-slate-900 dark:text-slate-50"
+            ? `${compact ? "text-xs" : "text-sm"} text-slate-700 dark:text-slate-200`
+            : `text-center ${compact ? "text-xl" : "text-2xl"} text-slate-900 dark:text-slate-50`
         }`}>
           <InlineMath math={letterFormula} />
         </div>
       )}
       {/* Live formula — always the hero: big, centered, display-math style */}
       {liveFormula && (
-        <div ref={liveRef} className="overflow-x-auto text-center text-2xl text-slate-900 dark:text-slate-50">
+        <div ref={liveRef} className={`overflow-x-auto text-center ${compact ? "text-[1.65rem]" : "text-2xl"} text-slate-900 dark:text-slate-50`}>
           <InlineMath math={liveFormula} />
         </div>
       )}
       {/* Interactive hint */}
       {hasInteractiveVars && liveFormula && (
-        <p className="text-center text-[9px] text-slate-400 dark:text-slate-500">
+        <p className={`text-center ${compact ? "text-[10px]" : "text-[9px]"} text-slate-400 dark:text-slate-500`}>
           tap colored values to edit
         </p>
       )}
@@ -127,7 +128,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
               if (e.key === "Enter") handleSubmit()
               if (e.key === "Escape") setEditing(null)
             }}
-            className="w-20 rounded border-2 bg-white px-1.5 py-0.5 font-mono text-sm font-bold shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:bg-slate-700"
+            className={`${compact ? "w-24 px-2 py-1 text-base" : "w-20 px-1.5 py-0.5 text-sm"} rounded border-2 bg-white font-mono font-bold shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:bg-slate-700`}
             style={{ borderColor: editing.color, color: editing.color }}
             aria-label="Edit variable value"
             autoFocus
@@ -136,13 +137,13 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       )}
       {/* Result */}
       {resultLine && (
-        <div className="overflow-x-auto text-center text-sm text-slate-600 dark:text-slate-400">
+        <div className={`overflow-x-auto text-center ${compact ? "text-xs" : "text-sm"} text-slate-600 dark:text-slate-400`}>
           <InlineMath math={resultLine} />
         </div>
       )}
       {/* Note */}
       {resultNote && (
-        <p className="text-center text-xs leading-tight text-slate-400 dark:text-slate-500">
+        <p className={`text-center ${compact ? "text-[11px]" : "text-xs"} leading-tight text-slate-400 dark:text-slate-500`}>
           {resultNote}
         </p>
       )}

@@ -301,7 +301,7 @@ export function TeachableEquation({
   )
 
   const teachingContent = (
-    <div className={`flex flex-col gap-2.5 overflow-y-auto ${isNarrow ? "px-3 py-2.5" : "h-full pl-2"}`}>
+    <div className={`flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2.5 pl-2"}`}>
 
         {/* Hook — conditionally shown, compact on mobile */}
         {appSettings.showHookText && (
@@ -321,7 +321,7 @@ export function TeachableEquation({
 
         {/* Live formula — in its own prominent rounded box */}
         {formulaCardVisible && (
-          <div className="rounded-xl border-2 border-ocean/30 bg-white px-4 py-4 dark:border-ocean/40 dark:bg-slate-900">
+          <div className={`${isMobile ? "rounded-[20px] border border-ocean/25 px-3.5 py-3" : "rounded-xl border-2 px-4 py-4"} border-ocean/30 bg-white dark:border-ocean/40 dark:bg-slate-900`}>
             <ErrorBoundary fallback={<FormulaFallback />}>
               <Suspense fallback={<FormulaFallback />}>
                 {buildLiveFormula ? (
@@ -332,6 +332,7 @@ export function TeachableEquation({
                     resultNote={resultNote}
                     variables={formulaVariables}
                     onVariableChange={setVar}
+                    compact={isMobile}
                   />
                 ) : displayFormula && appSettings.showFormulaLetters ? (
                   <LiveFormula
@@ -339,6 +340,7 @@ export function TeachableEquation({
                     liveFormula={displayFormula}
                     variables={formulaVariables}
                     onVariableChange={setVar}
+                    compact={isMobile}
                   />
                 ) : null}
               </Suspense>
@@ -347,11 +349,11 @@ export function TeachableEquation({
         )}
 
         {/* Variables */}
-        <Card>
-          <CardHeader className="p-3 pb-1">
+        <Card className={isMobile ? "rounded-[20px]" : undefined}>
+          <CardHeader className={isMobile ? "p-3 pb-1.5" : "p-3 pb-1"}>
             <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Variables</CardTitle>
           </CardHeader>
-          <CardContent className="px-1 pb-2">
+          <CardContent className={isMobile ? "px-1.5 pb-2.5" : "px-1 pb-2"}>
             <TouchableFormula
               variables={formulaVariables} onVariableChange={setVar}
               highlightedVariable={highlightedVar} onVariableHover={setHighlightedVar} formula={formula}
@@ -361,9 +363,9 @@ export function TeachableEquation({
 
         {/* Presets */}
         {presets && presets.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className={`flex ${isMobile ? "-mx-1 overflow-x-auto px-1 pb-1" : "flex-wrap"} gap-1.5`}>
             {presets.map((p) => (
-              <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className="text-[10px]">
+              <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className={`${isMobile ? "h-9 shrink-0 rounded-full px-3.5 text-[11px]" : "text-[10px]"}`}>
                 {p.label}
               </Button>
             ))}
@@ -372,16 +374,16 @@ export function TeachableEquation({
 
         {/* Lesson — at bottom, after presets */}
         {hasLessons && lessonMode && (
-          <Card className="border-ocean/30 bg-ocean/5 dark:border-ocean/40 dark:bg-ocean/10">
-            <CardHeader className="flex-row items-center justify-between space-y-0 p-3 pb-2">
+          <Card className={`${isMobile ? "rounded-[22px]" : ""} border-ocean/30 bg-ocean/5 dark:border-ocean/40 dark:bg-ocean/10`}>
+            <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3.5 pb-2.5" : "p-3 pb-2"}`}>
               <CardTitle className="flex items-center gap-1.5 text-xs text-ocean">
                 <BookOpen className="h-3.5 w-3.5" /> Guided lesson
               </CardTitle>
-              <Button variant="ghost" size="xs" onClick={disableLessonMode} className="text-ocean/60 hover:text-ocean">
+              <Button variant="ghost" size="xs" onClick={disableLessonMode} className={`${isMobile ? "min-h-[36px] rounded-full px-3 text-[11px]" : ""} text-ocean/60 hover:text-ocean`}>
                 Skip
               </Button>
             </CardHeader>
-            <CardContent className="px-3 pb-3">
+            <CardContent className={isMobile ? "px-3.5 pb-3.5" : "px-3 pb-3"}>
               <ErrorBoundary fallback={<LessonFallback />}>
                 <Suspense fallback={<LessonFallback />}>
                   <LessonRunner
@@ -389,6 +391,7 @@ export function TeachableEquation({
                     onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
                     variables={formulaVariables} onHighlight={setHighlightedVar}
                     glossary={glossary} onTermHighlight={setHighlightedTerm}
+                    compact={isMobile}
                   />
                 </Suspense>
               </ErrorBoundary>
@@ -397,7 +400,7 @@ export function TeachableEquation({
         )}
 
         {hasLessons && !lessonMode && (
-          <Button variant="outline" className="w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean" onClick={restartLessonMode}>
+          <Button variant="outline" className={`${isMobile ? "min-h-[46px] rounded-[18px]" : ""} w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean`} onClick={restartLessonMode}>
             <Sparkles className="h-3.5 w-3.5" /> Restart lesson
           </Button>
         )}
