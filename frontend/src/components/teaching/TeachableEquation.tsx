@@ -301,7 +301,7 @@ export function TeachableEquation({
   )
 
   const teachingContent = (
-    <div className={`flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2.5 pl-2"}`}>
+    <div className={`native-scroll flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2.5 pl-2"}`}>
 
         {/* Hook — conditionally shown, compact on mobile */}
         {appSettings.showHookText && (

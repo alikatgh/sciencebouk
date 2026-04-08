@@ -166,7 +166,7 @@ export function VisualizationViewport({
 
       <div
         ref={scrollRef}
-        className="h-full overflow-auto overscroll-contain"
+        className="native-scroll h-full overflow-auto overscroll-contain"
         onWheel={handleWheel}
       >
         <div

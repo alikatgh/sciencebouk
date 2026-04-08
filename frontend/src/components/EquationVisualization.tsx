@@ -27,9 +27,11 @@ export function EquationVisualization({
   // No ErrorBoundary here — App.tsx wraps us in one with a proper fallback UI.
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <EquationIdProvider value={equationId}>
-        <SceneComponent />
-      </EquationIdProvider>
+      <div key={equationId} className="h-full animate-fade-in-up motion-reduce:animate-none">
+        <EquationIdProvider value={equationId}>
+          <SceneComponent />
+        </EquationIdProvider>
+      </div>
     </Suspense>
   )
 }

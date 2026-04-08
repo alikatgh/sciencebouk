@@ -42,6 +42,7 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -50,6 +51,8 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background: transparent;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Protect KaTeX from Tailwind Preflight resets — DO NOT REMOVE */
@@ -80,6 +83,7 @@ section .katex {
 #root {
   min-height: 100vh;
   min-height: 100dvh;
+  overscroll-behavior-y: none;
 }
 
 @layer base {
@@ -93,6 +97,14 @@ section .katex {
 
   button {
     @apply font-medium;
+  }
+
+  a,
+  button,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -262,6 +274,16 @@ section .katex {
 @media (pointer: coarse) {
   .science-slider {
     height: 1rem;
+  }
+
+  .native-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .native-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   .science-slider::-webkit-slider-runnable-track {
