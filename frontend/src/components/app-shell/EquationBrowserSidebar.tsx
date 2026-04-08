@@ -242,6 +242,8 @@ function EquationBrowserSidebarComponent({
               total={total}
               totalTimeMinutes={totalTimeMinutes}
               progressByEquation={progressByEquation}
+              prevEquation={prevEquation}
+              nextEquation={nextEquation}
               searchQuery={searchQuery}
               isAuthenticated={isAuthenticated}
               isPro={isPro}

@@ -109,11 +109,15 @@ const EquationListItem = memo(function EquationListItem({
           </span>
         </span>
           <div className="flex flex-shrink-0 items-center gap-2">
-            {done && (
+            {active ? (
+              <span className="rounded-full bg-ocean/10 px-2 py-1 text-[10px] font-semibold text-ocean">
+                Current
+              </span>
+            ) : done ? (
               <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
                 Done
               </span>
-            )}
+            ) : null}
           <ChevronRight className={`h-4 w-4 ${active ? "text-ocean" : "text-slate-300 dark:text-slate-600"}`} />
         </div>
       </button>
