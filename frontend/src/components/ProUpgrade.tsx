@@ -111,7 +111,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   if (mode === "success") {
     if (!isPro && !verificationTimedOut) {
       return (
-        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
           <div className="text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-ocean" />
             <p className="mt-4 text-slate-500">
@@ -124,7 +124,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
     if (!isPro) {
       return (
-        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
           <div className="max-w-md text-center">
             <Loader2 className="mx-auto h-10 w-10 text-ocean" />
             <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Still checking your subscription</h1>
@@ -154,7 +154,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
     }
 
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
         <div className="text-center">
           <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment successful!</h1>
@@ -200,7 +200,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   return (
     <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-900">
       <TopNav showBack />
-      <div className="flex flex-1 flex-col items-center px-4 py-6 sm:py-8">
+      <div className="native-scroll flex flex-1 flex-col items-center px-4 py-5 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-8">
       <h1 className="font-display text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
         Go Pro
       </h1>
@@ -209,17 +209,17 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
       </p>
 
       {/* Toggle */}
-      <div className="mt-6 flex items-center gap-3 rounded-full bg-white p-1 shadow-sm dark:bg-slate-800">
+      <div className="mt-6 flex w-full max-w-md items-center gap-2 rounded-full bg-white p-1 shadow-sm dark:bg-slate-800">
         <button
           onClick={() => setYearly(false)}
-          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${!yearly ? "bg-ocean text-white" : "text-slate-500"}`}
+          className={`min-h-[44px] flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition ${!yearly ? "bg-ocean text-white" : "text-slate-500"}`}
           type="button"
         >
           Monthly
         </button>
         <button
           onClick={() => setYearly(true)}
-          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${yearly ? "bg-ocean text-white" : "text-slate-500"}`}
+          className={`min-h-[44px] flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition ${yearly ? "bg-ocean text-white" : "text-slate-500"}`}
           type="button"
         >
           Yearly <span className="text-xs opacity-70">save 33%</span>
@@ -227,9 +227,9 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
       </div>
 
       {/* Cards */}
-      <div className="mt-8 grid max-w-3xl gap-4 md:grid-cols-2">
+      <div className="mt-8 grid w-full max-w-3xl gap-4 md:grid-cols-2">
         {/* Free */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Free</h3>
           <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">$0</p>
           <p className="text-sm text-slate-400">forever</p>
@@ -243,7 +243,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           </ul>
           <button
             onClick={() => navigate("/")}
-            className="mt-6 w-full rounded-xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+            className="mt-6 min-h-[46px] w-full rounded-2xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
             type="button"
           >
             Continue free
@@ -251,7 +251,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
         </div>
 
         {/* Pro */}
-        <div className="relative rounded-2xl border-2 border-ocean bg-white p-6 shadow-lg dark:bg-slate-800">
+        <div className="relative rounded-[26px] border-2 border-ocean bg-white p-5 shadow-lg dark:bg-slate-800 sm:p-6">
           <div className="absolute -top-3 left-4 rounded-full bg-ocean px-3 py-0.5 text-xs font-bold text-white">
             RECOMMENDED
           </div>
@@ -271,7 +271,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           <button
             onClick={handleUpgrade}
             disabled={loading}
-            className="mt-6 w-full rounded-xl bg-ocean py-2.5 text-sm font-bold text-white transition hover:bg-ocean/90 disabled:opacity-50"
+            className="mt-6 min-h-[48px] w-full rounded-2xl bg-ocean py-2.5 text-sm font-bold text-white transition hover:bg-ocean/90 disabled:opacity-50"
             type="button"
           >
             {loading ? "Redirecting..." : isAuthenticated ? "Upgrade to Pro" : "Sign up & upgrade"}
@@ -303,7 +303,7 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
   return (
     <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-900">
       <TopNav showBack />
-      <div className="flex flex-1 flex-col items-center px-4 py-6 sm:py-8">
+      <div className="native-scroll flex flex-1 flex-col items-center px-4 py-5 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-8">
         <span className="rounded-full bg-ocean/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-ocean">
           {BILLING_DISABLED_COPY.badge}
         </span>
@@ -316,8 +316,8 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
             : BILLING_DISABLED_COPY.body}
         </p>
 
-        <div className="mt-8 grid max-w-3xl gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="mt-8 grid w-full max-w-3xl gap-4 md:grid-cols-2">
+          <div className="rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Free beta</h3>
             <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">$0</p>
             <p className="text-sm text-slate-400">for everyone right now</p>
@@ -331,14 +331,14 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
             </ul>
             <button
               onClick={() => navigate("/")}
-              className="mt-6 w-full rounded-xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+              className="mt-6 min-h-[46px] w-full rounded-2xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
               type="button"
             >
               Continue exploring
             </button>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-100/70 p-6 dark:border-slate-700 dark:bg-slate-800/70">
+          <div className="rounded-[26px] border border-slate-200 bg-slate-100/70 p-5 dark:border-slate-700 dark:bg-slate-800/70 sm:p-6">
             <div className="inline-flex rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
               Paused for beta
             </div>
@@ -357,7 +357,7 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
             </ul>
             <button
               disabled
-              className="mt-6 w-full rounded-xl border border-slate-300 bg-white/80 py-2.5 text-sm font-bold text-slate-400 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-500"
+              className="mt-6 min-h-[48px] w-full rounded-2xl border border-slate-300 bg-white/80 py-2.5 text-sm font-bold text-slate-400 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-500"
               type="button"
             >
               {BILLING_DISABLED_COPY.button}

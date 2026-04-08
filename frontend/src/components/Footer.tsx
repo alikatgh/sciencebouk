@@ -34,7 +34,7 @@ export function Footer(): ReactElement {
             </button>
           </div>
 
-          <nav className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+          <nav className="native-scroll mt-3 flex gap-2 overflow-x-auto pb-1 text-[11px] text-slate-500 dark:text-slate-400">
             <Link to="/about" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">About</Link>
             <Link to="/privacy" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Privacy</Link>
             <Link to="/terms" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Terms</Link>

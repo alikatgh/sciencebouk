@@ -174,9 +174,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const isLogin = mode === "login"
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="items-center pb-2 pt-8">
+    <main
+      className="flex min-h-[100dvh] items-start justify-center bg-slate-50 px-4 pt-4 dark:bg-slate-950 sm:items-center sm:pt-0"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+    >
+      <Card className="w-full max-w-sm rounded-[30px] border-slate-200/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:shadow-none">
+        <CardHeader className="items-center pb-2 pt-7 sm:pt-8">
           <Link to="/" className="mb-1 font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
             Sciencebouk
           </Link>
@@ -185,7 +188,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </span>
         </CardHeader>
 
-        <CardContent className="px-6 pb-8 pt-4">
+        <CardContent className="px-5 pb-6 pt-4 sm:px-6 sm:pb-8">
           <h1 className="mb-6 text-center font-body text-lg font-semibold text-ink dark:text-white">
             {isLogin ? "Sign in to your account" : "Create your account"}
           </h1>
@@ -274,7 +277,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
               <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-ember dark:bg-red-950/30">{error}</p>
             )}
 
-            <Button type="submit" disabled={submitting} className="w-full" size="lg">
+            <Button type="submit" disabled={submitting} className="min-h-[48px] w-full rounded-2xl" size="lg">
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -293,7 +296,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
                 <span className="text-[11px] text-slate-400 dark:text-slate-500">or</span>
                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
               </div>
-              <div ref={googleBtnRef} className="flex justify-center" />
+              <div ref={googleBtnRef} className="flex min-h-[44px] justify-center overflow-hidden rounded-2xl" />
               {googleError && (
                 <p className="mt-2 text-center text-xs font-medium text-ember">{googleError}</p>
               )}

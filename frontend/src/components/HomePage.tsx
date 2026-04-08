@@ -106,14 +106,14 @@ export function HomePage(): ReactElement {
           }
         />
         <div className="flex-1">
-          <div className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
+          <div className="mx-auto max-w-5xl px-4 py-4 sm:py-6">
             {!activeSubject ? (
               <>
             {/* === HERO === */}
-            <section className="mb-7 overflow-hidden rounded-[28px] bg-slate-900 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-              <div className="grid items-center gap-6 p-5 sm:p-6 md:grid-cols-[1fr_auto] md:p-8">
+            <section className="mb-6 overflow-hidden rounded-[32px] bg-slate-900 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
+              <div className="grid items-center gap-5 p-4 sm:p-6 md:grid-cols-[1fr_auto] md:p-8">
                 <div>
-                  <h1 className="font-display text-[1.75rem] font-bold tracking-tight leading-tight md:text-3xl">
+                  <h1 className="font-display text-[1.55rem] font-bold tracking-tight leading-tight md:text-3xl">
                     Grab a variable. Drag it.<br />
                     <span className="text-ocean">Watch the equation respond.</span>
                   </h1>
@@ -130,7 +130,7 @@ export function HomePage(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(1)
                       }}
-                      className="min-h-[46px] justify-center bg-ocean text-white hover:bg-ocean/90 sm:min-h-0"
+                      className="min-h-[48px] justify-center rounded-2xl bg-ocean text-white hover:bg-ocean/90 sm:min-h-0"
                     >
                       Try Pythagoras <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
@@ -139,7 +139,7 @@ export function HomePage(): ReactElement {
                         const el = document.getElementById("subjects-section")
                         el?.scrollIntoView({ behavior: "smooth" })
                       }}
-                      className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white sm:border-0 sm:px-0 sm:py-0"
+                      className="rounded-2xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 transition hover:border-white/20 hover:text-white sm:border-0 sm:px-0 sm:py-0"
                       type="button"
                     >
                       See all equations
@@ -174,7 +174,7 @@ export function HomePage(): ReactElement {
             {completedCount > 0 && completedCount < total && continueLearningFormulas.length > 0 && (
               <section className="mb-6">
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Continue learning</h3>
-                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
+                <div className="native-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
                   {continueLearningFormulas.map((f) => (
                       <button
                         key={f.id}
@@ -185,7 +185,7 @@ export function HomePage(): ReactElement {
                         onFocus={() => {
                           void prefetchEquationExperience(f.id!)
                         }}
-                        className="flex min-w-[15rem] snap-start flex-shrink-0 flex-col rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-ocean/30 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0"
+                        className="flex min-w-[15rem] snap-start flex-shrink-0 flex-col rounded-[22px] border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-ocean/30 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0"
                         type="button"
                       >
                         <span className="text-sm text-slate-600 dark:text-slate-300">
@@ -199,14 +199,14 @@ export function HomePage(): ReactElement {
             )}
 
             {/* === FEATURED: 17 Equations === */}
-            <div id="subjects-section">
+            <div id="subjects-section" className="space-y-3">
               {activeSubjectCards.map(({ subject, completedInSubject }) => {
                 return (
                   <Card
                     key={subject.slug}
                     role="button"
                     tabIndex={0}
-                    className="group cursor-pointer overflow-hidden rounded-[26px] border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
+                    className="group cursor-pointer overflow-hidden rounded-[28px] border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
                     onClick={() => setSelectedSubject(subject.slug)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSubject(subject.slug) } }}
                     aria-label={`Open ${subject.name}`}
@@ -228,7 +228,7 @@ export function HomePage(): ReactElement {
                       <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-500 transition group-hover:text-white sm:h-5 sm:w-5" />
                     </div>
                     <div className="border-t border-slate-700 bg-slate-800/50 px-4 py-2 sm:px-5 sm:py-2.5 dark:bg-slate-900/50">
-                      <div className="flex snap-x snap-mandatory gap-x-4 gap-y-1 overflow-x-auto pb-1 md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0">
+                      <div className="native-scroll flex snap-x snap-mandatory gap-x-4 gap-y-1 overflow-x-auto pb-1 md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0">
                         {subject.formulas.slice(0, 5).map((f, i) => (
                           <span key={i} className="shrink-0 snap-start text-[11px] text-slate-400 md:shrink md:text-xs">
                             <FormulaPreview formula={f.formula} />
@@ -245,12 +245,12 @@ export function HomePage(): ReactElement {
             {hasComingSoonSubjects && (
               <div className="mt-8">
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">Coming next</h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {inactiveSubjects.map((subject) => (
                     <button
                       key={subject.slug}
                       type="button"
-                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:hover:border-slate-600 dark:hover:bg-slate-800/50"
+                      className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-200 px-4 py-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:hover:border-slate-600 dark:hover:bg-slate-800/50"
                       onClick={() => setSelectedSubject(subject.slug)}
                     >
                       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
@@ -281,10 +281,10 @@ export function HomePage(): ReactElement {
                         role={isActive ? "button" : undefined}
                         tabIndex={isActive ? 0 : undefined}
                         aria-label={isActive ? `Open ${f.title}` : undefined}
-                        className={`overflow-hidden transition-all ${
-                          isActive
-                            ? "cursor-pointer hover:border-slate-300 hover:shadow-md active:scale-[0.98]"
-                            : "border-dashed opacity-40"
+                          className={`overflow-hidden rounded-[22px] transition-all ${
+                            isActive
+                              ? "cursor-pointer hover:border-slate-300 hover:shadow-md active:scale-[0.98]"
+                              : "border-dashed opacity-40"
                         }`}
                         onClick={isActive ? () => navigate(`/equation/${f.id}`) : undefined}
                         onKeyDown={isActive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/equation/${f.id}`) } } : undefined}

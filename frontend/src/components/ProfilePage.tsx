@@ -137,12 +137,12 @@ export default function ProfilePage(): ReactElement {
     <div className="flex min-h-[100dvh] flex-col overflow-hidden bg-[#f3f5f7] dark:bg-slate-900">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Profile</span>} />
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-4 py-5">
+      <div className="native-scroll flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-5">
           {/* Top section: profile + stats side by side */}
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
             {/* Left: identity */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div className="rounded-[26px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:p-5">
               <div className="flex items-center gap-4">
                 <div className="group relative flex-shrink-0">
                   {avatarUrl ? (
@@ -222,14 +222,14 @@ export default function ProfilePage(): ReactElement {
               </div>
 
               {/* Quick actions */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 {isPro && (
-                  <button onClick={() => navigate("/dashboard")} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300" type="button">
+                  <button onClick={() => navigate("/dashboard")} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
                     <BarChart2 className="h-3.5 w-3.5 text-ocean" /> Dashboard
                   </button>
                 )}
                 {isPro && BILLING_ENABLED && (
-                  <button onClick={handleManageSubscription} disabled={managingSubscription} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300" type="button">
+                  <button onClick={handleManageSubscription} disabled={managingSubscription} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
                     <CreditCard className="h-3.5 w-3.5" /> Billing
                   </button>
                 )}
@@ -237,7 +237,7 @@ export default function ProfilePage(): ReactElement {
                   <button
                     onClick={() => navigate("/pro")}
                     disabled={!BILLING_ENABLED}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${
+                    className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-bold sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5 ${
                       BILLING_ENABLED
                         ? "border-2 border-ocean text-ocean hover:bg-ocean/5"
                         : "border border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500"
@@ -248,7 +248,7 @@ export default function ProfilePage(): ReactElement {
                     <Crown className="h-3.5 w-3.5" /> {BILLING_ENABLED ? "Upgrade to Pro" : "Pro later"}
                   </button>
                 )}
-                <button onClick={() => { logout(); navigate("/") }} className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-900/30 [@media(pointer:coarse)]:min-h-[44px]" type="button">
+                <button onClick={() => { logout(); navigate("/") }} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-red-200 px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-900/30 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
                   <LogOut className="h-3.5 w-3.5" /> Sign out
                 </button>
               </div>
@@ -266,7 +266,7 @@ export default function ProfilePage(): ReactElement {
                   onFocus={() => {
                     void prefetchEquationExperience(nextEquation.id)
                   }}
-                  className="flex items-center gap-3 rounded-2xl border-2 border-ocean bg-ocean/[0.04] p-4 text-left transition hover:bg-ocean/[0.08] active:scale-[0.99]"
+                  className="flex items-center gap-3 rounded-[24px] border-2 border-ocean bg-ocean/[0.04] p-4 text-left transition hover:bg-ocean/[0.08] active:scale-[0.99]"
                   type="button"
                 >
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-ocean text-white">
@@ -288,15 +288,15 @@ export default function ProfilePage(): ReactElement {
 
               {/* Stats row */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex flex-col items-center justify-center rounded-[20px] border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-emerald-600">{completedCount}</p>
                   <p className="text-[11px] text-slate-400">Done</p>
                 </div>
-                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex flex-col items-center justify-center rounded-[20px] border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-blue-600">{totalTimeMinutes}m</p>
                   <p className="text-[11px] text-slate-400">Studied</p>
                 </div>
-                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex flex-col items-center justify-center rounded-[20px] border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-purple-600">{inProgressCount}</p>
                   <p className="text-[11px] text-slate-400">Exploring</p>
                 </div>
@@ -305,7 +305,7 @@ export default function ProfilePage(): ReactElement {
           </div>
 
           {/* Equations — sorted by relevance: in-progress first, then not started, completed last */}
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+          <div className="mt-4 rounded-[26px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">Your Equations</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedEquations.map((eq) => {
@@ -323,7 +323,7 @@ export default function ProfilePage(): ReactElement {
                     onFocus={() => {
                       void prefetchEquationExperience(eq.id)
                     }}
-                    className={`group relative flex flex-col rounded-xl border p-2.5 text-left transition hover:shadow-sm ${
+                    className={`group relative flex min-h-[104px] flex-col rounded-[20px] border p-2.5 text-left transition hover:shadow-sm ${
                       done
                         ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/20"
                         : started
