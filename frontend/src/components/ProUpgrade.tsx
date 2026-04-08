@@ -184,7 +184,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
   if (isPro) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <Sparkles className="mx-auto h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">You're Pro!</h1>

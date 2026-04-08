@@ -23,7 +23,7 @@ const AuthPage = lazy(() => import("./auth/AuthPage"))
 
 function NotFoundPage(): React.ReactElement {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 text-center dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-slate-50 text-center dark:bg-slate-950">
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">404</p>
       <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">Page not found</h1>
       <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">
@@ -43,7 +43,7 @@ function NotFoundPage(): React.ReactElement {
 function RequirePro({ children }: { children: React.ReactElement }): React.ReactElement {
   const { isAuthenticated, isPro, loading } = useAuth()
   const location = useLocation()
-  if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-400 dark:bg-slate-950 dark:text-slate-500">Loading...</main>
+  if (loading) return <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 text-sm text-slate-400 dark:bg-slate-950 dark:text-slate-500">Loading...</main>
   if (!isAuthenticated) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
   if (!isPro) return <Navigate to="/pro" replace />
   return children
@@ -59,7 +59,7 @@ const queryClient = new QueryClient({
 })
 
 const rootErrorFallback = (
-  <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 text-center dark:bg-slate-950">
+  <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-slate-50 text-center dark:bg-slate-950">
     <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Something went wrong. Reload the page.</p>
     <button
       type="button"
@@ -99,7 +99,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <SettingsProvider>
           <AuthProvider>
             <BrowserRouter>
-              <Suspense fallback={<main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-400 dark:bg-slate-950 dark:text-slate-500">Loading...</main>}>
+              <Suspense fallback={<main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 text-sm text-slate-400 dark:bg-slate-950 dark:text-slate-500">Loading...</main>}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/equation/:id" element={<App />} />

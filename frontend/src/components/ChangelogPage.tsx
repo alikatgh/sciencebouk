@@ -109,7 +109,7 @@ const LABEL_STYLES = {
 
 export default function ChangelogPage(): ReactElement {
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Changelog</span>} />
 
       <div className="flex-1">

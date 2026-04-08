@@ -94,7 +94,7 @@ export default function Dashboard(): ReactElement {
   // analyticsError is shown as a brief notice when the analytics fetch fails
   if (!isPro) {
     return (
-      <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+      <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
         <TopNav showBack />
         <div className="flex flex-1 flex-col items-center justify-center px-4">
           <Trophy className="h-12 w-12 text-ocean" />
@@ -124,7 +124,7 @@ export default function Dashboard(): ReactElement {
   }
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <main className="flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Dashboard</span>} />
 
       {loading ? (

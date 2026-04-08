@@ -48,6 +48,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background: transparent;
 }
 
@@ -78,6 +79,7 @@ section .katex {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 @layer base {

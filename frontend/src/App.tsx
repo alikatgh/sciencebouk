@@ -83,7 +83,7 @@ function persistDismissedSyncSignature(signature: string): void {
 
 function EquationNotFound({ onGoHome }: { onGoHome: () => void }): ReactElement {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center dark:bg-slate-950">
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Equation not found</p>
       <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">That equation does not exist in the atlas.</h1>
       <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">

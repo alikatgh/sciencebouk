@@ -174,7 +174,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const isLogin = mode === "login"
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center pb-2 pt-8">
           <Link to="/" className="mb-1 font-display text-2xl font-bold tracking-tight text-ink dark:text-white">

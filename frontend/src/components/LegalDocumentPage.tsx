@@ -44,7 +44,7 @@ export function LegalDocumentPage({ title, documentPath }: LegalDocumentPageProp
   }, [documentPath])
 
   return (
-    <main className="flex min-h-screen flex-col bg-white dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] flex-col bg-white dark:bg-slate-950">
       <TopNav showBack />
 
       <div className="flex-1 overflow-y-auto">
