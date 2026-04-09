@@ -13,7 +13,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)}
+    className={cn("fixed inset-0 z-50 bg-slate-950/58 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:duration-300 data-[state=closed]:duration-200", className)}
     {...props}
   />
 ))
@@ -29,7 +29,7 @@ const SheetContent = React.forwardRef<
       ref={ref}
       aria-describedby={undefined}
       className={cn(
-        "fixed inset-y-0 z-50 flex flex-col gap-0 overflow-hidden overscroll-contain border-r border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)] transition duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-900",
+        "fixed inset-y-0 z-50 flex flex-col gap-0 overflow-hidden overscroll-contain border-r border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)] transition will-change-transform data-[state=open]:duration-300 data-[state=closed]:duration-200 data-[state=open]:ease-out data-[state=closed]:ease-in dark:border-slate-800 dark:bg-slate-900",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         side === "left" && "left-0 w-[min(92vw,23rem)] max-w-none rounded-r-[32px] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:w-[320px] sm:rounded-r-3xl",
         side === "right" && "right-0 w-[min(92vw,23rem)] max-w-none rounded-l-[32px] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:w-[320px] sm:rounded-l-3xl",
@@ -44,7 +44,7 @@ const SheetContent = React.forwardRef<
     >
       <SheetClose
         aria-label="Close menu"
-        className="absolute right-3 top-3 z-10 rounded-full border border-slate-200/80 bg-white/90 p-2 text-slate-500 opacity-90 shadow-sm ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ocean focus:ring-offset-2 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300 dark:ring-offset-slate-900"
+        className="absolute right-3 top-3 z-10 rounded-full border border-slate-200/80 bg-white/90 p-2 text-slate-500 opacity-90 shadow-sm ring-offset-white transition active:scale-[0.96] hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ocean focus:ring-offset-2 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300 dark:ring-offset-slate-900"
       >
         <X className="h-4 w-4" />
       </SheetClose>

@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { Component, lazy, memo, Suspense, useEffect, useRef, useState } from "react"
-import { Menu, User } from "lucide-react"
+import { ChevronLeft, ChevronRight, Info, Menu, User } from "lucide-react"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
@@ -80,7 +80,7 @@ function EquationHeaderComponent({
         variant="ghost"
         size="icon-sm"
         onClick={onOpenDrawer}
-        className="rounded-full bg-slate-100/90 text-slate-600 shadow-sm hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/90 dark:text-slate-200 dark:hover:bg-slate-700 lg:hidden"
+        className="rounded-full bg-slate-100/90 text-slate-600 shadow-sm transition-transform active:scale-[0.96] hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/90 dark:text-slate-200 dark:hover:bg-slate-700 lg:hidden"
         aria-label="Open equation browser"
       >
         <Menu className="h-4 w-4" />
@@ -89,13 +89,41 @@ function EquationHeaderComponent({
         <h2 className="min-w-0 truncate font-display text-[15px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-sm md:text-base">
           {equation.title}
         </h2>
-        <div className="mt-1 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap sm:hidden">
+        <div className="native-scroll mt-1 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-0.5 sm:hidden">
+          {prevEquation && (
+            <button
+              onClick={() => onSelectEquation(prevEquation.id)}
+              onTouchStart={() => { void prefetchEquationScene(prevEquation.id) }}
+              onMouseEnter={() => {
+                void prefetchEquationScene(prevEquation.id)
+              }}
+              className="inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm transition active:scale-[0.97] hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+              type="button"
+              aria-label={`Previous equation: ${prevEquation.title}`}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Prev
+            </button>
+          )}
           <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-semibold text-slate-500 dark:text-slate-300">
             {equation.category}
           </Badge>
-          <p className="truncate text-[10px] text-slate-400">
-            {equation.author}, {equation.year}
-          </p>
+          <ScientistButton equationId={equation.id} author={equation.author} year={equation.year} mobile />
+          {nextEquation && (
+            <button
+              onClick={() => onSelectEquation(nextEquation.id)}
+              onTouchStart={() => { void prefetchEquationScene(nextEquation.id) }}
+              onMouseEnter={() => {
+                void prefetchEquationScene(nextEquation.id)
+              }}
+              className="inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm transition active:scale-[0.97] hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+              type="button"
+              aria-label={`Next equation: ${nextEquation.title}`}
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
       <Badge variant="secondary" className="hidden sm:inline-flex">
@@ -143,7 +171,7 @@ function EquationHeaderComponent({
           variant="ghost"
           size="icon-sm"
           onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
-          className="rounded-full bg-slate-100/90 text-slate-600 shadow-sm hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/90 dark:text-slate-200 dark:hover:bg-slate-700 lg:hidden"
+          className="rounded-full bg-slate-100/90 text-slate-600 shadow-sm transition-transform active:scale-[0.96] hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/90 dark:text-slate-200 dark:hover:bg-slate-700 lg:hidden"
           aria-label={isAuthenticated ? "Open profile" : "Sign in"}
         >
           {isAuthenticated ? (
@@ -161,7 +189,7 @@ function EquationHeaderComponent({
 
 export const EquationHeader = memo(EquationHeaderComponent)
 
-function ScientistButton({ equationId, author, year }: { equationId: number; author: string; year: string }): ReactElement {
+function ScientistButton({ equationId, author, year, mobile = false }: { equationId: number; author: string; year: string; mobile?: boolean }): ReactElement {
   const [open, setOpen] = useState(false)
   const mountedRef = useRef(false)
 
@@ -173,11 +201,18 @@ function ScientistButton({ equationId, author, year }: { equationId: number; aut
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden cursor-pointer text-[11px] text-slate-400 underline decoration-dotted underline-offset-2 transition hover:text-ocean sm:inline"
+        className={mobile
+          ? "inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm transition active:scale-[0.97] hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white sm:hidden"
+          : "hidden cursor-pointer text-[11px] text-slate-400 underline decoration-dotted underline-offset-2 transition hover:text-ocean sm:inline"}
         type="button"
         title={`Learn about ${author}`}
       >
-        {author}, {year}
+        {mobile ? (
+          <>
+            <Info className="h-3.5 w-3.5" />
+            {author}, {year}
+          </>
+        ) : author + ", " + year}
       </button>
       {mountedRef.current && (
         <ChunkErrorBoundary>
