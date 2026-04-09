@@ -167,6 +167,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width, height } = useContainerSize(containerRef)
   const compact = width > 0 && (width < 460 || height < 420)
+  const ultraCompact = width > 0 && (width < 390 || height < 360)
   const orderedParticles = useMemo(() => buildOrderedParticles(), [])
   const visualStateCount = useMemo(() => visualStateCountForTemperature(temperature), [temperature])
   const microstateCloud = useMemo(
@@ -174,7 +175,11 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
     [orderedParticles, temperature, visualStateCount],
   )
   const currentMicrostate = microstateCloud[microstateCloud.length - 1] ?? orderedParticles
-  const visibleGhostStates = compact ? microstateCloud.slice(-Math.min(5, microstateCloud.length)) : microstateCloud
+  const visibleGhostStates = ultraCompact
+    ? microstateCloud.slice(-Math.min(3, microstateCloud.length))
+    : compact
+      ? microstateCloud.slice(-Math.min(5, microstateCloud.length))
+      : microstateCloud
   const thermalAccent = useMemo(() => mixHex("#6f87ff", "#f7a85d", temperature / 100), [temperature])
   const hazeAccent = useMemo(() => mixHex("#8ea8ff", "#ffcb8a", temperature / 100), [temperature])
 
@@ -220,7 +225,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
           strokeWidth="2"
         />
 
-        {Array.from({ length: GRID_ROWS }).map((_, row) => {
+        {!ultraCompact && Array.from({ length: GRID_ROWS }).map((_, row) => {
           const y = orderedParticles[row * GRID_COLS].y
           return (
             <line
@@ -235,7 +240,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
             />
           )
         })}
-        {Array.from({ length: GRID_COLS }).map((_, col) => {
+        {!ultraCompact && Array.from({ length: GRID_COLS }).map((_, col) => {
           const top = orderedParticles[col]
           const bottom = orderedParticles[(GRID_ROWS - 1) * GRID_COLS + col]
           return (
@@ -257,7 +262,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
             key={`ordered-${index}`}
             cx={particle.x}
             cy={particle.y}
-            r={PARTICLE_RADIUS}
+            r={ultraCompact ? PARTICLE_RADIUS - 1.5 : PARTICLE_RADIUS}
             fill="none"
             stroke={particle.group === 0 ? "rgba(95,124,255,0.25)" : "rgba(107,208,173,0.25)"}
             strokeWidth="2"
@@ -265,13 +270,13 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
         ))}
 
         {visibleGhostStates.slice(0, -1).map((state, stateIndex) => (
-          <g key={`state-${stateIndex}`} opacity={compact ? 0.08 + stateIndex * 0.04 : 0.06 + stateIndex * 0.03}>
+          <g key={`state-${stateIndex}`} opacity={ultraCompact ? 0.06 + stateIndex * 0.05 : compact ? 0.08 + stateIndex * 0.04 : 0.06 + stateIndex * 0.03}>
             {state.map((particle, particleIndex) => (
               <circle
                 key={`ghost-${stateIndex}-${particleIndex}`}
                 cx={particle.x}
                 cy={particle.y}
-                r={PARTICLE_RADIUS}
+                r={ultraCompact ? PARTICLE_RADIUS - 1.5 : PARTICLE_RADIUS}
                 fill={PARTICLE_COLORS[particle.group]}
               />
             ))}
@@ -283,15 +288,15 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
             <circle
               cx={particle.x}
               cy={particle.y}
-              r={compact ? PARTICLE_RADIUS * 2.25 : PARTICLE_RADIUS * 2.7}
+              r={ultraCompact ? PARTICLE_RADIUS * 1.9 : compact ? PARTICLE_RADIUS * 2.25 : PARTICLE_RADIUS * 2.7}
               fill={PARTICLE_COLORS[particle.group]}
-              opacity={0.16 + (temperature / 100) * 0.1}
+              opacity={ultraCompact ? 0.13 + (temperature / 100) * 0.08 : 0.16 + (temperature / 100) * 0.1}
               filter="url(#blur-glow)"
             />
             <circle
               cx={particle.x}
               cy={particle.y}
-              r={PARTICLE_RADIUS}
+              r={ultraCompact ? PARTICLE_RADIUS - 1.5 : PARTICLE_RADIUS}
               fill={PARTICLE_COLORS[particle.group]}
               stroke="rgba(255,255,255,0.95)"
               strokeWidth={compact ? "2" : "2.5"}
@@ -299,16 +304,18 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
           </g>
         ))}
 
-        <line
-          x1={CHAMBER.x + 54}
-          x2={CHAMBER.x + CHAMBER.width - 54}
-          y1={CHAMBER.y + CHAMBER.height + 48}
-          y2={CHAMBER.y + CHAMBER.height + 48}
-          stroke="url(#heat-line)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          opacity={0.9}
-        />
+        {!ultraCompact && (
+          <line
+            x1={CHAMBER.x + 54}
+            x2={CHAMBER.x + CHAMBER.width - 54}
+            y1={CHAMBER.y + CHAMBER.height + 48}
+            y2={CHAMBER.y + CHAMBER.height + 48}
+            stroke="url(#heat-line)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity={0.9}
+          />
+        )}
       </svg>
     </div>
   )

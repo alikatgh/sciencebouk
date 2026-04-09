@@ -183,6 +183,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
   const [showArea, setShowArea] = useState(false)
   const [showDeriv, setShowDeriv] = useState(false)
   const compact = frame.width < 420
+  const ultraCompact = frame.width < 370
 
   const slope = fPrime(t)
   const secantSlope = (f(t + h) - f(t)) / h
@@ -225,8 +226,8 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
     ]
   }, [t, h, secantSlope])
 
-  const xTicks = useMemo(() => getTicks([0, 10.5], compact ? 6 : 10), [compact])
-  const yTicks = useMemo(() => getTicks([-1, 14], compact ? 5 : 6), [compact])
+  const xTicks = useMemo(() => getTicks([0, 10.5], ultraCompact ? 4 : compact ? 6 : 10), [compact, ultraCompact])
+  const yTicks = useMemo(() => getTicks([-1, 14], ultraCompact ? 4 : compact ? 5 : 6), [compact, ultraCompact])
   const curvePath = useMemo(() => buildLinePath({
     data: curveData,
     xScale: frame.xScale,
@@ -268,11 +269,11 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               className={`${compact ? "w-16 text-xs" : "w-20 text-sm"} rounded-lg border-2 px-2 py-1 font-bold outline-none`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
             <button onClick={() => handleBadgeClick("t", t)} className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
-              {compact ? `t ${t.toFixed(1)}` : `t = ${t.toFixed(1)}`}
+              {ultraCompact ? `t${t.toFixed(1)}` : compact ? `t ${t.toFixed(1)}` : `t = ${t.toFixed(1)}`}
             </button>
           )}
           <span className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} rounded-lg border border-slate-200 py-1 font-extrabold dark:border-slate-600`} style={{ color: VAR_COLORS.result }}>
-            {compact ? `m ${slope.toFixed(2)}` : `slope = ${slope.toFixed(2)}`}
+            {ultraCompact ? `m${slope.toFixed(2)}` : compact ? `m ${slope.toFixed(2)}` : `slope = ${slope.toFixed(2)}`}
           </span>
           {editingVar === "h" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
@@ -280,7 +281,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               className={`${compact ? "w-16" : "ml-auto w-20"} rounded-lg border-2 px-2 py-1 text-xs font-bold outline-none`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
           ) : (
             <button onClick={() => handleBadgeClick("h", h)} className={`${compact ? "" : "ml-auto"} cursor-text rounded-lg border border-slate-200 ${compact ? "px-2.5 text-[11px]" : "px-3 text-xs"} py-1 font-semibold transition hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800`} style={{ color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
-              {compact ? `h ${h.toFixed(2)}` : `h = ${h.toFixed(2)}`}
+              {ultraCompact ? `h${h.toFixed(2)}` : compact ? `h ${h.toFixed(2)}` : `h = ${h.toFixed(2)}`}
             </button>
           )}
         </div>
@@ -374,7 +375,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
             ))}
 
             <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 6} textAnchor="middle" fontSize={compact ? "11" : "13"} fill="#64748b" fontWeight="600">
-              x
+              {ultraCompact ? "" : "x"}
             </text>
             <text
               x={16}
@@ -385,7 +386,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               fontWeight="600"
               transform={`rotate(-90 16 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              y
+              {ultraCompact ? "" : "y"}
             </text>
 
             <circle
@@ -422,7 +423,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               color: showArea ? "white" : "#64748b",
             }}
           >
-            {showArea ? "Hide area" : "Area"}
+            {ultraCompact ? (showArea ? "∫ off" : "∫") : showArea ? "Hide area" : "Area"}
           </button>
           <button
             onClick={() => setShowDeriv(v => !v)}
@@ -433,13 +434,13 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               color: showDeriv ? "white" : "#64748b",
             }}
           >
-            {showDeriv ? "Hide f'(x)" : "f'(x)"}
+            {ultraCompact ? (showDeriv ? "f′ off" : "f′") : showDeriv ? "Hide f'(x)" : "f'(x)"}
           </button>
           <div className={`${compact ? "w-full pt-0.5" : "ml-auto"} flex items-center gap-2 text-xs text-slate-400`}>
             <span className="inline-block h-0.5 w-4" style={{ backgroundColor: "#94a3b8", height: 2 }} />
-            <span>{compact ? "Tan" : "Tangent"}</span>
+            <span>{ultraCompact ? "T" : compact ? "Tan" : "Tangent"}</span>
             <span className="ml-2 inline-block h-0.5 w-4" style={{ backgroundColor: VAR_COLORS.secondary, height: 2 }} />
-            <span>{compact ? "Sec" : "Secant"}</span>
+            <span>{ultraCompact ? "S" : compact ? "Sec" : "Secant"}</span>
           </div>
         </div>
       </div>
