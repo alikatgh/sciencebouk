@@ -199,6 +199,23 @@ function shortSolidName(name: string): string {
   }
 }
 
+function tinySolidName(name: string): string {
+  switch (name) {
+    case "Tetrahedron":
+      return "Tet"
+    case "Cube":
+      return "Cube"
+    case "Octahedron":
+      return "Oct"
+    case "Dodecahedron":
+      return "Dod"
+    case "Icosahedron":
+      return "Ico"
+    default:
+      return shortSolidName(name)
+  }
+}
+
 function rotateY(v: Vec3, angle: number): Vec3 {
   const c = Math.cos(angle)
   const s = Math.sin(angle)
@@ -318,7 +335,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
   useEffect(() => {
     const container = containerRef.current
     if (!container || W < 100 || H < 100) return
-    const compact = W < 460 || H < 420
+    const compact = W < 480 || H < 420
+    const ultraCompact = W < 390 || H < 360
     wRef.current = W
     hRef.current = H
     select(container).select("svg").remove()
@@ -339,8 +357,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     gRef.current = g
 
     // Shape selector buttons (these are D3 elements, not React)
-    const btnW = compact ? Math.min(116, Math.floor(W * 0.17)) : Math.min(160, Math.floor(W * 0.22))
-    const btnH = compact ? 32 : 36
+    const btnW = ultraCompact ? Math.min(92, Math.floor(W * 0.135)) : compact ? Math.min(116, Math.floor(W * 0.17)) : Math.min(160, Math.floor(W * 0.22))
+    const btnH = ultraCompact ? 28 : compact ? 32 : 36
     for (let i = 0; i < solids.length; i++) {
       const bx = W * 0.04
       const by = H * 0.07 + i * (compact ? H * 0.085 : H * 0.1)
@@ -352,8 +370,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
       btnG.append("text")
         .attr("class", `btn-txt-${i}`)
         .attr("x", bx + btnW / 2).attr("y", by + (compact ? 21 : 24)).attr("text-anchor", "middle")
-        .attr("font-size", compact ? 13 : 15).attr("font-family", F)
-        .text(compact ? shortSolidName(solids[i].name) : solids[i].name)
+        .attr("font-size", ultraCompact ? 11 : compact ? 13 : 15).attr("font-family", F)
+        .text(ultraCompact ? tinySolidName(solids[i].name) : compact ? shortSolidName(solids[i].name) : solids[i].name)
       btnG.on("click", () => {
         selectedIdxRef.current = i
         setSelectedIdx(i)
@@ -392,35 +410,35 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     // V, E, F info panel
     const ipX = W * 0.04
     const ipY = compact ? H * 0.62 : H * 0.6
-    const ipW = compact ? W * 0.16 : W * 0.18
+    const ipW = ultraCompact ? W * 0.18 : compact ? W * 0.16 : W * 0.18
     const ipH = compact ? H * 0.29 : H * 0.34
     g.append("rect").attr("class", "info-bg").attr("x", ipX).attr("y", ipY).attr("width", ipW)
       .attr("height", ipH).attr("rx", 12).attr("fill", "white").attr("fill-opacity", 0.9)
       .attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
 
     g.append("text").attr("class", "v-label").attr("x", ipX + 20).attr("y", ipY + 30)
-      .attr("font-size", compact ? 17 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", VAR_COLORS.primary)
+      .attr("font-size", ultraCompact ? 15 : compact ? 17 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", VAR_COLORS.primary)
     g.append("text").attr("class", "e-label").attr("x", ipX + 20).attr("y", ipY + 58)
-      .attr("font-size", compact ? 17 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", VAR_COLORS.secondary)
+      .attr("font-size", ultraCompact ? 15 : compact ? 17 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", VAR_COLORS.secondary)
     g.append("text").attr("class", "f-label").attr("x", ipX + 20).attr("y", ipY + 86)
-      .attr("font-size", compact ? 17 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", VAR_COLORS.tertiary)
+      .attr("font-size", ultraCompact ? 15 : compact ? 17 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", VAR_COLORS.tertiary)
 
     g.append("line").attr("class", "info-divider").attr("x1", ipX + 10).attr("y1", ipY + 100).attr("x2", ipX + ipW - 10).attr("y2", ipY + 100)
       .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
     g.append("text").attr("class", "euler-result").attr("x", ipX + ipW / 2).attr("y", ipY + 126).attr("text-anchor", "middle")
-      .attr("font-size", compact ? 16 : 20).attr("font-family", F).attr("font-weight", 800).attr("fill", "#0f172a")
+      .attr("font-size", ultraCompact ? 14 : compact ? 16 : 20).attr("font-family", F).attr("font-weight", 800).attr("fill", "#0f172a")
     g.append("text").attr("class", "euler-formula-label").attr("x", ipX + ipW / 2).attr("y", ipY + 146).attr("text-anchor", "middle")
-      .attr("font-size", compact ? 11 : 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-      .text(compact ? "V-E+F=2" : "V - E + F = 2")
+      .attr("font-size", ultraCompact ? 10 : compact ? 11 : 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
+      .text(ultraCompact ? "= 2" : compact ? "V-E+F=2" : "V - E + F = 2")
 
     // Shape name
     g.append("text").attr("class", "shape-name").attr("x", W * 0.6).attr("y", H - 36).attr("text-anchor", "middle")
-      .attr("font-size", compact ? 18 : 20).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
+      .attr("font-size", ultraCompact ? 16 : compact ? 18 : 20).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
 
     // Drag hint
     g.append("text").attr("x", W * 0.6).attr("y", H - 12).attr("text-anchor", "middle")
       .attr("font-size", 13).attr("font-family", F).attr("fill", "#94a3b8").attr("opacity", 0.6)
-      .text(compact ? "Drag to rotate" : "Drag the shape to rotate it in 3D")
+      .text(ultraCompact ? "Rotate" : compact ? "Drag to rotate" : "Drag the shape to rotate it in 3D")
 
     // Stop any previously running animation loop before starting a new one.
     // runningRef is shared across renders, so a stale rAF callback checks it
@@ -479,7 +497,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     const angle = angleRef.current
     const W = wRef.current
     const H = hRef.current
-    const compact = W < 460 || H < 420
+    const compact = W < 480 || H < 420
+    const ultraCompact = W < 390 || H < 360
     const cx = W * 0.6
     const cy = H * 0.45
     const baseScale = Math.min(W, H) * 0.22
@@ -534,17 +553,17 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     vertSel.enter().append("circle").merge(vertSel)
       .attr("cx", d => d[0])
       .attr("cy", d => d[1])
-      .attr("r", 4)
+      .attr("r", ultraCompact ? 3 : 4)
       .attr("fill", "#1e40af")
       .attr("stroke", "#ffffff")
       .attr("stroke-width", 2)
 
     // Info
-    g.select(".v-label").text(`V = ${solid.V}`)
-    g.select(".e-label").text(`E = ${solid.E}`)
-    g.select(".f-label").text(`F = ${solid.F}`)
-    g.select(".euler-result").text(compact ? `${solid.V}-${solid.E}+${solid.F}=2` : `${solid.V} - ${solid.E} + ${solid.F} = 2`)
-    g.select(".shape-name").text(compact ? shortSolidName(solid.name) : solid.name)
+    g.select(".v-label").text(ultraCompact ? `V${solid.V}` : `V = ${solid.V}`)
+    g.select(".e-label").text(ultraCompact ? `E${solid.E}` : `E = ${solid.E}`)
+    g.select(".f-label").text(ultraCompact ? `F${solid.F}` : `F = ${solid.F}`)
+    g.select(".euler-result").text(ultraCompact ? `${solid.V}-${solid.E}+${solid.F}` : compact ? `${solid.V}-${solid.E}+${solid.F}=2` : `${solid.V} - ${solid.E} + ${solid.F} = 2`)
+    g.select(".shape-name").text(ultraCompact ? tinySolidName(solid.name) : compact ? shortSolidName(solid.name) : solid.name)
   }
 
   return (
