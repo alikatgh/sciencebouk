@@ -166,7 +166,8 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       const energyTop = H * 0.19
       const energyBottom = H * 0.72
 
-      const compact = W < 460 || H < 420
+      const compact = W < 500 || H < 430
+      const ultraCompact = W < 410 || H < 380
       const fontSize = Math.max(12, Math.min(18, H / 28))
       const fontSizeSm = Math.max(10, Math.min(15, H / 32))
 
@@ -213,7 +214,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       wallHandle.append("text").attr("class", "wall-drag-label")
         .attr("y", wavePlotTop - 8).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#f59e0b")
-        .text("drag L")
+        .text(ultraCompact ? "L" : "drag L")
 
       const wallXScale = scaleLinear().domain([0.5, 2.0]).range([
         wavePlotLeft + (wavePlotRight - wavePlotLeft) * 0.25,
@@ -240,9 +241,9 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
       // Wall labels
       g.append("text").attr("x", wavePlotLeft).attr("y", wavePlotBottom + H * 0.047)
-        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("fill", "#64748b").attr("font-family", F).text("x=0")
+        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("fill", "#64748b").attr("font-family", F).text(ultraCompact ? "0" : "x=0")
       g.append("text").attr("class", "wall-right-label").attr("y", wavePlotBottom + H * 0.047)
-        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("fill", "#64748b").attr("font-family", F).text("x=L")
+        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("fill", "#64748b").attr("font-family", F).text(ultraCompact ? "L" : "x=L")
 
       // Midline
       g.append("line").attr("class", "midline")
@@ -272,7 +273,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       g.append("line").attr("x1", wavePlotLeft + legendOff4).attr("y1", wavePlotTop - 6).attr("x2", wavePlotLeft + legendOff5).attr("y2", wavePlotTop - 6)
         .attr("stroke", "#10b981").attr("stroke-width", 2)
       g.append("text").attr("x", wavePlotLeft + legendOff6).attr("y", wavePlotTop - 2)
-        .attr("font-size", fontSizeSm).attr("fill", "#10b981").attr("font-family", F).attr("font-weight", 600).text(compact ? "|\u03C8|\u00B2" : "|\u03C8(x)|\u00B2")
+        .attr("font-size", fontSizeSm).attr("fill", "#10b981").attr("font-family", F).attr("font-weight", 600).text(ultraCompact ? "P" : compact ? "|\u03C8|\u00B2" : "|\u03C8(x)|\u00B2")
 
       // Energy level diagram background
       const ePad = W * 0.012
@@ -282,7 +283,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
       g.append("text").attr("x", (energyLeft + energyRight) / 2).attr("y", energyTop - 2)
         .attr("text-anchor", "middle").attr("font-size", fontSize).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text(compact ? "Levels" : "Energy Levels")
+        .text(ultraCompact ? "E" : compact ? "Levels" : "Energy Levels")
 
       // Energy axis
       const eAxisOff = W * 0.012
@@ -318,9 +319,9 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("x", vpX + vpW * 0.04).attr("y", vpY + vpH * 0.75).attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#ef4444")
 
       // D3 buttons inside SVG: quantum number selector + play/pause
-      const btnStep = compact ? 32 : 36
-      const btnWidth = compact ? 26 : 30
-      const playButtonWidth = compact ? 58 : 70
+      const btnStep = ultraCompact ? 29 : compact ? 32 : 36
+      const btnWidth = ultraCompact ? 24 : compact ? 26 : 30
+      const playButtonWidth = ultraCompact ? 50 : compact ? 58 : 70
       const btnBaseY = H - 38
       for (let n = 1; n <= 5; n++) {
         const nbg = g.append("g").attr("class", `n-btn-${n}`).style("cursor", "pointer")
@@ -340,7 +341,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       // n label
       g.append("text").attr("x", 14).attr("y", btnBaseY - 6)
         .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text("n:")
+        .text(ultraCompact ? "n" : "n:")
 
       // Play/pause button
       const playBtnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
@@ -349,7 +350,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       playBtnG.append("text").attr("class", "play-btn-text").attr("x", playButtonWidth / 2).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text(compact ? "On" : "Pause")
+        .text(ultraCompact ? "Run" : compact ? "On" : "Pause")
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         if (playingRef.current) {
@@ -440,13 +441,13 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
             .attr("x", energyLeft + eW * 0.038).attr("y", y - 6)
             .attr("fill", isSelected ? "#ef4444" : "#64748b")
             .attr("font-weight", isSelected ? 700 : 500)
-            .text(`n=${n}`)
+            .text(ultraCompact ? `n${n}` : `n=${n}`)
 
           g.select(`.elevel-val-${n}`)
             .transition().duration(dur)
             .attr("x", energyRight - eW * 0.038).attr("y", y - 6)
             .attr("fill", isSelected ? "#ef4444" : "#94a3b8")
-            .attr("opacity", compact && !isSelected ? 0 : 1)
+            .attr("opacity", (compact || ultraCompact) && !isSelected ? 0 : 1)
             .text(energy.toFixed(1))
 
           g.select(`.elevel-dot-${n}`)
@@ -459,18 +460,18 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         const wallX = wallXScale(LVal)
         g.select(".wall-drag-handle").transition().duration(dur)
           .attr("transform", `translate(${wallX},0)`)
-        g.select(".wall-drag-label").text(`L=${LVal.toFixed(1)}`)
+        g.select(".wall-drag-label").text(ultraCompact ? `L ${LVal.toFixed(1)}` : `L=${LVal.toFixed(1)}`)
 
         // Position n drag handle at current energy level
         const currentY = yScale(currentEnergy)
         g.select(".n-drag-handle").transition().duration(dur)
           .attr("transform", `translate(${energyLeft + (energyRight - energyLeft) * 0.062},${currentY})`)
-        g.select(".n-handle-label").text(`n=${nVal}`)
+        g.select(".n-handle-label").text(ultraCompact ? `n${nVal}` : `n=${nVal}`)
 
         // Values panel
-        g.select(".val-n-label").text(`n = ${nVal}`)
-        g.select(".val-L-label").text(`L = ${LVal.toFixed(1)}`)
-        g.select(".val-energy-label").text(`E${nVal} = ${currentEnergy.toFixed(2)} (natural units)`)
+        g.select(".val-n-label").text(ultraCompact ? `n ${nVal}` : `n = ${nVal}`)
+        g.select(".val-L-label").text(ultraCompact ? `L ${LVal.toFixed(1)}` : `L = ${LVal.toFixed(1)}`)
+        g.select(".val-energy-label").text(ultraCompact ? `E${nVal} ${currentEnergy.toFixed(2)}` : `E${nVal} = ${currentEnergy.toFixed(2)} (natural units)`)
 
         // Update D3 quantum number button appearances
         for (let n = 1; n <= 5; n++) {
@@ -492,7 +493,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
           .attr("stroke", isPlaying ? "#059669" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", isPlaying ? "white" : "#64748b")
-          .text(compact ? (isPlaying ? "On" : "Off") : (isPlaying ? "Pause" : "Play"))
+          .text(ultraCompact ? (isPlaying ? "Stop" : "Run") : compact ? (isPlaying ? "On" : "Off") : (isPlaying ? "Pause" : "Play"))
       }
 
       // ── D3 drag — updates SVG directly, syncs React only on end ──

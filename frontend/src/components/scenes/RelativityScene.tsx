@@ -213,7 +213,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const g = svg.append("g")
 
       const fs = Math.max(12, Math.min(18, H / 28))
-      const compact = W < 430 || H < 430
+      const compact = W < 470 || H < 430
+      const ultraCompact = W < 390 || H < 360
 
       // Curve panel geometry
       const leftPanelLeft = Math.round(W * 0.05)
@@ -236,8 +237,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * (compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text(compact ? "Gamma" : "Lorentz Factor")
+        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text(ultraCompact ? "Gamma" : "Lorentz Factor")
 
       // Axes
       const axLeft = xScale(0)
@@ -263,7 +264,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       }
       // Y axis ticks
       for (const gv of [1, 2, 4, 6, 8, 10, 12]) {
-        if (compact && ![1, 4, 8, 12].includes(gv)) continue
+        if (ultraCompact && ![1, 8].includes(gv)) continue
+        if (!ultraCompact && compact && ![1, 4, 8, 12].includes(gv)) continue
         const yp = yScale(gv)
         if (yp >= axTop && yp <= axBottom) {
           g.append("line").attr("x1", axLeft - 4).attr("y1", yp).attr("x2", axLeft + 2).attr("y2", yp)
@@ -333,7 +335,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * (compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
         .text(compact ? "Clocks" : "Time Dilation")
 
       // Clock 1 (stationary)
@@ -381,8 +383,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * (compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text(compact ? "Length" : "Length Contraction")
+        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .text(ultraCompact ? "Length" : compact ? "Length" : "Length Contraction")
 
       // Rest length bar
       const barX = Math.round(rpLeft + rpWidth * 0.16)
@@ -393,7 +395,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .attr("rx", 5).attr("fill", "#dbeafe").attr("stroke", "#3b82f6").attr("stroke-width", 1.5)
       g.append("text").attr("x", barX + barW / 2).attr("y", barY1 + barH * 0.73).attr("text-anchor", "middle")
         .attr("font-size", fs * 0.9).attr("fill", "#1e40af").attr("font-family", F).attr("font-weight", 600)
-        .text(compact ? "L = 1.00" : "Rest: L = 1.00")
+        .text(ultraCompact ? "L" : compact ? "L = 1.00" : "Rest: L = 1.00")
 
       // Contracted bar (will update)
       const barY2 = barY1 + barH + 8
@@ -429,7 +431,9 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
           .attr("x", cx).text(compact ? `${vel.toFixed(2)}c` : `v = ${vel.toFixed(2)}c`)
 
         // Clock 2 label
-        g.select(".clock2-label").text(compact ? `${(1 / gam).toFixed(2)}x` : `Moving (${(1 / gam).toFixed(2)}x)`)
+        g.select(".clock2-label").text(
+          ultraCompact ? `${Math.round((1 / gam) * 100)}% rate` : compact ? `${(1 / gam).toFixed(2)}x` : `Moving (${(1 / gam).toFixed(2)}x)`
+        )
 
         // Length contraction
         const contractedWidth = barW / gam
@@ -437,10 +441,12 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
           .attr("x", barX).attr("width", contractedWidth)
         g.select(".contract-label")
           .attr("x", barX + contractedWidth / 2)
-          .text(compact ? `${(1 / gam).toFixed(2)}x` : `L' = ${(1 / gam).toFixed(3)}`)
+          .text(ultraCompact ? `${(1 / gam).toFixed(2)}L` : compact ? `${(1 / gam).toFixed(2)}x` : `L' = ${(1 / gam).toFixed(3)}`)
 
         // Extreme annotations
-        if (gam > 7) {
+        if (ultraCompact) {
+          g.select(".extreme-label").text("")
+        } else if (gam > 7) {
           g.select(".extreme-label").attr("fill", "#ef4444")
             .text(compact ? "Extreme regime" : "Extreme relativistic regime -- time nearly stops for the traveler.")
         } else if (vel < 0.1) {
