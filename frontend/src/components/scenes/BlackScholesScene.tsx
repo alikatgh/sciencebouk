@@ -185,15 +185,16 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
     y2Domain: showGreeks ? [0, 1.2] : undefined,
   })
   const compact = frame.width < 420
+  const ultraCompact = frame.width < 380
   const handleChartClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (!onVarChange) return
     const s = frame.clientXToX(event.clientX)
     if (s == null) return
     onVarChange("K", Math.max(50, Math.min(150, Math.round(s))))
   }, [frame, onVarChange])
-  const xTicks = useMemo(() => getTicks([20, 200], compact ? 6 : 10), [compact])
-  const yTicks = useMemo(() => getTicks([0, Math.ceil(maxPrice)], compact ? 5 : 6), [compact, maxPrice])
-  const y2Ticks = useMemo(() => (showGreeks ? getTicks([0, 1.2], compact ? 4 : 5) : []), [compact, showGreeks])
+  const xTicks = useMemo(() => getTicks([20, 200], ultraCompact ? 4 : compact ? 6 : 10), [compact, ultraCompact])
+  const yTicks = useMemo(() => getTicks([0, Math.ceil(maxPrice)], ultraCompact ? 4 : compact ? 5 : 6), [compact, maxPrice, ultraCompact])
+  const y2Ticks = useMemo(() => (showGreeks ? getTicks([0, 1.2], ultraCompact ? 3 : compact ? 4 : 5) : []), [compact, showGreeks, ultraCompact])
   const y2Scale = frame.y2Scale
   const intrinsicCallPath = useMemo(() => buildLinePath({
     data,
@@ -251,11 +252,11 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
       return (
         <input key={varName} type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-          className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} />
+          className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} />
       )
     }
     return (
-      <button key={varName} onClick={() => handleBadgeClick(varName, value)} className={`cursor-text rounded-lg border px-2 py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} type="button" title="Click to type a value">
+      <button key={varName} onClick={() => handleBadgeClick(varName, value)} className={`cursor-text rounded-lg border px-2 py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} type="button" title="Click to type a value">
         {label} = {format(value)}
       </button>
     )
@@ -317,7 +318,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
 
             <line x1={frame.xScale(K)} x2={frame.xScale(K)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeWidth={1.5} strokeDasharray="6 4" />
             <text x={frame.xScale(K)} y={frame.plotTop + 14} textAnchor="middle" fontSize="14" fontWeight="700" fill={VAR_COLORS.primary}>
-              {compact ? `K ${K}` : `K = ${K}`}
+              {ultraCompact ? `${K}` : compact ? `K ${K}` : `K = ${K}`}
             </text>
 
             {xTicks.map((tick) => (
@@ -346,7 +347,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
             ))}
 
             <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
-              {compact ? "Price (S)" : "Underlying Price (S)"}
+              {ultraCompact ? "S" : compact ? "Price (S)" : "Underlying Price (S)"}
             </text>
             <text
               x={18}
@@ -357,7 +358,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               fontWeight="600"
               transform={`rotate(-90 18 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              {compact ? "Price" : "Option Price"}
+              {ultraCompact ? "$" : compact ? "Price" : "Option Price"}
             </text>
           </svg>
         </div>
@@ -374,7 +375,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 border-t-2 border-dashed border-slate-400" />
-            <span className="text-xs font-semibold text-slate-400">Intrinsic</span>
+            <span className="text-xs font-semibold text-slate-400">{ultraCompact ? "IV" : "Intrinsic"}</span>
           </div>
           <button
             onClick={() => setShowGreeks(v => !v)}
@@ -385,7 +386,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               color: showGreeks ? "white" : "#64748b",
             }}
           >
-            {compact ? (showGreeks ? "Hide" : "Greeks") : (showGreeks ? "Hide Greeks" : "Show Greeks")}
+            {ultraCompact ? (showGreeks ? "Hide ΔΓ" : "ΔΓ") : compact ? (showGreeks ? "Hide" : "Greeks") : (showGreeks ? "Hide Greeks" : "Show Greeks")}
           </button>
         </div>
       </div>

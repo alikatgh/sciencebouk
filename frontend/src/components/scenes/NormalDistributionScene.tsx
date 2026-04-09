@@ -139,8 +139,9 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
   const muHighlighted = highlightedVar === "mu"
   const sigmaHighlighted = highlightedVar === "sigma"
   const compact = frame.width < 420
-  const xTicks = useMemo(() => getTicks([xDomainMin, xDomainMax], compact ? 6 : 8), [compact, xDomainMin, xDomainMax])
-  const yTicks = useMemo(() => getTicks([0, peak * 1.15], compact ? 4 : 5), [compact, peak])
+  const ultraCompact = frame.width < 380
+  const xTicks = useMemo(() => getTicks([xDomainMin, xDomainMax], ultraCompact ? 4 : compact ? 6 : 8), [compact, ultraCompact, xDomainMin, xDomainMax])
+  const yTicks = useMemo(() => getTicks([0, peak * 1.15], ultraCompact ? 3 : compact ? 4 : 5), [compact, peak, ultraCompact])
   const shade3Path = useMemo(() => buildAreaPath({
     data,
     xScale: frame.xScale,
@@ -181,23 +182,23 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
           {editingVar === "mu" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
+              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("mu", mu)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button onClick={() => handleBadgeClick("mu", mu)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
               {"\u03BC"} = {mu.toFixed(1)}
             </button>
           )}
           {editingVar === "sigma" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
+              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("sigma", sigma)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
+            <button onClick={() => handleBadgeClick("sigma", sigma)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
               {"\u03C3"} = {sigma.toFixed(1)}
             </button>
           )}
-          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
-            peak = {pdf(mu, mu, sigma).toFixed(3)}
+          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
+            {ultraCompact ? `pk ${pdf(mu, mu, sigma).toFixed(3)}` : `peak = ${pdf(mu, mu, sigma).toFixed(3)}`}
           </span>
         </div>
 
@@ -285,10 +286,10 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
             />
 
             <text x={frame.xScale(mu)} y={frame.plotTop + 14} textAnchor="middle" fontSize={compact ? "12" : "13"} fontWeight="700" fill={VAR_COLORS.primary}>
-              {compact ? `μ ${mu.toFixed(1)}` : `μ = ${mu.toFixed(1)}`}
+              {ultraCompact ? `${mu.toFixed(1)}` : compact ? `μ ${mu.toFixed(1)}` : `μ = ${mu.toFixed(1)}`}
             </text>
             <text x={frame.xScale(mu + sigma)} y={frame.plotTop + 30} textAnchor="middle" fontSize="11" fill={VAR_COLORS.secondary}>
-              +1σ
+              {ultraCompact ? "σ" : "+1σ"}
             </text>
             {!compact && (
               <text x={frame.xScale(mu + 2 * sigma)} y={frame.plotTop + 44} textAnchor="middle" fontSize="10" fill="#94a3b8">
@@ -317,9 +318,9 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
 
         {/* Percentage labels */}
         <div className="flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 px-4 py-2 text-[10px] font-medium dark:border-slate-700">
-          <span className="text-blue-600">{compact ? "68%" : `1σ: 68.27%`}</span>
-          <span className="text-blue-400">{compact ? "95%" : `2σ: 95.45%`}</span>
-          <span className="text-blue-300">{compact ? "99.7%" : `3σ: 99.73%`}</span>
+          <span className="text-blue-600">{ultraCompact ? "1σ 68%" : compact ? "68%" : `1σ: 68.27%`}</span>
+          <span className="text-blue-400">{ultraCompact ? "2σ 95%" : compact ? "95%" : `2σ: 95.45%`}</span>
+          <span className="text-blue-300">{ultraCompact ? "3σ 99.7%" : compact ? "99.7%" : `3σ: 99.73%`}</span>
         </div>
       </div>
     </div>

@@ -129,8 +129,9 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
   const surpriseH = prob > 0 ? -Math.log2(prob) : Infinity
   const surpriseT = q > 0 ? -Math.log2(q) : Infinity
   const compact = frame.width < 420
-  const xTicks = useMemo(() => getTicks([0, 1], compact ? 4 : 5), [compact])
-  const yTicks = useMemo(() => getTicks([0, 1.1], compact ? 4 : 5), [compact])
+  const ultraCompact = frame.width < 380
+  const xTicks = useMemo(() => getTicks([0, 1], ultraCompact ? 3 : compact ? 4 : 5), [compact, ultraCompact])
+  const yTicks = useMemo(() => getTicks([0, 1.1], ultraCompact ? 3 : compact ? 4 : 5), [compact, ultraCompact])
   const fillPath = useMemo(() => buildAreaPath({
     data,
     xScale: frame.xScale,
@@ -155,14 +156,14 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
           {editingVar === "p" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
-              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
+              className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("p", prob)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button onClick={() => handleBadgeClick("p", prob)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
               p = {prob.toFixed(2)}
             </button>
           )}
-          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
-            H = {entropy.toFixed(4)} bits
+          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
+            {ultraCompact ? `H ${entropy.toFixed(3)}` : `H = ${entropy.toFixed(4)} bits`}
           </span>
         </div>
 
@@ -209,7 +210,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={7} fill="#ef4444" stroke="white" strokeWidth={2} />
 
             <text x={frame.plotRight - 4} y={frame.yScale(1) - 6} textAnchor="end" fontSize="11" fontWeight="600" fill="#f59e0b">
-              {compact ? "max 1b" : "max = 1 bit"}
+              {ultraCompact ? "1b" : compact ? "max 1b" : "max = 1 bit"}
             </text>
 
             {xTicks.map((tick) => (
@@ -240,7 +241,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
               fill="#94a3b8"
               transform={`rotate(-90 16 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              {compact ? "H" : "H (bits)"}
+              {ultraCompact ? "H" : compact ? "H" : "H (bits)"}
             </text>
           </svg>
         </div>
@@ -273,16 +274,16 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
           </button>
 
           {/* Tally */}
-          <div className={`flex flex-wrap gap-3 font-semibold ${compact ? "text-xs" : "text-sm"}`}>
+          <div className={`flex flex-wrap gap-3 font-semibold ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`}>
             <span className="text-blue-600">H: {heads}</span>
             <span className="text-emerald-600">T: {tails}</span>
-            <span className="text-slate-500">{compact ? `n: ${flips.length}` : `Total: ${flips.length}`}</span>
+            <span className="text-slate-500">{ultraCompact ? `${flips.length}` : compact ? `n: ${flips.length}` : `Total: ${flips.length}`}</span>
           </div>
 
           {/* Surprise */}
           <div className={`ml-auto flex flex-col ${compact ? "w-full text-[11px]" : "text-xs"}`}>
-            <span className="text-blue-600">{compact ? `H info: ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)}b` : `Surprise(H): ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)} bits`}</span>
-            <span className="text-emerald-600">{compact ? `T info: ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)}b` : `Surprise(T): ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)} bits`}</span>
+            <span className="text-blue-600">{ultraCompact ? `H ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)}b` : compact ? `H info: ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)}b` : `Surprise(H): ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)} bits`}</span>
+            <span className="text-emerald-600">{ultraCompact ? `T ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)}b` : compact ? `T info: ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)}b` : `Surprise(T): ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)} bits`}</span>
           </div>
         </div>
       </div>
