@@ -170,7 +170,8 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       currentH = H
 
       const isNarrow = W < 500
-      const compact = W < 420 || H < 420
+      const compact = W < 440 || H < 420
+      const ultraCompact = W < 390 || H < 360
       const CX = isNarrow ? W * 0.5 : W * 0.42
       const CY = H * 0.5
       const RADIUS = Math.min(W, H) * (isNarrow ? 0.36 : 0.32)
@@ -199,11 +200,12 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
           .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
         g.append("line").attr("x1", xScale(-3)).attr("y1", yScale(i)).attr("x2", xScale(3)).attr("y2", yScale(i))
           .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
-        if (compact && Math.abs(i) === 2) continue
+        if (ultraCompact && Math.abs(i) !== 1 && Math.abs(i) !== 3) continue
+        if (!ultraCompact && compact && Math.abs(i) === 2) continue
         g.append("text").attr("x", xScale(i)).attr("y", CY + 18).attr("text-anchor", "middle")
           .attr("font-size", 12).attr("fill", "#94a3b8").attr("font-family", F).text(String(i))
         g.append("text").attr("x", CX - 14).attr("y", yScale(i) + 4).attr("text-anchor", "end")
-          .attr("font-size", 12).attr("fill", "#94a3b8").attr("font-family", F).text(`${i}i`)
+          .attr("font-size", 12).attr("fill", "#94a3b8").attr("font-family", F).text(ultraCompact ? String(i) : `${i}i`)
       }
 
       // Axes
@@ -212,9 +214,9 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       g.append("line").attr("x1", CX).attr("y1", yScale(-3)).attr("x2", CX).attr("y2", yScale(3))
         .attr("stroke", "#cbd5e1").attr("stroke-width", 2)
       g.append("text").attr("x", xScale(3) - 8).attr("y", CY - 10)
-        .attr("font-size", 17).attr("fill", "#64748b").attr("font-weight", 700).attr("font-family", F).text("Re")
+        .attr("font-size", ultraCompact ? 14 : 17).attr("fill", "#64748b").attr("font-weight", 700).attr("font-family", F).text(ultraCompact ? "x" : "Re")
       g.append("text").attr("x", CX + 10).attr("y", yScale(3) + 14)
-        .attr("font-size", 17).attr("fill", "#64748b").attr("font-weight", 700).attr("font-family", F).text("Im")
+        .attr("font-size", ultraCompact ? 14 : 17).attr("fill", "#64748b").attr("font-weight", 700).attr("font-family", F).text(ultraCompact ? "y" : "Im")
 
       // Unit circle
       g.append("circle").attr("cx", CX).attr("cy", CY).attr("r", xScale(1) - CX)
@@ -252,7 +254,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
 
       // Point label
       g.append("text").attr("class", "point-label")
-        .attr("font-size", compact ? 13 : 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+        .attr("font-size", ultraCompact ? 12 : compact ? 13 : 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
 
       // Info panel — hidden on narrow screens (redundant with live formula below)
       if (!isNarrow) {
@@ -281,12 +283,12 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       }
 
       // D3 action buttons inside SVG
-      const btnLabels = compact ? ["\u00D7i", "-1", "Conj", "\u21BA"] : ["x i", "x (-1)", "Conj", "Reset"]
+      const btnLabels = ultraCompact ? ["\u00D7i", "-1", "z*", "\u21BA"] : compact ? ["\u00D7i", "-1", "Conj", "\u21BA"] : ["x i", "x (-1)", "Conj", "Reset"]
       const btnClasses = ["btn-mult-i", "btn-mult-neg", "btn-conj", "btn-reset"]
-      const btnCharW = compact ? 6.5 : W < 380 ? 7 : 9
-      const btnPad = compact ? 12 : W < 380 ? 14 : 20
-      const btnGap = compact ? 5 : W < 380 ? 6 : 10
-      const btnFontSize = compact ? 9 : W < 380 ? 10 : 12
+      const btnCharW = ultraCompact ? 5.8 : compact ? 6.5 : W < 380 ? 7 : 9
+      const btnPad = ultraCompact ? 10 : compact ? 12 : W < 380 ? 14 : 20
+      const btnGap = ultraCompact ? 4 : compact ? 5 : W < 380 ? 6 : 10
+      const btnFontSize = ultraCompact ? 8 : compact ? 9 : W < 380 ? 10 : 12
       let bx = W * 0.015
       for (let i = 0; i < btnLabels.length; i++) {
         const bw = btnLabels[i].length * btnCharW + btnPad
@@ -331,7 +333,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
           g.select(".angle-text")
             .attr("x", CX + 45 * Math.cos(-angle / 2))
             .attr("y", CY + 45 * Math.sin(-angle / 2) + 4)
-            .text(`${angleDeg.toFixed(0)}\u00B0`)
+            .text(ultraCompact ? "" : `${angleDeg.toFixed(0)}\u00B0`)
         } else {
           g.select(".angle-arc").attr("d", "")
           g.select(".angle-text").text("")
@@ -342,11 +344,11 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
         g.select(".point-glow").attr("cx", px).attr("cy", py)
 
         // Point label
-        const pointLabel = compact ? `${formatComplex(aVal, bVal)}` : `z = ${formatComplex(aVal, bVal)}`
+        const pointLabel = ultraCompact ? formatComplex(aVal, bVal) : compact ? `${formatComplex(aVal, bVal)}` : `z = ${formatComplex(aVal, bVal)}`
         g.select(".point-label")
           .attr("text-anchor", compact ? "middle" : null)
           .attr("x", compact ? W / 2 : px + 16)
-          .attr("y", compact ? 34 : py - 16)
+          .attr("y", compact ? (ultraCompact ? 28 : 34) : py - 16)
           .text(pointLabel)
 
         // Info panel — only exists when !isNarrow
