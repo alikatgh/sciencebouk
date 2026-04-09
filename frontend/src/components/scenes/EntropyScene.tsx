@@ -1,8 +1,9 @@
 import type { ReactElement } from "react"
-import { useMemo } from "react"
+import { useMemo, useRef } from "react"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { useContainerSize } from "../../hooks/useContainerSize"
 
 /* ── constants ── */
 const VIEWBOX_WIDTH = 1400
@@ -163,6 +164,9 @@ interface EntropyVisualProps {
 }
 
 function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { width, height } = useContainerSize(containerRef)
+  const compact = width > 0 && (width < 460 || height < 420)
   const orderedParticles = useMemo(() => buildOrderedParticles(), [])
   const visualStateCount = useMemo(() => visualStateCountForTemperature(temperature), [temperature])
   const microstateCloud = useMemo(
@@ -170,11 +174,12 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
     [orderedParticles, temperature, visualStateCount],
   )
   const currentMicrostate = microstateCloud[microstateCloud.length - 1] ?? orderedParticles
+  const visibleGhostStates = compact ? microstateCloud.slice(-Math.min(5, microstateCloud.length)) : microstateCloud
   const thermalAccent = useMemo(() => mixHex("#6f87ff", "#f7a85d", temperature / 100), [temperature])
   const hazeAccent = useMemo(() => mixHex("#8ea8ff", "#ffcb8a", temperature / 100), [temperature])
 
   return (
-    <div className="h-full w-full">
+    <div ref={containerRef} className="h-full w-full">
       <svg
         viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
         className="h-full w-full"
@@ -259,8 +264,8 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
           />
         ))}
 
-        {microstateCloud.slice(0, -1).map((state, stateIndex) => (
-          <g key={`state-${stateIndex}`} opacity={0.06 + stateIndex * 0.03}>
+        {visibleGhostStates.slice(0, -1).map((state, stateIndex) => (
+          <g key={`state-${stateIndex}`} opacity={compact ? 0.08 + stateIndex * 0.04 : 0.06 + stateIndex * 0.03}>
             {state.map((particle, particleIndex) => (
               <circle
                 key={`ghost-${stateIndex}-${particleIndex}`}
@@ -278,7 +283,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
             <circle
               cx={particle.x}
               cy={particle.y}
-              r={PARTICLE_RADIUS * 2.7}
+              r={compact ? PARTICLE_RADIUS * 2.25 : PARTICLE_RADIUS * 2.7}
               fill={PARTICLE_COLORS[particle.group]}
               opacity={0.16 + (temperature / 100) * 0.1}
               filter="url(#blur-glow)"
@@ -289,7 +294,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
               r={PARTICLE_RADIUS}
               fill={PARTICLE_COLORS[particle.group]}
               stroke="rgba(255,255,255,0.95)"
-              strokeWidth="2.5"
+              strokeWidth={compact ? "2" : "2.5"}
             />
           </g>
         ))}

@@ -222,15 +222,16 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     gRef.current = g
 
     // Mode toggle buttons — adapt labels to available width
-    const compact = W < 700
-    const btn1Label = compact ? "Field Lines" : "Electric Field Lines"
-    const btn2Label = compact ? "EM Wave" : "EM Wave"
+    const compact = W < 760
+    const ultraCompact = W < 520 || H < 380
+    const btn1Label = ultraCompact ? "Field" : compact ? "Field Lines" : "Electric Field Lines"
+    const btn2Label = ultraCompact ? "Wave" : "EM Wave"
     const btnGap = Math.round(W * 0.012)
     const btnY = Math.round(H * 0.027)
     const btnH = Math.max(24, Math.round(H * 0.068))
-    const btn1W = compact ? Math.round(W * 0.14) : Math.round(W * 0.167)
+    const btn1W = ultraCompact ? Math.round(W * 0.12) : compact ? Math.round(W * 0.14) : Math.round(W * 0.167)
     const btn1X = Math.round(W * 0.044)
-    const btn2W = compact ? Math.round(W * 0.14) : Math.round(W * 0.133)
+    const btn2W = ultraCompact ? Math.round(W * 0.11) : compact ? Math.round(W * 0.14) : Math.round(W * 0.133)
     const btn2X = btn1X + btn1W + btnGap
 
     const btn1 = g.append("g").attr("class", "btn-field").style("cursor", "pointer")
@@ -300,7 +301,8 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
   // Update field lines when charges move (mode 1 only, triggered by redrawFieldLines)
   function buildFieldMode(g: Selection<SVGGElement, unknown, null, undefined>) {
     const fm = g.select(".field-mode")
-    const compact = W < 500
+    const compact = W < 580
+    const ultraCompact = W < 430 || H < 360
 
     // Field lines group
     fm.append("g").attr("class", "field-lines")
@@ -311,13 +313,13 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     const hintFs = Math.max(11, Math.min(14, H / 32))
     fm.append("text").attr("x", Math.round(W * 0.044)).attr("y", H - 20)
       .attr("font-size", hintFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-      .text(compact ? "Move charges" : "Drag charges to reposition")
+      .text(ultraCompact ? "Move" : compact ? "Move charges" : "Drag charges to reposition")
 
     // Legend
     fm.append("circle").attr("cx", Math.round(W * 0.467)).attr("cy", Math.round(H * 0.059)).attr("r", 5).attr("fill", "#1e40af")
     fm.append("text").attr("x", Math.round(W * 0.48)).attr("y", Math.round(H * 0.068))
       .attr("font-size", hintFs).attr("font-family", F).attr("fill", "#64748b")
-      .text(compact ? "field lines" : "E field lines (gray)")
+      .text(ultraCompact ? "lines" : compact ? "field lines" : "E field lines (gray)")
 
     drawFieldScene(g)
   }
@@ -415,7 +417,8 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
 
   function buildWaveMode(g: Selection<SVGGElement, unknown, null, undefined>) {
     const wm = g.select(".wave-mode")
-    const compact = W < 500
+    const compact = W < 580
+    const ultraCompact = W < 430 || H < 360
     const waveCenter = Math.round(H * 0.48)
     const waveLeft = Math.round(W * 0.067)
     const waveRight = Math.round(W * 0.933)
@@ -438,10 +441,12 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     wm.append("path").attr("class", "b-wave").attr("fill", "none").attr("stroke", "#059669").attr("stroke-width", 3)
 
     // Labels
-    wm.append("text").attr("x", waveLeft - 8).attr("y", waveCenter - eAmplitude - 8)
-      .attr("font-size", waveFs * 1.3).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e40af").text("E")
-    wm.append("text").attr("x", waveLeft - 8).attr("y", waveCenter + bAmplitude + 20)
-      .attr("font-size", waveFs * 1.3).attr("font-family", F).attr("font-weight", 700).attr("fill", "#059669").text("B")
+    if (!ultraCompact) {
+      wm.append("text").attr("x", waveLeft - 8).attr("y", waveCenter - eAmplitude - 8)
+        .attr("font-size", waveFs * 1.3).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e40af").text("E")
+      wm.append("text").attr("x", waveLeft - 8).attr("y", waveCenter + bAmplitude + 20)
+        .attr("font-size", waveFs * 1.3).attr("font-family", F).attr("font-weight", 700).attr("fill", "#059669").text("B")
+    }
 
     // Propagation arrow
     const arrowX1 = Math.round(W * 0.778)
@@ -453,7 +458,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .attr("fill", "#1e293b")
     wm.append("text").attr("x", (arrowX1 + arrowX2) / 2).attr("y", arrowY + 22).attr("text-anchor", "middle")
       .attr("font-size", waveFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
-      .text(compact ? "k" : "Propagation (k)")
+      .text(ultraCompact ? "" : compact ? "k" : "Propagation (k)")
 
     // Wavelength indicator
     const wlY = waveCenter + Math.round(H * 0.273)
@@ -463,7 +468,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     wm.append("line").attr("class", "wl-tick2").attr("stroke", "#f59e0b").attr("stroke-width", 2)
     wm.append("text").attr("class", "wl-text").attr("y", wlY - 4).attr("text-anchor", "middle")
       .attr("font-size", waveFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#f59e0b")
-      .text(compact ? "\u03BB" : "lambda")
+      .text(ultraCompact ? "" : compact ? "\u03BB" : "lambda")
 
     // Draggable wavelength handle on the right tick
     const wlStart = waveLeft + Math.round(W * 0.089)

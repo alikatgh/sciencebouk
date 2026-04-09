@@ -199,7 +199,8 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       const spectrumTop = H * 0.19
       const spectrumBottom = H * 0.62
 
-      const compact = W < 460 || H < 420
+      const compact = W < 560 || H < 440
+      const ultraCompact = W < 420 || H < 380
       const fontSize = Math.max(12, Math.min(18, H / 28))
       const fontSizeSm = Math.max(10, Math.min(15, H / 32))
 
@@ -279,7 +280,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         labelG.append("text")
           .attr("x", plotLeft - W * 0.007).attr("y", yMid + 5)
           .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
-          .text(compact ? `${i + 1}` : `n=${i + 1}`)
+          .text(ultraCompact ? `${i + 1}` : compact ? `${i + 1}` : `n=${i + 1}`)
         labelG.append("rect")
           .attr("x", plotLeft - W * 0.055).attr("y", yMid - 18).attr("width", W * 0.055).attr("height", 36)
           .attr("fill", "transparent")
@@ -314,7 +315,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         g.append("text")
           .attr("x", bx + spectrumBarW / 2).attr("y", spectrumBottom + H * 0.038)
           .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#64748b")
-          .text(compact ? `${i + 1}` : `${i + 1}f`)
+          .text(ultraCompact ? `${i + 1}` : compact ? `${i + 1}` : `${i + 1}f`)
 
         // Drag handle on top of each bar
         const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab").style("touch-action", "none")
@@ -397,14 +398,29 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       function updateScene(amps: number[]) {
         // Amplitude labels
         for (let i = 0; i < 4; i++) {
-          g.select(`.amp-text-${i}`).text(compact ? `${HARMONIC_LABELS[i]} ${amps[i].toFixed(2)}` : `${HARMONIC_LABELS[i]}=${amps[i].toFixed(2)}`)
+          g.select(`.amp-text-${i}`).text(
+            ultraCompact
+              ? `${amps[i].toFixed(2)}`
+              : compact
+                ? `${HARMONIC_LABELS[i]} ${amps[i].toFixed(2)}`
+                : `${HARMONIC_LABELS[i]}=${amps[i].toFixed(2)}`,
+          )
         }
 
         // Equation readout
+        const activeHarmonics = amps
+          .map((amp, index) => ({ amp, index }))
+          .filter(({ amp }) => amp > 0.05)
+          .map(({ amp, index }) => `${HARMONIC_LABELS[index]} ${amp.toFixed(2)}`)
+
         g.select(".equation-readout")
-          .text(compact
-            ? `mix: ${amps.map((amp) => amp.toFixed(2)).join(" · ")}`
-            : `f(t) = ${amps[0].toFixed(2)}sin(t) + ${amps[1].toFixed(2)}sin(2t) + ${amps[2].toFixed(2)}sin(3t) + ${amps[3].toFixed(2)}sin(4t)`)
+          .text(
+            ultraCompact
+              ? (activeHarmonics.length > 0 ? activeHarmonics.join(" · ") : "Silence")
+              : compact
+                ? `mix: ${amps.map((amp) => amp.toFixed(2)).join(" · ")}`
+                : `f(t) = ${amps[0].toFixed(2)}sin(t) + ${amps[1].toFixed(2)}sin(2t) + ${amps[2].toFixed(2)}sin(3t) + ${amps[3].toFixed(2)}sin(4t)`,
+          )
 
         // Spectrum bars + knobs (static position based on amplitude)
         for (let i = 0; i < 4; i++) {
@@ -425,7 +441,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
           .attr("stroke", playing ? "#4f73ff" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", playing ? "white" : "#64748b")
-          .text(compact ? (playing ? "On" : "Off") : (playing ? "Pause" : "Play"))
+          .text(ultraCompact ? (playing ? "On" : "Off") : compact ? (playing ? "On" : "Off") : (playing ? "Pause" : "Play"))
       }
 
       // ── Animation loop: reads from refs, never from React state ──
