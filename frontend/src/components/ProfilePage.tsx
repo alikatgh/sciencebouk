@@ -222,7 +222,7 @@ export default function ProfilePage(): ReactElement {
               </div>
 
               {/* Quick actions */}
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <div className="mt-4 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-row sm:flex-wrap">
                 {isPro && (
                   <button onClick={() => navigate("/dashboard")} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
                     <BarChart2 className="h-3.5 w-3.5 text-ocean" /> Dashboard
@@ -307,7 +307,7 @@ export default function ProfilePage(): ReactElement {
           {/* Equations — sorted by relevance: in-progress first, then not started, completed last */}
           <div className="mt-4 rounded-[26px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">Your Equations</h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedEquations.map((eq) => {
                 const progress = eq.progress
                 const done = progress?.completed ?? false
@@ -323,7 +323,7 @@ export default function ProfilePage(): ReactElement {
                     onFocus={() => {
                       void prefetchEquationExperience(eq.id)
                     }}
-                    className={`group relative flex min-h-[104px] flex-col rounded-[20px] border p-2.5 text-left transition hover:shadow-sm ${
+                    className={`group relative flex min-h-[108px] flex-col rounded-[22px] border p-3 text-left transition hover:shadow-sm ${
                       done
                         ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/20"
                         : started

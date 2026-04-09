@@ -39,7 +39,7 @@ export function ScientistModal({ open, onClose, equationId }: ScientistModalProp
   if (!scientist) {
     return (
       <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Unknown Scientist</DialogTitle>
           </DialogHeader>
@@ -51,17 +51,17 @@ export function ScientistModal({ open, onClose, equationId }: ScientistModalProp
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-lg">{scientist.fullName}</DialogTitle>
+          <DialogTitle className="text-xl sm:text-lg">{scientist.fullName}</DialogTitle>
         </DialogHeader>
 
-        <div className="mt-2 flex gap-4">
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:gap-4">
           {/* Portrait */}
           <img
             src={scientist.portrait}
             alt={scientist.name}
-            className="h-24 w-24 flex-shrink-0 rounded-xl object-cover shadow-sm"
+            className="h-24 w-24 flex-shrink-0 rounded-2xl object-cover shadow-sm sm:rounded-xl"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
           />
           <div className="min-w-0 flex-1">
@@ -79,13 +79,13 @@ export function ScientistModal({ open, onClose, equationId }: ScientistModalProp
 
         <div className="space-y-3">
           {/* Fun fact */}
-          <div className="flex items-start gap-3 rounded-lg bg-amber-50 px-4 py-3 dark:bg-amber-950/20">
+          <div className="flex items-start gap-3 rounded-2xl bg-amber-50 px-4 py-3 dark:bg-amber-950/20 sm:rounded-lg">
             <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
             <p className="text-sm text-amber-800 dark:text-amber-300">{scientist.funFact}</p>
           </div>
 
           {/* Impact */}
-          <div className="flex items-start gap-3 rounded-lg bg-ocean/5 px-4 py-3 dark:bg-ocean/10">
+          <div className="flex items-start gap-3 rounded-2xl bg-ocean/5 px-4 py-3 dark:bg-ocean/10 sm:rounded-lg">
             <Lightbulb className="mt-0.5 h-4 w-4 flex-shrink-0 text-ocean" />
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-ocean">Why it matters</p>
@@ -96,9 +96,9 @@ export function ScientistModal({ open, onClose, equationId }: ScientistModalProp
 
         {/* Links */}
         {scientist.links.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {scientist.links.map((link) => (
-              <Button key={link.url} variant="outline" size="sm" asChild>
+              <Button key={link.url} variant="outline" size="sm" asChild className="w-full justify-between rounded-2xl py-2 sm:w-auto sm:justify-start sm:rounded-md sm:py-0">
                 <a href={link.url} target="_blank" rel="noopener noreferrer" className="gap-1.5">
                   <ExternalLink className="h-3 w-3" />
                   {link.label}

@@ -29,13 +29,16 @@ const DialogContent = React.forwardRef<
       ref={ref}
       aria-describedby={undefined}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] dark:border-slate-700 dark:bg-slate-800",
+        "fixed inset-x-0 bottom-0 z-50 w-full rounded-t-[28px] border border-slate-200 bg-white px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-5 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:slide-in-from-bottom-8 dark:border-slate-700 dark:bg-slate-800 sm:left-[50%] sm:top-[50%] sm:bottom-auto sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:px-6 sm:pb-6 sm:pt-6 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
         className,
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close aria-label="Close dialog" className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ocean focus:ring-offset-2 dark:ring-offset-slate-800">
+      <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center sm:hidden">
+        <span className="h-1.5 w-12 rounded-full bg-slate-200 dark:bg-slate-700" />
+      </div>
+      <DialogPrimitive.Close aria-label="Close dialog" className="absolute right-3 top-3 rounded-full bg-slate-100 p-2 opacity-80 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ocean focus:ring-offset-2 dark:bg-slate-700 dark:ring-offset-slate-800 sm:right-4 sm:top-4 sm:bg-transparent sm:p-0">
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -44,7 +47,7 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-1.5 pr-10 text-left", className)} {...props} />
 )
 
 const DialogTitle = React.forwardRef<

@@ -52,12 +52,12 @@ function FontCard({ font, selected, onSelect }: { font: typeof FONTS[0]; selecte
 
 function SettingRow({ label, description, children }: { label: string; description?: string; children: ReactElement }): ReactElement {
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
+    <div className="flex flex-col items-stretch justify-between gap-2.5 py-2.5 sm:flex-row sm:items-center sm:gap-4">
       <div className="min-w-0">
         <p className="text-sm font-medium text-slate-900 dark:text-white">{label}</p>
         {description && <p className="text-xs text-slate-400 dark:text-slate-500">{description}</p>}
       </div>
-      {children}
+      <div className="sm:flex-shrink-0">{children}</div>
     </div>
   )
 }
@@ -68,12 +68,12 @@ function SegmentedControl({ value, onChange, options, label }: {
   label?: string
 }): ReactElement {
   return (
-    <div role="group" aria-label={label} className="flex flex-shrink-0 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+    <div role="group" aria-label={label} className="flex flex-wrap rounded-2xl bg-slate-100 p-1 dark:bg-slate-800 sm:flex-nowrap sm:rounded-lg sm:p-0.5">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+          className={`min-h-[40px] rounded-xl px-3 py-2 text-xs font-medium transition-all sm:min-h-0 sm:rounded-md sm:px-2.5 sm:py-1 ${
             value === opt.value
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
@@ -146,7 +146,7 @@ export default function SettingsPage(): ReactElement {
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Settings</span>} />
 
       <div className="flex-1">
-        <div className="mx-auto max-w-4xl px-4 py-6 space-y-4">
+        <div className="mx-auto max-w-4xl space-y-4 px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-6">
 
         {/* ── Learning Experience — full-width hero ── */}
         <Card className="border-blue-100 dark:border-blue-900/30">
@@ -163,7 +163,7 @@ export default function SettingsPage(): ReactElement {
                   Formula Display
                 </p>
                 <SettingRow label="Formula size" description={`${settings.formulaSize}%`}>
-                  <Slider className="w-28" min={75} max={150} step={5}
+                  <Slider className="w-full max-w-full sm:w-28" min={75} max={150} step={5}
                     value={[settings.formulaSize]} onValueChange={([v]) => update("formulaSize", v)} trackColor="#3b82f6" />
                 </SettingRow>
                 <Separator />
@@ -207,7 +207,7 @@ export default function SettingsPage(): ReactElement {
                 </SettingRow>
                 <Separator />
                 <SettingRow label="Daily goal" description={`${settings.dailyGoalMinutes} min/day`}>
-                  <Slider className="w-28" min={5} max={60} step={5}
+                  <Slider className="w-full max-w-full sm:w-28" min={5} max={60} step={5}
                     value={[settings.dailyGoalMinutes]} onValueChange={([v]) => update("dailyGoalMinutes", v)} trackColor="#10b981" />
                 </SettingRow>
               </div>
@@ -242,7 +242,7 @@ export default function SettingsPage(): ReactElement {
                 <>
                   <Separator />
                   <SettingRow label="Volume" description={`${settings.soundVolume}%`}>
-                    <Slider className="w-28" min={0} max={100} step={5}
+                    <Slider className="w-full max-w-full sm:w-28" min={0} max={100} step={5}
                       value={[settings.soundVolume]} onValueChange={([v]) => update("soundVolume", v)} trackColor="#3b82f6" />
                   </SettingRow>
                 </>

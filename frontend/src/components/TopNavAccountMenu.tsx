@@ -46,10 +46,10 @@ export function TopNavAccountMenu({
   return (
     <div
       role="menu"
-      className="absolute right-0 top-full z-[100] mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+      className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+4.4rem)] z-[100] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800 sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-56 sm:rounded-xl"
       onKeyDown={handleKeyDown}
     >
-      <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-700">
+      <div className="border-b border-slate-100 px-4 py-4 dark:border-slate-700 sm:px-4 sm:py-3">
         <p className="text-sm font-semibold text-slate-900 dark:text-white">{displayName}</p>
         <p className="text-xs text-slate-400">{email}</p>
         {isPro && (
@@ -64,7 +64,7 @@ export function TopNavAccountMenu({
           role="menuitem"
           tabIndex={-1}
           onClick={() => { onClose(); onOpenProfile() }}
-          className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 sm:min-h-0 sm:py-2"
           type="button"
         >
           <User className="h-4 w-4 text-slate-400" />
@@ -76,7 +76,7 @@ export function TopNavAccountMenu({
             role="menuitem"
             tabIndex={-1}
             onClick={() => { onClose(); onOpenDashboard() }}
-            className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 sm:min-h-0 sm:py-2"
             type="button"
           >
             <BarChart2 className="h-4 w-4 text-slate-400" />
@@ -90,7 +90,7 @@ export function TopNavAccountMenu({
             tabIndex={-1}
             onClick={() => { onClose(); onOpenPro() }}
             disabled={!BILLING_ENABLED}
-            className={`flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition ${
+            className={`flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm transition sm:min-h-0 sm:py-2 ${
               BILLING_ENABLED
                 ? "text-ocean hover:bg-ocean/5"
                 : "text-slate-400"
@@ -107,7 +107,7 @@ export function TopNavAccountMenu({
           role="menuitem"
           tabIndex={-1}
           onClick={() => { onClose(); onOpenSettings() }}
-          className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 sm:min-h-0 sm:py-2"
           type="button"
         >
           <Settings className="h-4 w-4 text-slate-400" />
@@ -118,7 +118,7 @@ export function TopNavAccountMenu({
           role="menuitem"
           tabIndex={-1}
           onClick={() => { onClose(); onOpenAbout() }}
-          className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 sm:min-h-0 sm:py-2"
           type="button"
         >
           <Info className="h-4 w-4 text-slate-400" />
@@ -131,7 +131,7 @@ export function TopNavAccountMenu({
           role="menuitem"
           tabIndex={-1}
           onClick={() => { onClose(); onLogout() }}
-          className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/20"
+          className="flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/20 sm:min-h-0 sm:py-2"
           type="button"
         >
           <LogOut className="h-4 w-4" />
