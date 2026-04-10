@@ -6,6 +6,7 @@ from django.utils import timezone
 from io import StringIO
 from rest_framework.test import APIClient
 
+from .importers import EquationImportError, import_equations_from_json
 from .models import Course, Equation, Lesson, LearningEvent, UserProgress
 
 
@@ -633,6 +634,137 @@ class SeedEquationsCommandTests(TestCase):
         call_command("seed_equations", stdout=StringIO())
         sort_orders = list(Equation.objects.values_list("sort_order", flat=True))
         self.assertEqual(len(sort_orders), len(set(sort_orders)))
+
+
+# ---------------------------------------------------------------------------
+# Admin JSON Import
+# ---------------------------------------------------------------------------
+
+class EquationJSONImportTests(TestCase):
+    def test_import_updates_existing_equation_rich_fields(self):
+        equation = make_equation(sort_order=1, title="Old Title", category="geometry")
+        payload = """
+        [
+          {
+            "id": 1,
+            "title": "New Title",
+            "formula": "x = y",
+            "category": "Physics",
+            "hookAction": "Drag the slider.",
+            "variables": [{"name": "x", "value": 2}],
+            "lessons": [{"title": "Step one"}],
+            "glossary": [{"term": "force"}]
+          }
+        ]
+        """
+
+        result = import_equations_from_json(payload)
+        equation.refresh_from_db()
+
+        self.assertEqual(result.updated, 1)
+        self.assertEqual(equation.title, "New Title")
+        self.assertEqual(equation.category, "physics")
+        self.assertEqual(equation.hook_action, "Drag the slider.")
+        self.assertEqual(equation.variables_data, [{"name": "x", "value": 2}])
+        self.assertEqual(equation.lessons_data, [{"title": "Step one"}])
+        self.assertEqual(equation.glossary_data, [{"term": "force"}])
+
+    def test_import_creates_new_equation_from_required_fields(self):
+        payload = """
+        {
+          "equations": [
+            {
+              "id": 42,
+              "title": "Gradient Flow",
+              "formula": "\\\\nabla f = 0",
+              "author": "Example Author",
+              "year": "2026",
+              "category": "calculus",
+              "description": "A test import.",
+              "hook": "Find the steepest path.",
+              "presets": [{"label": "Default"}]
+            }
+          ]
+        }
+        """
+
+        result = import_equations_from_json(payload)
+        equation = Equation.objects.get(sort_order=42)
+
+        self.assertEqual(result.created, 1)
+        self.assertEqual(equation.slug, "gradient-flow")
+        self.assertEqual(equation.hook, "Find the steepest path.")
+        self.assertEqual(equation.presets_data, [{"label": "Default"}])
+
+    def test_import_rejects_invalid_json(self):
+        with self.assertRaises(EquationImportError):
+            import_equations_from_json("{not json")
+
+    def test_import_accepts_empty_equations_list(self):
+        result = import_equations_from_json('{"equations": []}')
+        self.assertEqual(result.total_changed, 0)
+        self.assertEqual(result.skipped, 0)
+
+    def test_import_skips_unknown_bad_rows_without_blocking_good_rows(self):
+        payload = """
+        [
+          {"id": "bad", "title": "Broken"},
+          {
+            "id": 2,
+            "title": "Good Row",
+            "formula": "g = 1",
+            "author": "Author",
+            "year": "2026",
+            "category": "Algebra"
+          }
+        ]
+        """
+
+        result = import_equations_from_json(payload)
+
+        self.assertEqual(result.created, 1)
+        self.assertEqual(result.skipped, 1)
+        self.assertEqual(len(result.errors), 1)
+        self.assertTrue(Equation.objects.filter(sort_order=2, title="Good Row").exists())
+
+
+class EquationJSONImportAdminTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username="admin@example.com",
+            email="admin@example.com",
+            password="testpass123",
+        )
+        self.client.force_login(self.admin_user)
+
+    def test_import_page_loads_for_admin(self):
+        response = self.client.get(reverse("admin:courses_equation_import_json"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Drop an equations JSON file here")
+
+    def test_import_page_updates_equation_from_pasted_json(self):
+        make_equation(sort_order=1, title="Before Import")
+        payload = """
+        [
+          {
+            "id": 1,
+            "title": "After Import",
+            "formula": "a = b",
+            "category": "Geometry",
+            "hook": "Plain-language explanation."
+          }
+        ]
+        """
+
+        response = self.client.post(
+            reverse("admin:courses_equation_import_json"),
+            {"json_text": payload},
+        )
+
+        self.assertRedirects(response, reverse("admin:courses_equation_changelist"))
+        equation = Equation.objects.get(sort_order=1)
+        self.assertEqual(equation.title, "After Import")
+        self.assertEqual(equation.hook, "Plain-language explanation.")
 
 
 # ---------------------------------------------------------------------------

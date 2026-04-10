@@ -1,0 +1,149 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .json-import-card {
+      max-width: 980px;
+      margin-top: 1rem;
+      padding: 1.25rem;
+      border: 1px solid var(--hairline-color);
+      border-radius: 12px;
+      background: var(--body-bg);
+    }
+
+    .json-drop-zone {
+      display: flex;
+      min-height: 150px;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      background: var(--darkened-bg);
+      text-align: center;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .json-drop-zone.is-dragging {
+      border-color: var(--link-fg);
+      background: var(--selected-bg);
+    }
+
+    .json-drop-zone input {
+      margin-top: 0.75rem;
+    }
+
+    .json-import-card textarea {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .json-import-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 1rem;
+    }
+
+    .json-import-help {
+      color: var(--body-quiet-color);
+      margin: 0.5rem 0 1rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <p class="json-import-help">
+      Upload the same JSON format used by the app content source. Existing equations are matched by <code>id</code> or <code>sort_order</code>; rich teaching fields like hooks, variables, presets, lessons, and glossary entries are updated safely.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" class="json-import-card" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="errornote">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <fieldset class="module aligned">
+        <div class="form-row">
+          <div id="json-drop-zone" class="json-drop-zone">
+            <div>
+              <strong id="json-drop-label">Drop an equations JSON file here</strong>
+              <div>or choose a file manually.</div>
+              {{ form.json_file }}
+              {% if form.json_file.errors %}
+                <div class="errors">{{ form.json_file.errors }}</div>
+              {% endif %}
+              <p class="help">{{ form.json_file.help_text }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          {{ form.json_text.label_tag }}
+          {{ form.json_text }}
+          {% if form.json_text.errors %}
+            <div class="errors">{{ form.json_text.errors }}</div>
+          {% endif %}
+          <p class="help">{{ form.json_text.help_text }}</p>
+        </div>
+      </fieldset>
+
+      <div class="json-import-actions">
+        <input type="submit" value="Import JSON" class="default">
+        <a href="{{ changelist_url }}" class="button cancel-link">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      const dropZone = document.getElementById("json-drop-zone");
+      const fileInput = document.getElementById("id_json_file");
+      const label = document.getElementById("json-drop-label");
+
+      if (!dropZone || !fileInput || !label) {
+        return;
+      }
+
+      function stopEvent(event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      ["dragenter", "dragover"].forEach(function (eventName) {
+        dropZone.addEventListener(eventName, function (event) {
+          stopEvent(event);
+          dropZone.classList.add("is-dragging");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(function (eventName) {
+        dropZone.addEventListener(eventName, function (event) {
+          stopEvent(event);
+          dropZone.classList.remove("is-dragging");
+        });
+      });
+
+      dropZone.addEventListener("drop", function (event) {
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if (!files || files.length === 0) {
+          return;
+        }
+
+        fileInput.files = files;
+        label.textContent = files[0].name;
+      });
+
+      fileInput.addEventListener("change", function () {
+        if (fileInput.files && fileInput.files.length > 0) {
+          label.textContent = fileInput.files[0].name;
+        }
+      });
+    })();
+  </script>
+{% endblock %}
