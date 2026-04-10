@@ -112,7 +112,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
     if (!isPro && !verificationTimedOut) {
       return (
         <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-          <div className="text-center">
+          <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-ocean" />
             <p className="mt-4 text-slate-500">
               {authLoading ? "Loading your account..." : "Verifying payment..."}
@@ -125,7 +125,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
     if (!isPro) {
       return (
         <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-          <div className="max-w-md text-center">
+          <div className="max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <Loader2 className="mx-auto h-10 w-10 text-ocean" />
             <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Still checking your subscription</h1>
             <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
@@ -155,7 +155,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
     return (
         <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-        <div className="text-center">
+        <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment successful!</h1>
           <p className="mt-2 text-slate-500">Your Pro subscription is now active. Welcome aboard.</p>
@@ -169,8 +169,8 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
   if (mode === "cancel") {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
+      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <XCircle className="mx-auto h-12 w-12 text-slate-400" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">Payment cancelled</h1>
           <p className="mt-2 text-slate-500">No charge was made. You can upgrade whenever you're ready.</p>
@@ -184,8 +184,8 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
 
   if (isPro) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
+      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <Sparkles className="mx-auto h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">You're Pro!</h1>
           <p className="mt-2 text-slate-500">You have access to all features.</p>
@@ -227,9 +227,9 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
       </div>
 
       {/* Cards */}
-      <div className="mt-8 grid w-full max-w-3xl gap-4 md:grid-cols-2">
+      <div className="native-scroll mt-8 flex w-full max-w-3xl snap-x snap-mandatory gap-4 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
         {/* Free */}
-        <div className="rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+        <div className="min-w-[18rem] snap-start rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6 md:min-w-0">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Free</h3>
           <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">$0</p>
           <p className="text-sm text-slate-400">forever</p>
@@ -251,7 +251,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
         </div>
 
         {/* Pro */}
-        <div className="relative rounded-[26px] border-2 border-ocean bg-white p-5 shadow-lg dark:bg-slate-800 sm:p-6">
+        <div className="relative min-w-[18rem] snap-start rounded-[26px] border-2 border-ocean bg-white p-5 shadow-lg dark:bg-slate-800 sm:p-6 md:min-w-0">
           <div className="absolute -top-3 left-4 rounded-full bg-ocean px-3 py-0.5 text-xs font-bold text-white">
             RECOMMENDED
           </div>
@@ -282,7 +282,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
         </div>
       </div>
 
-        <button onClick={() => navigate("/")} className="mt-8 text-sm text-slate-400 hover:underline" type="button">
+        <button onClick={() => navigate("/")} className="mt-8 rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300" type="button">
           Back to equations
         </button>
 
@@ -316,8 +316,8 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
             : BILLING_DISABLED_COPY.body}
         </p>
 
-        <div className="mt-8 grid w-full max-w-3xl gap-4 md:grid-cols-2">
-          <div className="rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+        <div className="native-scroll mt-8 flex w-full max-w-3xl snap-x snap-mandatory gap-4 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
+          <div className="min-w-[18rem] snap-start rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6 md:min-w-0">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Free beta</h3>
             <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">$0</p>
             <p className="text-sm text-slate-400">for everyone right now</p>
@@ -338,7 +338,7 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
             </button>
           </div>
 
-          <div className="rounded-[26px] border border-slate-200 bg-slate-100/70 p-5 dark:border-slate-700 dark:bg-slate-800/70 sm:p-6">
+          <div className="min-w-[18rem] snap-start rounded-[26px] border border-slate-200 bg-slate-100/70 p-5 dark:border-slate-700 dark:bg-slate-800/70 sm:p-6 md:min-w-0">
             <div className="inline-flex rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
               Paused for beta
             </div>
@@ -366,7 +366,7 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
           </div>
         </div>
 
-        <button onClick={() => navigate("/")} className="mt-8 text-sm text-slate-400 hover:underline" type="button">
+        <button onClick={() => navigate("/")} className="mt-8 rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300" type="button">
           Back to equations
         </button>
       </div>
@@ -385,15 +385,15 @@ export function ConversionPrompt({ equationTitle, completedCount }: SoftPromptPr
   if (completedCount < 3) return null
 
   return (
-    <div className="mt-3 flex items-center gap-3 rounded-xl border border-ocean/20 bg-ocean/5 px-4 py-2.5 dark:border-ocean/30 dark:bg-ocean/10">
+    <div className="mt-3 flex flex-col items-stretch gap-3 rounded-[22px] border border-ocean/20 bg-ocean/5 px-4 py-3 dark:border-ocean/30 dark:bg-ocean/10 sm:flex-row sm:items-center sm:rounded-xl sm:py-2.5">
       <Sparkles className="h-4 w-4 flex-shrink-0 text-ocean" />
       <p className="flex-1 text-xs text-slate-600 dark:text-slate-300">
         Nice work on {equationTitle}! Track progress across devices with Pro.
       </p>
-      <button onClick={() => navigate("/pro")} className="rounded-lg bg-ocean px-3 py-1 text-xs font-semibold text-white" type="button">
+      <button onClick={() => navigate("/pro")} className="min-h-[40px] rounded-full bg-ocean px-4 py-2 text-xs font-semibold text-white sm:min-h-0 sm:rounded-lg sm:px-3 sm:py-1" type="button">
         Go Pro
       </button>
-      <button onClick={() => setDismissed(true)} className="text-xs text-slate-400 hover:underline" type="button">
+      <button onClick={() => setDismissed(true)} className="rounded-full px-3 py-2 text-xs text-slate-400 transition hover:bg-white/60 hover:text-slate-600 dark:hover:bg-slate-800/60 dark:hover:text-slate-300 sm:rounded-none sm:px-0 sm:py-0 sm:hover:bg-transparent" type="button">
         Later
       </button>
     </div>

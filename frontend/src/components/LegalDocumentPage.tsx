@@ -11,7 +11,7 @@ type LegalDocumentPageProps = {
 
 type LoadState = "loading" | "ready" | "missing"
 
-const ARTICLE_CLASSNAME = "mx-auto max-w-3xl px-4 py-12 [&_h1]:font-display [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:text-slate-900 dark:[&_h1]:text-white [&_h1]:mt-2 [&_h1]:mb-6 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-white [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-800 dark:[&_h3]:text-slate-200 [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:text-slate-600 dark:[&_p]:text-slate-400 [&_p]:mb-3 [&_ul]:mb-4 [&_ul]:ml-5 [&_ul]:list-disc [&_ul]:space-y-1 [&_li]:text-sm [&_li]:text-slate-600 dark:[&_li]:text-slate-400 [&_strong]:text-slate-900 dark:[&_strong]:text-slate-200 [&_a]:font-medium [&_a]:text-ocean [&_a]:underline-offset-2 hover:[&_a]:underline"
+const ARTICLE_CLASSNAME = "mx-auto max-w-3xl rounded-[30px] border border-slate-200 bg-white px-5 py-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-4 sm:py-12 sm:shadow-none [&_h1]:font-display [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:text-slate-900 dark:[&_h1]:text-white [&_h1]:mt-2 [&_h1]:mb-6 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-white [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-800 dark:[&_h3]:text-slate-200 [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:text-slate-600 dark:[&_p]:text-slate-400 [&_p]:mb-3 [&_ul]:mb-4 [&_ul]:ml-5 [&_ul]:list-disc [&_ul]:space-y-1 [&_li]:text-sm [&_li]:text-slate-600 dark:[&_li]:text-slate-400 [&_strong]:text-slate-900 dark:[&_strong]:text-slate-200 [&_a]:font-medium [&_a]:text-ocean [&_a]:underline-offset-2 hover:[&_a]:underline"
 
 export function LegalDocumentPage({ title, documentPath }: LegalDocumentPageProps): ReactElement {
   const [state, setState] = useState<LoadState>("loading")
@@ -47,7 +47,7 @@ export function LegalDocumentPage({ title, documentPath }: LegalDocumentPageProp
     <main className="flex min-h-[100dvh] flex-col bg-white dark:bg-slate-950">
       <TopNav showBack />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="native-scroll flex-1 overflow-y-auto px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:px-0 sm:py-0">
         <article className={ARTICLE_CLASSNAME}>
           {state === "ready" ? (
             <div dangerouslySetInnerHTML={{ __html: html }} />
@@ -55,7 +55,7 @@ export function LegalDocumentPage({ title, documentPath }: LegalDocumentPageProp
 
           {state === "loading" ? (
             <>
-              <p className="text-xs text-slate-400">Loading document...</p>
+              <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-400 dark:bg-slate-800">Loading document...</p>
               <h1>{title}</h1>
               <p>Preparing the latest live copy of this document.</p>
             </>
@@ -63,7 +63,7 @@ export function LegalDocumentPage({ title, documentPath }: LegalDocumentPageProp
 
           {state === "missing" ? (
             <>
-              <p className="text-xs text-slate-400">Live document unavailable in this build</p>
+              <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-400 dark:bg-slate-800">Live document unavailable in this build</p>
               <h1>{title}</h1>
               <p>
                 The current legal document for <strong>{SITE_DOMAIN}</strong> is maintained privately for the live

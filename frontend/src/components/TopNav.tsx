@@ -208,10 +208,10 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => navigate("/about")}
-                className="text-xs text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+                className="min-h-[40px] rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300 sm:min-h-0 sm:border-0 sm:px-0 sm:py-0 sm:font-normal sm:text-xs"
                 type="button"
               >
                 About
@@ -220,7 +220,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/login")}
-                className="h-7 gap-1 text-xs"
+                className="min-h-[40px] rounded-full px-3 text-xs sm:h-7 sm:min-h-0 sm:rounded-md"
               >
                 <User className="h-3 w-3" /> Sign in
               </Button>

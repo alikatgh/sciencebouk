@@ -175,10 +175,10 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   return (
     <main
-      className="flex min-h-[100dvh] items-start justify-center bg-slate-50 px-4 pt-4 dark:bg-slate-950 sm:items-center sm:pt-0"
+      className="flex min-h-[100dvh] items-start justify-center bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.08),_transparent_42%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 pt-4 dark:bg-slate-950 sm:items-center sm:bg-slate-50 sm:pt-0 dark:sm:bg-slate-950"
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
     >
-      <Card className="w-full max-w-sm rounded-[30px] border-slate-200/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:shadow-none">
+      <Card className="w-full max-w-sm rounded-[32px] border-slate-200/90 bg-white/96 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
         <CardHeader className="items-center pb-2 pt-7 sm:pt-8">
           <Link to="/" className="mb-1 font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
             Sciencebouk
@@ -186,6 +186,10 @@ export default function AuthPage({ mode }: AuthPageProps) {
           <span className="text-sm text-slate-400 dark:text-slate-500" aria-hidden="true">
             <InlineMath math="E=mc^2" />
           </span>
+          <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11px]">
+            <span className="rounded-full bg-ocean/10 px-3 py-1 font-semibold text-ocean">Free beta</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">Core access stays free</span>
+          </div>
         </CardHeader>
 
         <CardContent className="px-5 pb-6 pt-4 sm:px-6 sm:pb-8">
@@ -304,7 +308,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           )}
 
           {isLogin && (
-            <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
+            <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs text-slate-400 dark:bg-slate-800/70 dark:text-slate-500">
               Forgot password?{" "}
               <span className="text-slate-500 dark:text-slate-400">
                 Contact support at {SUPPORT_EMAIL}
