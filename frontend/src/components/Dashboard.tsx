@@ -89,6 +89,37 @@ export default function Dashboard(): ReactElement {
     }
   }, [progressByEquation])
   const streak = serverData?.currentStreak ?? 0
+  const mobileStatCards = [
+    {
+      key: "completed",
+      value: `${completedCount}`,
+      suffix: `/${total}`,
+      label: "Completed",
+      icon: <Target className="h-5 w-5 text-emerald-500" />,
+      iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
+    },
+    {
+      key: "explored",
+      value: `${explored}`,
+      label: "Explored",
+      icon: <BookOpen className="h-5 w-5 text-blue-500" />,
+      iconBg: "bg-blue-50 dark:bg-blue-950/40",
+    },
+    {
+      key: "streak",
+      value: `${streak}`,
+      label: "Day streak",
+      icon: <Flame className="h-5 w-5 text-amber-500" />,
+      iconBg: "bg-amber-50 dark:bg-amber-950/40",
+    },
+    {
+      key: "time",
+      value: `${totalTimeMinutes}m`,
+      label: "Study time",
+      icon: <Clock className="h-5 w-5 text-purple-500" />,
+      iconBg: "bg-purple-50 dark:bg-purple-950/40",
+    },
+  ]
 
   // Single <main> landmark — inner content switches based on state
   // analyticsError is shown as a brief notice when the analytics fetch fails
@@ -97,26 +128,30 @@ export default function Dashboard(): ReactElement {
       <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
         <TopNav showBack />
         <div className="flex flex-1 flex-col items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
-          <Trophy className="h-12 w-12 text-ocean" />
-          <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">Learning Dashboard</h1>
-          <p className="mt-2 max-w-md text-center text-sm text-slate-500">
-            {BILLING_ENABLED
-              ? "Track your progress with Pro."
-              : `${BILLING_DISABLED_COPY.badge}: dashboards and streaks arrive after the beta.`}
-          </p>
-          <div className="mt-6 flex gap-3">
-            <Button variant="outline" onClick={() => navigate("/")}>Back</Button>
-            <Button
-              onClick={() => navigate("/pro")}
-              disabled={!BILLING_ENABLED}
-              className={
-                BILLING_ENABLED
-                  ? "bg-ocean text-white hover:bg-ocean/90"
-                  : "border border-slate-200 bg-white text-slate-400 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
-              }
-            >
-              {BILLING_ENABLED ? "Upgrade" : "Pro later"}
-            </Button>
+          <div className="w-full max-w-sm rounded-[30px] border border-slate-200 bg-white px-5 py-7 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-ocean/10 text-ocean">
+              <Trophy className="h-7 w-7" />
+            </div>
+            <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">Learning Dashboard</h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              {BILLING_ENABLED
+                ? "Track your progress with Pro."
+                : `${BILLING_DISABLED_COPY.badge}: dashboards and streaks arrive after the beta.`}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button variant="outline" onClick={() => navigate("/")} className="min-h-[48px] rounded-2xl sm:min-h-0 sm:rounded-md">Back</Button>
+              <Button
+                onClick={() => navigate("/pro")}
+                disabled={!BILLING_ENABLED}
+                className={
+                  BILLING_ENABLED
+                    ? "min-h-[48px] rounded-2xl bg-ocean text-white hover:bg-ocean/90 sm:min-h-0 sm:rounded-md"
+                    : "min-h-[48px] rounded-2xl border border-slate-200 bg-white text-slate-400 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 sm:min-h-0 sm:rounded-md"
+                }
+              >
+                {BILLING_ENABLED ? "Upgrade" : "Pro later"}
+              </Button>
+            </div>
           </div>
         </div>
       </main>
@@ -183,52 +218,38 @@ export default function Dashboard(): ReactElement {
               )}
 
               {/* Right: stats grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40">
-                    <Target className="h-5 w-5 text-emerald-500" />
+              <div className="native-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+                {mobileStatCards.map((card) => (
+                  <div
+                    key={card.key}
+                    className="flex min-w-[10.25rem] snap-start items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4 lg:min-w-0 lg:shadow-none"
+                  >
+                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}>
+                      {card.icon}
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                        {card.value}
+                        {card.suffix && <span className="text-sm font-normal text-slate-400">{card.suffix}</span>}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{card.label}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{completedCount}<span className="text-sm font-normal text-slate-400">/{total}</span></p>
-                    <p className="text-[10px] text-slate-400">Completed</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
-                    <BookOpen className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{explored}</p>
-                    <p className="text-[10px] text-slate-400">Explored</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40">
-                    <Flame className="h-5 w-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{streak}</p>
-                    <p className="text-[10px] text-slate-400">Day streak</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/40">
-                    <Clock className="h-5 w-5 text-purple-500" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{totalTimeMinutes}m</p>
-                    <p className="text-[10px] text-slate-400">Total study time</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
             {/* In Progress — most important section after CTA */}
             {inProgress.length > 0 && (
               <div className="mt-5">
-                <h3 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                  <Sparkles className="h-3.5 w-3.5 text-ocean" /> Keep going
-                </h3>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <Sparkles className="h-3.5 w-3.5 text-ocean" /> Keep going
+                  </h3>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
+                    {inProgress.length} active
+                  </span>
+                </div>
                 <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
                   {inProgress.map((eq) => {
                     const mins = Math.round(eq.timeSpent / 60)
@@ -262,9 +283,14 @@ export default function Dashboard(): ReactElement {
             {/* Not Started — discovery section */}
             {notStarted.length > 0 && (
               <div className="mt-5">
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Discover
-                </h3>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Discover
+                  </h3>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
+                    {notStarted.length} waiting
+                  </span>
+                </div>
                 <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
                   {notStarted.map((eq) => (
                     <button
@@ -276,7 +302,7 @@ export default function Dashboard(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(eq.id)
                       }}
-                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-slate-200 bg-white p-3.5 text-left transition hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0 sm:rounded-xl sm:p-3"
+                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-slate-200 bg-white p-3.5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0 sm:rounded-xl sm:p-3 sm:shadow-none"
                       type="button"
                     >
                       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400 dark:bg-slate-700">
@@ -295,9 +321,14 @@ export default function Dashboard(): ReactElement {
             {/* Completed — celebration section */}
             {completed.length > 0 && (
               <div className="mt-5">
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
-                  ✓ Completed
-                </h3>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    ✓ Completed
+                  </h3>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
+                    {completed.length} done
+                  </span>
+                </div>
                 <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
                   {completed.map((eq) => (
                     <button
@@ -309,7 +340,7 @@ export default function Dashboard(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(eq.id)
                       }}
-                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-emerald-200 bg-emerald-50/50 p-3.5 text-left transition hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20 sm:min-w-0 sm:rounded-xl sm:p-3"
+                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-emerald-200 bg-emerald-50/50 p-3.5 text-left shadow-sm transition hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20 sm:min-w-0 sm:rounded-xl sm:p-3 sm:shadow-none"
                       type="button"
                     >
                       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-xs font-bold text-white">
@@ -326,11 +357,16 @@ export default function Dashboard(): ReactElement {
             )}
 
             {/* Footer: manage subscription */}
-            <div className="mt-6 flex justify-end pb-4">
-              <Button variant="outline" size="sm" onClick={handleManageSubscription} disabled={portalLoading} className="text-slate-400">
-                <Settings className="mr-1.5 h-3.5 w-3.5" />
-                {portalLoading ? "Loading..." : "Manage subscription"}
-              </Button>
+            <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:rounded-xl sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <p className="text-xs leading-relaxed text-slate-400 sm:hidden">
+                  Account and billing stay tucked away here while the learning surface stays clean.
+                </p>
+                <Button variant="outline" size="sm" onClick={handleManageSubscription} disabled={portalLoading} className="min-h-[46px] rounded-2xl text-slate-400 sm:min-h-0 sm:rounded-md">
+                  <Settings className="mr-1.5 h-3.5 w-3.5" />
+                  {portalLoading ? "Loading..." : "Manage subscription"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

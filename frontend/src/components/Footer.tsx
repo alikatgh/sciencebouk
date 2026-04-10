@@ -17,41 +17,47 @@ export function Footer(): ReactElement {
     <footer className="mt-auto border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl sm:hidden">
         <div
-          className="px-4 pb-5 pt-4"
+          className="rounded-t-[28px] border-x border-t border-slate-200/80 bg-slate-50/95 px-4 pb-5 pt-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Formulas</p>
-              <p className="text-[11px] text-slate-400">{SITE_DOMAIN}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Formulas</p>
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                  Open source
+                </span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-slate-400">{SITE_DOMAIN}</p>
             </div>
             <button
               type="button"
               onClick={() => setMobileExpanded((current) => !current)}
-              className="rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
             >
               {mobileExpanded ? "Less" : "More"}
             </button>
           </div>
 
-          <nav className={`mt-3 ${mobileExpanded ? "grid grid-cols-2 gap-2" : "native-scroll flex gap-2 overflow-x-auto pb-1"} text-[11px] text-slate-500 dark:text-slate-400`}>
-            <Link to="/about" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">About</Link>
-            <Link to="/privacy" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Privacy</Link>
-            <Link to="/terms" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Terms</Link>
-            <Link to="/pro" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+          <nav className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+            <Link to="/about" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">About</Link>
+            <Link to="/pro" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
               {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
             </Link>
-            {mobileExpanded && (
-              <>
-                <Link to="/changelog" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Changelog</Link>
-                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">GitHub</a>
-                <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" className="col-span-2 rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Report a bug</a>
-              </>
-            )}
+            <Link to="/privacy" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Privacy</Link>
+            <Link to="/terms" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Terms</Link>
           </nav>
 
           {mobileExpanded && (
-            <p className="mt-3 text-[11px] text-slate-400">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <Link to="/changelog" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Changelog</Link>
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">GitHub</a>
+              <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" className="col-span-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Report a bug</a>
+            </div>
+          )}
+
+          {mobileExpanded && (
+            <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
               Open source interactive math learning.
             </p>
           )}

@@ -108,6 +108,12 @@ const LABEL_STYLES = {
 }
 
 export default function ChangelogPage(): ReactElement {
+  const totalReleases = RELEASES.length
+  const securityCount = RELEASES.reduce(
+    (count, release) => count + release.changes.filter((change) => change.type === "security").length,
+    0,
+  )
+
   return (
     <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Changelog</span>} />
@@ -117,6 +123,17 @@ export default function ChangelogPage(): ReactElement {
           <div className="mb-6 sm:mb-8">
             <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Changelog</h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">What's new in Sciencebouk</p>
+            <div className="native-scroll mt-4 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+              <span className="inline-flex min-w-max items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                {totalReleases} releases shipped
+              </span>
+              <span className="inline-flex min-w-max items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                {securityCount} security hardenings
+              </span>
+              <span className="inline-flex min-w-max items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                Mobile-first polish in flight
+              </span>
+            </div>
           </div>
 
           <div className="space-y-4 sm:space-y-10">
@@ -143,9 +160,12 @@ export default function ChangelogPage(): ReactElement {
                   {release.changes.map((change, i) => {
                     const s = TYPE_STYLES[change.type]
                     return (
-                      <li key={i} className="flex items-start gap-2.5">
+                      <li
+                        key={i}
+                        className="flex items-start gap-2.5 rounded-2xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-0"
+                      >
                         <span className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${s.dot}`} />
-                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                        <span className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                           <span className={`mr-1 text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
                             {s.label}
                           </span>

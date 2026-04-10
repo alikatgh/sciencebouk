@@ -27,8 +27,11 @@ export default function AboutPage(): ReactElement {
 
           {/* ── HERO: text + live demo side by side ── */}
           <section className="grid items-start gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(240px,300px)] md:gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,320px)] lg:gap-14">
-            <div className="max-w-2xl md:max-w-none">
-              <h1 className="font-display text-[2rem] font-bold tracking-tight text-slate-900 dark:text-white md:text-[2.6rem] md:leading-[0.95]">
+            <div className="max-w-2xl rounded-[30px] border border-slate-200/80 bg-slate-50/80 p-5 shadow-sm backdrop-blur md:max-w-none md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none dark:border-slate-800 dark:bg-slate-900/70 md:dark:bg-transparent">
+              <span className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+                Why this exists
+              </span>
+              <h1 className="mt-4 font-display text-[2rem] font-bold tracking-tight text-slate-900 dark:text-white md:text-[2.6rem] md:leading-[0.95]">
                 Grab a variable. Drag it.<br />Watch the equation respond.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500 dark:text-slate-400">
@@ -42,6 +45,18 @@ export default function AboutPage(): ReactElement {
               <p className="max-w-xl text-sm leading-relaxed text-slate-500 dark:text-slate-400 md:max-w-none">
                 If you have to read to understand, we failed. If you can drag and discover, we succeeded.
               </p>
+
+              <div className="native-scroll mt-5 flex gap-2 overflow-x-auto pb-1 md:mt-6 md:flex-wrap md:overflow-visible md:pb-0">
+                <span className="inline-flex min-w-max items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  {equationCount} interactive equations
+                </span>
+                <span className="inline-flex min-w-max items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  Core access stays free
+                </span>
+                <span className="inline-flex min-w-max items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  Built in public
+                </span>
+              </div>
 
               <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Button onClick={() => navigate("/equation/1")} className="min-h-[48px] justify-center rounded-2xl bg-ocean text-white hover:bg-ocean/90 sm:min-h-0">
@@ -134,14 +149,14 @@ export default function AboutPage(): ReactElement {
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Same interactive format. New subjects.
                 </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+                <div className="native-scroll mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 md:grid-cols-1 xl:grid-cols-2">
                   {[
                     { icon: <FlaskConical className="h-4 w-4" />, name: "Chemistry", count: 8, color: "text-emerald-500" },
                     { icon: <Atom className="h-4 w-4" />, name: "Biology", count: 8, color: "text-pink-500" },
                     { icon: <Cpu className="h-4 w-4" />, name: "Computer Science", count: 8, color: "text-violet-500" },
                     { icon: <Smartphone className="h-4 w-4" />, name: "Mobile app", count: null, color: "text-sky-500" },
                   ].map((item) => (
-                    <div key={item.name} className="flex items-center gap-3 rounded-[22px] border border-slate-200 px-3 py-3 dark:border-slate-700 sm:rounded-lg sm:py-2.5">
+                    <div key={item.name} className="flex min-w-[13.5rem] snap-start items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:min-w-0 sm:rounded-lg sm:py-2.5 sm:shadow-none">
                       <span className={item.color}>{item.icon}</span>
                       <div>
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name}</p>
