@@ -111,6 +111,13 @@ export default function HelpCenterPage(): ReactElement {
                 </Button>
                 <Button
                   variant="outline"
+                  onClick={() => navigate("/changelog")}
+                  className="min-h-[48px] justify-center rounded-2xl text-slate-600 dark:text-slate-300 sm:min-h-0"
+                >
+                  Open changelog
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => navigate("/about")}
                   className="min-h-[48px] justify-center rounded-2xl text-slate-600 dark:text-slate-300 sm:min-h-0"
                 >
@@ -194,6 +201,20 @@ export default function HelpCenterPage(): ReactElement {
                   <li>Accounts, sync, dashboard, and billing features only expand when the beta is ready.</li>
                 </ul>
               </article>
+            </div>
+
+            <div className="mt-5 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Want the product timeline?</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                The changelog now has two views: General for learners and users, Engineering for the deeper technical story behind each release.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/changelog")}
+                className="mt-4 rounded-2xl text-slate-600 dark:text-slate-300"
+              >
+                Read the changelog <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </section>
 
