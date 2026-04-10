@@ -200,6 +200,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                       onOpenDashboard={() => navigate("/dashboard")}
                       onOpenPro={() => navigate("/pro")}
                       onOpenSettings={() => navigate("/settings")}
+                      onOpenHelp={() => navigate("/help")}
                       onOpenAbout={() => navigate("/about")}
                       onLogout={() => { logout(); navigate("/") }}
                     />
@@ -210,11 +211,11 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
-                onClick={() => navigate("/about")}
+                onClick={() => navigate("/help")}
                 className="min-h-[40px] rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300 sm:min-h-0 sm:border-0 sm:px-0 sm:py-0 sm:font-normal sm:text-xs"
                 type="button"
               >
-                About
+                Help
               </button>
               <Button
                 variant="outline"

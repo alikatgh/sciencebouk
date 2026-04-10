@@ -40,12 +40,13 @@ export function Footer(): ReactElement {
           </div>
 
           <nav className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+            <Link to="/help" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Help</Link>
             <Link to="/about" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">About</Link>
             <Link to="/pro" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
               {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
             </Link>
             <Link to="/privacy" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Privacy</Link>
-            <Link to="/terms" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Terms</Link>
+            <Link to="/terms" className="col-span-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Terms</Link>
           </nav>
 
           {mobileExpanded && (
@@ -88,6 +89,7 @@ export function Footer(): ReactElement {
           <Link to="/pro" className="transition hover:text-slate-600 dark:hover:text-slate-300">
             {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
           </Link>
+          <Link to="/help" className="transition hover:text-slate-600 dark:hover:text-slate-300">Help</Link>
           <Link to="/about" className="transition hover:text-slate-600 dark:hover:text-slate-300">About</Link>
           <Link to="/changelog" className="transition hover:text-slate-600 dark:hover:text-slate-300">Changelog</Link>
           <Link to="/privacy" className="transition hover:text-slate-600 dark:hover:text-slate-300">Privacy</Link>

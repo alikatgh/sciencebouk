@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import("./components/Dashboard"))
 const ProfilePage = lazy(() => import("./components/ProfilePage"))
 const SettingsPage = lazy(() => import("./components/SettingsPage"))
 const AboutPage = lazy(() => import("./components/AboutPage"))
+const HelpCenterPage = lazy(() => import("./components/HelpCenterPage"))
 const PrivacyPage = lazy(() => import("./components/PrivacyPage"))
 const TermsPage = lazy(() => import("./components/TermsPage"))
 const ChangelogPage = lazy(() => import("./components/ChangelogPage"))
@@ -110,6 +111,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/about" element={<AboutPage />} />
+                  <Route path="/help" element={<HelpCenterPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/changelog" element={<ChangelogPage />} />

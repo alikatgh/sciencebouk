@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactElement } from "react"
-import { BarChart2, Crown, Info, LogOut, Settings, User } from "lucide-react"
+import { BarChart2, Crown, Info, LifeBuoy, LogOut, Settings, User } from "lucide-react"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 
 interface TopNavAccountMenuProps {
@@ -11,6 +11,7 @@ interface TopNavAccountMenuProps {
   onOpenDashboard: () => void
   onOpenPro: () => void
   onOpenSettings: () => void
+  onOpenHelp: () => void
   onOpenAbout: () => void
   onLogout: () => void
 }
@@ -24,6 +25,7 @@ export function TopNavAccountMenu({
   onOpenDashboard,
   onOpenPro,
   onOpenSettings,
+  onOpenHelp,
   onOpenAbout,
   onLogout,
 }: TopNavAccountMenuProps): ReactElement {
@@ -112,6 +114,17 @@ export function TopNavAccountMenu({
         >
           <Settings className="h-4 w-4 text-slate-400" />
           Settings
+        </button>
+
+        <button
+          role="menuitem"
+          tabIndex={-1}
+          onClick={() => { onClose(); onOpenHelp() }}
+          className="flex min-h-[48px] w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 sm:min-h-0 sm:py-2"
+          type="button"
+        >
+          <LifeBuoy className="h-4 w-4 text-slate-400" />
+          Help Center
         </button>
 
         <button
