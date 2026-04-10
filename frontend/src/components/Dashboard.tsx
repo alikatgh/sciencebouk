@@ -8,6 +8,7 @@ import { resolveEquationManifest, useEquationManifest } from "../data/equationMa
 import { api } from "../api/client"
 import type { DashboardData } from "../api/client"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { dashboardPageContent, interpolateContent } from "../data/pageContent"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { Button } from "./ui/button"
@@ -96,28 +97,28 @@ export default function Dashboard(): ReactElement {
       key: "completed",
       value: `${completedCount}`,
       suffix: `/${total}`,
-      label: "Completed",
+      label: dashboardPageContent.stats.completed,
       icon: <Target className="h-5 w-5 text-emerald-500" />,
       iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
     },
     {
       key: "explored",
       value: `${explored}`,
-      label: "Explored",
+      label: dashboardPageContent.stats.explored,
       icon: <BookOpen className="h-5 w-5 text-blue-500" />,
       iconBg: "bg-blue-50 dark:bg-blue-950/40",
     },
     {
       key: "streak",
       value: `${streak}`,
-      label: "Day streak",
+      label: dashboardPageContent.stats.streak,
       icon: <Flame className="h-5 w-5 text-amber-500" />,
       iconBg: "bg-amber-50 dark:bg-amber-950/40",
     },
     {
       key: "time",
       value: `${totalTimeMinutes}m`,
-      label: "Study time",
+      label: dashboardPageContent.stats.studyTime,
       icon: <Clock className="h-5 w-5 text-purple-500" />,
       iconBg: "bg-purple-50 dark:bg-purple-950/40",
     },
@@ -134,14 +135,14 @@ export default function Dashboard(): ReactElement {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-ocean/10 text-ocean">
               <Trophy className="h-7 w-7" />
             </div>
-            <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">Learning Dashboard</h1>
+            <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">{dashboardPageContent.upgrade.title}</h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               {BILLING_ENABLED
-                ? "Track your progress with Pro."
-                : `${BILLING_DISABLED_COPY.badge}: dashboards and streaks arrive after the beta.`}
+                ? dashboardPageContent.upgrade.enabledBody
+                : interpolateContent(dashboardPageContent.upgrade.disabledBodyTemplate, { badge: BILLING_DISABLED_COPY.badge })}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Button variant="outline" onClick={() => navigate("/")} className="min-h-[48px] rounded-2xl sm:min-h-0 sm:rounded-md">Back</Button>
+              <Button variant="outline" onClick={() => navigate("/")} className="min-h-[48px] rounded-2xl sm:min-h-0 sm:rounded-md">{dashboardPageContent.upgrade.backButton}</Button>
               <Button
                 onClick={() => navigate("/pro")}
                 disabled={!BILLING_ENABLED}
@@ -151,7 +152,7 @@ export default function Dashboard(): ReactElement {
                     : "min-h-[48px] rounded-2xl border border-slate-200 bg-white text-slate-400 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 sm:min-h-0 sm:rounded-md"
                 }
               >
-                {BILLING_ENABLED ? "Upgrade" : "Pro later"}
+                {BILLING_ENABLED ? dashboardPageContent.upgrade.upgradeButton : dashboardPageContent.upgrade.pausedButton}
               </Button>
             </div>
           </div>
@@ -162,7 +163,7 @@ export default function Dashboard(): ReactElement {
 
   return (
     <main className="flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Dashboard</span>} />
+      <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">{dashboardPageContent.title}</span>} />
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
@@ -175,7 +176,7 @@ export default function Dashboard(): ReactElement {
             {/* Analytics error notice */}
             {analyticsError && (
               <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
-                Could not load stats — streak and server data may be unavailable.
+                {dashboardPageContent.analyticsError}
               </div>
             )}
 
@@ -199,7 +200,7 @@ export default function Dashboard(): ReactElement {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-wider text-ocean">
-                      {inProgress.length > 0 ? "Continue where you left off" : "Start your journey"}
+                      {inProgress.length > 0 ? dashboardPageContent.cta.continueStarted : dashboardPageContent.cta.startJourney}
                     </p>
                     <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{continueEq.title}</p>
                     <p className="mt-0.5 text-xs text-slate-400">
@@ -214,7 +215,9 @@ export default function Dashboard(): ReactElement {
                 <div className="flex items-center justify-center rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-700 dark:bg-emerald-950/30">
                   <div className="text-center">
                     <Trophy className="mx-auto h-8 w-8 text-emerald-500" />
-                    <p className="mt-2 text-sm font-bold text-emerald-700 dark:text-emerald-400">All {total} equations completed!</p>
+                    <p className="mt-2 text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                      {interpolateContent(dashboardPageContent.cta.allDoneTemplate, { total })}
+                    </p>
                   </div>
                 </div>
               )}
@@ -246,10 +249,10 @@ export default function Dashboard(): ReactElement {
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    <Sparkles className="h-3.5 w-3.5 text-ocean" /> Keep going
+                    <Sparkles className="h-3.5 w-3.5 text-ocean" /> {dashboardPageContent.sections.keepGoing}
                   </h3>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
-                    {inProgress.length} active
+                    {interpolateContent(dashboardPageContent.sections.keepGoingCountTemplate, { count: inProgress.length })}
                   </span>
                 </div>
                 <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
@@ -287,10 +290,10 @@ export default function Dashboard(): ReactElement {
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Discover
+                    {dashboardPageContent.sections.discover}
                   </h3>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
-                    {notStarted.length} waiting
+                    {interpolateContent(dashboardPageContent.sections.discoverCountTemplate, { count: notStarted.length })}
                   </span>
                 </div>
                 <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
@@ -325,10 +328,10 @@ export default function Dashboard(): ReactElement {
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    ✓ Completed
+                    ✓ {dashboardPageContent.sections.completed}
                   </h3>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
-                    {completed.length} done
+                    {interpolateContent(dashboardPageContent.sections.completedCountTemplate, { count: completed.length })}
                   </span>
                 </div>
                 <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">

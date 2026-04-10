@@ -2,14 +2,11 @@ import type { ReactElement } from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { footerContent } from "../data/pageContent"
 import { GITHUB_URL, SITE_DOMAIN } from "../config/site"
 
-const EASTER_EGG_LINES = [
-  "\"Read serious bouks — life will do the rest.\" — Fyodor Dostoevsky",
-]
-
 export function Footer(): ReactElement {
-  const [easterEgg] = useState(() => EASTER_EGG_LINES[Math.floor(Math.random() * EASTER_EGG_LINES.length)])
+  const [easterEgg] = useState(() => footerContent.easterEggLines[Math.floor(Math.random() * footerContent.easterEggLines.length)])
   const [hovered, setHovered] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState(false)
 
@@ -59,7 +56,7 @@ export function Footer(): ReactElement {
 
           {mobileExpanded && (
             <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
-              Open source interactive math learning.
+              {footerContent.tagline}
             </p>
           )}
         </div>
@@ -98,7 +95,7 @@ export function Footer(): ReactElement {
         </nav>
 
         <p className="text-[10px] text-slate-500 dark:text-slate-500">
-          Open source interactive math learning.
+          {footerContent.tagline}
         </p>
       </div>
     </footer>

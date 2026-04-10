@@ -1,28 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "../api/client"
 import type { EquationSummaryResponse } from "../api/client"
+import fallbackManifestJson from "./content/equation-manifest-fallback.json"
 
 export type EquationSummary = EquationSummaryResponse
 
-export const coreEquationManifest: EquationSummary[] = [
-  { id: 1, title: "Pythagoras's Theorem", formula: "a^2 + b^2 = c^2", author: "Pythagoras", year: "530 BC", category: "geometry", slug: "pythagorass-theorem", description: "The fundamental relationship between the sides of a right triangle.", stage: "live-demo" },
-  { id: 2, title: "Logarithms", formula: "\\log xy = \\log x + \\log y", author: "John Napier", year: "1610", category: "algebra", slug: "logarithms", description: "Logarithms convert multiplication into addition, revolutionizing computation.", stage: "live-demo" },
-  { id: 3, title: "Calculus", formula: "\\frac{df}{dt}=\\lim_{h\\to0}\\frac{f(t+h)-f(t)}{h}", author: "Newton", year: "1668", category: "calculus", slug: "calculus", description: "The derivative measures instantaneous rate of change.", stage: "live-demo" },
-  { id: 4, title: "Law of Gravity", formula: "F=G\\frac{m_1m_2}{r^2}", author: "Newton", year: "1687", category: "physics", slug: "law-of-gravity", description: "Every mass attracts every other mass with a force proportional to their product and inversely proportional to distance squared.", stage: "live-demo" },
-  { id: 5, title: "Wave Equation", formula: "\\frac{\\partial^2 u}{\\partial t^2}=c^2\\frac{\\partial^2 u}{\\partial x^2}", author: "J. d'Alembert", year: "1746", category: "physics", slug: "wave-equation", description: "Describes how waves propagate through space and time.", stage: "live-demo" },
-  { id: 6, title: "The Square Root of Minus One", formula: "i^2=-1", author: "Euler", year: "1750", category: "complex_numbers", slug: "the-square-root-of-minus-one", description: "The imaginary unit extends the real numbers into the complex plane.", stage: "live-demo" },
-  { id: 7, title: "Euler's Formula for Polyhedra", formula: "V-E+F=2", author: "Euler", year: "1751", category: "topology", slug: "eulers-formula-for-polyhedra", description: "For any convex polyhedron, vertices minus edges plus faces always equals two.", stage: "live-demo" },
-  { id: 8, title: "Normal Distribution", formula: "\\Phi(x)=\\frac{1}{\\sqrt{2\\pi\\sigma}}e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}", author: "C. F. Gauss", year: "1810", category: "statistics", slug: "normal-distribution", description: "The bell curve that describes how data clusters around the mean.", stage: "live-demo" },
-  { id: 9, title: "Fourier Transform", formula: "f(\\omega)=\\int_{-\\infty}^{\\infty}f(x)e^{-2\\pi i x\\omega}\\,dx", author: "J. Fourier", year: "1822", category: "signal_processing", slug: "fourier-transform", description: "Decomposes any signal into its constituent frequencies.", stage: "live-demo" },
-  { id: 10, title: "Navier-Stokes Equation", formula: "\\rho\\left(\\frac{\\partial \\mathbf{v}}{\\partial t}+\\mathbf{v}\\cdot\\nabla\\mathbf{v}\\right)=-\\nabla p+\\nabla\\cdot\\mathbf{T}+\\mathbf{f}", author: "Navier, Stokes", year: "1845", category: "fluid_dynamics", slug: "navier-stokes-equation", description: "Governs the motion of fluid substances like water and air.", stage: "live-demo" },
-  { id: 11, title: "Maxwell's Equations", formula: "\\nabla\\cdot\\mathbf{E}=0,\\;\\nabla\\times\\mathbf{E}=-\\frac{1}{c}\\frac{\\partial \\mathbf{H}}{\\partial t}", author: "J. C. Maxwell", year: "1865", category: "electromagnetism", slug: "maxwells-equations", description: "The unified theory of electricity, magnetism, and light.", stage: "live-demo" },
-  { id: 12, title: "Second Law of Thermodynamics", formula: "dS\\ge0", author: "L. Boltzmann", year: "1874", category: "thermodynamics", slug: "second-law-of-thermodynamics", description: "Entropy of an isolated system never decreases.", stage: "live-demo" },
-  { id: 13, title: "Relativity", formula: "E=mc^2", author: "Einstein", year: "1905", category: "physics", slug: "relativity", description: "Mass and energy are equivalent, connected by the speed of light squared.", stage: "live-demo" },
-  { id: 14, title: "Schrodinger's Equation", formula: "i\\hbar\\frac{\\partial}{\\partial t}\\Psi=H\\Psi", author: "E. Schrodinger", year: "1927", category: "quantum_mechanics", slug: "schrodingers-equation", description: "Describes how quantum states evolve over time.", stage: "live-demo" },
-  { id: 15, title: "Information Theory", formula: "H=-\\sum p(x)\\log p(x)", author: "C. Shannon", year: "1949", category: "information", slug: "information-theory", description: "Shannon entropy measures the uncertainty in a random variable.", stage: "live-demo" },
-  { id: 16, title: "Chaos Theory", formula: "x_{t+1}=r x_t(1-x_t)", author: "R. May", year: "1975", category: "dynamical_systems", slug: "chaos-theory", description: "The logistic map shows how simple rules create complex, unpredictable behavior.", stage: "live-demo" },
-  { id: 17, title: "Black-Scholes Equation", formula: "\\frac{1}{2}\\sigma^2S^2\\frac{\\partial^2V}{\\partial S^2}+rS\\frac{\\partial V}{\\partial S}+\\frac{\\partial V}{\\partial t}-rV=0", author: "Black, Scholes", year: "1973", category: "finance", slug: "black-scholes-equation", description: "Determines the fair price of financial options.", stage: "live-demo" },
-]
+export const coreEquationManifest: EquationSummary[] = fallbackManifestJson as EquationSummary[]
 
 export function resolveEquationManifest(
   manifest: EquationSummary[] | null | undefined,

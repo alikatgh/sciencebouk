@@ -14,6 +14,7 @@ import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 import { DeferredInlineMath } from "./math/DeferredInlineMath"
 import { activeSubjects, getSubject, inactiveSubjects } from "../data/subjects"
+import { homePageContent, interpolateContent } from "../data/pageContent"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { useAllProgress } from "../progress/useProgress"
 
@@ -90,7 +91,7 @@ export function HomePage(): ReactElement {
           left={
             <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
               <span className="max-w-full break-words text-[15px] font-bold leading-tight text-slate-900 dark:text-white sm:truncate sm:text-base">
-                {activeSubject ? activeSubject.name : "Formulas"}
+                {activeSubject ? activeSubject.name : homePageContent.title}
               </span>
               {completedCount > 0 && !activeSubject && (
                 <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
@@ -114,12 +115,11 @@ export function HomePage(): ReactElement {
               <div className="grid items-center gap-5 p-4 sm:p-6 md:grid-cols-[1fr_auto] md:p-8">
                 <div>
                   <h1 className="font-display text-[1.55rem] font-bold tracking-tight leading-tight md:text-3xl">
-                    Grab a variable. Drag it.<br />
-                    <span className="text-ocean">Watch the equation respond.</span>
+                    {homePageContent.hero.titleLine1}<br />
+                    <span className="text-ocean">{homePageContent.hero.titleLine2}</span>
                   </h1>
                   <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-400">
-                    {total} equations that shaped the world — turned into interactive visualizations
-                    you can touch and understand. No textbook. No video.
+                    {interpolateContent(homePageContent.hero.descriptionTemplate, { total })}
                   </p>
                   <div className="mt-5 flex flex-col items-stretch gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                     <Button
@@ -132,7 +132,7 @@ export function HomePage(): ReactElement {
                       }}
                       className="min-h-[48px] justify-center rounded-2xl bg-ocean text-white hover:bg-ocean/90 sm:min-h-0"
                     >
-                      Try Pythagoras <ArrowRight className="ml-1.5 h-4 w-4" />
+                      {homePageContent.hero.primaryCta} <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
                     <button
                       onClick={() => {
@@ -142,7 +142,7 @@ export function HomePage(): ReactElement {
                       className="rounded-2xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 transition hover:border-white/20 hover:text-white sm:border-0 sm:px-0 sm:py-0"
                       type="button"
                     >
-                      See all equations
+                      {homePageContent.hero.secondaryCta}
                     </button>
                   </div>
                 </div>
@@ -165,7 +165,7 @@ export function HomePage(): ReactElement {
                       <HeroDemo />
                     </Suspense>
                   </ErrorBoundary>
-                  <p className="text-[10px] text-slate-500">click to explore · auto-cycles</p>
+                  <p className="text-[10px] text-slate-500">{homePageContent.hero.demoCaption}</p>
                 </div>
               </div>
             </section>
@@ -173,7 +173,7 @@ export function HomePage(): ReactElement {
             {/* === CONTINUE / FEATURED === */}
             {completedCount > 0 && completedCount < total && continueLearningFormulas.length > 0 && (
               <section className="mb-6">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Continue learning</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">{homePageContent.sections.continueLearning}</h3>
                 <div className="native-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
                   {continueLearningFormulas.map((f) => (
                       <button
@@ -219,9 +219,13 @@ export function HomePage(): ReactElement {
                         <h2 className="text-base font-bold leading-tight sm:text-lg">{subject.name}</h2>
                         <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:mt-0.5 sm:text-sm">{subject.description}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="text-xs font-medium text-slate-400">{subject.formulas.length} interactive equations</span>
+                          <span className="text-xs font-medium text-slate-400">
+                            {interpolateContent(homePageContent.sections.subjectCountTemplate, { count: subject.formulas.length })}
+                          </span>
                           {completedInSubject > 0 && (
-                            <span className="text-xs font-medium text-emerald-400">{completedInSubject} completed</span>
+                            <span className="text-xs font-medium text-emerald-400">
+                              {interpolateContent(homePageContent.sections.subjectCompletedTemplate, { count: completedInSubject })}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -244,7 +248,7 @@ export function HomePage(): ReactElement {
             {/* === COMING NEXT === */}
             {hasComingSoonSubjects && (
               <div className="mt-8">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">Coming next</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">{homePageContent.sections.comingNext}</h3>
                 <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {inactiveSubjects.map((subject) => (
                     <button
@@ -258,7 +262,9 @@ export function HomePage(): ReactElement {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subject.name}</p>
-                        <p className="text-[10px] text-slate-400">{subject.formulas.length} formulas</p>
+                        <p className="text-[10px] text-slate-400">
+                          {interpolateContent(homePageContent.sections.comingSoonCountTemplate, { count: subject.formulas.length })}
+                        </p>
                       </div>
                     </button>
                   ))}

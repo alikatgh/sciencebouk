@@ -8,6 +8,7 @@ import { resolveEquationManifest, useEquationManifest } from "../data/equationMa
 import { api } from "../api/client"
 import { SITE_BASE } from "../config/api"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { interpolateContent, profilePageContent } from "../data/pageContent"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
@@ -41,8 +42,8 @@ export default function ProfilePage(): ReactElement {
         <TopNav />
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center">
-            <p className="text-lg text-slate-500">Sign in to see your profile.</p>
-            <button onClick={() => navigate("/")} className="mt-4 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white" type="button">Go home</button>
+            <p className="text-lg text-slate-500">{profilePageContent.signedOut.body}</p>
+            <button onClick={() => navigate("/")} className="mt-4 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white" type="button">{profilePageContent.signedOut.button}</button>
           </div>
         </div>
       </div>
@@ -58,7 +59,7 @@ export default function ProfilePage(): ReactElement {
       await refreshUser()
       setEditingName(false)
     } catch (error) {
-      setProfileError(error instanceof Error ? error.message : "Could not save your name.")
+      setProfileError(error instanceof Error ? error.message : profilePageContent.errors.saveName)
     } finally {
       setSaving(false)
     }
@@ -82,7 +83,7 @@ export default function ProfilePage(): ReactElement {
       await api.profile.uploadAvatar(file)
       await refreshUser()
     } catch (error) {
-      setProfileError(error instanceof Error ? error.message : "Could not upload your photo.")
+      setProfileError(error instanceof Error ? error.message : profilePageContent.errors.uploadPhoto)
     } finally {
       e.target.value = ""
       setUploadingAvatar(false)
@@ -137,7 +138,7 @@ export default function ProfilePage(): ReactElement {
 
   return (
     <div className="flex min-h-[100dvh] flex-col overflow-hidden bg-[#f3f5f7] dark:bg-slate-900">
-      <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Profile</span>} />
+      <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">{profilePageContent.title}</span>} />
 
       <div className="native-scroll flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-5">
@@ -183,7 +184,7 @@ export default function ProfilePage(): ReactElement {
                       <input ref={nameRef} type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false) }}
                         className="w-full rounded-lg border border-ocean/30 bg-ocean/5 px-2 py-1 text-base font-bold text-slate-900 outline-none focus:border-ocean dark:bg-slate-700 dark:text-white"
-                        placeholder="Your name" autoFocus disabled={saving} />
+                        placeholder={profilePageContent.placeholders.name} autoFocus disabled={saving} />
                       <button onClick={handleSaveName} disabled={saving} className="rounded-lg bg-ocean p-1.5 text-white" type="button" aria-label="Save changes"><Check className="h-3.5 w-3.5" /></button>
                       <button onClick={() => setEditingName(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" type="button" aria-label="Cancel editing"><X className="h-3.5 w-3.5" /></button>
                     </div>
@@ -196,9 +197,9 @@ export default function ProfilePage(): ReactElement {
                   <p className="mt-0.5 text-xs text-slate-400">{user.email}</p>
                   <div className="mt-1.5">
                     {isPro ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Crown className="h-3 w-3" /> Pro</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Crown className="h-3 w-3" /> {profilePageContent.badges.pro}</span>
                     ) : (
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">Free</span>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">{profilePageContent.badges.free}</span>
                     )}
                   </div>
                   {profileError && <p className="mt-2 text-xs text-red-500">{profileError}</p>}
@@ -208,7 +209,7 @@ export default function ProfilePage(): ReactElement {
               {/* Progress bar */}
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{completedCount}/{total} completed</span>
+                  <span>{interpolateContent(profilePageContent.progress.completedTemplate, { completed: completedCount, total })}</span>
                   <span className="font-bold text-ocean">{pct}%</span>
                 </div>
                 <div
@@ -227,12 +228,12 @@ export default function ProfilePage(): ReactElement {
               <div className="mt-4 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-row sm:flex-wrap">
                 {isPro && (
                   <button onClick={() => navigate("/dashboard")} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
-                    <BarChart2 className="h-3.5 w-3.5 text-ocean" /> Dashboard
+                    <BarChart2 className="h-3.5 w-3.5 text-ocean" /> {profilePageContent.actions.dashboard}
                   </button>
                 )}
                 {isPro && BILLING_ENABLED && (
                   <button onClick={handleManageSubscription} disabled={managingSubscription} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
-                    <CreditCard className="h-3.5 w-3.5" /> Billing
+                    <CreditCard className="h-3.5 w-3.5" /> {profilePageContent.actions.billing}
                   </button>
                 )}
                 {!isPro && (
@@ -247,11 +248,11 @@ export default function ProfilePage(): ReactElement {
                     type="button"
                     title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
                   >
-                    <Crown className="h-3.5 w-3.5" /> {BILLING_ENABLED ? "Upgrade to Pro" : "Pro later"}
+                    <Crown className="h-3.5 w-3.5" /> {BILLING_ENABLED ? profilePageContent.actions.upgrade : profilePageContent.actions.proLater}
                   </button>
                 )}
                 <button onClick={() => { logout(); navigate("/") }} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-red-200 px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-900/30 sm:min-h-0 sm:justify-start sm:rounded-lg sm:py-1.5" type="button">
-                  <LogOut className="h-3.5 w-3.5" /> Sign out
+                  <LogOut className="h-3.5 w-3.5" /> {profilePageContent.actions.signOut}
                 </button>
               </div>
             </div>
@@ -276,12 +277,14 @@ export default function ProfilePage(): ReactElement {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-wider text-ocean">
-                      {closestInProgress ? "Continue where you left off" : "Start here"}
+                      {closestInProgress ? profilePageContent.progress.continue : profilePageContent.progress.start}
                     </p>
                     <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">{nextEquation.title}</p>
                     {closestInProgress && (
                       <p className="text-[10px] text-slate-400">
-                        {Math.round((closestInProgress.progress?.timeSpentSeconds ?? 0) / 60)}m studied — keep going
+                        {interpolateContent(profilePageContent.progress.keepGoingTemplate, {
+                          minutes: Math.round((closestInProgress.progress?.timeSpentSeconds ?? 0) / 60),
+                        })}
                       </p>
                     )}
                   </div>
@@ -292,15 +295,15 @@ export default function ProfilePage(): ReactElement {
               <div className="grid grid-cols-3 gap-2">
                 <div className="flex flex-col items-center justify-center rounded-[20px] border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-emerald-600">{completedCount}</p>
-                  <p className="text-[11px] text-slate-400">Done</p>
+                  <p className="text-[11px] text-slate-400">{profilePageContent.progress.statsDone}</p>
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-[20px] border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-blue-600">{totalTimeMinutes}m</p>
-                  <p className="text-[11px] text-slate-400">Studied</p>
+                  <p className="text-[11px] text-slate-400">{profilePageContent.progress.statsStudied}</p>
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-[20px] border border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-800">
                   <p className="text-xl font-bold text-purple-600">{inProgressCount}</p>
-                  <p className="text-[11px] text-slate-400">Exploring</p>
+                  <p className="text-[11px] text-slate-400">{profilePageContent.progress.statsExploring}</p>
                 </div>
               </div>
             </div>
@@ -308,7 +311,7 @@ export default function ProfilePage(): ReactElement {
 
           {/* Equations — sorted by relevance: in-progress first, then not started, completed last */}
           <div className="mt-4 rounded-[26px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">Your Equations</h2>
+            <h2 className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-300">{profilePageContent.progress.yourEquations}</h2>
             <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedEquations.map((eq) => {
                 const progress = eq.progress

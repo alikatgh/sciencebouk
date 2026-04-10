@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Footer } from "./Footer"
 import { TopNav } from "./TopNav"
 import { SITE_DOMAIN, SUPPORT_EMAIL } from "../config/site"
+import { interpolateContent, legalPageContent } from "../data/pageContent"
 
 type LegalDocumentPageProps = {
   title: string
@@ -55,22 +56,21 @@ export function LegalDocumentPage({ title, documentPath }: LegalDocumentPageProp
 
           {state === "loading" ? (
             <>
-              <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-400 dark:bg-slate-800">Loading document...</p>
+              <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-400 dark:bg-slate-800">{legalPageContent.loadingBadge}</p>
               <h1>{title}</h1>
-              <p>Preparing the latest live copy of this document.</p>
+              <p>{legalPageContent.loadingBody}</p>
             </>
           ) : null}
 
           {state === "missing" ? (
             <>
-              <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-400 dark:bg-slate-800">Live document unavailable in this build</p>
+              <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-400 dark:bg-slate-800">{legalPageContent.missingBadge}</p>
               <h1>{title}</h1>
               <p>
-                The current legal document for <strong>{SITE_DOMAIN}</strong> is maintained privately for the live
-                deployment and was not bundled into this build.
+                {interpolateContent(legalPageContent.missingBodyTemplate, { siteDomain: SITE_DOMAIN })}
               </p>
               <p>
-                If you need a copy or have questions, contact <strong>{SUPPORT_EMAIL}</strong>.
+                {interpolateContent(legalPageContent.missingContactTemplate, { supportEmail: SUPPORT_EMAIL })}
               </p>
             </>
           ) : null}

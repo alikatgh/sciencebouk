@@ -1,0 +1,572 @@
+{
+  "billing": {
+    "disabledCopy": {
+      "badge": "Free beta",
+      "headline": "Pro is coming after the beta",
+      "body": "We are validating the core learning experience first. Sync, dashboard, streaks, and billing stay built but unavailable until the beta ends.",
+      "button": "Pro later",
+      "detail": "No subscriptions yet. Everything core stays free while we test."
+    }
+  },
+  "footer": {
+    "easterEggLines": [
+      "\"Read serious bouks - life will do the rest.\" - Fyodor Dostoevsky"
+    ],
+    "tagline": "Open source interactive math learning."
+  },
+  "legal": {
+    "loadingBadge": "Loading document...",
+    "loadingBody": "Preparing the latest live copy of this document.",
+    "missingBadge": "Live document unavailable in this build",
+    "missingBodyTemplate": "The current legal document for {siteDomain} is maintained privately for the live deployment and was not bundled into this build.",
+    "missingContactTemplate": "If you need a copy or have questions, contact {supportEmail}."
+  },
+  "home": {
+    "title": "Formulas",
+    "hero": {
+      "titleLine1": "Grab a variable. Drag it.",
+      "titleLine2": "Watch the equation respond.",
+      "descriptionTemplate": "{total} equations that shaped the world — turned into interactive visualizations you can touch and understand. No textbook. No video.",
+      "primaryCta": "Try Pythagoras",
+      "secondaryCta": "See all equations",
+      "demoCaption": "click to explore · auto-cycles"
+    },
+    "sections": {
+      "continueLearning": "Continue learning",
+      "comingNext": "Coming next",
+      "subjectCountTemplate": "{count} interactive equations",
+      "subjectCompletedTemplate": "{count} completed",
+      "comingSoonCountTemplate": "{count} formulas"
+    }
+  },
+  "about": {
+    "badge": "Why this exists",
+    "titleLines": [
+      "Grab a variable. Drag it.",
+      "Watch the equation respond."
+    ],
+    "descriptionTemplate": "{equationCount} equations that shaped the world, turned into interactive visualizations you can touch and understand. No textbook. No video. Just drag, change, and see why the formula works.",
+    "beliefTitle": "Built for people who gave up on math a long time ago.",
+    "beliefBody": "If you have to read to understand, we failed. If you can drag and discover, we succeeded.",
+    "heroPills": [
+      "Core access stays free",
+      "Built in public"
+    ],
+    "primaryCta": "Try Pythagoras right now",
+    "browseAllLabelTemplate": "Browse all {equationCount}",
+    "liveDemoCaption": "Click to cycle through triples",
+    "sections": {
+      "freeVsProTitle": "Free vs Pro",
+      "comingSoonTitle": "Coming Soon",
+      "comingSoonDescription": "Same interactive format. New subjects."
+    },
+    "freePlan": {
+      "title": "Free - forever",
+      "price": "$0",
+      "priceNote": "forever",
+      "features": [
+        "All {equationCount} equations (and every future one)",
+        "All interactive visualizations",
+        "All guided lessons",
+        "Progress saved on your device"
+      ],
+      "footnote": "No account needed. No limits.",
+      "button": "Continue free"
+    },
+    "proPlan": {
+      "enabledTitle": "Pro - $4.99/month",
+      "disabledTitle": "Pro later",
+      "features": [
+        "Everything free, plus:",
+        "Progress sync across devices",
+        "Learning dashboard + streaks",
+        "Settings sync"
+      ],
+      "enabledButton": "Go Pro",
+      "disabledButton": "Pro later"
+    },
+    "funding": {
+      "enabledHeadline": "Pro funds the next wave of subjects and keeps the servers running.",
+      "enabledBody": "Chemistry, Biology, Computer Science - all coming. Everything core stays free. We're building for the long term.",
+      "disabledHeadline": "We are running a free beta first so the core learning experience can harden before payments turn on.",
+      "disabledBody": "Chemistry, Biology, and Computer Science are still on the roadmap."
+    },
+    "comingSoonItems": [
+      { "icon": "flask-conical", "name": "Chemistry", "count": 8, "color": "text-emerald-500" },
+      { "icon": "atom", "name": "Biology", "count": 8, "color": "text-pink-500" },
+      { "icon": "cpu", "name": "Computer Science", "count": 8, "color": "text-violet-500" },
+      { "icon": "smartphone", "name": "Mobile app", "count": null, "color": "text-sky-500" }
+    ],
+    "openSource": {
+      "title": "Fully Open Source",
+      "license": "MIT License",
+      "body": "Every equation, every visualization, every line of code. Fork it, self-host it, study it, improve it, teach with it.",
+      "primaryLinkLabel": "View on GitHub",
+      "secondaryLinkLabel": "Report a bug"
+    }
+  },
+  "helpCenter": {
+    "badge": "Help Center",
+    "title": "How Sciencebo works, in plain English.",
+    "description": "This is the home base for learners, teachers, and editors. Start here if you want to understand how to use the site, how the lessons are structured, or how to add new formulas through the admin panel.",
+    "heroChips": [
+      "Learner-first explanations",
+      "Admin-powered content updates"
+    ],
+    "primaryCta": "Open the first equation",
+    "secondaryCta": "Open changelog",
+    "tertiaryCta": "Read the story behind the project",
+    "quickAnswers": [
+      {
+        "id": "account",
+        "title": "Need an account?",
+        "body": "No. The core equation experience is open to everyone."
+      },
+      {
+        "id": "progress",
+        "title": "Progress and sync",
+        "enabledBody": "Accounts can unlock sync and dashboard features.",
+        "disabledBody": "We are validating the core learning experience first. Sync, dashboard, streaks, and billing stay built but unavailable until the beta ends."
+      },
+      {
+        "id": "support",
+        "title": "Need help?",
+        "body": "Email {supportEmail}."
+      }
+    ],
+    "learner": {
+      "title": "For learners",
+      "description": "Every equation page follows the same pattern: interactive canvas first, simple explanation second, then guided steps and supporting context. We want the visual intuition to land before the formalism does.",
+      "cards": [
+        {
+          "title": "Pick any formula and start touching it",
+          "body": "Each equation page is built around one interactive scene. Drag variables, use presets, and watch the picture update before you read the explanation."
+        },
+        {
+          "title": "Read the plain-language explanation under the canvas",
+          "body": "Every formula has a short real-world hook, a simpler explanation, and guided lesson steps. The goal is to make the hard-looking formula feel human first."
+        },
+        {
+          "title": "Move at your own pace",
+          "body": "You can browse equation by equation, search the atlas, and come back later. Core learning stays free while the beta hardens."
+        }
+      ],
+      "checklists": [
+        {
+          "title": "What to do on an equation page",
+          "items": [
+            "Use the plus and minus controls or pinch/scroll to zoom the visualization.",
+            "Drag colored variables to see the formula respond in real time.",
+            "Read the short hook if the full formula still feels intimidating.",
+            "Work through the lesson steps when you want a slower, guided path."
+          ]
+        },
+        {
+          "title": "What stays free during beta",
+          "items": [
+            "All live equations and visual lessons.",
+            "Browsing, searching, and reading the atlas.",
+            "The core teaching content for every formula we publish.",
+            "Accounts, sync, dashboard, and billing features only expand when the beta is ready."
+          ]
+        }
+      ],
+      "timelineCard": {
+        "title": "Want the product timeline?",
+        "body": "The changelog now has two views: General for learners and users, Engineering for the deeper technical story behind each release.",
+        "button": "Read the changelog"
+      }
+    },
+    "editors": {
+      "title": "For editors and teachers",
+      "description": "If you have admin access, you can expand the atlas without touching code. Most of the public teaching experience lives in the Equation admin record, and bulk updates can now be imported with JSON.",
+      "paths": [
+        {
+          "title": "Edit one equation directly",
+          "body": "Open the equation record in Django Admin and update the title, formula, hook, hook action, variables, presets, lessons, or glossary fields."
+        },
+        {
+          "title": "Bulk import many equations with JSON",
+          "body": "In Admin, go to Courses -> Equations -> Import JSON. Drag in a JSON file or paste JSON text. The importer matches rows by id or sort_order and updates the public site content."
+        }
+      ],
+      "checklistTitle": "Content model cheat sheet",
+      "checklist": [
+        "sort_order controls the atlas order and public equation id",
+        "title, formula, author, year, and category are the required fields for a new equation",
+        "hook and hookAction drive the simple explanation shown around the visualization",
+        "variables, presets, lessons, and glossary are the rich teaching blocks that power the interactive experience",
+        "Courses and Lessons in admin are useful for broader course shells, while most per-equation teaching content lives on the Equation record itself"
+      ],
+      "sampleTitle": "Example JSON import",
+      "sampleBadge": "Safe public example",
+      "sampleBody": "Paste this into the import tool as a template. No credentials or private URLs are required here.",
+      "sampleJsonLines": [
+        "[",
+        "  {",
+        "    \"id\": 18,",
+        "    \"title\": \"Euler-Lagrange Equation\",",
+        "    \"formula\": \"\\\\frac{d}{dt}\\\\frac{\\\\partial L}{\\\\partial \\\\dot{q}}-\\\\frac{\\\\partial L}{\\\\partial q}=0\",",
+        "    \"author\": \"Euler and Lagrange\",",
+        "    \"year\": \"1750s\",",
+        "    \"category\": \"physics\",",
+        "    \"hook\": \"Nature tends to choose the path that balances competing costs.\",",
+        "    \"hookAction\": \"Drag the path and compare how the action changes.\",",
+        "    \"variables\": [],",
+        "    \"presets\": [],",
+        "    \"lessons\": [],",
+        "    \"glossary\": []",
+        "  }",
+        "]"
+      ],
+      "privacyTitle": "Privacy note",
+      "privacyBody": "This guide is intentionally generic. It explains the content workflow, but it does not publish admin credentials, private infrastructure details, or personal deployment information."
+    },
+    "support": {
+      "title": "Still stuck?",
+      "body": "If a formula feels confusing, a scene breaks, or you want help structuring new content, send a note to {supportEmail}."
+    }
+  },
+  "proUpgrade": {
+    "freeFeatures": [
+      "All interactive equations",
+      "Guided lessons & real-world hooks",
+      "Drag-to-explore visualizations",
+      "Dark mode"
+    ],
+    "proFeatures": [
+      "Everything in Free",
+      "Progress sync across devices",
+      "Learning analytics dashboard",
+      "Streak tracking",
+      "Smart recommendations"
+    ],
+    "pricing": {
+      "title": "Go Pro",
+      "subtitle": "The equations are free forever. Pro adds personalization.",
+      "monthlyLabel": "Monthly",
+      "yearlyLabel": "Yearly",
+      "yearlySaveLabel": "save 33%",
+      "checkoutError": "Something went wrong. Please try again.",
+      "freeCard": {
+        "title": "Free",
+        "price": "$0",
+        "priceNote": "forever",
+        "button": "Continue free"
+      },
+      "proCard": {
+        "title": "Pro",
+        "recommendedBadge": "RECOMMENDED",
+        "priceWholeYearly": "3",
+        "priceWholeMonthly": "4",
+        "priceFraction": ".99",
+        "priceNoteYearly": "per month, billed yearly",
+        "priceNoteMonthly": "per month",
+        "ctaAuthenticated": "Upgrade to Pro",
+        "ctaGuest": "Sign up & upgrade",
+        "backToEquations": "Back to equations"
+      }
+    },
+    "states": {
+      "verifying": {
+        "loadingAuth": "Loading your account...",
+        "checkingPayment": "Verifying payment..."
+      },
+      "delayed": {
+        "title": "Still checking your subscription",
+        "body": "Your payment may have gone through, but the confirmation has not reached us yet. Try checking again in a moment. If this keeps happening, the webhook may need attention.",
+        "checkAgain": "Check again",
+        "backToEquations": "Back to equations"
+      },
+      "success": {
+        "title": "Payment successful!",
+        "body": "Your Pro subscription is now active. Welcome aboard.",
+        "button": "Go to Dashboard"
+      },
+      "cancel": {
+        "title": "Payment cancelled",
+        "body": "No charge was made. You can upgrade whenever you're ready.",
+        "button": "Back to pricing"
+      },
+      "currentPro": {
+        "title": "You're Pro!",
+        "body": "You have access to all features.",
+        "button": "Back to equations"
+      },
+      "beta": {
+        "titleForPro": "Your Pro access stays active",
+        "bodyForPro": "You already have Pro access. New purchases are paused while the free beta is running.",
+        "freeCardTitle": "Free beta",
+        "freeCardPrice": "$0",
+        "freeCardPriceNote": "for everyone right now",
+        "freeCardButton": "Continue exploring",
+        "proPausedBadge": "Paused for beta",
+        "proCardTitle": "Pro later",
+        "proCardPriceWhole": "4",
+        "proCardPriceFraction": ".99",
+        "proCardPriceNote": "subscriptions will return after launch",
+        "backToEquations": "Back to equations"
+      },
+      "conversionPrompt": {
+        "bodyTemplate": "Nice work on {equationTitle}! Track progress across devices with Pro.",
+        "cta": "Go Pro",
+        "dismiss": "Later"
+      }
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "analyticsError": "Could not load stats — streak and server data may be unavailable.",
+    "upgrade": {
+      "title": "Learning Dashboard",
+      "enabledBody": "Track your progress with Pro.",
+      "disabledBodyTemplate": "{badge}: dashboards and streaks arrive after the beta.",
+      "backButton": "Back",
+      "upgradeButton": "Upgrade",
+      "pausedButton": "Pro later"
+    },
+    "cta": {
+      "continueStarted": "Continue where you left off",
+      "startJourney": "Start your journey",
+      "allDoneTemplate": "All {total} equations completed!"
+    },
+    "stats": {
+      "completed": "Completed",
+      "explored": "Explored",
+      "streak": "Day streak",
+      "studyTime": "Study time"
+    },
+    "sections": {
+      "keepGoing": "Keep going",
+      "keepGoingCountTemplate": "{count} active",
+      "discover": "Discover",
+      "discoverCountTemplate": "{count} waiting",
+      "completed": "Completed",
+      "completedCountTemplate": "{count} done"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "signedOut": {
+      "body": "Sign in to see your profile.",
+      "button": "Go home"
+    },
+    "errors": {
+      "saveName": "Could not save your name.",
+      "uploadPhoto": "Could not upload your photo."
+    },
+    "placeholders": {
+      "name": "Your name"
+    },
+    "badges": {
+      "pro": "Pro",
+      "free": "Free"
+    },
+    "actions": {
+      "dashboard": "Dashboard",
+      "billing": "Billing",
+      "upgrade": "Upgrade to Pro",
+      "proLater": "Pro later",
+      "signOut": "Sign out"
+    },
+    "progress": {
+      "completedTemplate": "{completed}/{total} completed",
+      "yourEquations": "Your Equations",
+      "continue": "Continue where you left off",
+      "start": "Start here",
+      "keepGoingTemplate": "{minutes}m studied — keep going",
+      "statsDone": "Done",
+      "statsStudied": "Studied",
+      "statsExploring": "Exploring"
+    }
+  },
+  "changelog": {
+    "audit": {
+      "commits": 67,
+      "start": "5 Apr 2026",
+      "end": "10 Apr 2026"
+    },
+    "hero": {
+      "badge": "Changelog",
+      "title": "Product history, in two languages.",
+      "description": "This changelog is curated from audited git history on the main branch, covering {start} to {end}. Use General mode for user-facing updates, or Engineering mode for the technical trail behind the release.",
+      "generalModeLabel": "General",
+      "engineeringModeLabel": "Engineering",
+      "helpButton": "Open Help Center",
+      "chips": [
+        "{releases} curated releases",
+        "{securityCount} security-facing changes",
+        "Mobile-native polish tracked across multiple passes"
+      ]
+    },
+    "modeDescriptions": {
+      "general": "General mode is for learners and customers. It strips out most jargon and focuses on what changed in the product.",
+      "engineering": "Engineering mode is for builders. It shows the architectural and implementation shifts behind each release."
+    },
+    "footerNotes": {
+      "general": {
+        "title": "Why two modes?",
+        "body": "Normal users should not have to translate commit messages. General mode keeps the focus on what changed in the experience."
+      },
+      "engineering": {
+        "title": "How to read the engineering log",
+        "body": "Engineering mode is intentionally closer to the build trail. It groups implementation changes into frontend, backend, content, infra, and security so the release story stays readable."
+      }
+    },
+    "releases": [
+      {
+        "version": "0.8.0",
+        "date": "10 Apr 2026",
+        "label": "major",
+        "auditTrail": ["fc6dc0c", "5609f41", "cd93639", "105e782", "a245558", "fb01156"],
+        "summary": "Content editing got dramatically easier, the public help layer arrived, and the atlas stopped depending on hardcoded frontend data.",
+        "general": [
+          { "type": "new", "text": "Help Center added for learners and editors, with clear guidance on how the site works." },
+          { "type": "new", "text": "Content editors can now bulk-update formulas through Django Admin with drag-and-drop JSON import." },
+          { "type": "improved", "text": "Equation content now comes from the database, making it much easier to expand the atlas without frontend rewiring." },
+          { "type": "improved", "text": "Blank or broken equation states now fail more gracefully instead of leaving users on empty screens." },
+          { "type": "fix", "text": "More mobile polish landed across dashboard, onboarding, and content surfaces." }
+        ],
+        "engineering": [
+          { "type": "backend", "text": "Added an admin-only JSON importer for equations, including validation, row-level error handling, and tests." },
+          { "type": "content", "text": "Shifted the equation atlas away from static frontend assumptions toward API-backed database content." },
+          { "type": "frontend", "text": "Added resilient manifest fallback logic and a generic scene fallback to prevent white-screen failures when content is missing." },
+          { "type": "infra", "text": "Expanded env-driven config cleanup so content and deployment behavior rely less on hardcoded values." },
+          { "type": "frontend", "text": "Continued the mobile pass across dashboard, onboarding, and beta messaging surfaces." }
+        ]
+      },
+      {
+        "version": "0.7.0",
+        "date": "8-10 Apr 2026",
+        "label": "major",
+        "auditTrail": ["4396ec4", "3d01f4d", "d619132", "d04f9c2", "6feec7a", "a33e0d6", "1edb7ca"],
+        "summary": "The mobile browser experience was pushed much closer to a native app, especially on small and awkward screen sizes.",
+        "general": [
+          { "type": "improved", "text": "Equation screens now feel tighter, calmer, and more app-like on phones." },
+          { "type": "improved", "text": "Header controls, drawers, dialogs, and teaching panels were tuned for thumb use and narrow screens." },
+          { "type": "improved", "text": "Dense formulas and scene labels were cleaned up across gravity, relativity, quantum, wave, fluid, and finance views." },
+          { "type": "improved", "text": "Mobile home, account, and dashboard surfaces now scroll and transition more naturally." },
+          { "type": "fix", "text": "Tiny-phone clutter was reduced instead of simply shrinking everything into unreadability." }
+        ],
+        "engineering": [
+          { "type": "frontend", "text": "Added focused mobile visualization mode plus snap states for the teaching sheet." },
+          { "type": "frontend", "text": "Reworked equation shell chrome, drawer behavior, sticky controls, and mobile transitions across the app." },
+          { "type": "frontend", "text": "Ran scene-specific label density passes across wave, log, Euler, gravity, fluids, complex numbers, relativity, and quantum scenes." },
+          { "type": "frontend", "text": "Moved mobile behavior toward dynamic viewport height handling so browser chrome changes stop breaking layouts." },
+          { "type": "frontend", "text": "Refined mobile dialogs and account surfaces to behave more like app surfaces than desktop overlays." }
+        ]
+      },
+      {
+        "version": "0.6.0",
+        "date": "7 Apr 2026",
+        "label": "major",
+        "auditTrail": ["3a03e0e", "51e1b3c", "04b9a06", "8f7aa7d", "d139d4e", "bda86e1"],
+        "summary": "Sciencebo shifted into a safer public beta shape: real legal pages, production prep, and no forced payments during the learning-first phase.",
+        "general": [
+          { "type": "new", "text": "The product moved to a free beta stance while the core learning experience is validated." },
+          { "type": "improved", "text": "Privacy and Terms pages were upgraded from placeholders to real site copy." },
+          { "type": "improved", "text": "Production auth and domain setup work landed to support the live site." },
+          { "type": "security", "text": "Personal deployment notes and private operational docs were kept out of the public repo." }
+        ],
+        "engineering": [
+          { "type": "infra", "text": "Prepared production auth and domain configuration for the live deployment path." },
+          { "type": "security", "text": "Billing was paused behind flags so beta users stay free while payment code remains intact but inactive." },
+          { "type": "content", "text": "Replaced placeholder legal content with public-ready copy and unified contact info." },
+          { "type": "security", "text": "Kept private deploy docs and personal legal-deployment notes local-only rather than tracked." }
+        ]
+      },
+      {
+        "version": "0.5.0",
+        "date": "6 Apr 2026",
+        "label": "major",
+        "auditTrail": ["4e65121", "58344e1", "315553b", "1d9e8eb", "4b60514", "6a65bbe"],
+        "summary": "The app became much sturdier: smoother teaching layouts, better auth continuity, and sharper production-minded hardening.",
+        "general": [
+          { "type": "new", "text": "Google sign-in landed alongside the existing auth flows." },
+          { "type": "improved", "text": "Zooming and responsive teaching layouts became smoother and more reliable." },
+          { "type": "fix", "text": "Login state now restores more cleanly after reloads and auth transitions." },
+          { "type": "security", "text": "A broad security and stability hardening pass landed across auth, progress sync, and interactions." },
+          { "type": "improved", "text": "Typography, footer polish, and the first changelog pass made the product feel more editorially complete." }
+        ],
+        "engineering": [
+          { "type": "security", "text": "Ran a comprehensive security and stability bug hunt across auth, progress sync, and interaction flows." },
+          { "type": "backend", "text": "Returned richer user payloads on login so the frontend can restore account state more accurately." },
+          { "type": "frontend", "text": "Stopped sizing teaching layouts purely from viewport assumptions and moved toward container-aware behavior." },
+          { "type": "frontend", "text": "Improved responsive visualization zoom behavior and equation teaching layout breakpoints." },
+          { "type": "content", "text": "Added and refined changelog and typography systems, including the STIX Two Text rollout." }
+        ]
+      },
+      {
+        "version": "0.4.0",
+        "date": "5 Apr 2026",
+        "label": "major",
+        "auditTrail": ["bcdbf5e", "3eac350", "15d154b", "2886055", "1669d8e", "6cfc40f"],
+        "summary": "The teaching shell settled into a real product: lessons, layouts, KaTeX consistency, and calmer scene behavior.",
+        "general": [
+          { "type": "improved", "text": "Lessons, settings, and layout behavior were tightened across the app." },
+          { "type": "fix", "text": "Formulas were standardized around KaTeX instead of mixed rendering paths." },
+          { "type": "improved", "text": "Silent progress syncing replaced more intrusive sync prompts." },
+          { "type": "fix", "text": "Entropy and immersive-mode issues were cleaned up so scenes behave more consistently." },
+          { "type": "fix", "text": "Narrow-screen clipping and formula rendering regressions were removed." }
+        ],
+        "engineering": [
+          { "type": "frontend", "text": "Standardized formula rendering around KaTeX and removed the older preview conversion path." },
+          { "type": "frontend", "text": "Normalized scene composition by wrapping straggler scenes with the same teaching shell used elsewhere." },
+          { "type": "frontend", "text": "Fixed narrow-screen SVG clipping and tightened reusable lesson-layout plumbing." },
+          { "type": "backend", "text": "Improved silent progress sync behavior so local and server progress stop fighting the interface." }
+        ]
+      },
+      {
+        "version": "0.3.0",
+        "date": "5 Apr 2026",
+        "label": "major",
+        "auditTrail": ["2d85ab6", "390f172", "5a0e5f5", "7a0196b"],
+        "summary": "Sciencebo grew from a concept into a broader learning product with profiles, dashboard views, and richer scene interactions.",
+        "general": [
+          { "type": "new", "text": "Profile, dashboard, About, and Pro-facing surfaces were added." },
+          { "type": "new", "text": "D3 drag interactions landed across all 17 equation scenes." },
+          { "type": "new", "text": "Resizable panels gave the teaching layout more flexibility on larger screens." },
+          { "type": "improved", "text": "Continue Learning and equation relevance sorting made the profile flow more useful." }
+        ],
+        "engineering": [
+          { "type": "frontend", "text": "Added D3-driven interaction plumbing across every equation scene." },
+          { "type": "frontend", "text": "Introduced resizable panel infrastructure and integrated it into the learning shell." },
+          { "type": "backend", "text": "Expanded the app surface around profile, dashboard, and Pro-related user state." },
+          { "type": "content", "text": "Improved homepage math rendering and corrected subject positioning as the product scope sharpened." }
+        ]
+      },
+      {
+        "version": "0.2.0",
+        "date": "5 Apr 2026",
+        "label": "minor",
+        "auditTrail": ["a682d67", "b191b9d"],
+        "summary": "The product identity sharpened and the early equation scenes started looking like a coherent atlas instead of disconnected demos.",
+        "general": [
+          { "type": "improved", "text": "The project was renamed to Sciencebo, with early scene upgrades to match the new direction." },
+          { "type": "improved", "text": "Hero math precision and formula rendering were cleaned up in public-facing surfaces." }
+        ],
+        "engineering": [
+          { "type": "content", "text": "Renamed the project and aligned public-facing scene and subject language with the new brand direction." },
+          { "type": "frontend", "text": "Improved hero precision and reinforced KaTeX rendering on surfaced marketing pages." }
+        ]
+      },
+      {
+        "version": "0.1.0",
+        "date": "5 Apr 2026",
+        "label": "minor",
+        "auditTrail": ["b7315ca"],
+        "summary": "The first working foundation landed: an interactive math learning platform with a frontend, backend, auth, and a starting equation atlas.",
+        "general": [
+          { "type": "new", "text": "Initial interactive math platform launched with React and Django." },
+          { "type": "new", "text": "The first equation atlas and learning shell were established." },
+          { "type": "new", "text": "Auth, formula rendering, and the basic product structure were all in place from day one." }
+        ],
+        "engineering": [
+          { "type": "frontend", "text": "Bootstrapped the React application and interactive math presentation layer." },
+          { "type": "backend", "text": "Bootstrapped the Django backend and auth foundations." },
+          { "type": "content", "text": "Established the initial equation atlas and interactive learning direction." }
+        ]
+      }
+    ]
+  }
+}
