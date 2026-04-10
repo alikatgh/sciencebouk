@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useMemo, useState } from "react"
 import { buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -46,38 +47,40 @@ const variables: Variable[] = [
   { name: 'r', symbol: 'r', latex: 'r', value: 0.05, min: 0.01, max: 0.15, step: 0.005, color: VAR_COLORS.quaternary, description: 'Risk-free rate' },
 ]
 
+const lessonCopy = getLessonCopy("black-scholes")
+
 const lessons: LessonStep[] = [
   {
     id: 'strike-price',
-    instruction: "The blue curve is the call option price. Drag the strike price K to see how it affects the option value. Higher K means the right to buy is less valuable (you'd have to pay more).",
-    hint: "Drag the blue K in the formula to change the strike price. Watch how the call curve shifts.",
+    instruction: lessonCopy["strike-price"].instruction,
+    hint: lessonCopy["strike-price"].hint,
     highlightElements: ['K'],
     unlockedVariables: ['K'],
     lockedVariables: ['sigma', 'T', 'r'],
     successCondition: { type: 'variable_changed', target: 'K' },
     celebration: 'subtle',
-    insight: "The call option (right to BUY) gets cheaper as the strike price rises, because a higher strike means you'd pay more to exercise. The put option (right to SELL) does the opposite. The dashed lines show the 'intrinsic value' -- what the option would be worth if it expired right now.",
+    insight: lessonCopy["strike-price"].insight,
   },
   {
     id: 'volatility',
-    instruction: "Now drag volatility (sigma) upward. This is the key insight of Black-Scholes: uncertainty has measurable value.",
-    hint: "Increase the yellow sigma. Watch both curves rise.",
+    instruction: lessonCopy.volatility.instruction,
+    hint: lessonCopy.volatility.hint,
     highlightElements: ['sigma'],
     unlockedVariables: ['sigma'],
     lockedVariables: ['K', 'T', 'r'],
     successCondition: { type: 'variable_changed', target: 'sigma' },
     celebration: 'subtle',
-    insight: "Higher volatility means the stock price could swing wildly. For an option buyer, this is pure upside -- if the stock goes way up, you profit; if it goes way down, you just don't exercise. More uncertainty = more valuable options. This is why options get expensive before earnings reports.",
+    insight: lessonCopy.volatility.insight,
   },
   {
     id: 'time-decay',
-    instruction: "Drag T (time to expiry) toward zero. Watch how the smooth option price curve approaches the sharp 'hockey stick' of intrinsic value.",
-    hint: "Decrease the green T toward 0.01 and watch the curves change shape.",
+    instruction: lessonCopy["time-decay"].instruction,
+    hint: lessonCopy["time-decay"].hint,
     highlightElements: ['T'],
     unlockedVariables: ['K', 'sigma', 'T', 'r'],
     successCondition: { type: 'variable_changed', target: 'T' },
     celebration: 'big',
-    insight: "As expiration approaches, the 'time value' of the option evaporates. The smooth curve collapses into a sharp corner at the strike price. This is 'theta decay' -- options lose value every day just from the passage of time. The Black-Scholes formula quantifies exactly how much.",
+    insight: lessonCopy["time-decay"].insight,
   },
 ]
 

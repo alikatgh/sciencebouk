@@ -7,6 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { curveMonotoneX, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -19,37 +20,39 @@ const variables: Variable[] = [
   { name: 'y', symbol: 'y', latex: 'y', value: 5, min: 1, max: 100, step: 1, color: VAR_COLORS.secondary, description: 'Second number' },
 ]
 
+const lessonCopy = getLessonCopy("logarithm")
+
 const lessons: LessonStep[] = [
   {
     id: 'drag-x',
-    instruction: "Drag the blue x upward to increase it. Watch how log(x) grows slowly compared to x itself.",
-    hint: "Find the blue x in the formula and drag it upward.",
+    instruction: lessonCopy["drag-x"].instruction,
+    hint: lessonCopy["drag-x"].hint,
     highlightElements: ['x'],
     unlockedVariables: ['x'],
     lockedVariables: ['y'],
     successCondition: { type: 'variable_changed', target: 'x' },
     celebration: 'subtle',
-    insight: "Notice how x went from 20 to a bigger number, but log(x) barely changed? Logarithms grow incredibly slowly. Going from 10 to 100 only adds 1 to the log.",
+    insight: lessonCopy["drag-x"].insight,
   },
   {
     id: 'product-rule',
-    instruction: "Now drag both x and y. Watch the bars: the bottom bar (log of x times y) always equals the sum of the top two bars.",
-    hint: "Change both x and y and compare the three colored bars.",
+    instruction: lessonCopy["product-rule"].instruction,
+    hint: lessonCopy["product-rule"].hint,
     highlightElements: ['x', 'y'],
     unlockedVariables: ['x', 'y'],
     successCondition: { type: 'variable_changed', target: 'y' },
     celebration: 'subtle',
-    insight: "This is the product rule of logarithms: log(xy) = log(x) + log(y). Multiplication becomes addition! This is why slide rules worked -- engineers could multiply by adding lengths.",
+    insight: lessonCopy["product-rule"].insight,
   },
   {
     id: 'earthquake',
-    instruction: "Set x to 10 and y to 10. Their product is 100, but log(100) = log(10) + log(10) = just 2.",
-    hint: "Set x=10, y=10 and look at the result.",
+    instruction: lessonCopy.earthquake.instruction,
+    hint: lessonCopy.earthquake.hint,
     highlightElements: ['x', 'y'],
     unlockedVariables: ['x', 'y'],
     successCondition: { type: 'value_reached', target: 'x', value: 10, tolerance: 2 },
     celebration: 'big',
-    insight: "This is why the Richter scale uses logarithms. An earthquake of magnitude 8 is not 'a little bigger' than magnitude 7 -- it's 10 times more powerful. Logarithms let us handle enormous ranges on a human-friendly scale.",
+    insight: lessonCopy.earthquake.insight,
   },
 ]
 

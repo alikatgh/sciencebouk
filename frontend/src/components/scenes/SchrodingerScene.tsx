@@ -7,6 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { area as d3area, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -17,38 +18,40 @@ const variables: Variable[] = [
   { name: 'L', symbol: 'L', latex: 'L', value: 1.0, min: 0.5, max: 2.0, step: 0.1, color: VAR_COLORS.secondary, description: 'Box width' },
 ]
 
+const lessonCopy = getLessonCopy("schrodinger")
+
 const lessons: LessonStep[] = [
   {
     id: 'ground-state',
-    instruction: "This is n=1, the ground state. The blue wave shows the particle's wave function -- where the particle is most likely to be found.",
-    hint: "Look at the blue curve: it peaks in the center of the box. The particle is most likely to be found there.",
+    instruction: lessonCopy["ground-state"].instruction,
+    hint: lessonCopy["ground-state"].hint,
     highlightElements: ['n'],
     unlockedVariables: ['n'],
     lockedVariables: ['L'],
     successCondition: { type: 'time_elapsed', duration: 8000 },
     celebration: 'subtle',
-    insight: "Unlike a classical ball bouncing in a box, a quantum particle doesn't have a definite position. The wave function tells us the PROBABILITY of finding it at each location. The green shaded area shows this probability density.",
+    insight: lessonCopy["ground-state"].insight,
   },
   {
     id: 'increase-n',
-    instruction: "Drag the blue n upward to increase the quantum number. Watch the wave function develop more peaks (nodes).",
-    hint: "Increase n to 2, then 3. Count the number of peaks in the wave function.",
+    instruction: lessonCopy["increase-n"].instruction,
+    hint: lessonCopy["increase-n"].hint,
     highlightElements: ['n'],
     unlockedVariables: ['n'],
     lockedVariables: ['L'],
     successCondition: { type: 'variable_changed', target: 'n' },
     celebration: 'subtle',
-    insight: "Higher quantum numbers mean more nodes (zero-crossings) in the wave function. Each node means higher energy. The energy goes as n squared -- doubling n quadruples the energy. The particle is more energetic but also more confined in its probability peaks.",
+    insight: lessonCopy["increase-n"].insight,
   },
   {
     id: 'shrink-box',
-    instruction: "Now drag the yellow L downward to shrink the box. Watch the energy levels spread apart.",
-    hint: "Decrease L toward 0.5 and watch the energy diagram on the right.",
+    instruction: lessonCopy["shrink-box"].instruction,
+    hint: lessonCopy["shrink-box"].hint,
     highlightElements: ['L'],
     unlockedVariables: ['n', 'L'],
     successCondition: { type: 'variable_changed', target: 'L' },
     celebration: 'big',
-    insight: "This is the Heisenberg Uncertainty Principle in action! Confining the particle to a smaller space (knowing its position better) forces it to have higher energy (more uncertain momentum). Energy scales as 1/L squared. This is why atoms don't collapse -- squeezing electrons closer to the nucleus would cost too much energy.",
+    insight: lessonCopy["shrink-box"].insight,
   },
 ]
 

@@ -4,6 +4,7 @@ import { drag, type D3DragEvent } from "d3-drag"
 import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -14,38 +15,40 @@ const variables: Variable[] = [
   { name: 'b', symbol: 'b', latex: 'b', value: 0.5, min: -2.5, max: 2.5, step: 0.1, color: VAR_COLORS.secondary, description: 'Imaginary part Im(z)' },
 ]
 
+const lessonCopy = getLessonCopy("complex")
+
 const lessons: LessonStep[] = [
   {
     id: 'explore-real',
-    instruction: "Drag the blue a (the real part) to move the point left and right along the real axis.",
-    hint: "Find the blue a in the formula and drag it.",
+    instruction: lessonCopy["explore-real"].instruction,
+    hint: lessonCopy["explore-real"].hint,
     highlightElements: ['a'],
     unlockedVariables: ['a'],
     lockedVariables: ['b'],
     successCondition: { type: 'variable_changed', target: 'a' },
     celebration: 'subtle',
-    insight: "The real part moves the point horizontally, just like a regular number line. Complex numbers extend math into two dimensions.",
+    insight: lessonCopy["explore-real"].insight,
   },
   {
     id: 'explore-imaginary',
-    instruction: "Now drag the yellow b (the imaginary part) to move the point up and down.",
-    hint: "Drag the yellow b value in the formula.",
+    instruction: lessonCopy["explore-imaginary"].instruction,
+    hint: lessonCopy["explore-imaginary"].hint,
     highlightElements: ['b'],
     unlockedVariables: ['b'],
     lockedVariables: ['a'],
     successCondition: { type: 'variable_changed', target: 'b' },
     celebration: 'subtle',
-    insight: "The imaginary axis is perpendicular to the real axis. Together they form the complex plane, where every point represents a complex number a + bi.",
+    insight: lessonCopy["explore-imaginary"].insight,
   },
   {
     id: 'multiply-by-i',
-    instruction: "Set a to about 1 and b to 0, then use the 'Multiply by i' button below the visualization. Watch what happens to the point.",
-    hint: "Set a=1, b=0 to put the point on the real axis, then click the multiply-by-i button.",
+    instruction: lessonCopy["multiply-by-i"].instruction,
+    hint: lessonCopy["multiply-by-i"].hint,
     highlightElements: ['a', 'b'],
     unlockedVariables: ['a', 'b'],
     successCondition: { type: 'variable_changed', target: 'b' },
     celebration: 'big',
-    insight: "Multiplying by i rotates the point exactly 90 degrees counterclockwise. Do it twice (i x i) and you've rotated 180 degrees, which is the same as multiplying by -1. That's why i squared equals -1!",
+    insight: lessonCopy["multiply-by-i"].insight,
   },
 ]
 

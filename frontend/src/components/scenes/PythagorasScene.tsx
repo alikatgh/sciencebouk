@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react"
 import { select } from "d3-selection"
 import { drag, type D3DragEvent } from "d3-drag"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep, GlossaryTerm } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -46,34 +47,36 @@ const variables: Variable[] = [
   { name: 'c', symbol: 'c', latex: 'c', value: 5, min: 0, max: 20, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Hypotenuse' },
 ]
 
+const lessonCopy = getLessonCopy("pythagoras")
+
 const lessons: LessonStep[] = [
   {
     id: 'touch',
-    instruction: "Grab the blue dot on side a and drag up to make it longer.",
+    instruction: lessonCopy.touch.instruction,
     highlightElements: ['a'],
     unlockedVariables: ['a'],
     lockedVariables: ['b'],
     successCondition: { type: 'variable_changed', target: 'a' },
     celebration: 'subtle',
-    insight: "The hypotenuse c grew too. And look at the squares — the blue one (a²) got bigger, and so did the red one (c²). They always balance.",
+    insight: lessonCopy.touch.insight,
   },
   {
     id: 'squares',
-    instruction: "Watch the squares. Blue area + amber area always equals red area. Drag both a and b to verify.",
+    instruction: lessonCopy.squares.instruction,
     highlightElements: ['a', 'b'],
     unlockedVariables: ['a', 'b'],
     successCondition: { type: 'variable_changed', target: 'b' },
     celebration: 'subtle',
-    insight: "a² + b² = c². Always. No matter what size the triangle is.",
+    insight: lessonCopy.squares.insight,
   },
   {
     id: 'classic',
-    instruction: "Set a = 3 and b = 4. What is c?",
+    instruction: lessonCopy.classic.instruction,
     highlightElements: ['a', 'b'],
     unlockedVariables: ['a', 'b'],
     successCondition: { type: 'value_reached', target: 'a', value: 3, tolerance: 0.5 },
     celebration: 'big',
-    insight: "c = 5. The famous 3-4-5 triangle. Builders have used this for 4,000 years to make perfect right angles.",
+    insight: lessonCopy.classic.insight,
   },
 ]
 

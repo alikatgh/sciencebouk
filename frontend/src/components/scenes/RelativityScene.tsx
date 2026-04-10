@@ -7,6 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -18,36 +19,38 @@ const variables: Variable[] = [
   { name: 'gamma', symbol: '\u03B3', latex: '\\gamma', value: 1.15, min: 1, max: 100, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Lorentz factor' },
 ]
 
+const lessonCopy = getLessonCopy("relativity")
+
 const lessons: LessonStep[] = [
   {
     id: 'touch-v',
-    instruction: "See the blue v in the formula? Drag it upward to increase the velocity.",
-    hint: "Find the blue v above and drag up to increase it.",
+    instruction: lessonCopy["touch-v"].instruction,
+    hint: lessonCopy["touch-v"].hint,
     highlightElements: ['v'],
     unlockedVariables: ['v'],
     successCondition: { type: 'variable_changed', target: 'v' },
     celebration: 'subtle',
-    insight: "As velocity increases, the Lorentz factor gamma grows. At half the speed of light, time only slows by about 15%. Not much yet.",
+    insight: lessonCopy["touch-v"].insight,
   },
   {
     id: 'high-speed',
-    instruction: "Now push v up to 0.90 -- that's 90% of light speed.",
-    hint: "Drag v until it reads 0.90.",
+    instruction: lessonCopy["high-speed"].instruction,
+    hint: lessonCopy["high-speed"].hint,
     highlightElements: ['v'],
     unlockedVariables: ['v'],
     successCondition: { type: 'value_reached', target: 'v', value: 0.90, tolerance: 0.03 },
     celebration: 'medium',
-    insight: "At 90% light speed, gamma is about 2.3. A clock on the spaceship ticks at less than half speed. GPS satellites experience a version of this -- their clocks drift by 38 microseconds per day.",
+    insight: lessonCopy["high-speed"].insight,
   },
   {
     id: 'near-light',
-    instruction: "Try to push v as close to 1.0 as you can. Watch what happens to gamma.",
-    hint: "Push v to the maximum value (0.99).",
+    instruction: lessonCopy["near-light"].instruction,
+    hint: lessonCopy["near-light"].hint,
     highlightElements: ['v', 'gamma'],
     unlockedVariables: ['v'],
     successCondition: { type: 'value_reached', target: 'v', value: 0.99, tolerance: 0.02 },
     celebration: 'big',
-    insight: "Gamma shoots toward infinity as v approaches c. This is why nothing with mass can reach light speed -- it would require infinite energy. The universe has a speed limit baked into spacetime itself.",
+    insight: lessonCopy["near-light"].insight,
   },
 ]
 

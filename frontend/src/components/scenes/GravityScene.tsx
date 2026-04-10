@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react"
 import { drag, type D3DragEvent } from "d3-drag"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -16,35 +17,37 @@ const variables: Variable[] = [
   { name: 'G', symbol: 'G', latex: 'G', value: 1, min: 1, max: 1, step: 1, color: VAR_COLORS.constant, constant: true, description: 'Gravitational constant' },
 ]
 
+const lessonCopy = getLessonCopy("gravity")
+
 const lessons: LessonStep[] = [
   {
     id: 'touch',
-    instruction: "Drag the distance between the bodies to see how gravity changes.",
+    instruction: lessonCopy.touch.instruction,
     highlightElements: ['r'],
     unlockedVariables: ['r'],
     lockedVariables: ['m1', 'm2'],
     successCondition: { type: 'variable_changed', target: 'r' },
     celebration: 'subtle',
-    insight: "See the force arrow change? Closer bodies pull harder — gravity falls off with distance squared.",
+    insight: lessonCopy.touch.insight,
   },
   {
     id: 'distance',
-    instruction: "Now drag the masses closer together. Watch the force arrow.",
+    instruction: lessonCopy.distance.instruction,
     highlightElements: ['r'],
     unlockedVariables: ['r'],
     lockedVariables: ['m1', 'm2'],
     successCondition: { type: 'variable_changed', target: 'r' },
     celebration: 'subtle',
-    insight: "Halve the distance, quadruple the force. The r\u00B2 in the formula is what makes gravity so strong up close.",
+    insight: lessonCopy.distance.insight,
   },
   {
     id: 'break-it',
-    instruction: "Everything unlocked. Bring the masses as close as possible.",
+    instruction: lessonCopy["break-it"].instruction,
     highlightElements: ['m1', 'm2', 'r'],
     unlockedVariables: ['m1', 'm2', 'r'],
     successCondition: { type: 'value_reached', target: 'r', value: 1.5, tolerance: 0.2 },
     celebration: 'medium',
-    insight: "Huge masses + tiny distance = enormous force. This is black-hole territory.",
+    insight: lessonCopy["break-it"].insight,
   },
 ]
 

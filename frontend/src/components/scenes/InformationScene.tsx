@@ -7,6 +7,7 @@ import {
   useChartFrame,
 } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -19,10 +20,12 @@ const variables: Variable[] = [
   { name: 'p', symbol: 'p', latex: 'p', value: 0.5, min: 0.01, max: 0.99, step: 0.01, color: VAR_COLORS.primary, description: 'Probability of outcome A' },
 ]
 
+const lessonCopy = getLessonCopy("information")
+
 const lessons: LessonStep[] = [
-  { id: 'max-entropy', instruction: "Set p to 0.50 -- the fair coin. Notice the entropy is at its maximum: 1 bit.", hint: "Drag p to 0.50.", highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'value_reached', target: 'p', value: 0.5, tolerance: 0.05 }, celebration: 'subtle', insight: "When p=0.5, you have maximum uncertainty. You need exactly 1 bit (one yes/no question) to determine the outcome. This is why a fair coin flip is the fundamental unit of information." },
-  { id: 'low-entropy', instruction: "Now drag p to 0.99 -- an almost-certain outcome. Watch entropy drop to nearly zero.", hint: "Drag p all the way up to 0.99.", highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'value_reached', target: 'p', value: 0.99, tolerance: 0.03 }, celebration: 'subtle', insight: "When the outcome is almost certain, there is almost no information in learning it. Asking 'Will the sun rise tomorrow?' gives you almost zero bits of information." },
-  { id: 'explore-curve', instruction: "Explore the full curve. Notice it is perfectly symmetric around p=0.5.", hint: "Drag p around to see how entropy changes across the full range.", highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'variable_changed', target: 'p' }, celebration: 'big', insight: "Shannon's key insight: information equals surprise. The most informative message is the one you least expected. This idea powers everything from ZIP files to 5G networks." },
+  { id: 'max-entropy', instruction: lessonCopy["max-entropy"].instruction, hint: lessonCopy["max-entropy"].hint, highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'value_reached', target: 'p', value: 0.5, tolerance: 0.05 }, celebration: 'subtle', insight: lessonCopy["max-entropy"].insight },
+  { id: 'low-entropy', instruction: lessonCopy["low-entropy"].instruction, hint: lessonCopy["low-entropy"].hint, highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'value_reached', target: 'p', value: 0.99, tolerance: 0.03 }, celebration: 'subtle', insight: lessonCopy["low-entropy"].insight },
+  { id: 'explore-curve', instruction: lessonCopy["explore-curve"].instruction, hint: lessonCopy["explore-curve"].hint, highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'variable_changed', target: 'p' }, celebration: 'big', insight: lessonCopy["explore-curve"].insight },
 ]
 
 export function InformationScene(): ReactElement {

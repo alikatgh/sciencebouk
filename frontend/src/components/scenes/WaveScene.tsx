@@ -6,6 +6,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -17,38 +18,40 @@ const variables: Variable[] = [
   { name: 'wavelength', symbol: '\u03BB', latex: '\\lambda', value: 120, min: 50, max: 200, step: 1, color: VAR_COLORS.tertiary, unit: 'px', description: 'Wavelength (distance between peaks)' },
 ]
 
+const lessonCopy = getLessonCopy("wave")
+
 const lessons: LessonStep[] = [
   {
     id: 'change-freq',
-    instruction: "Drag the blue f (frequency) upward. Watch the wave get more tightly packed.",
-    hint: "Drag the blue f in the formula upward to increase frequency.",
+    instruction: lessonCopy["change-freq"].instruction,
+    hint: lessonCopy["change-freq"].hint,
     highlightElements: ['freq'],
     unlockedVariables: ['freq'],
     lockedVariables: ['amp', 'wavelength'],
     successCondition: { type: 'variable_changed', target: 'freq' },
     celebration: 'subtle',
-    insight: "Higher frequency means more oscillations per second. On a guitar, a shorter string vibrates faster and produces a higher pitch. Frequency IS pitch.",
+    insight: lessonCopy["change-freq"].insight,
   },
   {
     id: 'change-amp',
-    instruction: "Now drag the amber A (amplitude) to make the wave taller or shorter.",
-    hint: "Drag the amber A up to increase amplitude.",
+    instruction: lessonCopy["change-amp"].instruction,
+    hint: lessonCopy["change-amp"].hint,
     highlightElements: ['amp'],
     unlockedVariables: ['amp'],
     lockedVariables: ['freq', 'wavelength'],
     successCondition: { type: 'variable_changed', target: 'amp' },
     celebration: 'subtle',
-    insight: "Amplitude controls how much energy the wave carries. For sound, amplitude is volume. For light, it's brightness. The wave shape stays the same -- only its height changes.",
+    insight: lessonCopy["change-amp"].insight,
   },
   {
     id: 'superposition',
-    instruction: "Now everything is unlocked. Look at the bottom panel: two waves added together. This is superposition -- waves combine by simple addition.",
-    hint: "Adjust frequency and wavelength to see interesting interference patterns.",
+    instruction: lessonCopy.superposition.instruction,
+    hint: lessonCopy.superposition.hint,
     highlightElements: ['freq', 'amp', 'wavelength'],
     unlockedVariables: ['freq', 'amp', 'wavelength'],
     successCondition: { type: 'variable_changed', target: 'wavelength' },
     celebration: 'big',
-    insight: "Superposition is why noise-canceling headphones work: they produce an inverted copy of the noise, and when the two waves add up, they cancel out. Wave + anti-wave = silence.",
+    insight: lessonCopy.superposition.insight,
   },
 ]
 

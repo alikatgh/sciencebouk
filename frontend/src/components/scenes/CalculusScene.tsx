@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -24,44 +25,46 @@ const variables: Variable[] = [
   { name: 'f', symbol: 'f', latex: 'f', value: 0, min: 0, max: 0, step: 1, color: '#6b7280', constant: true, description: 'The function' },
 ]
 
+const lessonCopy = getLessonCopy("calculus")
+
 const lessons: LessonStep[] = [
   {
     id: 'touch',
-    instruction: "Grab the blue dot and drag it along the curve.",
+    instruction: lessonCopy.touch.instruction,
     highlightElements: ['t'],
     unlockedVariables: ['t'],
     lockedVariables: ['h'],
     successCondition: { type: 'variable_changed', target: 't' },
     celebration: 'subtle',
-    insight: "The orange line tilts as you move. Its steepness IS the speed -- that's a derivative.",
+    insight: lessonCopy.touch.insight,
   },
   {
     id: 'secant',
-    instruction: "Now drag h smaller. Watch the orange line approach the gray tangent.",
+    instruction: lessonCopy.secant.instruction,
     highlightElements: ['h'],
     unlockedVariables: ['h'],
     lockedVariables: ['t'],
     successCondition: { type: 'variable_changed', target: 'h' },
     celebration: 'subtle',
-    insight: "As h -> 0, the secant becomes the tangent. That's what 'limit' means -- just zooming in until two points become one.",
+    insight: lessonCopy.secant.insight,
   },
   {
     id: 'explore',
-    instruction: "Find where the slope is zero -- the flat spots on the curve.",
+    instruction: lessonCopy.explore.instruction,
     highlightElements: ['t', 'h'],
     unlockedVariables: ['t', 'h'],
     successCondition: { type: 'value_reached', target: 'slope', value: 0, tolerance: 0.15 },
     celebration: 'medium',
-    insight: "Slope = 0 at peaks and valleys. Setting the derivative to zero finds maximums and minimums. That's optimization.",
+    insight: lessonCopy.explore.insight,
   },
   {
     id: 'integral',
-    instruction: "Toggle 'Area' below. Drag t right and watch the shaded region grow -- that's the integral.",
+    instruction: lessonCopy.integral.instruction,
     highlightElements: ['t'],
     unlockedVariables: ['t', 'h'],
     successCondition: { type: 'variable_changed', target: 't' },
     celebration: 'big',
-    insight: "Derivative = distance -> speed. Integral = speed -> distance. They undo each other. This powers all of physics.",
+    insight: lessonCopy.integral.insight,
   },
 ]
 

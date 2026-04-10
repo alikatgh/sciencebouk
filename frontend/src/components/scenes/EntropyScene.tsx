@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { useMemo, useRef } from "react"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -119,42 +120,44 @@ const variables: Variable[] = [
   },
 ]
 
+const lessonCopy = getLessonCopy("entropy")
+
 const lessons: LessonStep[] = [
   {
     id: 'order',
-    instruction: "Start with low temperature. Notice the ordered particles.",
+    instruction: lessonCopy.order.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
     successCondition: { type: 'time_elapsed', duration: 5000 },
     celebration: 'subtle',
-    insight: "At low temperature, particles sit in a neat lattice. Only one microstate — entropy is zero.",
+    insight: lessonCopy.order.insight,
   },
   {
     id: 'heat',
-    instruction: "Drag T up to about 50. Watch particles scatter.",
+    instruction: lessonCopy.heat.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
     successCondition: { type: 'variable_changed', target: 'temperature' },
     celebration: 'subtle',
-    insight: "More thermal energy means more possible arrangements. Entropy climbs as disorder grows.",
+    insight: lessonCopy.heat.insight,
   },
   {
     id: 'arrow',
-    instruction: "Push T to 100. Maximum entropy — total disorder.",
+    instruction: lessonCopy.arrow.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
     successCondition: { type: 'value_reached', target: 'temperature', value: 100, tolerance: 5 },
     celebration: 'medium',
-    insight: "At maximum temperature the particles explore every possible arrangement. Entropy is at its peak.",
+    insight: lessonCopy.arrow.insight,
   },
   {
     id: 'irreversible',
-    instruction: "Now try to bring T back to 0. Can you unscramble the egg?",
+    instruction: lessonCopy.irreversible.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
     successCondition: { type: 'value_reached', target: 'temperature', value: 0, tolerance: 5 },
     celebration: 'big',
-    insight: "You can cool the system, but in nature the total entropy of the universe never decreases. That's the Second Law.",
+    insight: lessonCopy.irreversible.insight,
   },
 ]
 

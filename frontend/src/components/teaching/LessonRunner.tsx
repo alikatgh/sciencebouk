@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, RotateCcw, Trophy, Sparkles } from "lucide-re
 import { Button } from "../ui/button"
 import { Progress } from "../ui/progress"
 import { useSettings } from "../../settings/SettingsContext"
+import { LessonMarkdown } from "./LessonMarkdown"
 import type { LessonStep, Variable, GlossaryTerm } from "./types"
 
 interface LessonRunnerProps {
@@ -17,74 +18,6 @@ interface LessonRunnerProps {
   glossary?: GlossaryTerm[]
   onTermHighlight?: (highlightClass: string | null) => void
   compact?: boolean
-}
-
-function linkTerms(
-  text: string,
-  variables: Variable[],
-  glossary: GlossaryTerm[],
-  onHighlight: (name: string | null) => void,
-  onTermHighlight: (cls: string | null) => void,
-): ReactElement {
-  // Build all matchable tokens: glossary words + multi-char variable symbols
-  const allTokens: Array<{ word: string; type: 'var' | 'term'; varRef?: Variable; termRef?: GlossaryTerm }> = []
-
-  // Glossary terms (multi-word phrases like "hypotenuse", "bell curve", "force arrow")
-  for (const term of glossary) {
-    for (const w of term.words) {
-      allTokens.push({ word: w, type: 'term', termRef: term })
-    }
-  }
-
-  // Multi-char variable symbols
-  const safeVars = variables.filter((v) => v.symbol.length > 1 || v.name.length > 1)
-  for (const v of safeVars) {
-    if (v.symbol.length > 1) allTokens.push({ word: v.symbol, type: 'var', varRef: v })
-    if (v.name.length > 1 && v.name !== v.symbol) allTokens.push({ word: v.name, type: 'var', varRef: v })
-  }
-
-  if (allTokens.length === 0) return <>{text}</>
-
-  // Sort longest first to match "force arrow" before "force"
-  allTokens.sort((a, b) => b.word.length - a.word.length)
-
-  const escaped = allTokens.map((t) => t.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-  const regex = new RegExp(`\\b(${escaped.join("|")})\\b`, "gi")
-  const parts = text.split(regex)
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        const lower = part.toLowerCase()
-        const token = allTokens.find((t) => t.word.toLowerCase() === lower)
-        if (!token) return <span key={i}>{part}</span>
-
-        if (token.type === 'var' && token.varRef) {
-          return (
-            <span key={i} className="cursor-pointer rounded px-0.5 font-bold transition hover:ring-1 hover:ring-current"
-              style={{ color: token.varRef.color }}
-              onPointerEnter={() => onHighlight(token.varRef!.name)}
-              onPointerLeave={() => onHighlight(null)}
-            >{part}</span>
-          )
-        }
-
-        if (token.type === 'term' && token.termRef) {
-          return (
-            <span key={i}
-              className="cursor-pointer border-b border-dashed border-current font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
-              style={{ color: token.termRef.color }}
-              title={token.termRef.tooltip}
-              onPointerEnter={() => onTermHighlight(token.termRef!.highlightClass)}
-              onPointerLeave={() => onTermHighlight(null)}
-            >{part}</span>
-          )
-        }
-
-        return <span key={i}>{part}</span>
-      })}
-    </>
-  )
 }
 
 const PARTICLE_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
@@ -141,9 +74,6 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
   const highlight = useCallback((name: string | null) => { onHighlight?.(name) }, [onHighlight])
   const termHighlight = useCallback((cls: string | null) => { onTermHighlight?.(cls) }, [onTermHighlight])
-  const renderText = useCallback((text: string) => {
-    return linkTerms(text, variables, glossary, highlight, termHighlight)
-  }, [variables, glossary, highlight, termHighlight])
 
   useEffect(() => () => {
     if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
@@ -234,16 +164,29 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
           ? "animate-slide-in-right rounded-[18px] border border-ocean/15 bg-ocean/5 px-3.5 py-3 dark:border-ocean/20 dark:bg-ocean/10"
           : "animate-slide-in-right rounded-lg border border-ocean/15 bg-ocean/5 px-3 py-2 dark:border-ocean/20 dark:bg-ocean/10"}
       >
-          <p className={`${compact ? "text-[13px]" : "text-xs"} leading-relaxed text-slate-700 dark:text-slate-300`}>{renderText(step.instruction)}</p>
+        <LessonMarkdown
+          content={step.instruction}
+          className={`${compact ? "text-[13px]" : "text-xs"} text-slate-700 dark:text-slate-300`}
+          variables={variables}
+          glossary={glossary}
+          onHighlight={highlight}
+          onTermHighlight={termHighlight}
+        />
       </div>
 
       {/* Hint */}
       {showHint && step.hint && !stepCompleted && appSettings.showHints && (
-        <p className={compact
+        <div className={compact
           ? "animate-fade-in mt-1.5 rounded-[16px] bg-slate-100 px-3.5 py-2 text-xs text-slate-400 dark:bg-slate-700"
           : "animate-fade-in mt-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] text-slate-400 dark:bg-slate-700"}>
-          {renderText(step.hint)}
-        </p>
+          <LessonMarkdown
+            content={step.hint}
+            variables={variables}
+            glossary={glossary}
+            onHighlight={highlight}
+            onTermHighlight={termHighlight}
+          />
+        </div>
       )}
 
       {/* Insight (mid-lesson steps) */}
@@ -254,7 +197,14 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
             <div className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-500" />
               <div className="flex-1">
-                <p className={`${compact ? "text-[13px]" : "text-xs"} leading-relaxed text-slate-600 dark:text-slate-300`}>{renderText(step.insight)}</p>
+                <LessonMarkdown
+                  content={step.insight}
+                  className={`${compact ? "text-[13px]" : "text-xs"} text-slate-600 dark:text-slate-300`}
+                  variables={variables}
+                  glossary={glossary}
+                  onHighlight={highlight}
+                  onTermHighlight={termHighlight}
+                />
                 <Button size="xs" className={`${compact ? "mt-2.5 min-h-[42px] rounded-full px-4" : "mt-2"}`} onClick={handleAdvance}>
                   Next step <ArrowRight className="h-3 w-3" />
                 </Button>
@@ -287,12 +237,18 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
                 Lesson complete!
               </p>
 
-              <p
+              <div
                 className={`animate-fade-in mt-1.5 ${compact ? "text-[13px]" : "text-xs"} leading-relaxed text-slate-600 dark:text-slate-300`}
                 style={{ animationDelay: "400ms" }}
               >
-                {renderText(step.insight)}
-              </p>
+                <LessonMarkdown
+                  content={step.insight}
+                  variables={variables}
+                  glossary={glossary}
+                  onHighlight={highlight}
+                  onTermHighlight={termHighlight}
+                />
+              </div>
 
               <div
                 className={`animate-fade-in-up mt-3 flex ${compact ? "flex-wrap justify-center" : ""} gap-2`}

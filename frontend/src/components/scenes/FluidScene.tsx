@@ -5,6 +5,7 @@ import { drag, type D3DragEvent } from "d3-drag"
 import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -58,38 +59,40 @@ const variables: Variable[] = [
   { name: 'flowSpeed', symbol: 'U', latex: 'U', value: 1.5, min: 0.3, max: 4, step: 0.1, color: VAR_COLORS.secondary, description: 'Flow speed' },
 ]
 
+const lessonCopy = getLessonCopy("fluid")
+
 const lessons: LessonStep[] = [
   {
     id: 'watch-flow',
-    instruction: "Watch the particles flowing around the obstacle. Notice how they speed up as they pass around the sides.",
-    hint: "Look at the color of particles near the top and bottom of the obstacle (red = fast).",
+    instruction: lessonCopy["watch-flow"].instruction,
+    hint: lessonCopy["watch-flow"].hint,
     highlightElements: ['flowSpeed'],
     unlockedVariables: ['flowSpeed'],
     lockedVariables: ['viscosity'],
     successCondition: { type: 'time_elapsed', duration: 8000 },
     celebration: 'subtle',
-    insight: "Fluid speeds up when squeezed through a narrow space. This is the same principle that makes wind howl between buildings and why a garden hose sprays faster when you pinch it.",
+    insight: lessonCopy["watch-flow"].insight,
   },
   {
     id: 'change-viscosity',
-    instruction: "Drag the blue viscosity upward. Watch how the flow changes as the fluid gets thicker.",
-    hint: "Increase viscosity to see the boundary layer grow around the obstacle.",
+    instruction: lessonCopy["change-viscosity"].instruction,
+    hint: lessonCopy["change-viscosity"].hint,
     highlightElements: ['viscosity'],
     unlockedVariables: ['viscosity'],
     lockedVariables: ['flowSpeed'],
     successCondition: { type: 'variable_changed', target: 'viscosity' },
     celebration: 'subtle',
-    insight: "Higher viscosity means the fluid 'sticks' more to surfaces. Honey (high viscosity) flows slowly around obstacles. Air (low viscosity) flows quickly. This is why airplane wings are so carefully shaped.",
+    insight: lessonCopy["change-viscosity"].insight,
   },
   {
     id: 'turbulence',
-    instruction: "Set viscosity low (near 0) and flow speed high (near 4). This is where the Navier-Stokes equation becomes nearly impossible to solve.",
-    hint: "Minimize viscosity and maximize flow speed.",
+    instruction: lessonCopy.turbulence.instruction,
+    hint: lessonCopy.turbulence.hint,
     highlightElements: ['viscosity', 'flowSpeed'],
     unlockedVariables: ['viscosity', 'flowSpeed'],
     successCondition: { type: 'value_reached', target: 'flowSpeed', value: 3.5, tolerance: 0.6 },
     celebration: 'big',
-    insight: "At high speed and low viscosity, flow becomes chaotic -- turbulent. Proving whether smooth solutions always exist for the Navier-Stokes equation is one of the seven Millennium Prize Problems, worth one million dollars. Nobody has solved it yet.",
+    insight: lessonCopy.turbulence.insight,
   },
 ]
 

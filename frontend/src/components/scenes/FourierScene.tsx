@@ -7,6 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { curveBasis, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -21,36 +22,38 @@ const variables: Variable[] = [
   { name: 'a4', symbol: 'a\u2084', latex: 'a_4', value: 0.0, min: 0, max: 1, step: 0.05, color: '#a855f7', description: '4th harmonic amplitude' },
 ]
 
+const lessonCopy = getLessonCopy("fourier")
+
 const lessons: LessonStep[] = [
   {
     id: 'fundamental',
-    instruction: "Set a\u2081 to 1.0 and all others to 0. This is a pure tone -- the fundamental frequency.",
-    hint: "Drag a\u2082, a\u2083, a\u2084 down to 0 and keep a\u2081 at 1.0.",
+    instruction: lessonCopy.fundamental.instruction,
+    hint: lessonCopy.fundamental.hint,
     highlightElements: ['a1'],
     unlockedVariables: ['a1', 'a2', 'a3', 'a4'],
     successCondition: { type: 'value_reached', target: 'a2', value: 0, tolerance: 0.1 },
     celebration: 'subtle',
-    insight: "A single sine wave is the simplest possible sound -- a pure tone like a tuning fork. Every other sound is built by combining multiple pure tones at different frequencies.",
+    insight: lessonCopy.fundamental.insight,
   },
   {
     id: 'add-harmonics',
-    instruction: "Now bring a\u2082 up to about 0.5. Watch how the composite signal changes shape.",
-    hint: "Drag the amber a\u2082 up to about 0.50.",
+    instruction: lessonCopy["add-harmonics"].instruction,
+    hint: lessonCopy["add-harmonics"].hint,
     highlightElements: ['a2'],
     unlockedVariables: ['a1', 'a2', 'a3', 'a4'],
     successCondition: { type: 'value_reached', target: 'a2', value: 0.5, tolerance: 0.15 },
     celebration: 'subtle',
-    insight: "Adding a second harmonic changes the timbre -- the 'color' of the sound. This is why a violin and a flute playing the same note sound different: they have different harmonic recipes.",
+    insight: lessonCopy["add-harmonics"].insight,
   },
   {
     id: 'square-wave',
-    instruction: "Try to approximate a square wave: set a\u2081=1.0, a\u2082=0, a\u2083=0.35, a\u2084=0. (Only odd harmonics!)",
-    hint: "Set a\u2081=1.0, a\u2082=0, a\u2083=0.35, a\u2084=0.",
+    instruction: lessonCopy["square-wave"].instruction,
+    hint: lessonCopy["square-wave"].hint,
     highlightElements: ['a1', 'a2', 'a3', 'a4'],
     unlockedVariables: ['a1', 'a2', 'a3', 'a4'],
     successCondition: { type: 'value_reached', target: 'a3', value: 0.35, tolerance: 0.1 },
     celebration: 'big',
-    insight: "A square wave is built from only odd harmonics (1, 3, 5...) with amplitudes 1/n. This is Fourier's great insight: ANY shape can be built from sine waves. MP3 compression works by throwing away the harmonics your ear can't hear.",
+    insight: lessonCopy["square-wave"].insight,
   },
 ]
 

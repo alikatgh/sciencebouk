@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useMemo, useState } from "react"
 import { buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -10,49 +11,51 @@ const variables: Variable[] = [
   { name: 'x0', symbol: 'x\u2080', latex: 'x_0', value: 0.5, min: 0.1, max: 0.9, step: 0.01, color: VAR_COLORS.secondary, description: 'Initial population value' },
 ]
 
+const lessonCopy = getLessonCopy("chaos")
+
 const lessons: LessonStep[] = [
   {
     id: 'stable',
-    instruction: "Drag the blue r down to about 2.8. Watch the time series settle to a single value.",
-    hint: "Drag r in the formula down to 2.80.",
+    instruction: lessonCopy.stable.instruction,
+    hint: lessonCopy.stable.hint,
     highlightElements: ['r'],
     unlockedVariables: ['r'],
     lockedVariables: ['x0'],
     successCondition: { type: 'value_reached', target: 'r', value: 2.8, tolerance: 0.15 },
     celebration: 'subtle',
-    insight: "At r=2.8, the system settles to a fixed point. This is like a stable ecosystem -- the population finds its equilibrium and stays there.",
+    insight: lessonCopy.stable.insight,
   },
   {
     id: 'oscillation',
-    instruction: "Now drag r up to about 3.2. Watch the time series start to oscillate between two values.",
-    hint: "Increase r to about 3.20.",
+    instruction: lessonCopy.oscillation.instruction,
+    hint: lessonCopy.oscillation.hint,
     highlightElements: ['r'],
     unlockedVariables: ['r'],
     lockedVariables: ['x0'],
     successCondition: { type: 'value_reached', target: 'r', value: 3.2, tolerance: 0.15 },
     celebration: 'subtle',
-    insight: "The system now bounces between two values -- a period-2 cycle. Like a population that overshoots, then undershoots, then overshoots again. Predictable, but no longer a fixed point.",
+    insight: lessonCopy.oscillation.insight,
   },
   {
     id: 'chaos',
-    instruction: "Push r all the way up to about 3.8. Welcome to chaos.",
-    hint: "Drag r up to 3.80.",
+    instruction: lessonCopy.chaos.instruction,
+    hint: lessonCopy.chaos.hint,
     highlightElements: ['r'],
     unlockedVariables: ['r'],
     lockedVariables: ['x0'],
     successCondition: { type: 'value_reached', target: 'r', value: 3.8, tolerance: 0.1 },
     celebration: 'medium',
-    insight: "The time series now looks random, but it's not -- it follows a deterministic equation. This is chaos: perfectly predictable rules producing apparently unpredictable behavior.",
+    insight: lessonCopy.chaos.insight,
   },
   {
     id: 'butterfly',
-    instruction: "Now unlock: change x\u2080 by just 0.01. Even a tiny change in initial conditions leads to a completely different trajectory.",
-    hint: "Drag the amber x\u2080 slightly up or down.",
+    instruction: lessonCopy.butterfly.instruction,
+    hint: lessonCopy.butterfly.hint,
     highlightElements: ['x0'],
     unlockedVariables: ['r', 'x0'],
     successCondition: { type: 'variable_changed', target: 'x0' },
     celebration: 'big',
-    insight: "This is the butterfly effect. In a chaotic system, a butterfly flapping its wings in Brazil can change the weather in Texas. That's why weather forecasts fail after about 10 days -- tiny measurement errors grow exponentially.",
+    insight: lessonCopy.butterfly.insight,
   },
 ]
 

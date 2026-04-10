@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -15,10 +16,12 @@ const variables: Variable[] = [
   { name: "sigma", symbol: "\u03C3", latex: "\\sigma", value: 1, min: 0.3, max: 3, step: 0.1, color: VAR_COLORS.secondary, description: "Width/spread of the curve" },
 ]
 
+const lessonCopy = getLessonCopy("normal-distribution")
+
 const lessons: LessonStep[] = [
-  { id: "touch", instruction: "See the blue \u03BC? That's the center. Drag it left or right.", hint: "Drag \u03BC in the formula.", highlightElements: ["mu"], unlockedVariables: ["mu"], lockedVariables: ["sigma"], successCondition: { type: "variable_changed", target: "mu" }, celebration: "subtle", insight: "The whole curve shifts. \u03BC is where the average is — the peak." },
-  { id: "width", instruction: "Now drag \u03C3 to make the curve wider or narrower.", hint: "Drag \u03C3 upward for wider.", highlightElements: ["sigma"], unlockedVariables: ["sigma"], lockedVariables: ["mu"], successCondition: { type: "variable_changed", target: "sigma" }, celebration: "subtle", insight: "Bigger \u03C3 = more spread. Tiny \u03C3 = everyone clustered at the average." },
-  { id: "regions", instruction: "Set \u03C3=1 — the shaded region is 68% of all data.", hint: "Drag \u03C3 to 1.0.", highlightElements: ["mu", "sigma"], unlockedVariables: ["mu", "sigma"], successCondition: { type: "value_reached", target: "sigma", value: 1, tolerance: 0.2 }, celebration: "big", insight: "68% within 1\u03C3, 95% within 2\u03C3, 99.7% within 3\u03C3. Works for everything — heights, scores, manufacturing." },
+  { id: "touch", instruction: lessonCopy.touch.instruction, hint: lessonCopy.touch.hint, highlightElements: ["mu"], unlockedVariables: ["mu"], lockedVariables: ["sigma"], successCondition: { type: "variable_changed", target: "mu" }, celebration: "subtle", insight: lessonCopy.touch.insight },
+  { id: "width", instruction: lessonCopy.width.instruction, hint: lessonCopy.width.hint, highlightElements: ["sigma"], unlockedVariables: ["sigma"], lockedVariables: ["mu"], successCondition: { type: "variable_changed", target: "sigma" }, celebration: "subtle", insight: lessonCopy.width.insight },
+  { id: "regions", instruction: lessonCopy.regions.instruction, hint: lessonCopy.regions.hint, highlightElements: ["mu", "sigma"], unlockedVariables: ["mu", "sigma"], successCondition: { type: "value_reached", target: "sigma", value: 1, tolerance: 0.2 }, celebration: "big", insight: lessonCopy.regions.insight },
 ]
 
 export function NormalDistributionScene(): ReactElement {

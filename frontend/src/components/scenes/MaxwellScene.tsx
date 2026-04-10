@@ -7,6 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select, type Selection } from "d3-selection"
 import { curveBasis, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
+import { getLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -86,36 +87,38 @@ const variables: Variable[] = [
   { name: 'wavelength', symbol: '\u03BB', latex: '\\lambda', value: 120, min: 60, max: 300, step: 5, color: VAR_COLORS.primary, unit: 'px', description: 'Wavelength of EM wave' },
 ]
 
+const lessonCopy = getLessonCopy("maxwell")
+
 const lessons: LessonStep[] = [
   {
     id: 'field-lines',
-    instruction: "Observe the electric field lines connecting the positive (+) and negative (-) charges. Try dragging them to see the field bend.",
-    hint: "You can grab a charge and move it around. The step will advance shortly.",
+    instruction: lessonCopy["field-lines"].instruction,
+    hint: lessonCopy["field-lines"].hint,
     highlightElements: [],
     unlockedVariables: ['wavelength'],
     successCondition: { type: 'time_elapsed', duration: 10000 },
     celebration: 'subtle',
-    insight: "Field lines flow from positive to negative charges. The closer the charges, the stronger the field between them. This is Coulomb's law in action.",
+    insight: lessonCopy["field-lines"].insight,
   },
   {
     id: 'em-wave',
-    instruction: "Now watch the EM Wave mode. Electric (blue) and magnetic (green) waves travel together, in phase.",
-    hint: "Click the 'EM Wave' button at the top to switch views.",
+    instruction: lessonCopy["em-wave"].instruction,
+    hint: lessonCopy["em-wave"].hint,
     highlightElements: ['wavelength'],
     unlockedVariables: ['wavelength'],
     successCondition: { type: 'time_elapsed', duration: 12000 },
     celebration: 'subtle',
-    insight: "A changing electric field creates a magnetic field, and vice versa. This self-sustaining dance is an electromagnetic wave -- light, radio, WiFi, X-rays are all the same phenomenon at different wavelengths.",
+    insight: lessonCopy["em-wave"].insight,
   },
   {
     id: 'wavelength',
-    instruction: "Drag the wavelength slider to see different types of electromagnetic radiation. Short wavelength = high energy (like X-rays). Long wavelength = low energy (like radio).",
-    hint: "Drag the wavelength slider in the formula or in the visualization.",
+    instruction: lessonCopy.wavelength.instruction,
+    hint: lessonCopy.wavelength.hint,
     highlightElements: ['wavelength'],
     unlockedVariables: ['wavelength'],
     successCondition: { type: 'variable_changed', target: 'wavelength' },
     celebration: 'big',
-    insight: "Maxwell's equations predict that all electromagnetic waves travel at the speed of light. When Maxwell calculated this speed from electric and magnetic constants, he realized light itself must be an electromagnetic wave. One equation unified electricity, magnetism, and optics.",
+    insight: lessonCopy.wavelength.insight,
   },
 ]
 
