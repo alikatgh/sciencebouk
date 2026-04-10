@@ -34,18 +34,18 @@ export function Footer(): ReactElement {
             </button>
           </div>
 
-          <nav className="native-scroll mt-3 flex gap-2 overflow-x-auto pb-1 text-[11px] text-slate-500 dark:text-slate-400">
-            <Link to="/about" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">About</Link>
-            <Link to="/privacy" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Privacy</Link>
-            <Link to="/terms" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Terms</Link>
-            <Link to="/pro" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+          <nav className={`mt-3 ${mobileExpanded ? "grid grid-cols-2 gap-2" : "native-scroll flex gap-2 overflow-x-auto pb-1"} text-[11px] text-slate-500 dark:text-slate-400`}>
+            <Link to="/about" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">About</Link>
+            <Link to="/privacy" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Privacy</Link>
+            <Link to="/terms" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Terms</Link>
+            <Link to="/pro" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
               {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
             </Link>
             {mobileExpanded && (
               <>
-                <Link to="/changelog" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Changelog</Link>
-                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">GitHub</a>
-                <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 px-3 py-1.5 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Report a bug</a>
+                <Link to="/changelog" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Changelog</Link>
+                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">GitHub</a>
+                <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" className="col-span-2 rounded-full border border-slate-200 px-3 py-2 text-center transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Report a bug</a>
               </>
             )}
           </nav>

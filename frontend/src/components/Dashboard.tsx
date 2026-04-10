@@ -96,7 +96,7 @@ export default function Dashboard(): ReactElement {
     return (
       <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
         <TopNav showBack />
-        <div className="flex flex-1 flex-col items-center justify-center px-4">
+        <div className="flex flex-1 flex-col items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
           <Trophy className="h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">Learning Dashboard</h1>
           <p className="mt-2 max-w-md text-center text-sm text-slate-500">
@@ -132,8 +132,8 @@ export default function Dashboard(): ReactElement {
           <Loader2 className="h-6 w-6 animate-spin text-ocean" />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-5xl px-4 py-5">
+        <div className="native-scroll flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-5">
 
             {/* Analytics error notice */}
             {analyticsError && (
@@ -154,10 +154,10 @@ export default function Dashboard(): ReactElement {
                   onFocus={() => {
                     void prefetchEquationExperience(continueEq.id)
                   }}
-                  className="flex items-center gap-4 rounded-2xl border-2 border-ocean bg-gradient-to-r from-ocean/[0.06] to-ocean/[0.02] p-5 text-left transition hover:shadow-lg active:scale-[0.995] dark:from-ocean/[0.12] dark:to-ocean/[0.04]"
+                  className="flex flex-col items-start gap-3 rounded-[28px] border-2 border-ocean bg-gradient-to-r from-ocean/[0.06] to-ocean/[0.02] p-4 text-left transition hover:shadow-lg active:scale-[0.995] dark:from-ocean/[0.12] dark:to-ocean/[0.04] sm:flex-row sm:items-center sm:gap-4 sm:rounded-2xl sm:p-5"
                   type="button"
                 >
-                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-ocean text-white shadow-lg shadow-ocean/25">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ocean text-white shadow-lg shadow-ocean/25 sm:h-14 sm:w-14">
                     <ArrowRight className="h-6 w-6" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -184,7 +184,7 @@ export default function Dashboard(): ReactElement {
 
               {/* Right: stats grid */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40">
                     <Target className="h-5 w-5 text-emerald-500" />
                   </div>
@@ -193,7 +193,7 @@ export default function Dashboard(): ReactElement {
                     <p className="text-[10px] text-slate-400">Completed</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
                     <BookOpen className="h-5 w-5 text-blue-500" />
                   </div>
@@ -202,7 +202,7 @@ export default function Dashboard(): ReactElement {
                     <p className="text-[10px] text-slate-400">Explored</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40">
                     <Flame className="h-5 w-5 text-amber-500" />
                   </div>
@@ -211,7 +211,7 @@ export default function Dashboard(): ReactElement {
                     <p className="text-[10px] text-slate-400">Day streak</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/40">
                     <Clock className="h-5 w-5 text-purple-500" />
                   </div>
@@ -229,7 +229,7 @@ export default function Dashboard(): ReactElement {
                 <h3 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   <Sparkles className="h-3.5 w-3.5 text-ocean" /> Keep going
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
                   {inProgress.map((eq) => {
                     const mins = Math.round(eq.timeSpent / 60)
                     return (
@@ -242,7 +242,7 @@ export default function Dashboard(): ReactElement {
                         onFocus={() => {
                           void prefetchEquationExperience(eq.id)
                         }}
-                        className="flex items-center gap-3 rounded-xl border border-ocean/20 bg-ocean/[0.03] p-3 text-left transition hover:bg-ocean/[0.06] hover:shadow-sm"
+                        className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-ocean/20 bg-ocean/[0.03] p-3.5 text-left transition hover:bg-ocean/[0.06] hover:shadow-sm sm:min-w-0 sm:rounded-xl sm:p-3"
                         type="button"
                       >
                         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-ocean/10 text-xs font-bold text-ocean">
@@ -265,7 +265,7 @@ export default function Dashboard(): ReactElement {
                 <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   Discover
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
                   {notStarted.map((eq) => (
                     <button
                       key={eq.id}
@@ -276,7 +276,7 @@ export default function Dashboard(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(eq.id)
                       }}
-                      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-slate-200 bg-white p-3.5 text-left transition hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0 sm:rounded-xl sm:p-3"
                       type="button"
                     >
                       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400 dark:bg-slate-700">
@@ -298,7 +298,7 @@ export default function Dashboard(): ReactElement {
                 <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
                   ✓ Completed
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
                   {completed.map((eq) => (
                     <button
                       key={eq.id}
@@ -309,7 +309,7 @@ export default function Dashboard(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(eq.id)
                       }}
-                      className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-left transition hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20"
+                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-emerald-200 bg-emerald-50/50 p-3.5 text-left transition hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20 sm:min-w-0 sm:rounded-xl sm:p-3"
                       type="button"
                     >
                       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-xs font-bold text-white">

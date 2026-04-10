@@ -113,21 +113,21 @@ export default function ChangelogPage(): ReactElement {
       <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Changelog</span>} />
 
       <div className="flex-1">
-        <div className="mx-auto max-w-2xl px-4 py-10">
-          <div className="mb-8">
+        <div className="mx-auto max-w-2xl px-4 py-6 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-10">
+          <div className="mb-6 sm:mb-8">
             <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Changelog</h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">What's new in Sciencebouk</p>
           </div>
 
-          <div className="space-y-10">
+          <div className="space-y-4 sm:space-y-10">
             {RELEASES.map((release) => (
-              <div key={release.version} className="relative pl-6">
+              <div key={release.version} className="relative rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:pl-6">
                 {/* Timeline line */}
-                <div className="absolute left-0 top-2 bottom-0 w-px bg-slate-200 dark:bg-slate-800" />
+                <div className="absolute bottom-0 left-0 top-2 hidden w-px bg-slate-200 dark:bg-slate-800 sm:block" />
                 {/* Timeline dot */}
-                <div className="absolute left-[-4px] top-2 h-2 w-2 rounded-full bg-ocean" />
+                <div className="absolute left-[-4px] top-2 hidden h-2 w-2 rounded-full bg-ocean sm:block" />
 
-                <div className="mb-3 flex items-center gap-2.5">
+                <div className="mb-3 flex flex-wrap items-center gap-2.5">
                   <span className="font-display text-lg font-semibold text-slate-900 dark:text-white">
                     v{release.version}
                   </span>
@@ -136,7 +136,7 @@ export default function ChangelogPage(): ReactElement {
                       {release.label}
                     </span>
                   )}
-                  <span className="text-xs text-slate-400 dark:text-slate-500">{release.date}</span>
+                  <span className="w-full text-xs text-slate-400 dark:text-slate-500 sm:w-auto">{release.date}</span>
                 </div>
 
                 <ul className="space-y-2">

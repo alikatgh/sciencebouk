@@ -23,12 +23,12 @@ export default function AboutPage(): ReactElement {
       <TopNav showBack />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-12 lg:py-16">
+        <div className="mx-auto max-w-6xl px-4 py-6 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:px-6 md:py-12 lg:py-16">
 
           {/* ── HERO: text + live demo side by side ── */}
-          <section className="grid items-start gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(240px,300px)] md:gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,320px)] lg:gap-14">
+          <section className="grid items-start gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(240px,300px)] md:gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,320px)] lg:gap-14">
             <div className="max-w-2xl md:max-w-none">
-              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-[2.6rem] md:leading-[0.95]">
+              <h1 className="font-display text-[2rem] font-bold tracking-tight text-slate-900 dark:text-white md:text-[2.6rem] md:leading-[0.95]">
                 Grab a variable. Drag it.<br />Watch the equation respond.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500 dark:text-slate-400">
@@ -43,11 +43,11 @@ export default function AboutPage(): ReactElement {
                 If you have to read to understand, we failed. If you can drag and discover, we succeeded.
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Button onClick={() => navigate("/equation/1")} className="bg-ocean text-white hover:bg-ocean/90">
+              <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                <Button onClick={() => navigate("/equation/1")} className="min-h-[48px] justify-center rounded-2xl bg-ocean text-white hover:bg-ocean/90 sm:min-h-0">
                   Try Pythagoras right now <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
-                <Button variant="outline" onClick={() => navigate("/")} className="text-slate-600 dark:text-slate-300">
+                <Button variant="outline" onClick={() => navigate("/")} className="min-h-[48px] justify-center rounded-2xl text-slate-600 dark:text-slate-300 sm:min-h-0">
                   Browse all {equationCount}
                 </Button>
               </div>
@@ -55,7 +55,7 @@ export default function AboutPage(): ReactElement {
 
             {/* Live demo — the proof */}
             <div className="w-full md:justify-self-end">
-              <div className="w-full max-w-[320px] rounded-2xl bg-slate-900 p-1 shadow-2xl shadow-slate-900/20 sm:max-w-[300px] md:ml-auto md:max-w-[320px]">
+              <div className="w-full max-w-[320px] rounded-[28px] bg-slate-900 p-1 shadow-2xl shadow-slate-900/20 sm:max-w-[300px] sm:rounded-2xl md:ml-auto md:max-w-[320px]">
                 <ErrorBoundary fallback={null}>
                   <Suspense fallback={<div className="h-56 w-full animate-pulse rounded-xl bg-slate-800" />}>
                     <HeroDemo className="w-full" />
@@ -69,14 +69,14 @@ export default function AboutPage(): ReactElement {
           </section>
 
           {/* ── TWO-COLUMN GRID ── */}
-          <div className="mt-14 grid gap-10 md:grid-cols-2 md:items-start xl:gap-12">
+          <div className="mt-10 grid gap-10 md:grid-cols-2 md:items-start xl:gap-12">
 
             {/* Left: Free vs Pro */}
             <section>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Free vs Pro</h2>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 p-5 dark:border-slate-700">
+                <div className="rounded-[24px] border border-slate-200 p-5 dark:border-slate-700 sm:rounded-xl">
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Free — forever</p>
                   <ul className="mt-3 space-y-1.5 text-sm text-slate-500 dark:text-slate-400">
                     <li>All {equationCount} equations (and every future one)</li>
@@ -87,7 +87,7 @@ export default function AboutPage(): ReactElement {
                   <p className="mt-3 text-xs text-slate-400">No account needed. No limits.</p>
                 </div>
 
-                <div className="rounded-xl border-2 border-ocean bg-ocean/[0.03] p-5">
+                <div className="rounded-[24px] border-2 border-ocean bg-ocean/[0.03] p-5 sm:rounded-xl">
                   <p className="text-sm font-bold text-ocean">
                     {BILLING_ENABLED ? "Pro — $4.99/month" : "Pro later"}
                   </p>
@@ -101,7 +101,7 @@ export default function AboutPage(): ReactElement {
                     onClick={() => navigate("/pro")}
                     size="sm"
                     disabled={!BILLING_ENABLED}
-                    className={`mt-4 ${
+                    className={`mt-4 w-full rounded-2xl sm:w-auto sm:rounded-md ${
                       BILLING_ENABLED
                         ? "bg-ocean text-white hover:bg-ocean/90"
                         : "border border-slate-200 bg-white text-slate-400 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
@@ -112,7 +112,7 @@ export default function AboutPage(): ReactElement {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-900">
+              <div className="mt-4 rounded-[22px] bg-slate-50 px-4 py-3 dark:bg-slate-900 sm:rounded-lg">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   {BILLING_ENABLED
                     ? "Pro funds the next wave of subjects and keeps the servers running."
@@ -141,7 +141,7 @@ export default function AboutPage(): ReactElement {
                     { icon: <Cpu className="h-4 w-4" />, name: "Computer Science", count: 8, color: "text-violet-500" },
                     { icon: <Smartphone className="h-4 w-4" />, name: "Mobile app", count: null, color: "text-sky-500" },
                   ].map((item) => (
-                    <div key={item.name} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                    <div key={item.name} className="flex items-center gap-3 rounded-[22px] border border-slate-200 px-3 py-3 dark:border-slate-700 sm:rounded-lg sm:py-2.5">
                       <span className={item.color}>{item.icon}</span>
                       <div>
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name}</p>
@@ -154,7 +154,7 @@ export default function AboutPage(): ReactElement {
               </section>
 
               {/* Open Source — bigger presence */}
-              <section className="rounded-xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-900">
+              <section className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900 sm:rounded-xl sm:p-6">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
                     <Github className="h-5 w-5" />
@@ -168,17 +168,17 @@ export default function AboutPage(): ReactElement {
                   Every equation, every visualization, every line of code.
                   Fork it, self-host it, study it, improve it, teach with it.
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <a
                     href={GITHUB_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 sm:min-h-0 sm:justify-start sm:rounded-lg"
                   >
                     <Github className="h-4 w-4" /> View on GitHub
                   </a>
                   <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
+                    className="inline-flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 sm:min-h-0 sm:justify-start sm:rounded-lg">
                     Report a bug
                   </a>
                 </div>
