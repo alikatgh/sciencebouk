@@ -4,6 +4,11 @@ import { lazy } from "react"
 type SceneModule = { default: ComponentType }
 type SceneLoader = () => Promise<SceneModule>
 
+const genericSceneLoader: SceneLoader = () =>
+  import("./scenes/GenericEquationScene").then((m) => ({ default: m.GenericEquationScene }))
+
+const genericScene = lazy(genericSceneLoader)
+
 const sceneLoaders: Record<number, SceneLoader> = {
   1: () => import("./scenes/PythagorasScene").then((module) => ({ default: module.PythagorasScene })),
   2: () => import("./scenes/LogarithmScene").then((module) => ({ default: module.LogarithmScene })),
@@ -27,12 +32,12 @@ const sceneLoaders: Record<number, SceneLoader> = {
 const sceneCache = new Map<number, LazyExoticComponent<ComponentType>>()
 const prefetchedSceneIds = new Set<number>()
 
-export function getScene(id: number): LazyExoticComponent<ComponentType> | null {
+export function getScene(id: number): LazyExoticComponent<ComponentType> {
   const cached = sceneCache.get(id)
   if (cached) return cached
 
   const loader = sceneLoaders[id]
-  if (!loader) return null
+  if (!loader) return genericScene
 
   const scene = lazy(loader)
   sceneCache.set(id, scene)

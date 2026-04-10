@@ -1,4 +1,4 @@
-import { equationManifest } from "./equationManifest"
+import { coreEquationManifest } from "./equationManifest"
 
 export interface SubjectFormula {
   title: string
@@ -17,7 +17,7 @@ export interface Subject {
   formulas: SubjectFormula[]
 }
 
-const coreSubjectFormulas: SubjectFormula[] = equationManifest.map((equation) => ({
+const coreSubjectFormulas: SubjectFormula[] = coreEquationManifest.map((equation) => ({
   id: equation.id,
   title: equation.title,
   formula: equation.formula,

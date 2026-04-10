@@ -97,8 +97,9 @@ async function requestAllPages<T>(path: string): Promise<T[]> {
   return items
 }
 
-export interface EquationResponse {
+export interface EquationSummaryResponse {
   id: number
+  slug: string
   title: string
   formula: string
   author: string
@@ -106,6 +107,15 @@ export interface EquationResponse {
   category: string
   description: string
   stage: string
+}
+
+export interface EquationResponse extends EquationSummaryResponse {
+  hook: string
+  hook_action: string
+  variables_data: unknown[]
+  presets_data: unknown[]
+  lessons_data: unknown[]
+  glossary_data: unknown[]
 }
 
 export interface PaginatedResponse<T> {
@@ -187,8 +197,9 @@ export const api = {
   equations: {
     list: (category?: string) => {
       const params = category ? `?category=${encodeURIComponent(category)}` : ""
-      return request<PaginatedResponse<EquationResponse>>(`/equations/${params}`)
+      return request<PaginatedResponse<EquationSummaryResponse>>(`/equations/${params}`)
     },
+    listAll: () => requestAllPages<EquationSummaryResponse>("/equations/"),
     get: (id: number) =>
       request<EquationResponse>(`/equations/${id}/`),
     updateProgress: (id: number, data: { user_id: string; completed?: boolean; notes?: string }) => {
@@ -212,7 +223,7 @@ export const api = {
       request<CourseResponse>(`/courses/${slug}/`),
   },
   search: (q: string) =>
-    request<EquationResponse[] | PaginatedResponse<EquationResponse>>(`/search/?q=${encodeURIComponent(q)}`)
+    request<EquationSummaryResponse[] | PaginatedResponse<EquationSummaryResponse>>(`/search/?q=${encodeURIComponent(q)}`)
       .then((payload) => Array.isArray(payload) ? payload : payload.results),
 
   progress: {

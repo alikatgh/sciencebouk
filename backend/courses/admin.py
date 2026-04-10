@@ -5,11 +5,16 @@ from .models import Course, Equation, Lesson, LearningEvent, UserProgress
 
 @admin.register(Equation)
 class EquationAdmin(admin.ModelAdmin):
-    list_display = ("sort_order", "title", "author", "year", "category", "stage")
+    list_display = ("sort_order", "title", "author", "year", "category", "stage", "slug")
     list_filter = ("category", "stage")
-    search_fields = ("title", "author")
+    search_fields = ("title", "author", "slug")
     ordering = ("sort_order",)
     list_editable = ("stage",)
+    prepopulated_fields = {"slug": ("title",)}
+    fieldsets = (
+        (None, {"fields": ("sort_order", "slug", "title", "formula", "author", "year", "category", "stage", "description")}),
+        ("Teaching Content", {"fields": ("hook", "hook_action", "variables_data", "presets_data", "lessons_data", "glossary_data"), "classes": ("collapse",)}),
+    )
 
 
 @admin.register(Course)

@@ -9,13 +9,11 @@ import { EquationHeader } from "./components/app-shell/EquationHeader"
 import { prefetchEquationScene } from "./components/sceneRegistry"
 import { FormulaProvider } from "./components/teaching/FormulaContext"
 import {
-  equationIndexById,
-  equationManifest,
-  equationSummaryById,
-  hasEquation,
-  searchEquations,
+  resolveEquationManifest,
+  searchEquationManifest,
+  useEquationManifest,
 } from "./data/equationManifest"
-import { useAllProgress } from "./progress/useProgress"
+import { useAllProgress, registerEquationIds } from "./progress/useProgress"
 import { useSettings } from "./settings/SettingsContext"
 
 const ShortcutOverlay = lazy(() =>
@@ -103,6 +101,39 @@ function EquationNotFound({ onGoHome }: { onGoHome: () => void }): ReactElement 
 export default function App(): ReactElement {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const manifestQuery = useEquationManifest()
+  const equationManifest = useMemo(
+    () => resolveEquationManifest(manifestQuery.data),
+    [manifestQuery.data],
+  )
+
+  // Register IDs with the progress store whenever the manifest updates
+  useEffect(() => {
+    if (equationManifest.length > 0) {
+      registerEquationIds(equationManifest.map((e) => e.id))
+    }
+  }, [equationManifest])
+
+  // Derived lookups — recomputed only when manifest changes
+  const equationSummaryById = useMemo(
+    () => new Map(equationManifest.map((e) => [e.id, e])),
+    [equationManifest],
+  )
+  const equationIndexById = useMemo(
+    () => new Map(equationManifest.map((e, i) => [e.id, i])),
+    [equationManifest],
+  )
+  const hasEquation = useCallback(
+    (equationId: number) => equationSummaryById.has(equationId),
+    [equationSummaryById],
+  )
+  const searchEquations = useCallback(
+    (query: string) => {
+      return searchEquationManifest(equationManifest, query)
+    },
+    [equationManifest],
+  )
+
   const firstEquationId = equationManifest[0]?.id ?? 1
   const rawSelectedId = id ? Number(id) : firstEquationId
   const [searchQuery, setSearchQuery] = useState("")
@@ -186,14 +217,14 @@ export default function App(): ReactElement {
 
   const selectedEquation = useMemo(
     () => equationSummaryById.get(rawSelectedId) ?? null,
-    [rawSelectedId],
+    [rawSelectedId, equationSummaryById],
   )
   const routeInvalid = !Number.isInteger(rawSelectedId) || !selectedEquation
 
   const filteredEquations = useMemo(() => {
     if (!deferredSearchQuery.trim()) return null
     return searchEquations(deferredSearchQuery)
-  }, [deferredSearchQuery])
+  }, [deferredSearchQuery, searchEquations])
 
   const selectEquation = useCallback((equationId: number) => {
     if (!hasEquation(equationId)) return
@@ -202,7 +233,7 @@ export default function App(): ReactElement {
       setDrawerOpen(false)
       setSearchQuery("")
     })
-  }, [navigate])
+  }, [navigate, hasEquation])
 
   const selectEquationFromShortcut = useCallback((baseId: number, shifted: boolean) => {
     const targetId = shifted ? baseId + 10 : baseId
@@ -283,7 +314,19 @@ export default function App(): ReactElement {
     }
   }, [nextEquation?.id, prevEquation?.id])
 
+  if (manifestQuery.isLoading && !manifestQuery.data) {
+    return (
+      <div className="flex h-[100dvh] items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ocean border-t-transparent" />
+      </div>
+    )
+  }
+
   if (routeInvalid) {
+    return <EquationNotFound onGoHome={handleGoHome} />
+  }
+
+  if (!selectedEquation) {
     return <EquationNotFound onGoHome={handleGoHome} />
   }
 

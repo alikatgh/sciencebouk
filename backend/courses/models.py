@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
 
 
 class Equation(models.Model):
@@ -22,6 +23,7 @@ class Equation(models.Model):
     ]
 
     title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
     formula = models.TextField(help_text="LaTeX formula string")
     author = models.CharField(max_length=200)
     year = models.CharField(max_length=20)
@@ -29,9 +31,32 @@ class Equation(models.Model):
     description = models.TextField(blank=True, default="")
     stage = models.CharField(max_length=20, default="live-demo")
     sort_order = models.PositiveIntegerField(unique=True)
+    hook = models.TextField(blank=True, default="", help_text="Real-world hook shown before the lesson")
+    hook_action = models.TextField(blank=True, default="", help_text="Action prompt shown with the visualization")
+    variables_data = models.JSONField(default=list, blank=True, help_text="Interactive variable definitions")
+    presets_data = models.JSONField(default=list, blank=True, help_text="Preset value configurations")
+    lessons_data = models.JSONField(default=list, blank=True, help_text="Guided lesson steps")
+    glossary_data = models.JSONField(default=list, blank=True, help_text="Glossary term highlights")
 
     class Meta:
         ordering = ["sort_order"]
+
+    def _default_slug(self) -> str:
+        base_slug = slugify(self.title) or f"equation-{self.sort_order or 'item'}"
+        slug = base_slug
+        suffix = 2
+        queryset = type(self).objects.exclude(pk=self.pk)
+
+        while queryset.filter(slug=slug).exists():
+            slug = f"{base_slug}-{suffix}"
+            suffix += 1
+
+        return slug
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self._default_slug()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.sort_order}. {self.title}"
@@ -110,7 +135,7 @@ class LearningEvent(models.Model):
     equation = models.ForeignKey(Equation, on_delete=models.CASCADE, null=True, blank=True)
     event_type = models.CharField(max_length=50)
     data = models.JSONField(default=dict)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]

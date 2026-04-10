@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.db import IntegrityError
-from django.db.models import Q, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -13,11 +13,15 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
 from .models import Course, Equation, LearningEvent, UserProgress
+
+PRO_TIER = "pro"
+EQUATION_ATLAS_SLUG = "equations-that-changed-the-world"
 from .serializers import (
     AuthProgressUpdateSerializer,
     BulkProgressItemSerializer,
     CourseDetailSerializer,
     EquationSerializer,
+    EquationSummarySerializer,
     LogEventSerializer,
     ProgressUpdateSerializer,
     UserProgressSerializer,
@@ -28,11 +32,16 @@ class EquationViewSet(viewsets.ReadOnlyModelViewSet):
     """List and retrieve equations. Supports ?category= filtering."""
 
     queryset = Equation.objects.all()
-    serializer_class = EquationSerializer
+    serializer_class = EquationSummarySerializer
     lookup_field = "sort_order"
     lookup_url_kwarg = "id"
     filterset_fields = ["category"]
     permission_classes = [AllowAny]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return EquationSerializer
+        return EquationSummarySerializer
 
     @method_decorator(cache_page(60 * 5))
     def list(self, request, *args, **kwargs):
@@ -102,11 +111,10 @@ def search_equations(request):
         Q(title__icontains=q) | Q(author__icontains=q) | Q(category__icontains=q)
     )
     paginator = PageNumberPagination()
-    paginator.page_size = 20
     page = paginator.paginate_queryset(equations, request)
     if page is not None:
-        return paginator.get_paginated_response(EquationSerializer(page, many=True).data)
-    return Response(EquationSerializer(equations, many=True).data)
+        return paginator.get_paginated_response(EquationSummarySerializer(page, many=True).data)
+    return Response(EquationSummarySerializer(equations, many=True).data)
 
 
 @api_view(["GET"])
@@ -118,7 +126,6 @@ def health(request):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@cache_page(60 * 5)
 def equation_atlas_legacy(request):
     """Legacy alias that returns the full equation atlas in the original envelope shape.
 
@@ -126,7 +133,7 @@ def equation_atlas_legacy(request):
     """
     try:
         course = Course.objects.prefetch_related("lessons").get(
-            slug="equations-that-changed-the-world"
+            slug=EQUATION_ATLAS_SLUG
         )
     except Course.DoesNotExist:
         # Fall back to an empty payload if the DB hasn't been seeded yet.
@@ -170,7 +177,7 @@ def equation_atlas_legacy(request):
 @permission_classes([IsAuthenticated])
 def my_progress(request):
     """Get or clear all progress for the authenticated user."""
-    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+    if not hasattr(request.user, "profile") or request.user.profile.tier != PRO_TIER:
         return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
 
     progress = UserProgress.objects.filter(user=request.user).order_by("equation__sort_order")
@@ -179,7 +186,6 @@ def my_progress(request):
         return Response({"ok": True})
 
     paginator = PageNumberPagination()
-    paginator.page_size = 20
     page = paginator.paginate_queryset(progress, request)
     if page is not None:
         return paginator.get_paginated_response(UserProgressSerializer(page, many=True).data)
@@ -190,7 +196,7 @@ def my_progress(request):
 @permission_classes([IsAuthenticated])
 def update_my_progress(request, equation_id):
     """Update progress for a specific equation. Pro users only for sync."""
-    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+    if not hasattr(request.user, "profile") or request.user.profile.tier != PRO_TIER:
         return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
 
     try:
@@ -223,7 +229,7 @@ def update_my_progress(request, equation_id):
 @permission_classes([IsAuthenticated])
 def bulk_sync_progress(request):
     """Bulk sync progress from localStorage when user signs up for Pro."""
-    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+    if not hasattr(request.user, "profile") or request.user.profile.tier != PRO_TIER:
         return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
 
     raw_items = request.data.get("items", [])
@@ -247,7 +253,6 @@ def bulk_sync_progress(request):
     for index, vd in valid_items:
         equation = equations.get(vd["equation_id"])
         if equation is None:
-            errors.append({"index": index, "errors": {"equation_id": "Not found"}})
             continue
 
         progress, _ = UserProgress.objects.get_or_create(
@@ -276,7 +281,7 @@ def bulk_sync_progress(request):
 def learning_dashboard(request):
     """Return aggregated learning analytics for the authenticated Pro user."""
     user = request.user
-    if not hasattr(user, "profile") or user.profile.tier != "pro":
+    if not hasattr(user, "profile") or user.profile.tier != PRO_TIER:
         return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
 
     progress = UserProgress.objects.filter(user=user)
@@ -296,20 +301,20 @@ def learning_dashboard(request):
         streak += 1
         day -= timedelta(days=1)
 
-    # Category completion — pre-fetch completed IDs to avoid N+1 queries
-    completed_equation_ids = set(
+    # Category completion — two aggregated queries, no per-row iteration
+    completed_equation_ids = list(
         progress.filter(completed=True).values_list("equation_id", flat=True)
     )
-    categories = {}
-    for eq in Equation.objects.all():
-        cat = eq.category
-        if cat not in categories:
-            categories[cat] = {"total": 0, "completed": 0}
-        categories[cat]["total"] += 1
-        if eq.id in completed_equation_ids:
-            categories[cat]["completed"] += 1
+    category_stats = Equation.objects.values("category").annotate(
+        total=Count("id"),
+        completed=Count("id", filter=Q(id__in=completed_equation_ids)),
+    )
+    categories = {
+        row["category"]: {"total": row["total"], "completed": row["completed"]}
+        for row in category_stats
+    }
 
-    # Recommendation: first uncompleted equation (reuse already-fetched set)
+    # Recommendation: first uncompleted equation
     next_eq = Equation.objects.exclude(id__in=completed_equation_ids).first()
 
     return Response({
@@ -329,7 +334,7 @@ def learning_dashboard(request):
 @permission_classes([IsAuthenticated])
 def log_event(request):
     """Log a learning event for analytics. Pro users only."""
-    if not hasattr(request.user, "profile") or request.user.profile.tier != "pro":
+    if not hasattr(request.user, "profile") or request.user.profile.tier != PRO_TIER:
         return Response({"error": "Pro subscription required"}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = LogEventSerializer(data=request.data)

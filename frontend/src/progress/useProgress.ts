@@ -2,7 +2,18 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"
 import type { BulkSyncItem, ProgressItem } from "../api/client"
-import { equationManifest } from "../data/equationManifest"
+
+// Equation IDs registered at runtime from the API manifest.
+// Defaults to IDs 1–17 so progress works before the first API response.
+let _equationIds: number[] = Array.from({ length: 17 }, (_, i) => i + 1)
+
+/** Called by App once the equation manifest loads from the API. */
+export function registerEquationIds(ids: number[]): void {
+  if (ids.length === 0) return
+  _equationIds = ids
+  progressSnapshotCache.clear()
+  notifyProgressListeners()
+}
 
 export interface EquationProgress {
   completed: boolean
@@ -172,13 +183,16 @@ export function clearStoredProgress() {
   for (const timer of syncTimers.values()) clearTimeout(timer)
   syncTimers.clear()
 
-  for (const equation of equationManifest) {
-    if (typeof localStorage !== "undefined") {
-      try {
-        localStorage.removeItem(progressKey(equation.id))
-      } catch {
-        // Ignore storage cleanup failures; caches are still cleared below.
+  if (typeof localStorage !== "undefined") {
+    try {
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith(STORAGE_KEY_PREFIX)) keysToRemove.push(key)
       }
+      for (const key of keysToRemove) localStorage.removeItem(key)
+    } catch {
+      // Ignore storage cleanup failures; caches are still cleared below.
     }
   }
 
@@ -340,19 +354,19 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
   const progressByEquation = new Map<number, EquationProgress>()
   const localSyncItems: BulkSyncItem[] = []
 
-  for (const equation of equationManifest) {
-    const localProgress = readMergedProgress(equation.id, false)
+  for (const equationId of _equationIds) {
+    const localProgress = readMergedProgress(equationId, false)
     const progress = includeServer
-      ? readMergedProgress(equation.id, true)
+      ? readMergedProgress(equationId, true)
       : localProgress
 
-    progressByEquation.set(equation.id, progress)
+    progressByEquation.set(equationId, progress)
     if (progress.completed) completedCount += 1
     totalTimeSeconds += progress.timeSpentSeconds
 
     if (shouldSyncProgress(localProgress)) {
       localSyncItems.push({
-        equation_id: equation.id,
+        equation_id: equationId,
         completed: localProgress.completed,
         lesson_step: localProgress.lessonStep,
         time_spent_seconds: localProgress.timeSpentSeconds,
@@ -366,7 +380,7 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
   const snapshot = {
     completedCount,
     totalTimeMinutes: Math.round(totalTimeSeconds / 60),
-    total: equationManifest.length,
+    total: _equationIds.length,
     progressByEquation,
     localSyncItems,
     localSyncSignature: JSON.stringify(localSyncItems),

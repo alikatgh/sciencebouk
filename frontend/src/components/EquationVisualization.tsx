@@ -20,9 +20,6 @@ export function EquationVisualization({
   equationId: number
 }): ReactElement {
   const SceneComponent = getScene(equationId)
-  if (!SceneComponent) {
-    return <div className="flex h-80 items-center justify-center text-slate-400">No visualization available</div>
-  }
 
   // No ErrorBoundary here — App.tsx wraps us in one with a proper fallback UI.
   return (

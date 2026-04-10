@@ -6,15 +6,12 @@ import { useAuth } from "../auth/AuthContext"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 
 import { api } from "../api/client"
-import { equationManifest } from "../data/equationManifest"
 import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 
-const EQUATION_COUNT = equationManifest.length
-
 const FREE_FEATURES = [
-  `All ${EQUATION_COUNT} interactive equations`,
+  "All interactive equations",
   "Guided lessons & real-world hooks",
   "Drag-to-explore visualizations",
   "Dark mode",

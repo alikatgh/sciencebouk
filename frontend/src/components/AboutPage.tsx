@@ -8,7 +8,7 @@ import { Footer } from "./Footer"
 import { Button } from "./ui/button"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
 import { GITHUB_URL } from "../config/site"
-import { equationManifest } from "../data/equationManifest"
+import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 
 const HeroDemo = lazy(() =>
   import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
@@ -16,7 +16,9 @@ const HeroDemo = lazy(() =>
 
 export default function AboutPage(): ReactElement {
   const navigate = useNavigate()
-  const equationCount = equationManifest.length
+  const manifestQuery = useEquationManifest()
+  const manifest = resolveEquationManifest(manifestQuery.data)
+  const equationCount = manifest.length
 
   return (
     <main className="flex min-h-[100dvh] flex-col bg-white dark:bg-slate-950">

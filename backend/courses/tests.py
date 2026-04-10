@@ -181,11 +181,13 @@ class UserProgressModelTests(TestCase):
         self.assertEqual(progress.notes, "")
 
     def test_unique_together_anon_id_and_equation_without_user(self):
-        # The unique constraint only applies when user FK is set;
-        # two anon records for the same equation are allowed.
+        # Anonymous progress is unique per anon_id + equation so repeated updates
+        # can safely use get_or_create without creating duplicate rows.
+        from django.db import IntegrityError
+
         UserProgress.objects.create(anon_id="user-1", equation=self.equation)
-        # This should NOT raise — no user FK set.
-        UserProgress.objects.create(anon_id="user-1", equation=self.equation)
+        with self.assertRaises(IntegrityError):
+            UserProgress.objects.create(anon_id="user-1", equation=self.equation)
 
     def test_progress_cascade_deletes_with_equation(self):
         UserProgress.objects.create(anon_id="user-1", equation=self.equation)

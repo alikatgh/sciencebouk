@@ -3,16 +3,24 @@ from rest_framework import serializers
 from .models import Course, Equation, Lesson, UserProgress
 
 
-class EquationSerializer(serializers.ModelSerializer):
+class EquationSummarySerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="sort_order", read_only=True)
-    category = serializers.SerializerMethodField()
 
     class Meta:
         model = Equation
-        fields = ["id", "title", "formula", "author", "year", "category", "description", "stage"]
+        fields = [
+            "id", "slug", "title", "formula", "author", "year", "category",
+            "description", "stage",
+        ]
 
-    def get_category(self, obj):
-        return obj.get_category_display()
+
+class EquationSerializer(EquationSummarySerializer):
+    class Meta(EquationSummarySerializer.Meta):
+        fields = [
+            *EquationSummarySerializer.Meta.fields,
+            "hook", "hook_action",
+            "variables_data", "presets_data", "lessons_data", "glossary_data",
+        ]
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -74,13 +82,7 @@ class BulkProgressItemSerializer(serializers.Serializer):
 
 
 class LogEventSerializer(serializers.Serializer):
-    """Validates a POST payload for log_event with an event_type allowlist."""
-    ALLOWED_EVENT_TYPES = [
-        "lesson_step_completed",
-        "lesson_completed",
-        "equation_viewed",
-    ]
-
-    event_type = serializers.ChoiceField(choices=ALLOWED_EVENT_TYPES)
+    """Validates a POST payload for log_event."""
+    event_type = serializers.CharField(max_length=50)
     equation_id = serializers.IntegerField(required=False, allow_null=True)
     data = serializers.DictField(required=False, default=dict)

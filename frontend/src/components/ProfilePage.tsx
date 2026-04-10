@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { Crown, LogOut, BarChart2, CreditCard, Camera, Pencil, Check, X, ArrowRight } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { useAllProgress } from "../progress/useProgress"
-import { equationManifest } from "../data/equationManifest"
+import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import { SITE_BASE } from "../config/api"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
@@ -16,6 +16,8 @@ import { Footer } from "./Footer"
 export default function ProfilePage(): ReactElement {
   const navigate = useNavigate()
   const { user, isAuthenticated, isPro, logout, refreshUser } = useAuth()
+  const manifestQuery = useEquationManifest()
+  const equationManifest = resolveEquationManifest(manifestQuery.data)
   const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
   const [managingSubscription, setManagingSubscription] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -130,7 +132,7 @@ export default function ProfilePage(): ReactElement {
       nextEquation: inProgressEquations[0] ?? nextFresh,
       sortedEquations: sortedEquationCards,
     }
-  }, [progressByEquation])
+  }, [equationManifest, progressByEquation])
   const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
   return (

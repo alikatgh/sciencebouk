@@ -1,12 +1,36 @@
+import json
+from pathlib import Path
+
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
 
 from courses.models import Course, Equation, Lesson
+
+# Path to the frontend rich-data file (relative to repo root).
+# Seed reads hook, variables, presets, lessons, and glossary from here
+# so those fields don't need to be re-entered by hand after migrating.
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+EQUATIONS_JSON = _REPO_ROOT / "frontend" / "src" / "data" / "equations.json"
+
+
+def _load_rich_data() -> dict:
+    """Load equations.json keyed by sort_order (= id in JSON)."""
+    if not EQUATIONS_JSON.exists():
+        return {}
+    with open(EQUATIONS_JSON, encoding="utf-8") as fh:
+        return {entry["id"]: entry for entry in json.load(fh)}
 
 
 class Command(BaseCommand):
     help = "Seed the database with the 17 equations and default course"
 
     def handle(self, *args, **options):
+        rich = _load_rich_data()
+        if rich:
+            self.stdout.write(f"Loaded rich data for {len(rich)} equations from equations.json")
+        else:
+            self.stdout.write(self.style.WARNING("equations.json not found — seeding without rich data"))
+
         equations_data = [
             {
                 "sort_order": 1,
@@ -164,8 +188,18 @@ class Command(BaseCommand):
         ]
 
         for eq_data in equations_data:
+            sort_order = eq_data["sort_order"]
+            r = rich.get(sort_order, {})
+            eq_data["slug"] = slugify(eq_data["title"])
+            eq_data["hook"] = r.get("hook", "")
+            eq_data["hook_action"] = r.get("hookAction", "")
+            eq_data["variables_data"] = r.get("variables", [])
+            eq_data["presets_data"] = r.get("presets", [])
+            eq_data["lessons_data"] = r.get("lessons", [])
+            eq_data["glossary_data"] = r.get("glossary", [])
+
             Equation.objects.update_or_create(
-                sort_order=eq_data["sort_order"],
+                sort_order=sort_order,
                 defaults=eq_data,
             )
         self.stdout.write(self.style.SUCCESS(f"Seeded {len(equations_data)} equations"))

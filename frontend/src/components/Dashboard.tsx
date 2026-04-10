@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { ArrowRight, Clock, Flame, Loader2, Settings, Trophy, Sparkles, Target, BookOpen } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { useAllProgress } from "../progress/useProgress"
-import { equationManifest } from "../data/equationManifest"
+import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import type { DashboardData } from "../api/client"
 import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
@@ -17,6 +17,8 @@ import { Footer } from "./Footer"
 export default function Dashboard(): ReactElement {
   const { isPro, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const manifestQuery = useEquationManifest()
+  const equationManifest = resolveEquationManifest(manifestQuery.data)
   const { completedCount, totalTimeMinutes, total, progressByEquation } = useAllProgress()
   const [serverData, setServerData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -87,7 +89,7 @@ export default function Dashboard(): ReactElement {
       explored: exploredCount,
       continueEq: inProgressItems[0] ?? notStartedItems[0] ?? null,
     }
-  }, [progressByEquation])
+  }, [equationManifest, progressByEquation])
   const streak = serverData?.currentStreak ?? 0
   const mobileStatCards = [
     {
