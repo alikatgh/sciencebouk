@@ -72,26 +72,34 @@ const rootErrorFallback = (
   </main>
 )
 
-async function clearStaleLocalDevServiceWorkers(): Promise<void> {
-  if (!import.meta.env.DEV) return
+async function clearLegacyServiceWorkers(): Promise<void> {
   if (typeof window === "undefined" || typeof navigator === "undefined") return
   if (!("serviceWorker" in navigator)) return
-  if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return
 
   try {
     const registrations = await navigator.serviceWorker.getRegistrations()
+    if (registrations.length === 0) return
+
     await Promise.all(registrations.map((registration) => registration.unregister()))
 
     if ("caches" in window) {
       const cacheKeys = await caches.keys()
       await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey)))
     }
+
+    const reloadMarker = "__sciencebo_service_worker_reset__"
+    if (sessionStorage.getItem(reloadMarker) !== "1") {
+      sessionStorage.setItem(reloadMarker, "1")
+      window.location.reload()
+    } else {
+      sessionStorage.removeItem(reloadMarker)
+    }
   } catch {
-    // Best-effort cleanup for stale localhost app shells from older builds.
+    // Best-effort cleanup for stale app shells from older deployments.
   }
 }
 
-void clearStaleLocalDevServiceWorkers()
+void clearLegacyServiceWorkers()
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
