@@ -2,10 +2,12 @@ from datetime import timedelta
 from importlib.util import find_spec
 from pathlib import Path
 import os
+import re
 
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+ROUTE_FRAGMENT_PATTERN = re.compile(r"^[A-Za-z0-9/_-]+$")
 
 
 def load_env_file(path: Path) -> None:
@@ -37,12 +39,25 @@ def load_env_file(path: Path) -> None:
         return
 
 
+def normalize_route_fragment(value: str, setting_name: str) -> str:
+    normalized = value.strip().strip("/")
+    if not normalized:
+        raise ImproperlyConfigured(f"{setting_name} must not be empty")
+    if not ROUTE_FRAGMENT_PATTERN.fullmatch(normalized):
+        raise ImproperlyConfigured(
+            f"{setting_name} may only contain letters, numbers, hyphens, underscores, and slashes"
+        )
+    return f"{normalized}/"
+
+
 # Prefer service-specific backend/.env over the repo-root fallback file.
 load_env_file(BASE_DIR / ".env")
 load_env_file(BASE_DIR.parent / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-key-change-in-production")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
+ADMIN_URL_PATH = normalize_route_fragment(os.getenv("DJANGO_ADMIN_PATH", "admin"), "DJANGO_ADMIN_PATH")
+ADMIN_URL_ABSOLUTE_PATH = f"/{ADMIN_URL_PATH}"
 
 ALLOWED_HOSTS = [
     host.strip()

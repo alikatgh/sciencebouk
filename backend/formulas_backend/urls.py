@@ -6,7 +6,7 @@ from .views import backend_home
 
 urlpatterns = [
     path("", backend_home, name="backend-home"),
-    path("admin/", admin.site.urls),
+    path(settings.ADMIN_URL_PATH, admin.site.urls),
     path("api/auth/", include("accounts.urls")),
     path("api/", include("courses.urls")),
     path("api/payments/", include("payments.urls")),
