@@ -10,6 +10,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -56,6 +57,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function RelativityScene(): ReactElement {
   const lessonCopy = useLessonCopy("relativity")
+  const sceneCopy = useSceneCopy("relativity")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -78,10 +80,12 @@ export function RelativityScene(): ReactElement {
         const safeV = Math.min(v.v, 0.999)
         const gamma = 1 / Math.sqrt(1 - safeV * safeV)
         const pct = ((1 - 1 / gamma) * 100)
-        if (v.v < 0.01) return "At rest -- no relativistic effects"
-        if (v.v < 0.1) return "Everyday speed -- effects negligible"
-        if (gamma > 7) return `Time slows by ${pct.toFixed(0)}% -- extreme relativistic regime`
-        return `Time slows by ${pct.toFixed(1)}% for the traveler`
+        if (v.v < 0.01) return sceneCopy.description.atRest
+        if (v.v < 0.1) return sceneCopy.description.everydaySpeed
+        if (gamma > 7) {
+          return interpolateSceneCopy(sceneCopy.description.extremeRegime, { percent: pct.toFixed(0) })
+        }
+        return interpolateSceneCopy(sceneCopy.description.traveler, { percent: pct.toFixed(1) })
       }}
       presets={[
         { label: "Everyday", values: { v: 0 } },

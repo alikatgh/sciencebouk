@@ -9,6 +9,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -57,6 +58,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function WaveScene(): ReactElement {
   const lessonCopy = useLessonCopy("wave")
+  const sceneCopy = useSceneCopy("wave")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -70,13 +72,15 @@ export function WaveScene(): ReactElement {
       }}
       buildResultLine={(v) => {
         const speed = v.freq * v.wavelength
-        return `c = f \\times \\lambda = ${speed.toFixed(0)} \\;\\text{units/s}`
+        return interpolateSceneCopy(sceneCopy.resultLine.speed, { speed: speed.toFixed(0) })
       }}
       describeResult={(v) => {
-        if (v.freq < 1) return "Low bass -- a deep hum"
-        if (v.freq > 4) return "High pitch -- a shrill tone"
-        if (v.amp > 80) return "Loud -- tall wave, lots of energy"
-        return `Speed = ${(v.freq * v.wavelength).toFixed(0)} units/s`
+        if (v.freq < 1) return sceneCopy.description.lowBass
+        if (v.freq > 4) return sceneCopy.description.highPitch
+        if (v.amp > 80) return sceneCopy.description.loud
+        return interpolateSceneCopy(sceneCopy.description.default, {
+          speed: (v.freq * v.wavelength).toFixed(0),
+        })
       }}
       presets={[
         { label: "Low bass", values: { freq: 0.8, amp: 70, wavelength: 180 } },
@@ -110,6 +114,7 @@ interface D3WaveVisualProps {
 function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)) }
 
 function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlightedVar, onHighlight }: D3WaveVisualProps): ReactElement {
+  const sceneCopy = useSceneCopy("wave")
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Keep latest props in refs for callbacks
@@ -310,7 +315,13 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("fill", "#ef4444").attr("stroke", "#ef4444").attr("stroke-width", 1.5)
       playBtnG.append("text").attr("class", "play-btn-text").attr("x", ultraCompact ? 25 : compact ? 29 : 35).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "white")
-        .text(ultraCompact ? "Stop" : compact ? "On" : "Pause")
+        .text(
+          ultraCompact
+            ? sceneCopy.ui.playButton.ultraCompactPlaying
+            : compact
+              ? sceneCopy.ui.playButton.compactPlaying
+              : sceneCopy.ui.playButton.fullPlaying,
+        )
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         updatePlayButton()
@@ -329,7 +340,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       resetBtnG.append("text").attr("x", ultraCompact ? 22 : compact ? 26 : 35).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text(compact ? "\u21BA" : "Reset")
+        .text(compact ? sceneCopy.ui.resetButton.compact : sceneCopy.ui.resetButton.full)
       resetBtnG.on("click", () => {
         timeRef.current = 0
         playingRef.current = false
@@ -346,7 +357,13 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
           .attr("stroke", playing ? "#ef4444" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", playing ? "white" : "#64748b")
-          .text(ultraCompact ? (playing ? "Stop" : "Run") : compact ? (playing ? "On" : "Off") : (playing ? "Pause" : "Play"))
+          .text(
+            ultraCompact
+              ? (playing ? sceneCopy.ui.playButton.ultraCompactPlaying : sceneCopy.ui.playButton.ultraCompactPaused)
+              : compact
+                ? (playing ? sceneCopy.ui.playButton.compactPlaying : sceneCopy.ui.playButton.compactPaused)
+                : (playing ? sceneCopy.ui.playButton.fullPlaying : sceneCopy.ui.playButton.fullPaused),
+          )
       }
 
       // ── drawWaves: updates wave paths and amplitude handle position ──
@@ -488,7 +505,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
       select(el).select("svg").remove()
       updateRef.current = null
     }
-  }, []) // empty deps: SVG created once, rebuilt only on resize
+  }, [sceneCopy]) // Rebuild SVG labels when localized scene copy changes.
 
   return (
     <div

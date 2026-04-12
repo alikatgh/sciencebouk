@@ -11,6 +11,7 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
+import { useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -124,6 +125,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function MaxwellScene(): ReactElement {
   const lessonCopy = useLessonCopy("maxwell")
+  const sceneCopy = useSceneCopy("maxwell")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -140,9 +142,9 @@ export function MaxwellScene(): ReactElement {
         return `\\lambda = ${v.wavelength} \\;\\text{px}`
       }}
       describeResult={(v) => {
-        if (v.wavelength < 80) return "Short wavelength -- high energy, like X-rays"
-        if (v.wavelength > 180) return "Long wavelength -- low energy, like radio waves"
-        return "Medium wavelength -- visible light range"
+        if (v.wavelength < 80) return sceneCopy.description.shortWavelength
+        if (v.wavelength > 180) return sceneCopy.description.longWavelength
+        return sceneCopy.description.mediumWavelength
       }}
       presets={[
         { label: "Short (X-ray)", values: { wavelength: 60 } },

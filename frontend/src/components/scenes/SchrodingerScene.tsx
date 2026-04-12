@@ -10,6 +10,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -57,6 +58,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function SchrodingerScene(): ReactElement {
   const lessonCopy = useLessonCopy("schrodinger")
+  const sceneCopy = useSceneCopy("schrodinger")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -71,12 +73,20 @@ export function SchrodingerScene(): ReactElement {
       }}
       buildResultLine={(v) => {
         const energy = (v.n * v.n * Math.PI * Math.PI) / (2 * v.L * v.L)
-        return `E_{${v.n}} = ${energy.toFixed(2)} \\;\\text{(natural units)}`
+        return interpolateSceneCopy(sceneCopy.resultLine.energy, {
+          n: v.n,
+          energy: energy.toFixed(2),
+        })
       }}
       describeResult={(v) => {
-        if (v.n === 1) return "Ground state -- lowest possible energy"
-        if (v.n >= 4) return `Highly excited -- ${v.n} nodes in the wave function`
-        return `Energy level ${v.n} -- ${v.n - 1} node${v.n > 2 ? 's' : ''} in the wave function`
+        if (v.n === 1) return sceneCopy.description.groundState
+        if (v.n >= 4) {
+          return interpolateSceneCopy(sceneCopy.description.highlyExcited, { nodes: v.n })
+        }
+        return interpolateSceneCopy(
+          v.n > 2 ? sceneCopy.description.defaultMany : sceneCopy.description.defaultOne,
+          { n: v.n, nodes: v.n - 1 },
+        )
       }}
       presets={[
         { label: "Ground state", values: { n: 1, L: 1.0 } },
@@ -102,6 +112,7 @@ interface D3SchrodingerVisualProps {
 }
 
 function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3SchrodingerVisualProps): ReactElement {
+  const sceneCopy = useSceneCopy("schrodinger")
   const containerRef = useRef<HTMLDivElement>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
@@ -355,7 +366,13 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       playBtnG.append("text").attr("class", "play-btn-text").attr("x", playButtonWidth / 2).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text(ultraCompact ? "Run" : compact ? "On" : "Pause")
+        .text(
+          ultraCompact
+            ? sceneCopy.ui.playButton.ultraCompactPaused
+            : compact
+              ? sceneCopy.ui.playButton.compactPlaying
+              : sceneCopy.ui.playButton.fullPlaying,
+        )
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         if (playingRef.current) {
@@ -476,7 +493,11 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         // Values panel
         g.select(".val-n-label").text(ultraCompact ? `n ${nVal}` : `n = ${nVal}`)
         g.select(".val-L-label").text(ultraCompact ? `L ${LVal.toFixed(1)}` : `L = ${LVal.toFixed(1)}`)
-        g.select(".val-energy-label").text(ultraCompact ? `E${nVal} ${currentEnergy.toFixed(2)}` : `E${nVal} = ${currentEnergy.toFixed(2)} (natural units)`)
+        g.select(".val-energy-label").text(
+          ultraCompact || compact
+            ? interpolateSceneCopy(sceneCopy.ui.energyLabel.compact, { n: nVal, energy: currentEnergy.toFixed(2) })
+            : interpolateSceneCopy(sceneCopy.ui.energyLabel.full, { n: nVal, energy: currentEnergy.toFixed(2) }),
+        )
 
         // Update D3 quantum number button appearances
         for (let n = 1; n <= 5; n++) {
@@ -498,7 +519,13 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
           .attr("stroke", isPlaying ? "#059669" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", isPlaying ? "white" : "#64748b")
-          .text(ultraCompact ? (isPlaying ? "Stop" : "Run") : compact ? (isPlaying ? "On" : "Off") : (isPlaying ? "Pause" : "Play"))
+          .text(
+            ultraCompact
+              ? (isPlaying ? sceneCopy.ui.playButton.ultraCompactPlaying : sceneCopy.ui.playButton.ultraCompactPaused)
+              : compact
+                ? (isPlaying ? sceneCopy.ui.playButton.compactPlaying : sceneCopy.ui.playButton.compactPaused)
+                : (isPlaying ? sceneCopy.ui.playButton.fullPlaying : sceneCopy.ui.playButton.fullPaused),
+          )
       }
 
       // ── D3 drag — updates SVG directly, syncs React only on end ──
@@ -597,7 +624,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       updateWaveRef.current = null
       updatePlayBtnRef.current = null
     }
-  }, []) // <- empty deps: SVG created once, rebuilt only on resize
+  }, [sceneCopy]) // Rebuild SVG labels when localized scene copy changes.
 
   return (
     <div

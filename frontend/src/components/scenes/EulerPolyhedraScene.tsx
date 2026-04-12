@@ -7,6 +7,7 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -280,6 +281,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function EulerPolyhedraScene(): ReactElement {
   const lessonCopy = useLessonCopy("euler-polyhedra")
+  const sceneCopy = useSceneCopy("eulerPolyhedra")
   const teachingLessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -296,8 +298,8 @@ export function EulerPolyhedraScene(): ReactElement {
       }}
       describeResult={(v) => {
         const result = v.V - v.E + v.F
-        if (result === 2) return "Euler's formula holds -- V - E + F = 2"
-        return `V - E + F = ${result} (should be 2)`
+        if (result === 2) return sceneCopy.description.holds
+        return interpolateSceneCopy(sceneCopy.description.default, { result })
       }}
       presets={[
         { label: "Tetrahedron", values: { V: 4, E: 6, F: 4 } },

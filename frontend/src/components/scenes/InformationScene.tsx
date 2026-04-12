@@ -10,6 +10,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 function shannonEntropy(p: number): number {
   if (p <= 0 || p >= 1) return 0
@@ -30,6 +31,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function InformationScene(): ReactElement {
   const lessonCopy = useLessonCopy("information")
+  const sceneCopy = useSceneCopy("information")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -42,12 +44,14 @@ export function InformationScene(): ReactElement {
         const H = shannonEntropy(v.p)
         return `H = -{\\color{#3b82f6}${v.p.toFixed(2)}}\\log({\\color{#3b82f6}${v.p.toFixed(2)}}) - ${(1 - v.p).toFixed(2)}\\log(${(1 - v.p).toFixed(2)}) = {\\color{#ef4444}${H.toFixed(3)}}`
       }}
-      buildResultLine={(v) => `H = ${shannonEntropy(v.p).toFixed(4)} \\;\\text{bits}`}
+      buildResultLine={(v) => interpolateSceneCopy(sceneCopy.resultLine.entropy, {
+        entropy: shannonEntropy(v.p).toFixed(4),
+      })}
       describeResult={(v) => {
         const H = shannonEntropy(v.p)
-        if (H > 0.95) return "Maximum uncertainty -- a fair coin"
-        if (H < 0.2) return "Almost certain -- very little information"
-        return `${H.toFixed(2)} bits of uncertainty per outcome`
+        if (H > 0.95) return sceneCopy.description.maximumUncertainty
+        if (H < 0.2) return sceneCopy.description.almostCertain
+        return interpolateSceneCopy(sceneCopy.description.default, { entropy: H.toFixed(2) })
       }}
       presets={[
         { label: "Fair coin (p=0.5)", values: { p: 0.5 } },
@@ -68,6 +72,7 @@ interface InformationChartProps {
 }
 
 function InformationChart({ prob, onVarChange }: InformationChartProps): ReactElement {
+  const sceneCopy = useSceneCopy("information")
   const entropy = shannonEntropy(prob)
   const q = 1 - prob
   const frame = useChartFrame({
@@ -168,7 +173,9 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             </button>
           )}
           <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
-            {ultraCompact ? `H ${entropy.toFixed(3)}` : `H = ${entropy.toFixed(4)} bits`}
+            {ultraCompact
+              ? interpolateSceneCopy(sceneCopy.ui.entropyBadge.ultraCompact, { entropy: entropy.toFixed(3) })
+              : interpolateSceneCopy(sceneCopy.ui.entropyBadge.full, { entropy: entropy.toFixed(4) })}
           </span>
         </div>
 
@@ -215,7 +222,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={7} fill="#ef4444" stroke="white" strokeWidth={2} />
 
             <text x={frame.plotRight - 4} y={frame.yScale(1) - 6} textAnchor="end" fontSize="11" fontWeight="600" fill="#f59e0b">
-              {ultraCompact ? "1b" : compact ? "max 1b" : "max = 1 bit"}
+              {ultraCompact ? sceneCopy.ui.maxEntropyLine.ultraCompact : compact ? sceneCopy.ui.maxEntropyLine.compact : sceneCopy.ui.maxEntropyLine.full}
             </text>
 
             {xTicks.map((tick) => (
@@ -236,7 +243,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             ))}
 
             <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#94a3b8">
-              {compact ? "p" : "Probability p"}
+              {compact ? sceneCopy.ui.axisProbability.compact : sceneCopy.ui.axisProbability.full}
             </text>
             <text
               x={16}
@@ -246,7 +253,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
               fill="#94a3b8"
               transform={`rotate(-90 16 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              {ultraCompact ? "H" : compact ? "H" : "H (bits)"}
+              {compact ? sceneCopy.ui.axisEntropy.compact : sceneCopy.ui.axisEntropy.full}
             </text>
           </svg>
         </div>
@@ -269,26 +276,44 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             onClick={handleFlip}
             className={`rounded-lg bg-ocean font-semibold text-white transition-colors hover:bg-blue-900 ${compact ? "px-3 py-1.5 text-xs" : "px-4 py-1.5 text-sm"}`}
           >
-            Flip
+            {sceneCopy.ui.buttons.flip}
           </button>
           <button
             onClick={handleReset}
             className={`rounded-lg bg-slate-500 font-semibold text-white transition-colors hover:bg-slate-600 ${compact ? "px-3 py-1.5 text-xs" : "px-4 py-1.5 text-sm"}`}
           >
-            Reset
+            {sceneCopy.ui.buttons.reset}
           </button>
 
           {/* Tally */}
           <div className={`flex flex-wrap gap-3 font-semibold ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`}>
             <span className="text-blue-600">H: {heads}</span>
             <span className="text-emerald-600">T: {tails}</span>
-            <span className="text-slate-500">{ultraCompact ? `${flips.length}` : compact ? `n: ${flips.length}` : `Total: ${flips.length}`}</span>
+            <span className="text-slate-500">
+              {ultraCompact
+                ? `${flips.length}`
+                : compact
+                  ? interpolateSceneCopy(sceneCopy.ui.tally.compactTotal, { count: flips.length })
+                  : interpolateSceneCopy(sceneCopy.ui.tally.fullTotal, { count: flips.length })}
+            </span>
           </div>
 
           {/* Surprise */}
           <div className={`ml-auto flex flex-col ${compact ? "w-full text-[11px]" : "text-xs"}`}>
-            <span className="text-blue-600">{ultraCompact ? `H ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)}b` : compact ? `H info: ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)}b` : `Surprise(H): ${surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2)} bits`}</span>
-            <span className="text-emerald-600">{ultraCompact ? `T ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)}b` : compact ? `T info: ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)}b` : `Surprise(T): ${surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2)} bits`}</span>
+            <span className="text-blue-600">
+              {ultraCompact
+                ? interpolateSceneCopy(sceneCopy.ui.surprise.headsUltraCompact, { value: surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2) })
+                : compact
+                  ? interpolateSceneCopy(sceneCopy.ui.surprise.headsCompact, { value: surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2) })
+                  : interpolateSceneCopy(sceneCopy.ui.surprise.headsFull, { value: surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2) })}
+            </span>
+            <span className="text-emerald-600">
+              {ultraCompact
+                ? interpolateSceneCopy(sceneCopy.ui.surprise.tailsUltraCompact, { value: surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2) })
+                : compact
+                  ? interpolateSceneCopy(sceneCopy.ui.surprise.tailsCompact, { value: surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2) })
+                  : interpolateSceneCopy(sceneCopy.ui.surprise.tailsFull, { value: surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2) })}
+            </span>
           </div>
         </div>
       </div>

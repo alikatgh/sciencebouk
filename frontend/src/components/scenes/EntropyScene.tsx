@@ -4,6 +4,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 import { useContainerSize } from "../../hooks/useContainerSize"
 
 /* ── constants ── */
@@ -327,6 +328,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
 /* ── scene ── */
 export function EntropyScene(): ReactElement {
   const lessonCopy = useLessonCopy("entropy")
+  const sceneCopy = useSceneCopy("entropy")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -347,11 +349,11 @@ export function EntropyScene(): ReactElement {
       }}
       describeResult={(v) => {
         const S = entropyForTemperature(v.temperature)
-        if (v.temperature <= 5) return "Near-perfect order — only one microstate"
-        if (v.temperature <= 30) return "Low entropy — particles stay close to the lattice"
-        if (v.temperature <= 60) return "Growing disorder — many possible arrangements"
-        if (v.temperature <= 85) return "High entropy — particles roam freely"
-        return `Maximum disorder — ${S.toFixed(1)} k_B of entropy`
+        if (v.temperature <= 5) return sceneCopy.description.nearPerfectOrder
+        if (v.temperature <= 30) return sceneCopy.description.lowEntropy
+        if (v.temperature <= 60) return sceneCopy.description.growingDisorder
+        if (v.temperature <= 85) return sceneCopy.description.highEntropy
+        return interpolateSceneCopy(sceneCopy.description.maximumDisorder, { entropy: S.toFixed(1) })
       }}
       presets={[
         { label: "Frozen", values: { temperature: 5 } },

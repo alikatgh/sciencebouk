@@ -1,0 +1,324 @@
+{
+  "pythagoras": {
+    "description": {
+      "smallTriangle": "A very small triangle",
+      "longHypotenuse": "That's a long hypotenuse!",
+      "rampLength": "The ramp needs to be {{length}} units long"
+    }
+  },
+  "logarithm": {
+    "description": {
+      "hugeProduct": "Huge product -- but the log is only {{logValue}}",
+      "tinyProduct": "Tiny product -- log is near zero",
+      "default": "log({{product}}) = {{logValue}}"
+    }
+  },
+  "calculus": {
+    "resultLine": {
+      "slope": "\\text{slope} = {{slope}}"
+    },
+    "description": {
+      "flatSpot": "Flat spot -- a local max or min",
+      "steepUphill": "Steep uphill -- accelerating fast",
+      "uphill": "Going uphill",
+      "steepDownhill": "Steep downhill -- decelerating fast",
+      "downhill": "Going downhill"
+    },
+    "ui": {
+      "slopeBadge": {
+        "ultraCompact": "m{{slope}}",
+        "compact": "m {{slope}}",
+        "full": "slope = {{slope}}"
+      },
+      "areaToggle": {
+        "ultraCompactOff": "∫",
+        "ultraCompactOn": "∫ off",
+        "fullOff": "Area",
+        "fullOn": "Hide area"
+      },
+      "derivativeToggle": {
+        "ultraCompactOff": "f′",
+        "ultraCompactOn": "f′ off",
+        "fullOff": "f'(x)",
+        "fullOn": "Hide f'(x)"
+      },
+      "tangentLegend": {
+        "ultraCompact": "T",
+        "compact": "Tan",
+        "full": "Tangent"
+      },
+      "secantLegend": {
+        "ultraCompact": "S",
+        "compact": "Sec",
+        "full": "Secant"
+      }
+    }
+  },
+  "gravity": {
+    "description": {
+      "barelyAnyPull": "Barely any pull — like two pebbles in a field",
+      "smallCoin": "About the weight of a small coin",
+      "apple": "Like holding an apple",
+      "blackHole": "Black-hole territory!",
+      "default": "{{force}} newtons of gravitational pull"
+    }
+  },
+  "wave": {
+    "resultLine": {
+      "speed": "c = f \\times \\lambda = {{speed}} \\;\\text{units/s}"
+    },
+    "description": {
+      "lowBass": "Low bass -- a deep hum",
+      "highPitch": "High pitch -- a shrill tone",
+      "loud": "Loud -- tall wave, lots of energy",
+      "default": "Speed = {{speed}} units/s"
+    },
+    "ui": {
+      "playButton": {
+        "ultraCompactPlaying": "Stop",
+        "ultraCompactPaused": "Run",
+        "compactPlaying": "On",
+        "compactPaused": "Off",
+        "fullPlaying": "Pause",
+        "fullPaused": "Play"
+      },
+      "resetButton": {
+        "compact": "↺",
+        "full": "Reset"
+      }
+    }
+  },
+  "complex": {
+    "description": {
+      "origin": "At the origin -- zero",
+      "realAxis": "On the real axis -- a regular number",
+      "imaginaryAxis": "On the imaginary axis -- pure imaginary",
+      "default": "{{angle}} degrees from the real axis"
+    },
+    "ui": {
+      "infoPanel": {
+        "title": "Complex Number",
+        "rectangular": "Rectangular:",
+        "polar": "Polar:",
+        "magnitude": "Magnitude:"
+      },
+      "buttons": {
+        "multiplyByI": {
+          "ultraCompact": "×i",
+          "compact": "×i",
+          "full": "x i"
+        },
+        "multiplyByNegativeOne": {
+          "ultraCompact": "-1",
+          "compact": "-1",
+          "full": "x (-1)"
+        },
+        "conjugate": {
+          "ultraCompact": "z*",
+          "compact": "Conj",
+          "full": "Conj"
+        },
+        "reset": {
+          "ultraCompact": "↺",
+          "compact": "↺",
+          "full": "Reset"
+        }
+      }
+    }
+  },
+  "eulerPolyhedra": {
+    "description": {
+      "holds": "Euler's formula holds -- V - E + F = 2",
+      "default": "V - E + F = {{result}} (should be 2)"
+    }
+  },
+  "normalDistribution": {
+    "resultLine": {
+      "peak": "\\Phi_{\\text{peak}} = {{peak}}"
+    },
+    "description": {
+      "narrow": "Very narrow — 68% within {{sigma}} of the mean",
+      "spreadOut": "Very spread out — high variance",
+      "default": "68% within ±{{sigma}} of the mean"
+    },
+    "ui": {
+      "peakBadge": {
+        "ultraCompact": "pk {{peak}}",
+        "full": "peak = {{peak}}"
+      }
+    }
+  },
+  "fourier": {
+    "resultLine": {
+      "totalAmplitude": "\\text{Total amplitude} = {{total}}"
+    },
+    "description": {
+      "silence": "Silence -- no harmonics active",
+      "pureTone": "Pure tone -- like a tuning fork",
+      "oddHarmonics": "Odd harmonics only -- approaching a square wave",
+      "defaultOne": "{{count}} harmonic active -- complex timbre",
+      "defaultMany": "{{count}} harmonics active -- complex timbre"
+    },
+    "ui": {
+      "footer": "Fourier Decomposition: any signal = sum of sine waves",
+      "equationReadout": {
+        "silence": "Silence",
+        "compactPrefix": "mix:"
+      },
+      "playButton": {
+        "compactPlaying": "On",
+        "compactPaused": "Off",
+        "fullPlaying": "Pause",
+        "fullPaused": "Play"
+      }
+    }
+  },
+  "fluid": {
+    "description": {
+      "laminar": "Laminar -- smooth, predictable flow",
+      "transitional": "Transitional -- starting to become turbulent",
+      "turbulent": "Turbulent -- chaotic, unpredictable flow"
+    }
+  },
+  "maxwell": {
+    "description": {
+      "shortWavelength": "Short wavelength -- high energy, like X-rays",
+      "longWavelength": "Long wavelength -- low energy, like radio waves",
+      "mediumWavelength": "Medium wavelength -- visible light range"
+    }
+  },
+  "relativity": {
+    "description": {
+      "atRest": "At rest -- no relativistic effects",
+      "everydaySpeed": "Everyday speed -- effects negligible",
+      "extremeRegime": "Time slows by {{percent}}% -- extreme relativistic regime",
+      "traveler": "Time slows by {{percent}}% for the traveler"
+    }
+  },
+  "schrodinger": {
+    "resultLine": {
+      "energy": "E_{{n}} = {{energy}} \\;\\text{(natural units)}"
+    },
+    "description": {
+      "groundState": "Ground state -- lowest possible energy",
+      "highlyExcited": "Highly excited -- {{nodes}} nodes in the wave function",
+      "defaultOne": "Energy level {{n}} -- {{nodes}} node in the wave function",
+      "defaultMany": "Energy level {{n}} -- {{nodes}} nodes in the wave function"
+    },
+    "ui": {
+      "playButton": {
+        "ultraCompactPlaying": "Stop",
+        "ultraCompactPaused": "Run",
+        "compactPlaying": "On",
+        "compactPaused": "Off",
+        "fullPlaying": "Pause",
+        "fullPaused": "Play"
+      },
+      "energyLabel": {
+        "full": "E{{n}} = {{energy}} (natural units)",
+        "compact": "E{{n}} {{energy}}"
+      }
+    }
+  },
+  "information": {
+    "resultLine": {
+      "entropy": "H = {{entropy}} \\;\\text{bits}"
+    },
+    "description": {
+      "maximumUncertainty": "Maximum uncertainty -- a fair coin",
+      "almostCertain": "Almost certain -- very little information",
+      "default": "{{entropy}} bits of uncertainty per outcome"
+    },
+    "ui": {
+      "entropyBadge": {
+        "ultraCompact": "H {{entropy}}",
+        "full": "H = {{entropy}} bits"
+      },
+      "axisProbability": {
+        "compact": "p",
+        "full": "Probability p"
+      },
+      "axisEntropy": {
+        "compact": "H",
+        "full": "H (bits)"
+      },
+      "maxEntropyLine": {
+        "ultraCompact": "1b",
+        "compact": "max 1b",
+        "full": "max = 1 bit"
+      },
+      "buttons": {
+        "flip": "Flip",
+        "reset": "Reset"
+      },
+      "tally": {
+        "compactTotal": "n: {{count}}",
+        "fullTotal": "Total: {{count}}"
+      },
+      "surprise": {
+        "headsUltraCompact": "H {{value}}b",
+        "headsCompact": "H info: {{value}}b",
+        "headsFull": "Surprise(H): {{value}} bits",
+        "tailsUltraCompact": "T {{value}}b",
+        "tailsCompact": "T info: {{value}}b",
+        "tailsFull": "Surprise(T): {{value}} bits"
+      }
+    }
+  },
+  "chaos": {
+    "description": {
+      "stable": "Stable -- converges to a single value",
+      "period2": "Period-2 -- oscillates between two values",
+      "periodDoubling": "Period-doubling -- oscillations get more complex",
+      "chaos": "Chaos -- deterministic but unpredictable",
+      "period3Window": "Period-3 window -- brief order in the chaos",
+      "deepChaos": "Deep chaos -- the butterfly effect in action"
+    }
+  },
+  "blackScholes": {
+    "resultLine": {
+      "atm": "\\text{ATM Call} = \\${{call}},\\; \\text{Put} = \\${{put}}"
+    },
+    "description": {
+      "nearExpiry": "Near expiry -- time value almost gone",
+      "highVolatility": "High volatility -- options are expensive",
+      "lowVolatility": "Low volatility -- options are cheap",
+      "default": "ATM call costs ${{call}} with {{volatility}}% vol"
+    },
+    "ui": {
+      "xAxis": {
+        "ultraCompact": "S",
+        "compact": "Price (S)",
+        "full": "Underlying Price (S)"
+      },
+      "yAxis": {
+        "ultraCompact": "$",
+        "compact": "Price",
+        "full": "Option Price"
+      },
+      "legend": {
+        "call": "Call",
+        "put": "Put",
+        "intrinsicUltraCompact": "IV",
+        "intrinsicFull": "Intrinsic"
+      },
+      "greeksToggle": {
+        "ultraCompactOff": "ΔΓ",
+        "ultraCompactOn": "Hide ΔΓ",
+        "compactOff": "Greeks",
+        "compactOn": "Hide",
+        "fullOff": "Show Greeks",
+        "fullOn": "Hide Greeks"
+      }
+    }
+  },
+  "entropy": {
+    "description": {
+      "nearPerfectOrder": "Near-perfect order — only one microstate",
+      "lowEntropy": "Low entropy — particles stay close to the lattice",
+      "growingDisorder": "Growing disorder — many possible arrangements",
+      "highEntropy": "High entropy — particles roam freely",
+      "maximumDisorder": "Maximum disorder — {{entropy}} k_B of entropy"
+    }
+  }
+}

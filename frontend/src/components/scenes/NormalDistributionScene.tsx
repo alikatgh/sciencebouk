@@ -5,6 +5,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 function pdf(x: number, mu: number, sigma: number): number {
   return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
@@ -26,6 +27,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function NormalDistributionScene(): ReactElement {
   const lessonCopy = useLessonCopy("normal-distribution")
+  const sceneCopy = useSceneCopy("normalDistribution")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -38,11 +40,15 @@ export function NormalDistributionScene(): ReactElement {
         const peak = pdf(v.mu, v.mu, v.sigma)
         return `\\Phi = \\frac{1}{\\sqrt{2\\pi \\cdot {\\color{#f59e0b}${v.sigma.toFixed(1)}}^2}} e^{-\\frac{(x-{\\color{#3b82f6}${v.mu.toFixed(1)}})^2}{2\\cdot{\\color{#f59e0b}${v.sigma.toFixed(1)}}^2}} = {\\color{#ef4444}${peak.toFixed(3)}}`
       }}
-      buildResultLine={(v) => `\\Phi_{\\text{peak}} = ${pdf(v.mu, v.mu, v.sigma).toFixed(3)}`}
+      buildResultLine={(v) => interpolateSceneCopy(sceneCopy.resultLine.peak, {
+        peak: pdf(v.mu, v.mu, v.sigma).toFixed(3),
+      })}
       describeResult={(v) => {
-        if (v.sigma <= 0.5) return "Very narrow — 68% within " + v.sigma.toFixed(1) + " of the mean"
-        if (v.sigma >= 2.5) return "Very spread out — high variance"
-        return "68% within \u00B1" + v.sigma.toFixed(1) + " of the mean"
+        if (v.sigma <= 0.5) {
+          return interpolateSceneCopy(sceneCopy.description.narrow, { sigma: v.sigma.toFixed(1) })
+        }
+        if (v.sigma >= 2.5) return sceneCopy.description.spreadOut
+        return interpolateSceneCopy(sceneCopy.description.default, { sigma: v.sigma.toFixed(1) })
       }}
       presets={[
         { label: "Standard", values: { mu: 0, sigma: 1 } },
@@ -65,6 +71,7 @@ interface NormalChartProps {
 }
 
 function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProps): ReactElement {
+  const sceneCopy = useSceneCopy("normalDistribution")
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [isDragging, setIsDragging] = useState(false)
@@ -203,7 +210,9 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
             </button>
           )}
           <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
-            {ultraCompact ? `pk ${pdf(mu, mu, sigma).toFixed(3)}` : `peak = ${pdf(mu, mu, sigma).toFixed(3)}`}
+            {ultraCompact
+              ? interpolateSceneCopy(sceneCopy.ui.peakBadge.ultraCompact, { peak: pdf(mu, mu, sigma).toFixed(3) })
+              : interpolateSceneCopy(sceneCopy.ui.peakBadge.full, { peak: pdf(mu, mu, sigma).toFixed(3) })}
           </span>
         </div>
 

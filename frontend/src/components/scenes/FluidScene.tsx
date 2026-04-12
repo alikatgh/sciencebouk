@@ -8,6 +8,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -98,6 +99,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function FluidScene(): ReactElement {
   const lessonCopy = useLessonCopy("fluid")
+  const sceneCopy = useSceneCopy("fluid")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -116,9 +118,9 @@ export function FluidScene(): ReactElement {
       }}
       describeResult={(v) => {
         const Re = (v.flowSpeed * 80) / (v.viscosity + 0.01)
-        if (Re < 100) return "Laminar -- smooth, predictable flow"
-        if (Re < 500) return "Transitional -- starting to become turbulent"
-        return "Turbulent -- chaotic, unpredictable flow"
+        if (Re < 100) return sceneCopy.description.laminar
+        if (Re < 500) return sceneCopy.description.transitional
+        return sceneCopy.description.turbulent
       }}
       presets={[
         { label: "Laminar", values: { viscosity: 1.5, flowSpeed: 0.8 } },

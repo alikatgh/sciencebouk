@@ -10,6 +10,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -59,6 +60,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function FourierScene(): ReactElement {
   const lessonCopy = useLessonCopy("fourier")
+  const sceneCopy = useSceneCopy("fourier")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -72,14 +74,17 @@ export function FourierScene(): ReactElement {
       }}
       buildResultLine={(v) => {
         const total = Math.abs(v.a1) + Math.abs(v.a2) + Math.abs(v.a3) + Math.abs(v.a4)
-        return `\\text{Total amplitude} = ${total.toFixed(2)}`
+        return interpolateSceneCopy(sceneCopy.resultLine.totalAmplitude, { total: total.toFixed(2) })
       }}
       describeResult={(v) => {
         const active = [v.a1, v.a2, v.a3, v.a4].filter(a => a > 0.05).length
-        if (active === 0) return "Silence -- no harmonics active"
-        if (active === 1 && v.a1 > 0.5) return "Pure tone -- like a tuning fork"
-        if (v.a2 < 0.05 && v.a3 > 0.2 && v.a4 < 0.05) return "Odd harmonics only -- approaching a square wave"
-        return `${active} harmonic${active > 1 ? 's' : ''} active -- complex timbre`
+        if (active === 0) return sceneCopy.description.silence
+        if (active === 1 && v.a1 > 0.5) return sceneCopy.description.pureTone
+        if (v.a2 < 0.05 && v.a3 > 0.2 && v.a4 < 0.05) return sceneCopy.description.oddHarmonics
+        return interpolateSceneCopy(
+          active === 1 ? sceneCopy.description.defaultOne : sceneCopy.description.defaultMany,
+          { count: active },
+        )
       }}
       presets={[
         { label: "Pure tone", values: { a1: 1.0, a2: 0, a3: 0, a4: 0 } },
@@ -116,6 +121,7 @@ const HARMONIC_NAMES = ['a1', 'a2', 'a3', 'a4'] as const
 const HARMONIC_LABELS = ['a\u2081', 'a\u2082', 'a\u2083', 'a\u2084']
 
 function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarChange }: D3FourierVisualProps): ReactElement {
+  const sceneCopy = useSceneCopy("fourier")
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Stable callback refs — never stale in D3 closures
@@ -368,7 +374,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         g.append("text")
           .attr("x", W / 2).attr("y", H - H * 0.024)
           .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#94a3b8")
-          .text("Fourier Decomposition: any signal = sum of sine waves")
+          .text(sceneCopy.ui.footer)
       }
 
       // D3 play/pause button inside SVG
@@ -378,7 +384,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       btnG.append("text").attr("class", "play-btn-text").attr("x", compact ? 32 : 40).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text(compact ? "On" : "Pause")
+        .text(compact ? sceneCopy.ui.playButton.compactPlaying : sceneCopy.ui.playButton.fullPlaying)
       btnG.on("click", () => {
         playingRef.current = !playingRef.current
         updatePlayButton()
@@ -421,9 +427,9 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         g.select(".equation-readout")
           .text(
             ultraCompact
-              ? (activeHarmonics.length > 0 ? activeHarmonics.join(" · ") : "Silence")
+              ? (activeHarmonics.length > 0 ? activeHarmonics.join(" · ") : sceneCopy.ui.equationReadout.silence)
               : compact
-                ? `mix: ${amps.map((amp) => amp.toFixed(2)).join(" · ")}`
+                ? `${sceneCopy.ui.equationReadout.compactPrefix} ${amps.map((amp) => amp.toFixed(2)).join(" · ")}`
                 : `f(t) = ${amps[0].toFixed(2)}sin(t) + ${amps[1].toFixed(2)}sin(2t) + ${amps[2].toFixed(2)}sin(3t) + ${amps[3].toFixed(2)}sin(4t)`,
           )
 
@@ -446,7 +452,11 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
           .attr("stroke", playing ? "#4f73ff" : "#e2e8f0")
         g.select(".play-btn-text")
           .attr("fill", playing ? "white" : "#64748b")
-          .text(ultraCompact ? (playing ? "On" : "Off") : compact ? (playing ? "On" : "Off") : (playing ? "Pause" : "Play"))
+          .text(
+            ultraCompact || compact
+              ? (playing ? sceneCopy.ui.playButton.compactPlaying : sceneCopy.ui.playButton.compactPaused)
+              : (playing ? sceneCopy.ui.playButton.fullPlaying : sceneCopy.ui.playButton.fullPaused),
+          )
       }
 
       // ── Animation loop: reads from refs, never from React state ──
@@ -541,7 +551,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       updateSceneRef.current = null
       lastTsRef.current = 0
     }
-  }, []) // ← empty deps: SVG created once, rebuilt only on resize
+  }, [sceneCopy]) // Rebuild SVG labels when localized scene copy changes.
 
   return (
     <div

@@ -5,6 +5,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 // f(x) = 2 sin(0.8x) + 0.15x^2 - x + 3
 function f(x: number): number {
@@ -70,6 +71,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function CalculusScene(): ReactElement {
   const lessonCopy = useLessonCopy("calculus")
+  const sceneCopy = useSceneCopy("calculus")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -84,15 +86,15 @@ export function CalculusScene(): ReactElement {
       }}
       buildResultLine={(v) => {
         const slope = fPrime(v.t)
-        return `\\text{slope} = ${slope.toFixed(2)}`
+        return interpolateSceneCopy(sceneCopy.resultLine.slope, { slope: slope.toFixed(2) })
       }}
       describeResult={(v) => {
         const slope = fPrime(v.t)
-        if (Math.abs(slope) < 0.15) return "Flat spot -- a local max or min"
-        if (slope > 1.5) return "Steep uphill -- accelerating fast"
-        if (slope > 0) return "Going uphill"
-        if (slope < -1.5) return "Steep downhill -- decelerating fast"
-        return "Going downhill"
+        if (Math.abs(slope) < 0.15) return sceneCopy.description.flatSpot
+        if (slope > 1.5) return sceneCopy.description.steepUphill
+        if (slope > 0) return sceneCopy.description.uphill
+        if (slope < -1.5) return sceneCopy.description.steepDownhill
+        return sceneCopy.description.downhill
       }}
       presets={[
         { label: "Peak (t=2)", values: { t: 2, h: 1.5 } },
@@ -126,6 +128,7 @@ interface CalculusChartProps {
 }
 
 function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement {
+  const sceneCopy = useSceneCopy("calculus")
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [isDragging, setIsDragging] = useState(false)
@@ -278,7 +281,11 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
             </button>
           )}
           <span className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} rounded-lg border border-slate-200 py-1 font-extrabold dark:border-slate-600`} style={{ color: VAR_COLORS.result }}>
-            {ultraCompact ? `m${slope.toFixed(2)}` : compact ? `m ${slope.toFixed(2)}` : `slope = ${slope.toFixed(2)}`}
+            {ultraCompact
+              ? interpolateSceneCopy(sceneCopy.ui.slopeBadge.ultraCompact, { slope: slope.toFixed(2) })
+              : compact
+                ? interpolateSceneCopy(sceneCopy.ui.slopeBadge.compact, { slope: slope.toFixed(2) })
+                : interpolateSceneCopy(sceneCopy.ui.slopeBadge.full, { slope: slope.toFixed(2) })}
           </span>
           {editingVar === "h" ? (
             <input type="number" autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)}
@@ -428,7 +435,9 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               color: showArea ? "white" : "#64748b",
             }}
           >
-            {ultraCompact ? (showArea ? "∫ off" : "∫") : showArea ? "Hide area" : "Area"}
+            {ultraCompact
+              ? (showArea ? sceneCopy.ui.areaToggle.ultraCompactOn : sceneCopy.ui.areaToggle.ultraCompactOff)
+              : (showArea ? sceneCopy.ui.areaToggle.fullOn : sceneCopy.ui.areaToggle.fullOff)}
           </button>
           <button
             onClick={() => setShowDeriv(v => !v)}
@@ -439,13 +448,15 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               color: showDeriv ? "white" : "#64748b",
             }}
           >
-            {ultraCompact ? (showDeriv ? "f′ off" : "f′") : showDeriv ? "Hide f'(x)" : "f'(x)"}
+            {ultraCompact
+              ? (showDeriv ? sceneCopy.ui.derivativeToggle.ultraCompactOn : sceneCopy.ui.derivativeToggle.ultraCompactOff)
+              : (showDeriv ? sceneCopy.ui.derivativeToggle.fullOn : sceneCopy.ui.derivativeToggle.fullOff)}
           </button>
           <div className={`${compact ? "w-full pt-0.5" : "ml-auto"} flex items-center gap-2 text-xs text-slate-400`}>
             <span className="inline-block h-0.5 w-4" style={{ backgroundColor: "#94a3b8", height: 2 }} />
-            <span>{ultraCompact ? "T" : compact ? "Tan" : "Tangent"}</span>
+            <span>{ultraCompact ? sceneCopy.ui.tangentLegend.ultraCompact : compact ? sceneCopy.ui.tangentLegend.compact : sceneCopy.ui.tangentLegend.full}</span>
             <span className="ml-2 inline-block h-0.5 w-4" style={{ backgroundColor: VAR_COLORS.secondary, height: 2 }} />
-            <span>{ultraCompact ? "S" : compact ? "Sec" : "Secant"}</span>
+            <span>{ultraCompact ? sceneCopy.ui.secantLegend.ultraCompact : compact ? sceneCopy.ui.secantLegend.compact : sceneCopy.ui.secantLegend.full}</span>
           </div>
         </div>
       </div>

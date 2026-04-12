@@ -5,6 +5,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 function normalCDF(x: number): number {
   const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741
@@ -86,6 +87,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function BlackScholesScene(): ReactElement {
   const lessonCopy = useLessonCopy("black-scholes")
+  const sceneCopy = useSceneCopy("blackScholes")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -99,14 +101,20 @@ export function BlackScholesScene(): ReactElement {
       }}
       buildResultLine={(v) => {
         const bs = blackScholes(v.K, v.K, v.T, v.r, v.sigma)
-        return `\\text{ATM Call} = \\$${bs.call.toFixed(2)},\\; \\text{Put} = \\$${bs.put.toFixed(2)}`
+        return interpolateSceneCopy(sceneCopy.resultLine.atm, {
+          call: bs.call.toFixed(2),
+          put: bs.put.toFixed(2),
+        })
       }}
       describeResult={(v) => {
         const bs = blackScholes(v.K, v.K, v.T, v.r, v.sigma)
-        if (v.T < 0.05) return "Near expiry -- time value almost gone"
-        if (v.sigma > 0.6) return "High volatility -- options are expensive"
-        if (v.sigma < 0.1) return "Low volatility -- options are cheap"
-        return `ATM call costs $${bs.call.toFixed(2)} with ${(v.sigma * 100).toFixed(0)}% vol`
+        if (v.T < 0.05) return sceneCopy.description.nearExpiry
+        if (v.sigma > 0.6) return sceneCopy.description.highVolatility
+        if (v.sigma < 0.1) return sceneCopy.description.lowVolatility
+        return interpolateSceneCopy(sceneCopy.description.default, {
+          call: bs.call.toFixed(2),
+          volatility: (v.sigma * 100).toFixed(0),
+        })
       }}
       presets={[
         { label: "Low vol", values: { K: 100, sigma: 0.1, T: 0.5, r: 0.05 } },
@@ -130,6 +138,7 @@ interface BlackScholesChartProps {
 }
 
 function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChartProps): ReactElement {
+  const sceneCopy = useSceneCopy("blackScholes")
   const [showGreeks, setShowGreeks] = useState(false)
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
@@ -352,7 +361,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
             ))}
 
             <text x={(frame.plotLeft + frame.plotRight) / 2} y={frame.height - 8} textAnchor="middle" fontSize="13" fill="#64748b" fontWeight="600">
-              {ultraCompact ? "S" : compact ? "Price (S)" : "Underlying Price (S)"}
+              {ultraCompact ? sceneCopy.ui.xAxis.ultraCompact : compact ? sceneCopy.ui.xAxis.compact : sceneCopy.ui.xAxis.full}
             </text>
             <text
               x={18}
@@ -363,7 +372,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               fontWeight="600"
               transform={`rotate(-90 18 ${(frame.plotTop + frame.plotBottom) / 2})`}
             >
-              {ultraCompact ? "$" : compact ? "Price" : "Option Price"}
+              {ultraCompact ? sceneCopy.ui.yAxis.ultraCompact : compact ? sceneCopy.ui.yAxis.compact : sceneCopy.ui.yAxis.full}
             </text>
           </svg>
         </div>
@@ -372,15 +381,15 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
         <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-2 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 bg-[#5a79ff]" style={{ height: 3 }} />
-            <span className="text-xs font-semibold text-[#5a79ff]">Call</span>
+            <span className="text-xs font-semibold text-[#5a79ff]">{sceneCopy.ui.legend.call}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 bg-emerald-500" style={{ height: 3 }} />
-            <span className="text-xs font-semibold text-emerald-500">Put</span>
+            <span className="text-xs font-semibold text-emerald-500">{sceneCopy.ui.legend.put}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 border-t-2 border-dashed border-slate-400" />
-            <span className="text-xs font-semibold text-slate-400">{ultraCompact ? "IV" : "Intrinsic"}</span>
+            <span className="text-xs font-semibold text-slate-400">{ultraCompact ? sceneCopy.ui.legend.intrinsicUltraCompact : sceneCopy.ui.legend.intrinsicFull}</span>
           </div>
           <button
             onClick={() => setShowGreeks(v => !v)}
@@ -391,7 +400,11 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               color: showGreeks ? "white" : "#64748b",
             }}
           >
-            {ultraCompact ? (showGreeks ? "Hide ΔΓ" : "ΔΓ") : compact ? (showGreeks ? "Hide" : "Greeks") : (showGreeks ? "Hide Greeks" : "Show Greeks")}
+            {ultraCompact
+              ? (showGreeks ? sceneCopy.ui.greeksToggle.ultraCompactOn : sceneCopy.ui.greeksToggle.ultraCompactOff)
+              : compact
+                ? (showGreeks ? sceneCopy.ui.greeksToggle.compactOn : sceneCopy.ui.greeksToggle.compactOff)
+                : (showGreeks ? sceneCopy.ui.greeksToggle.fullOn : sceneCopy.ui.greeksToggle.fullOff)}
           </button>
         </div>
       </div>

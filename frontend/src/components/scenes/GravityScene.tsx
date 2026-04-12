@@ -6,6 +6,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -53,6 +54,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function GravityScene(): ReactElement {
   const lessonCopy = useLessonCopy("gravity")
+  const sceneCopy = useSceneCopy("gravity")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -71,11 +73,11 @@ export function GravityScene(): ReactElement {
       }}
       describeResult={(v) => {
         const F = (v.m1 * v.m2) / (v.r * v.r)
-        if (F < 0.05) return "Barely any pull — like two pebbles in a field"
-        if (F < 1) return "About the weight of a small coin"
-        if (F < 5) return "Like holding an apple"
-        if (F > 20) return "Black-hole territory!"
-        return `${F.toFixed(1)} newtons of gravitational pull`
+        if (F < 0.05) return sceneCopy.description.barelyAnyPull
+        if (F < 1) return sceneCopy.description.smallCoin
+        if (F < 5) return sceneCopy.description.apple
+        if (F > 20) return sceneCopy.description.blackHole
+        return interpolateSceneCopy(sceneCopy.description.default, { force: F.toFixed(1) })
       }}
       presets={[
         { label: "Two balls", values: { m1: 3, m2: 7, r: 5 } },

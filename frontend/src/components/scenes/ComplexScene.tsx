@@ -7,6 +7,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -54,6 +55,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function ComplexScene(): ReactElement {
   const lessonCopy = useLessonCopy("complex")
+  const sceneCopy = useSceneCopy("complex")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -74,10 +76,10 @@ export function ComplexScene(): ReactElement {
       describeResult={(v) => {
         const mag = Math.sqrt(v.a * v.a + v.b * v.b)
         const angle = (Math.atan2(v.b, v.a) * 180) / Math.PI
-        if (mag < 0.1) return "At the origin -- zero"
-        if (Math.abs(v.b) < 0.05) return "On the real axis -- a regular number"
-        if (Math.abs(v.a) < 0.05) return "On the imaginary axis -- pure imaginary"
-        return `${angle.toFixed(0)} degrees from the real axis`
+        if (mag < 0.1) return sceneCopy.description.origin
+        if (Math.abs(v.b) < 0.05) return sceneCopy.description.realAxis
+        if (Math.abs(v.a) < 0.05) return sceneCopy.description.imaginaryAxis
+        return interpolateSceneCopy(sceneCopy.description.default, { angle: angle.toFixed(0) })
       }}
       presets={[
         { label: "Unit (1+0i)", values: { a: 1, b: 0 } },
@@ -115,6 +117,7 @@ function formatComplex(re: number, im: number): string {
 }
 
 function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3ComplexVisualProps): ReactElement {
+  const sceneCopy = useSceneCopy("complex")
   const containerRef = useRef<HTMLDivElement>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
@@ -269,26 +272,45 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
           .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.13)
           .attr("font-size", 17).attr("fill", "#1e293b").attr("font-weight", 700).attr("font-family", F)
-          .text("Complex Number")
+          .text(sceneCopy.ui.infoPanel.title)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.19)
-          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Rectangular:")
+          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.rectangular)
         g.append("text").attr("class", "info-rect").attr("x", infoTxtX).attr("y", H * 0.23)
           .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.29)
-          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Polar:")
+          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.polar)
         g.append("text").attr("class", "info-polar").attr("x", infoTxtX).attr("y", H * 0.33)
           .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.39)
-          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text("Magnitude:")
+          .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.magnitude)
         g.append("text").attr("class", "info-mag").attr("x", infoTxtX).attr("y", H * 0.43)
           .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
       }
 
       // D3 action buttons inside SVG
-      const btnLabels = ultraCompact ? ["\u00D7i", "-1", "z*", "\u21BA"] : compact ? ["\u00D7i", "-1", "Conj", "\u21BA"] : ["x i", "x (-1)", "Conj", "Reset"]
+      const btnLabels = ultraCompact
+        ? [
+            sceneCopy.ui.buttons.multiplyByI.ultraCompact,
+            sceneCopy.ui.buttons.multiplyByNegativeOne.ultraCompact,
+            sceneCopy.ui.buttons.conjugate.ultraCompact,
+            sceneCopy.ui.buttons.reset.ultraCompact,
+          ]
+        : compact
+          ? [
+              sceneCopy.ui.buttons.multiplyByI.compact,
+              sceneCopy.ui.buttons.multiplyByNegativeOne.compact,
+              sceneCopy.ui.buttons.conjugate.compact,
+              sceneCopy.ui.buttons.reset.compact,
+            ]
+          : [
+              sceneCopy.ui.buttons.multiplyByI.full,
+              sceneCopy.ui.buttons.multiplyByNegativeOne.full,
+              sceneCopy.ui.buttons.conjugate.full,
+              sceneCopy.ui.buttons.reset.full,
+            ]
       const btnClasses = ["btn-mult-i", "btn-mult-neg", "btn-conj", "btn-reset"]
       const btnCharW = ultraCompact ? 5.8 : compact ? 6.5 : W < 380 ? 7 : 9
       const btnPad = ultraCompact ? 10 : compact ? 12 : W < 380 ? 14 : 20
@@ -456,7 +478,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       select(el).select("svg").remove()
       updateRef.current = null
     }
-  }, []) // <- empty deps: SVG created once, rebuilt only on resize
+  }, [sceneCopy]) // Rebuild SVG labels when localized scene copy changes.
 
   return (
     <div

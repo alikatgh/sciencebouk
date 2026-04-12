@@ -5,6 +5,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { useSceneCopy } from "../../data/sceneCopy"
 
 const variables: Variable[] = [
   { name: 'r', symbol: 'r', latex: 'r', value: 3.2, min: 2.5, max: 4.0, step: 0.001, color: VAR_COLORS.primary, description: 'Growth parameter' },
@@ -61,6 +62,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function ChaosScene(): ReactElement {
   const lessonCopy = useLessonCopy("chaos")
+  const sceneCopy = useSceneCopy("chaos")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -77,12 +79,12 @@ export function ChaosScene(): ReactElement {
         return `x_1 = ${xNext.toFixed(4)}`
       }}
       describeResult={(v) => {
-        if (v.r < 3) return "Stable -- converges to a single value"
-        if (v.r < 3.449) return "Period-2 -- oscillates between two values"
-        if (v.r < 3.57) return "Period-doubling -- oscillations get more complex"
-        if (v.r < 3.82) return "Chaos -- deterministic but unpredictable"
-        if (v.r < 3.86) return "Period-3 window -- brief order in the chaos"
-        return "Deep chaos -- the butterfly effect in action"
+        if (v.r < 3) return sceneCopy.description.stable
+        if (v.r < 3.449) return sceneCopy.description.period2
+        if (v.r < 3.57) return sceneCopy.description.periodDoubling
+        if (v.r < 3.82) return sceneCopy.description.chaos
+        if (v.r < 3.86) return sceneCopy.description.period3Window
+        return sceneCopy.description.deepChaos
       }}
       presets={[
         { label: "Stable (r=2.8)", values: { r: 2.8, x0: 0.5 } },

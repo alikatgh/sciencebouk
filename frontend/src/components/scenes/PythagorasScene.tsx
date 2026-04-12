@@ -6,6 +6,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep, GlossaryTerm } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const FONT = "Manrope, sans-serif"
 const glossary: GlossaryTerm[] = [
@@ -82,6 +83,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function PythagorasScene(): ReactElement {
   const lessonCopy = useLessonCopy("pythagoras")
+  const sceneCopy = useSceneCopy("pythagoras")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -100,9 +102,9 @@ export function PythagorasScene(): ReactElement {
       }}
       describeResult={(v) => {
         const c = Math.sqrt(v.a * v.a + v.b * v.b)
-        if (c < 2) return "A very small triangle"
-        if (c > 8) return "That's a long hypotenuse!"
-        return `The ramp needs to be ${c.toFixed(1)} units long`
+        if (c < 2) return sceneCopy.description.smallTriangle
+        if (c > 8) return sceneCopy.description.longHypotenuse
+        return interpolateSceneCopy(sceneCopy.description.rampLength, { length: c.toFixed(1) })
       }}
       presets={[
         { label: "3-4-5", values: { a: 3, b: 4 } },

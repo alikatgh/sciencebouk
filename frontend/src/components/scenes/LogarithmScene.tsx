@@ -10,6 +10,7 @@ import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
 
@@ -58,6 +59,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
 
 export function LogarithmScene(): ReactElement {
   const lessonCopy = useLessonCopy("logarithm")
+  const sceneCopy = useSceneCopy("logarithm")
   const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
@@ -77,9 +79,16 @@ export function LogarithmScene(): ReactElement {
       }}
       describeResult={(v) => {
         const product = v.x * v.y
-        if (product >= 1000) return "Huge product -- but the log is only " + (Math.log(product) / Math.log(BASE)).toFixed(1)
-        if (product <= 2) return "Tiny product -- log is near zero"
-        return "log(" + product + ") = " + (Math.log(product) / Math.log(BASE)).toFixed(3)
+        if (product >= 1000) {
+          return interpolateSceneCopy(sceneCopy.description.hugeProduct, {
+            logValue: (Math.log(product) / Math.log(BASE)).toFixed(1),
+          })
+        }
+        if (product <= 2) return sceneCopy.description.tinyProduct
+        return interpolateSceneCopy(sceneCopy.description.default, {
+          product,
+          logValue: (Math.log(product) / Math.log(BASE)).toFixed(3),
+        })
       }}
       presets={[
         { label: "10 \u00D7 10", values: { x: 10, y: 10 } },
