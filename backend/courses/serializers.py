@@ -3,8 +3,22 @@ from rest_framework import serializers
 from .models import Course, Equation, Lesson, UserProgress
 
 
-class EquationSummarySerializer(serializers.ModelSerializer):
+class LocalizedEquationSerializerMixin:
+    localized_fields: tuple[str, ...] = ()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        locale = self.context.get("locale")
+
+        for field_name in self.localized_fields:
+            data[field_name] = instance.get_localized_value(field_name, locale)
+
+        return data
+
+
+class EquationSummarySerializer(LocalizedEquationSerializerMixin, serializers.ModelSerializer):
     id = serializers.IntegerField(source="sort_order", read_only=True)
+    localized_fields = ("title", "description")
 
     class Meta:
         model = Equation
@@ -15,6 +29,16 @@ class EquationSummarySerializer(serializers.ModelSerializer):
 
 
 class EquationSerializer(EquationSummarySerializer):
+    localized_fields = (
+        *EquationSummarySerializer.localized_fields,
+        "hook",
+        "hook_action",
+        "variables_data",
+        "presets_data",
+        "lessons_data",
+        "glossary_data",
+    )
+
     class Meta(EquationSummarySerializer.Meta):
         fields = [
             *EquationSummarySerializer.Meta.fields,

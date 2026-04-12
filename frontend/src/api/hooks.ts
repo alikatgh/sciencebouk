@@ -1,19 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { api } from "./client"
+import { useSettings } from "../settings/SettingsContext"
 
 export function useEquations(category?: string) {
+  const { settings } = useSettings()
+
   return useQuery({
-    queryKey: ["equations", category],
-    queryFn: () => api.equations.list(category),
+    queryKey: ["equations", category, settings.language],
+    queryFn: () => api.equations.list(category, settings.language),
     staleTime: 5 * 60 * 1000,
   })
 }
 
 export function useEquation(id: number) {
+  const { settings } = useSettings()
+
   return useQuery({
-    queryKey: ["equation", id],
-    queryFn: () => api.equations.get(id),
+    queryKey: ["equation", id, settings.language],
+    queryFn: () => api.equations.get(id, settings.language),
     enabled: id > 0,
     staleTime: 5 * 60 * 1000,
   })
@@ -29,6 +34,7 @@ export function useCourse(slug: string) {
 }
 
 export function useSearchEquations(query: string) {
+  const { settings } = useSettings()
   const [debouncedQuery, setDebouncedQuery] = useState(query)
 
   useEffect(() => {
@@ -39,8 +45,8 @@ export function useSearchEquations(query: string) {
   }, [query])
 
   return useQuery({
-    queryKey: ["search", debouncedQuery],
-    queryFn: () => api.search(debouncedQuery),
+    queryKey: ["search", debouncedQuery, settings.language],
+    queryFn: () => api.search(debouncedQuery, settings.language),
     enabled: debouncedQuery.length >= 2,
     staleTime: 30 * 1000,
   })

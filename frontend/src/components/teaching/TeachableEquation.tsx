@@ -4,7 +4,8 @@ import { BookOpen, PanelBottomOpen, PanelRightOpen, SlidersHorizontal, Sparkles 
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { useAuth } from "../../auth/AuthContext"
-import { api } from "../../api/client"
+import { api, type EquationResponse } from "../../api/client"
+import { useEquation } from "../../api/hooks"
 import { useProgress } from "../../progress/useProgress"
 import { useEquationId } from "./EquationContext"
 import { useSettings } from "../../settings/SettingsContext"
@@ -91,9 +92,84 @@ function LessonFallback(): ReactElement {
 type MobileTeachingTab = "learn" | "controls" | "lesson"
 type MobilePanelState = "peek" | "expanded"
 
+type SceneVariableCopy = Pick<Variable, "name"> & Partial<Variable>
+type ScenePresetCopy = Partial<Preset>
+type SceneGlossaryCopy = Pick<GlossaryTerm, "highlightClass"> & Partial<GlossaryTerm>
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function mapSceneVariableCopies(rawVariables: unknown[] | undefined): SceneVariableCopy[] | undefined {
+  if (!rawVariables?.length) return undefined
+
+  return rawVariables
+    .filter(isRecord)
+    .filter((variable): variable is Record<string, unknown> & { name: string } => typeof variable.name === "string")
+    .map((variable) => ({
+      name: variable.name,
+      symbol: typeof variable.symbol === "string" ? variable.symbol : undefined,
+      latex: typeof variable.symbol === "string" ? variable.symbol : undefined,
+      description: typeof variable.description === "string" ? variable.description : undefined,
+      unit: typeof variable.unit === "string" ? variable.unit : undefined,
+    }))
+}
+
+function mapScenePresetCopies(rawPresets: unknown[] | undefined): ScenePresetCopy[] | undefined {
+  if (!rawPresets?.length) return undefined
+
+  return rawPresets
+    .filter(isRecord)
+    .map((preset) => ({
+      label: typeof preset.label === "string" ? preset.label : undefined,
+    }))
+}
+
+function mapSceneGlossaryCopies(rawGlossary: unknown[] | undefined): SceneGlossaryCopy[] | undefined {
+  if (!rawGlossary?.length) return undefined
+
+  return rawGlossary
+    .filter(isRecord)
+    .filter((term): term is Record<string, unknown> & { highlightClass: string } => typeof term.highlightClass === "string")
+    .map((term) => ({
+      highlightClass: term.highlightClass,
+      words: Array.isArray(term.words) ? term.words.filter((word): word is string => typeof word === "string") : undefined,
+      tooltip: typeof term.tooltip === "string" ? term.tooltip : undefined,
+      color: typeof term.color === "string" ? term.color : undefined,
+    }))
+}
+
+function isPreset(value: Partial<Preset>): value is Preset {
+  return typeof value.label === "string" && typeof value.values === "object" && value.values !== null
+}
+
+function isGlossaryTerm(value: SceneGlossaryCopy): value is GlossaryTerm {
+  return Array.isArray(value.words) && typeof value.color === "string"
+}
+
+function buildSceneLocalizationFromApi(equation: EquationResponse | undefined) {
+  if (!equation) {
+    return {
+      hook: undefined,
+      hookAction: undefined,
+      variables: undefined,
+      presets: undefined,
+      glossary: undefined,
+    }
+  }
+
+  return {
+    hook: equation.hook || undefined,
+    hookAction: equation.hook_action || undefined,
+    variables: mapSceneVariableCopies(equation.variables_data),
+    presets: mapScenePresetCopies(equation.presets_data),
+    glossary: mapSceneGlossaryCopies(equation.glossary_data),
+  }
+}
+
 function mergeSceneVariables(
   baseVariables: Variable[],
-  localizedVariables?: Variable[],
+  localizedVariables?: SceneVariableCopy[],
 ): Variable[] {
   if (!localizedVariables?.length) return baseVariables
 
@@ -117,10 +193,10 @@ function mergeSceneVariables(
 
 function mergeScenePresets(
   basePresets: Preset[] | undefined,
-  localizedPresets?: Preset[],
+  localizedPresets?: ScenePresetCopy[],
 ): Preset[] | undefined {
   if (!localizedPresets?.length) return basePresets
-  if (!basePresets?.length) return localizedPresets
+  if (!basePresets?.length) return localizedPresets.filter(isPreset)
 
   return basePresets.map((preset, index) => {
     const localized = localizedPresets[index]
@@ -135,10 +211,10 @@ function mergeScenePresets(
 
 function mergeSceneGlossary(
   baseGlossary: GlossaryTerm[] | undefined,
-  localizedGlossary?: GlossaryTerm[],
+  localizedGlossary?: SceneGlossaryCopy[],
 ): GlossaryTerm[] | undefined {
   if (!localizedGlossary?.length) return baseGlossary
-  if (!baseGlossary?.length) return localizedGlossary
+  if (!baseGlossary?.length) return localizedGlossary.filter(isGlossaryTerm)
 
   const localizedByClass = new Map(
     localizedGlossary.map((term) => [term.highlightClass, term]),
@@ -170,21 +246,35 @@ export function TeachableEquation({
   const contextFormula = useLatexFormula()
   const contextEquationId = useEquationId()
   const resolvedId = equationId ?? contextEquationId
+  const { data: apiEquation } = useEquation(resolvedId)
   const localizedEquationConfig = useEquationConfig(resolvedId)
+  const apiSceneLocalization = useMemo(
+    () => buildSceneLocalizationFromApi(apiEquation),
+    [apiEquation],
+  )
   const localizedVariables = useMemo(
-    () => mergeSceneVariables(initialVariables, localizedEquationConfig?.variables),
-    [initialVariables, localizedEquationConfig?.variables],
+    () => mergeSceneVariables(
+      initialVariables,
+      apiSceneLocalization.variables ?? localizedEquationConfig?.variables,
+    ),
+    [initialVariables, apiSceneLocalization.variables, localizedEquationConfig?.variables],
   )
   const localizedPresets = useMemo(
-    () => mergeScenePresets(presets, localizedEquationConfig?.presets),
-    [presets, localizedEquationConfig?.presets],
+    () => mergeScenePresets(
+      presets,
+      apiSceneLocalization.presets ?? localizedEquationConfig?.presets,
+    ),
+    [presets, apiSceneLocalization.presets, localizedEquationConfig?.presets],
   )
   const localizedGlossary = useMemo(
-    () => mergeSceneGlossary(glossary, localizedEquationConfig?.glossary),
-    [glossary, localizedEquationConfig?.glossary],
+    () => mergeSceneGlossary(
+      glossary,
+      apiSceneLocalization.glossary ?? localizedEquationConfig?.glossary,
+    ),
+    [glossary, apiSceneLocalization.glossary, localizedEquationConfig?.glossary],
   )
-  const hookCopy = localizedEquationConfig?.hook || hook
-  const hookActionCopy = localizedEquationConfig?.hookAction || hookAction
+  const hookCopy = apiSceneLocalization.hook || localizedEquationConfig?.hook || hook
+  const hookActionCopy = apiSceneLocalization.hookAction || localizedEquationConfig?.hookAction || hookAction
 
   // Progress tracking — writes to localStorage (and server for Pro)
   const { progress, updateProgress, markVariableExplored } = useProgress(resolvedId)

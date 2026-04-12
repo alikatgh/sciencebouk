@@ -5,6 +5,7 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.pagination import PageNumberPagination
@@ -12,6 +13,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
+from .localization import get_requested_locale, resolve_request_locale_candidates
 from .models import Course, Equation, LearningEvent, UserProgress
 
 PRO_TIER = "pro"
@@ -31,7 +33,7 @@ from .serializers import (
 class EquationViewSet(viewsets.ReadOnlyModelViewSet):
     """List and retrieve equations. Supports ?category= filtering."""
 
-    queryset = Equation.objects.all()
+    queryset = Equation.objects.prefetch_related("translations").all()
     serializer_class = EquationSummarySerializer
     lookup_field = "sort_order"
     lookup_url_kwarg = "id"
@@ -43,6 +45,12 @@ class EquationViewSet(viewsets.ReadOnlyModelViewSet):
             return EquationSerializer
         return EquationSummarySerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["locale"] = get_requested_locale(self.request)
+        return context
+
+    @method_decorator(vary_on_headers("Accept-Language"))
     @method_decorator(cache_page(60 * 5))
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
@@ -107,14 +115,40 @@ def search_equations(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    equations = Equation.objects.filter(
+    locale_candidates = [
+        candidate
+        for candidate in resolve_request_locale_candidates(request)
+        if candidate != "en"
+    ]
+
+    filters = (
         Q(title__icontains=q) | Q(author__icontains=q) | Q(category__icontains=q)
     )
+    if locale_candidates:
+        filters |= (
+            Q(translations__title__icontains=q, translations__locale__in=locale_candidates)
+            | Q(translations__description__icontains=q, translations__locale__in=locale_candidates)
+            | Q(translations__hook__icontains=q, translations__locale__in=locale_candidates)
+        )
+
+    equations = Equation.objects.prefetch_related("translations").filter(filters).distinct()
     paginator = PageNumberPagination()
     page = paginator.paginate_queryset(equations, request)
     if page is not None:
-        return paginator.get_paginated_response(EquationSummarySerializer(page, many=True).data)
-    return Response(EquationSummarySerializer(equations, many=True).data)
+        return paginator.get_paginated_response(
+            EquationSummarySerializer(
+                page,
+                many=True,
+                context={"locale": get_requested_locale(request)},
+            ).data
+        )
+    return Response(
+        EquationSummarySerializer(
+            equations,
+            many=True,
+            context={"locale": get_requested_locale(request)},
+        ).data
+    )
 
 
 @api_view(["GET"])
@@ -144,7 +178,8 @@ def equation_atlas_legacy(request):
             }
         )
 
-    equations = Equation.objects.all()
+    locale = get_requested_locale(request)
+    equations = Equation.objects.prefetch_related("translations").all()
     first_lesson = course.lessons.first()
 
     payload = {
@@ -163,7 +198,11 @@ def equation_atlas_legacy(request):
             "objective": first_lesson.objective if first_lesson else "",
             "steps": first_lesson.steps if first_lesson else [],
         },
-        "equationAtlas": EquationSerializer(equations, many=True).data,
+        "equationAtlas": EquationSerializer(
+            equations,
+            many=True,
+            context={"locale": locale},
+        ).data,
     }
     return Response(payload)
 

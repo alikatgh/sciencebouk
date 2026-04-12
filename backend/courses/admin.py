@@ -3,11 +3,17 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 
+from .localization import DEFAULT_LOCALE, normalize_locale
 from .importers import EquationImportError, import_equations_from_json
-from .models import Course, Equation, Lesson, LearningEvent, UserProgress
+from .models import Course, Equation, EquationTranslation, Lesson, LearningEvent, UserProgress
 
 
 class EquationJSONImportForm(forms.Form):
+    locale = forms.CharField(
+        required=False,
+        label="Locale",
+        help_text="Leave blank for the base English equation data. Set a locale like 'de', 'fr', or 'es-MX' to import translation rows instead.",
+    )
     json_file = forms.FileField(
         required=False,
         label="JSON file",
@@ -34,8 +40,19 @@ class EquationJSONImportForm(forms.Form):
         if not json_text:
             raise forms.ValidationError("Upload a JSON file or paste JSON text.")
 
+        cleaned_data["normalized_locale"] = normalize_locale(cleaned_data.get("locale"))
         cleaned_data["json_payload"] = json_text
         return cleaned_data
+
+
+class EquationTranslationInline(admin.StackedInline):
+    model = EquationTranslation
+    extra = 0
+    classes = ("collapse",)
+    fieldsets = (
+        (None, {"fields": ("locale", "title", "description")}),
+        ("Teaching Translation", {"fields": ("hook", "hook_action", "variables_data", "presets_data", "lessons_data", "glossary_data")}),
+    )
 
 
 @admin.register(Equation)
@@ -47,6 +64,7 @@ class EquationAdmin(admin.ModelAdmin):
     ordering = ("sort_order",)
     list_editable = ("stage",)
     prepopulated_fields = {"slug": ("title",)}
+    inlines = [EquationTranslationInline]
     fieldsets = (
         (None, {"fields": ("sort_order", "slug", "title", "formula", "author", "year", "category", "stage", "description")}),
         ("Teaching Content", {"fields": ("hook", "hook_action", "variables_data", "presets_data", "lessons_data", "glossary_data"), "classes": ("collapse",)}),
@@ -68,21 +86,23 @@ class EquationAdmin(admin.ModelAdmin):
         form = EquationJSONImportForm(request.POST or None, request.FILES or None)
 
         if request.method == "POST" and form.is_valid():
+            locale = form.cleaned_data["normalized_locale"]
             try:
-                result = import_equations_from_json(form.cleaned_data["json_payload"])
+                result = import_equations_from_json(form.cleaned_data["json_payload"], locale=locale)
             except EquationImportError as exc:
                 messages.error(request, str(exc))
             else:
+                import_target = "equations JSON" if locale == DEFAULT_LOCALE else f"{locale} translations"
                 if result.total_changed:
                     messages.success(
                         request,
                         (
-                            f"Imported equations JSON: {result.created} created, "
+                            f"Imported {import_target}: {result.created} created, "
                             f"{result.updated} updated, {result.skipped} skipped."
                         ),
                     )
                 else:
-                    messages.info(request, f"No equation changes found. {result.skipped} rows skipped.")
+                    messages.info(request, f"No {import_target} changes found. {result.skipped} rows skipped.")
 
                 for error in result.errors:
                     messages.warning(request, error)
@@ -98,6 +118,14 @@ class EquationAdmin(admin.ModelAdmin):
             "changelist_url": reverse("admin:courses_equation_changelist"),
         }
         return render(request, "admin/courses/equation/import_json.html", context)
+
+
+@admin.register(EquationTranslation)
+class EquationTranslationAdmin(admin.ModelAdmin):
+    list_display = ("equation", "locale", "title")
+    list_filter = ("locale",)
+    search_fields = ("equation__title", "title", "locale")
+    autocomplete_fields = ("equation",)
 
 
 @admin.register(Course)

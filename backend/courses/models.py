@@ -2,6 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
+from .localization import DEFAULT_LOCALE, normalize_locale, resolve_locale_candidates
+
 
 class Equation(models.Model):
     CATEGORY_CHOICES = [
@@ -58,8 +60,73 @@ class Equation(models.Model):
             self.slug = self._default_slug()
         super().save(*args, **kwargs)
 
+    def get_translation(self, locale: str | None):
+        candidates = [
+            candidate
+            for candidate in resolve_locale_candidates(locale)
+            if candidate != DEFAULT_LOCALE
+        ]
+        if not candidates:
+            return None
+
+        translations = getattr(self, "_prefetched_objects_cache", {}).get("translations")
+        if translations is None:
+            translations = list(self.translations.all())
+
+        translations_by_locale = {
+            translation.locale: translation
+            for translation in translations
+        }
+        for candidate in candidates:
+            translation = translations_by_locale.get(candidate)
+            if translation is not None:
+                return translation
+        return None
+
+    def get_localized_value(self, field_name: str, locale: str | None):
+        translation = self.get_translation(locale)
+        if translation is not None:
+            translated_value = getattr(translation, field_name)
+            if translated_value is not None:
+                return translated_value
+        return getattr(self, field_name)
+
     def __str__(self):
         return f"{self.sort_order}. {self.title}"
+
+
+class EquationTranslation(models.Model):
+    equation = models.ForeignKey(
+        Equation,
+        on_delete=models.CASCADE,
+        related_name="translations",
+    )
+    locale = models.CharField(max_length=20, db_index=True)
+    title = models.CharField(max_length=200, blank=True, null=True, default=None)
+    description = models.TextField(blank=True, null=True, default=None)
+    hook = models.TextField(blank=True, null=True, default=None)
+    hook_action = models.TextField(blank=True, null=True, default=None)
+    variables_data = models.JSONField(default=None, null=True, blank=True)
+    presets_data = models.JSONField(default=None, null=True, blank=True)
+    lessons_data = models.JSONField(default=None, null=True, blank=True)
+    glossary_data = models.JSONField(default=None, null=True, blank=True)
+
+    class Meta:
+        ordering = ["equation__sort_order", "locale"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["equation", "locale"],
+                name="unique_equation_translation_locale",
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        self.locale = normalize_locale(self.locale)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        label = self.title or self.equation.title
+        return f"{self.locale}: {label}"
 
 
 class Course(models.Model):

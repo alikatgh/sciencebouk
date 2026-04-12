@@ -6,7 +6,8 @@ from django.db import transaction
 from django.db.models import QuerySet
 from django.utils.text import slugify
 
-from .models import Equation
+from .localization import DEFAULT_LOCALE, normalize_locale
+from .models import Equation, EquationTranslation
 
 
 class EquationImportError(ValueError):
@@ -103,6 +104,15 @@ def _string_value(entry: dict[str, Any], source_key: str) -> str | None:
     return str(value)
 
 
+def _nullable_string_value(entry: dict[str, Any], source_key: str) -> str | None:
+    if source_key not in entry:
+        return None
+    value = entry[source_key]
+    if value is None:
+        return None
+    return str(value)
+
+
 def _unique_slug(value: str, queryset: QuerySet[Equation]) -> str:
     base_slug = slugify(value)
     if not base_slug:
@@ -183,8 +193,47 @@ def _build_updates(entry: dict[str, Any], equation: Equation | None) -> dict[str
     return updates
 
 
+def _build_translation_updates(entry: dict[str, Any]) -> dict[str, Any]:
+    updates: dict[str, Any] = {}
+
+    for source_key, model_key in [
+        ("title", "title"),
+        ("description", "description"),
+        ("hook", "hook"),
+    ]:
+        value = _nullable_string_value(entry, source_key)
+        if value is not None:
+            updates[model_key] = value
+
+    hook_action = _nullable_string_value(entry, "hookAction")
+    if hook_action is None:
+        hook_action = _nullable_string_value(entry, "hook_action")
+    if hook_action is not None:
+        updates["hook_action"] = hook_action
+
+    for source_key, model_key in [
+        ("variables", "variables_data"),
+        ("variables_data", "variables_data"),
+        ("presets", "presets_data"),
+        ("presets_data", "presets_data"),
+        ("lessons", "lessons_data"),
+        ("lessons_data", "lessons_data"),
+        ("glossary", "glossary_data"),
+        ("glossary_data", "glossary_data"),
+    ]:
+        value = _list_value(entry, source_key)
+        if value is not None:
+            updates[model_key] = value
+
+    return updates
+
+
 @transaction.atomic
-def import_equations_from_json(raw_json: str) -> EquationImportResult:
+def import_equations_from_json(raw_json: str, locale: str | None = None) -> EquationImportResult:
+    normalized_locale = normalize_locale(locale)
+    if normalized_locale != DEFAULT_LOCALE:
+        return import_equation_translations_from_json(raw_json, normalized_locale)
+
     entries = _load_entries(raw_json)
     result = EquationImportResult()
 
@@ -223,6 +272,70 @@ def import_equations_from_json(raw_json: str) -> EquationImportResult:
 
         if changed:
             equation.save(update_fields=[*updates.keys()])
+            result.updated += 1
+        else:
+            result.skipped += 1
+
+    if result.errors and result.total_changed == 0:
+        raise EquationImportError("; ".join(result.errors))
+
+    return result
+
+
+@transaction.atomic
+def import_equation_translations_from_json(raw_json: str, locale: str) -> EquationImportResult:
+    normalized_locale = normalize_locale(locale)
+    if normalized_locale == DEFAULT_LOCALE:
+        raise EquationImportError("use the base equation import for English content")
+
+    entries = _load_entries(raw_json)
+    result = EquationImportResult()
+
+    for index, entry in enumerate(entries, start=1):
+        raw_sort_order = entry.get("sort_order", entry.get("id"))
+        if raw_sort_order is None:
+            result.errors.append(f"row {index}: id or sort_order is required")
+            result.skipped += 1
+            continue
+
+        try:
+            sort_order = int(raw_sort_order)
+        except (TypeError, ValueError):
+            result.errors.append(f"row {index}: id/sort_order must be an integer")
+            result.skipped += 1
+            continue
+
+        equation = Equation.objects.filter(sort_order=sort_order).first()
+        if equation is None:
+            result.errors.append(
+                f"row {index}: base equation {sort_order} does not exist yet"
+            )
+            result.skipped += 1
+            continue
+
+        updates = _build_translation_updates(entry)
+        if not updates:
+            result.skipped += 1
+            continue
+
+        translation, created = EquationTranslation.objects.get_or_create(
+            equation=equation,
+            locale=normalized_locale,
+        )
+
+        changed = False
+        for field_name, value in updates.items():
+            if getattr(translation, field_name) != value:
+                setattr(translation, field_name, value)
+                changed = True
+
+        if created:
+            translation.save()
+            result.created += 1
+            continue
+
+        if changed:
+            translation.save(update_fields=[*updates.keys(), "locale"])
             result.updated += 1
         else:
             result.skipped += 1

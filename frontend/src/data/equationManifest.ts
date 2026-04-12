@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "../api/client"
 import type { EquationSummaryResponse } from "../api/client"
 import fallbackManifestJson from "./content/equation-manifest-fallback.json"
+import { useSettings } from "../settings/SettingsContext"
 
 export type EquationSummary = EquationSummaryResponse
 
@@ -28,9 +29,11 @@ export function searchEquationManifest(
 }
 
 export function useEquationManifest() {
+  const { settings } = useSettings()
+
   return useQuery({
-    queryKey: ["equations", "manifest"],
-    queryFn: () => api.equations.listAll(),
+    queryKey: ["equations", "manifest", settings.language],
+    queryFn: () => api.equations.listAll(settings.language),
     staleTime: 10 * 60 * 1000,
   })
 }

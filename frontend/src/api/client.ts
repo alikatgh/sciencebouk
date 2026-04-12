@@ -2,6 +2,13 @@ import { getAccessToken, refreshAccessToken } from "../auth/tokenStorage"
 import { API_BASE } from "../config/api"
 import { createHttpError } from "./httpError"
 
+function withLocaleParam(path: string, locale?: string | null): string {
+  if (!locale) return path
+
+  const separator = path.includes("?") ? "&" : "?"
+  return `${path}${separator}locale=${encodeURIComponent(locale)}`
+}
+
 async function readError(response: Response): Promise<Error> {
   const body = await response.json().catch(() => null) as
     | { detail?: string; message?: string }
@@ -195,13 +202,13 @@ export interface AuthenticatedUser {
 
 export const api = {
   equations: {
-    list: (category?: string) => {
+    list: (category?: string, locale?: string | null) => {
       const params = category ? `?category=${encodeURIComponent(category)}` : ""
-      return request<PaginatedResponse<EquationSummaryResponse>>(`/equations/${params}`)
+      return request<PaginatedResponse<EquationSummaryResponse>>(withLocaleParam(`/equations/${params}`, locale))
     },
-    listAll: () => requestAllPages<EquationSummaryResponse>("/equations/"),
-    get: (id: number) =>
-      request<EquationResponse>(`/equations/${id}/`),
+    listAll: (locale?: string | null) => requestAllPages<EquationSummaryResponse>(withLocaleParam("/equations/", locale)),
+    get: (id: number, locale?: string | null) =>
+      request<EquationResponse>(withLocaleParam(`/equations/${id}/`, locale)),
     updateProgress: (id: number, data: { user_id: string; completed?: boolean; notes?: string }) => {
       // Authenticated users must use the canonical progress endpoint.
       // Anonymous users (no access token) fall back to the legacy route.
@@ -222,8 +229,8 @@ export const api = {
     get: (slug: string) =>
       request<CourseResponse>(`/courses/${slug}/`),
   },
-  search: (q: string) =>
-    request<EquationSummaryResponse[] | PaginatedResponse<EquationSummaryResponse>>(`/search/?q=${encodeURIComponent(q)}`)
+  search: (q: string, locale?: string | null) =>
+    request<EquationSummaryResponse[] | PaginatedResponse<EquationSummaryResponse>>(withLocaleParam(`/search/?q=${encodeURIComponent(q)}`, locale))
       .then((payload) => Array.isArray(payload) ? payload : payload.results),
 
   progress: {

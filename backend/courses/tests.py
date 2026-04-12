@@ -7,7 +7,7 @@ from io import StringIO
 from rest_framework.test import APIClient
 
 from .importers import EquationImportError, import_equations_from_json
-from .models import Course, Equation, Lesson, LearningEvent, UserProgress
+from .models import Course, Equation, EquationTranslation, Lesson, LearningEvent, UserProgress
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +41,14 @@ def make_course(**kwargs):
     }
     defaults.update(kwargs)
     return Course.objects.create(**defaults)
+
+
+def make_equation_translation(equation, **kwargs):
+    defaults = {
+        "locale": "de",
+    }
+    defaults.update(kwargs)
+    return EquationTranslation.objects.create(equation=equation, **defaults)
 
 
 def make_lesson(course, **kwargs):
@@ -99,6 +107,27 @@ class EquationModelTests(TestCase):
         # Django does not enforce choices at the DB level; valid value saves fine.
         eq = make_equation(category="physics")
         self.assertEqual(eq.category, "physics")
+
+    def test_localized_value_prefers_matching_translation(self):
+        equation = make_equation(title="Gravity")
+        make_equation_translation(equation, locale="de", title="Schwerkraft")
+
+        self.assertEqual(equation.get_localized_value("title", "de-DE"), "Schwerkraft")
+        self.assertEqual(equation.get_localized_value("title", "de-AT"), "Schwerkraft")
+
+
+class EquationTranslationModelTests(TestCase):
+    def test_translation_locale_is_normalized_on_save(self):
+        equation = make_equation()
+        translation = make_equation_translation(equation, locale="DE_de")
+
+        self.assertEqual(translation.locale, "de-de")
+
+    def test_translation_str_falls_back_to_equation_title(self):
+        equation = make_equation(title="Entropy")
+        translation = make_equation_translation(equation, locale="fr")
+
+        self.assertEqual(str(translation), "fr: Entropy")
 
 
 class CourseModelTests(TestCase):
@@ -322,6 +351,62 @@ class EquationDetailTests(BaseAPITest):
         data = response.json()
         self.assertEqual(data["author"], "Newton")
         self.assertEqual(data["category"], "physics")
+
+
+class EquationLocalizationAPITests(BaseAPITest):
+    def setUp(self):
+        super().setUp()
+        make_equation_translation(
+            self.eq_geometry,
+            locale="de",
+            title="Satz des Pythagoras",
+            description="Eine ubersetzte Beschreibung.",
+            hook="Du baust eine Rampe.",
+            hook_action="Ziehe die Seiten des Dreiecks.",
+            variables_data=[{"name": "a", "description": "Vertikale Seite"}],
+            glossary_data=[{"highlightClass": "tri", "words": ["Dreieck"], "tooltip": "Ein rechtwinkliges Dreieck"}],
+        )
+
+    def test_list_uses_translated_summary_fields_for_locale(self):
+        response = self.client.get("/api/equations/?locale=de")
+        first = response.json()["results"][0]
+
+        self.assertEqual(first["title"], "Satz des Pythagoras")
+        self.assertEqual(first["description"], "Eine ubersetzte Beschreibung.")
+
+    def test_detail_uses_translated_rich_fields_for_locale(self):
+        response = self.client.get("/api/equations/1/?locale=de")
+        data = response.json()
+
+        self.assertEqual(data["hook"], "Du baust eine Rampe.")
+        self.assertEqual(data["hook_action"], "Ziehe die Seiten des Dreiecks.")
+        self.assertEqual(data["variables_data"], [{"name": "a", "description": "Vertikale Seite"}])
+
+    def test_detail_falls_back_to_base_field_when_translation_omits_it(self):
+        make_equation_translation(self.eq_physics_1, locale="de", hook="Ubersetzter Hook")
+
+        response = self.client.get("/api/equations/4/?locale=de")
+        data = response.json()
+
+        self.assertEqual(data["hook"], "Ubersetzter Hook")
+        self.assertEqual(data["description"], self.eq_physics_1.description)
+
+    def test_search_matches_translated_titles_when_locale_is_provided(self):
+        response = self.client.get("/api/search/?q=pythagoras&locale=de")
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get("/api/search/?q=satz&locale=de")
+        results = response.json()["results"]
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["title"], "Satz des Pythagoras")
+
+    def test_legacy_equation_atlas_uses_translated_content(self):
+        response = self.client.get("/api/courses/equation-atlas/?locale=de")
+        first_equation = response.json()["equationAtlas"][0]
+
+        self.assertEqual(first_equation["title"], "Satz des Pythagoras")
+        self.assertEqual(first_equation["hook"], "Du baust eine Rampe.")
 
 
 # ---------------------------------------------------------------------------
@@ -727,6 +812,42 @@ class EquationJSONImportTests(TestCase):
         self.assertEqual(len(result.errors), 1)
         self.assertTrue(Equation.objects.filter(sort_order=2, title="Good Row").exists())
 
+    def test_import_translation_updates_locale_row_without_touching_base_equation(self):
+        equation = make_equation(sort_order=1, title="Original Title", category="geometry")
+        payload = """
+        [
+          {
+            "id": 1,
+            "title": "Ubersetzter Titel",
+            "hookAction": "Ziehe den Regler.",
+            "variables": [{"name": "x", "description": "Ubersetzte Beschreibung"}]
+          }
+        ]
+        """
+
+        result = import_equations_from_json(payload, locale="de")
+        equation.refresh_from_db()
+        translation = EquationTranslation.objects.get(equation=equation, locale="de")
+
+        self.assertEqual(result.created, 1)
+        self.assertEqual(equation.title, "Original Title")
+        self.assertEqual(translation.title, "Ubersetzter Titel")
+        self.assertEqual(translation.hook_action, "Ziehe den Regler.")
+        self.assertEqual(translation.variables_data, [{"name": "x", "description": "Ubersetzte Beschreibung"}])
+
+    def test_import_translation_requires_existing_base_equation(self):
+        payload = """
+        [
+          {
+            "id": 99,
+            "title": "Fehlend"
+          }
+        ]
+        """
+
+        with self.assertRaises(EquationImportError):
+            import_equations_from_json(payload, locale="de")
+
 
 class EquationJSONImportAdminTests(TestCase):
     def setUp(self):
@@ -765,6 +886,28 @@ class EquationJSONImportAdminTests(TestCase):
         equation = Equation.objects.get(sort_order=1)
         self.assertEqual(equation.title, "After Import")
         self.assertEqual(equation.hook, "Plain-language explanation.")
+
+    def test_import_page_can_create_translation_rows(self):
+        equation = make_equation(sort_order=1, title="Before Import")
+        payload = """
+        [
+          {
+            "id": 1,
+            "title": "Nach dem Import",
+            "hookAction": "Ziehe das Dreieck."
+          }
+        ]
+        """
+
+        response = self.client.post(
+            reverse("admin:courses_equation_import_json"),
+            {"json_text": payload, "locale": "de"},
+        )
+
+        self.assertRedirects(response, reverse("admin:courses_equation_changelist"))
+        translation = EquationTranslation.objects.get(equation=equation, locale="de")
+        self.assertEqual(translation.title, "Nach dem Import")
+        self.assertEqual(translation.hook_action, "Ziehe das Dreieck.")
 
 
 # ---------------------------------------------------------------------------
