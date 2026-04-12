@@ -5,7 +5,7 @@ import { drag, type D3DragEvent } from "d3-drag"
 import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -59,9 +59,8 @@ const variables: Variable[] = [
   { name: 'flowSpeed', symbol: 'U', latex: 'U', value: 1.5, min: 0.3, max: 4, step: 0.1, color: VAR_COLORS.secondary, description: 'Flow speed' },
 ]
 
-const lessonCopy = getLessonCopy("fluid")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'watch-flow',
     instruction: lessonCopy["watch-flow"].instruction,
@@ -94,9 +93,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.turbulence.insight,
   },
-]
+  ]
+}
 
 export function FluidScene(): ReactElement {
+  const lessonCopy = useLessonCopy("fluid")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Why does smoke curl instead of going straight? Why do planes have that wing shape? This equation governs every fluid on Earth -- and we still can't fully solve it."

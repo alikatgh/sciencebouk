@@ -2,7 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useMemo, useState } from "react"
 import { buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -47,9 +47,8 @@ const variables: Variable[] = [
   { name: 'r', symbol: 'r', latex: 'r', value: 0.05, min: 0.01, max: 0.15, step: 0.005, color: VAR_COLORS.quaternary, description: 'Risk-free rate' },
 ]
 
-const lessonCopy = getLessonCopy("black-scholes")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'strike-price',
     instruction: lessonCopy["strike-price"].instruction,
@@ -82,9 +81,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy["time-decay"].insight,
   },
-]
+  ]
+}
 
 export function BlackScholesScene(): ReactElement {
+  const lessonCopy = useLessonCopy("black-scholes")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="You can buy the RIGHT to purchase a stock at today's price, but in the future. How much is that right worth?"

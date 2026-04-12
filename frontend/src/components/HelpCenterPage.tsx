@@ -5,12 +5,14 @@ import { ArrowRight, BookOpen, LifeBuoy, Search, ShieldCheck, Upload } from "luc
 import { Footer } from "./Footer"
 import { TopNav } from "./TopNav"
 import { Button } from "./ui/button"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
-import { helpCenterContent, interpolateContent } from "../data/pageContent"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
+import { interpolateContent, useHelpCenterContent } from "../data/pageContent"
 import { SUPPORT_EMAIL } from "../config/site"
 import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 
 export default function HelpCenterPage(): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
+  const helpCenterContent = useHelpCenterContent()
   const navigate = useNavigate()
   const manifestQuery = useEquationManifest()
   const manifest = useMemo(
@@ -88,7 +90,7 @@ export default function HelpCenterPage(): ReactElement {
                 {helpCenterContent.quickAnswers.map((answer) => {
                   let body = answer.body
                   if (answer.id === "progress") {
-                    body = BILLING_ENABLED ? answer.enabledBody : BILLING_DISABLED_COPY.body
+                    body = BILLING_ENABLED ? answer.enabledBody : billingDisabledCopy.body
                   }
                   const resolvedBody = body
                     ? interpolateContent(body, { supportEmail: SUPPORT_EMAIL })

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { drag, type D3DragEvent } from "d3-drag"
 import { select, type Selection } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -243,9 +243,8 @@ const teachingVariables: Variable[] = [
   { name: 'F', symbol: 'F', latex: 'F', value: 6, min: 4, max: 20, step: 1, color: VAR_COLORS.tertiary, constant: true, description: 'Faces' },
 ]
 
-const lessonCopy = getLessonCopy("euler-polyhedra")
-
-const teachingLessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'cube',
     instruction: lessonCopy.cube.instruction,
@@ -276,9 +275,12 @@ const teachingLessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.icosahedron.insight,
   },
-]
+  ]
+}
 
 export function EulerPolyhedraScene(): ReactElement {
+  const lessonCopy = useLessonCopy("euler-polyhedra")
+  const teachingLessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Count the corners, edges, and faces of any 3D shape you can imagine. Corners minus edges plus faces always equals 2. Always."

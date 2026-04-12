@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from "react"
 import { Lock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 import { useAuth } from "./AuthContext"
 
 interface ProGateProps {
@@ -10,6 +10,7 @@ interface ProGateProps {
 }
 
 export function ProGate({ children, feature }: ProGateProps): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
   const navigate = useNavigate()
   const { isAuthenticated, isPro } = useAuth()
 
@@ -38,7 +39,7 @@ export function ProGate({ children, feature }: ProGateProps): ReactElement {
               {feature}
             </p>
             <p className="text-xs text-slate-400">
-              {BILLING_DISABLED_COPY.badge}: available after launch
+              {billingDisabledCopy.badge}: available after launch
             </p>
           </div>
         </div>

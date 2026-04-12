@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { SettingsProvider } from "../settings/SettingsContext"
 import { ProSuccessPage } from "./ProUpgrade"
 
 const authState = {
@@ -22,6 +23,24 @@ vi.mock("./Footer", () => ({
   Footer: () => <div data-testid="footer" />,
 }))
 
+vi.mock("../config/billing", () => ({
+  BILLING_ENABLED: true,
+  BILLING_DISABLED_COPY: {
+    badge: "Free beta",
+    headline: "Pro later",
+    body: "Still in beta.",
+    button: "Later",
+    detail: "No subscriptions yet.",
+  },
+  useBillingDisabledCopy: () => ({
+    badge: "Free beta",
+    headline: "Pro later",
+    body: "Still in beta.",
+    button: "Later",
+    detail: "No subscriptions yet.",
+  }),
+}))
+
 describe("ProPricingPage", () => {
   beforeEach(() => {
     authState.isAuthenticated = true
@@ -37,11 +56,13 @@ describe("ProPricingPage", () => {
 
   it("shows a bounded fallback instead of spinning forever on /pro/success", async () => {
     render(
-      <MemoryRouter initialEntries={["/pro/success"]}>
-        <Routes>
-          <Route path="/pro/success" element={<ProSuccessPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <SettingsProvider>
+        <MemoryRouter initialEntries={["/pro/success"]}>
+          <Routes>
+            <Route path="/pro/success" element={<ProSuccessPage />} />
+          </Routes>
+        </MemoryRouter>
+      </SettingsProvider>,
     )
 
     // Initially the loading/verifying state is shown

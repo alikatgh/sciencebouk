@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { useMemo, useRef } from "react"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -120,9 +120,8 @@ const variables: Variable[] = [
   },
 ]
 
-const lessonCopy = getLessonCopy("entropy")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'order',
     instruction: lessonCopy.order.instruction,
@@ -159,7 +158,8 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.irreversible.insight,
   },
-]
+  ]
+}
 
 /* ── visual component ── */
 interface EntropyVisualProps {
@@ -326,6 +326,8 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
 
 /* ── scene ── */
 export function EntropyScene(): ReactElement {
+  const lessonCopy = useLessonCopy("entropy")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Why can't you unscramble an egg? The Second Law says entropy — the number of ways particles can arrange themselves — never decreases."

@@ -7,14 +7,16 @@ import { useAllProgress } from "../progress/useProgress"
 import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import { SITE_BASE } from "../config/api"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
-import { interpolateContent, profilePageContent } from "../data/pageContent"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
+import { interpolateContent, useProfilePageContent } from "../data/pageContent"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 
 export default function ProfilePage(): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
+  const profilePageContent = useProfilePageContent()
   const navigate = useNavigate()
   const { user, isAuthenticated, isPro, logout, refreshUser } = useAuth()
   const manifestQuery = useEquationManifest()
@@ -246,7 +248,7 @@ export default function ProfilePage(): ReactElement {
                         : "border border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500"
                     }`}
                     type="button"
-                    title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
+                    title={BILLING_ENABLED ? undefined : billingDisabledCopy.detail}
                   >
                     <Crown className="h-3.5 w-3.5" /> {BILLING_ENABLED ? profilePageContent.actions.upgrade : profilePageContent.actions.proLater}
                   </button>

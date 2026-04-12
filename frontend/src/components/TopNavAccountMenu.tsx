@@ -1,6 +1,6 @@
 import type { KeyboardEvent, ReactElement } from "react"
 import { BarChart2, Crown, Info, LifeBuoy, LogOut, Settings, User } from "lucide-react"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 
 interface TopNavAccountMenuProps {
   displayName: string
@@ -29,6 +29,7 @@ export function TopNavAccountMenu({
   onOpenAbout,
   onLogout,
 }: TopNavAccountMenuProps): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const items = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>("[role='menuitem']"),
@@ -98,7 +99,7 @@ export function TopNavAccountMenu({
                 : "text-slate-400"
             }`}
             type="button"
-            title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
+            title={BILLING_ENABLED ? undefined : billingDisabledCopy.detail}
           >
             <Crown className="h-4 w-4" />
             {BILLING_ENABLED ? "Upgrade to Pro" : "Pro later"}

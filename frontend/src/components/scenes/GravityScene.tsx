@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react"
 import { drag, type D3DragEvent } from "d3-drag"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -17,9 +17,8 @@ const variables: Variable[] = [
   { name: 'G', symbol: 'G', latex: 'G', value: 1, min: 1, max: 1, step: 1, color: VAR_COLORS.constant, constant: true, description: 'Gravitational constant' },
 ]
 
-const lessonCopy = getLessonCopy("gravity")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'touch',
     instruction: lessonCopy.touch.instruction,
@@ -49,9 +48,12 @@ const lessons: LessonStep[] = [
     celebration: 'medium',
     insight: lessonCopy["break-it"].insight,
   },
-]
+  ]
+}
 
 export function GravityScene(): ReactElement {
+  const lessonCopy = useLessonCopy("gravity")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Astronauts don't escape gravity — they fall sideways. The force barely changes at space-station altitude."

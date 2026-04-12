@@ -7,7 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -19,9 +19,8 @@ const variables: Variable[] = [
   { name: 'gamma', symbol: '\u03B3', latex: '\\gamma', value: 1.15, min: 1, max: 100, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Lorentz factor' },
 ]
 
-const lessonCopy = getLessonCopy("relativity")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'touch-v',
     instruction: lessonCopy["touch-v"].instruction,
@@ -52,9 +51,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy["near-light"].insight,
   },
-]
+  ]
+}
 
 export function RelativityScene(): ReactElement {
+  const lessonCopy = useLessonCopy("relativity")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="GPS satellites move fast and sit in weaker gravity. Without Einstein's corrections, your phone's location would drift by 10 km per day. Time itself runs at different speeds."

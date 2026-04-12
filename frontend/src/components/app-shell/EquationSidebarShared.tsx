@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
 import { prefetchEquationScene } from "../sceneRegistry"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../../config/billing"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../../config/billing"
 
 interface EquationListProps {
   equations: EquationSummary[]
@@ -192,6 +192,7 @@ export const SidebarAccount = memo(function SidebarAccount({
   onOpenPro,
   onLogout,
 }: SidebarAccountProps): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
   if (compact) {
     if (isAuthenticated) {
       return (
@@ -214,7 +215,7 @@ export const SidebarAccount = memo(function SidebarAccount({
                 size="xs"
                 onClick={onOpenPro}
                 disabled={!BILLING_ENABLED}
-                title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
+                title={BILLING_ENABLED ? undefined : billingDisabledCopy.detail}
                 className="h-10 flex-1 justify-center rounded-full"
               >
                 <Crown className={`h-3 w-3 ${BILLING_ENABLED ? "text-amber-500" : "text-slate-400"}`} />

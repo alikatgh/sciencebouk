@@ -2,7 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -16,15 +16,17 @@ const variables: Variable[] = [
   { name: "sigma", symbol: "\u03C3", latex: "\\sigma", value: 1, min: 0.3, max: 3, step: 0.1, color: VAR_COLORS.secondary, description: "Width/spread of the curve" },
 ]
 
-const lessonCopy = getLessonCopy("normal-distribution")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   { id: "touch", instruction: lessonCopy.touch.instruction, hint: lessonCopy.touch.hint, highlightElements: ["mu"], unlockedVariables: ["mu"], lockedVariables: ["sigma"], successCondition: { type: "variable_changed", target: "mu" }, celebration: "subtle", insight: lessonCopy.touch.insight },
   { id: "width", instruction: lessonCopy.width.instruction, hint: lessonCopy.width.hint, highlightElements: ["sigma"], unlockedVariables: ["sigma"], lockedVariables: ["mu"], successCondition: { type: "variable_changed", target: "sigma" }, celebration: "subtle", insight: lessonCopy.width.insight },
   { id: "regions", instruction: lessonCopy.regions.instruction, hint: lessonCopy.regions.hint, highlightElements: ["mu", "sigma"], unlockedVariables: ["mu", "sigma"], successCondition: { type: "value_reached", target: "sigma", value: 1, tolerance: 0.2 }, celebration: "big", insight: lessonCopy.regions.insight },
-]
+  ]
+}
 
 export function NormalDistributionScene(): ReactElement {
+  const lessonCopy = useLessonCopy("normal-distribution")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="In a class of 1000 students, how many score above 90%? This curve answers that."

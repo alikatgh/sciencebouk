@@ -18,6 +18,7 @@ import { ErrorBoundary } from "../ErrorBoundary"
 import { VisualizationViewport } from "./VisualizationViewport"
 import { shouldUseStackedTeachingLayout } from "./layoutMode"
 import { AutoFitDeferredInlineMath } from "../math/AutoFitDeferredInlineMath"
+import { useEquationConfig } from "../../data/equationConfig"
 
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
@@ -90,6 +91,72 @@ function LessonFallback(): ReactElement {
 type MobileTeachingTab = "learn" | "controls" | "lesson"
 type MobilePanelState = "peek" | "expanded"
 
+function mergeSceneVariables(
+  baseVariables: Variable[],
+  localizedVariables?: Variable[],
+): Variable[] {
+  if (!localizedVariables?.length) return baseVariables
+
+  const localizedByName = new Map(
+    localizedVariables.map((variable) => [variable.name, variable]),
+  )
+
+  return baseVariables.map((variable) => {
+    const localized = localizedByName.get(variable.name)
+    if (!localized) return variable
+
+    return {
+      ...variable,
+      description: localized.description ?? variable.description,
+      symbol: localized.symbol ?? variable.symbol,
+      latex: localized.latex ?? variable.latex,
+      unit: localized.unit ?? variable.unit,
+    }
+  })
+}
+
+function mergeScenePresets(
+  basePresets: Preset[] | undefined,
+  localizedPresets?: Preset[],
+): Preset[] | undefined {
+  if (!localizedPresets?.length) return basePresets
+  if (!basePresets?.length) return localizedPresets
+
+  return basePresets.map((preset, index) => {
+    const localized = localizedPresets[index]
+    if (!localized) return preset
+
+    return {
+      ...preset,
+      label: localized.label ?? preset.label,
+    }
+  })
+}
+
+function mergeSceneGlossary(
+  baseGlossary: GlossaryTerm[] | undefined,
+  localizedGlossary?: GlossaryTerm[],
+): GlossaryTerm[] | undefined {
+  if (!localizedGlossary?.length) return baseGlossary
+  if (!baseGlossary?.length) return localizedGlossary
+
+  const localizedByClass = new Map(
+    localizedGlossary.map((term) => [term.highlightClass, term]),
+  )
+
+  return baseGlossary.map((term) => {
+    const localized = localizedByClass.get(term.highlightClass)
+    if (!localized) return term
+
+    return {
+      ...term,
+      words: localized.words ?? term.words,
+      tooltip: localized.tooltip ?? term.tooltip,
+      color: localized.color ?? term.color,
+    }
+  })
+}
+
 export function TeachableEquation({
   equationId, hook, hookAction, formula, latexFormula,
   variables: initialVariables, lessonSteps,
@@ -103,6 +170,21 @@ export function TeachableEquation({
   const contextFormula = useLatexFormula()
   const contextEquationId = useEquationId()
   const resolvedId = equationId ?? contextEquationId
+  const localizedEquationConfig = useEquationConfig(resolvedId)
+  const localizedVariables = useMemo(
+    () => mergeSceneVariables(initialVariables, localizedEquationConfig?.variables),
+    [initialVariables, localizedEquationConfig?.variables],
+  )
+  const localizedPresets = useMemo(
+    () => mergeScenePresets(presets, localizedEquationConfig?.presets),
+    [presets, localizedEquationConfig?.presets],
+  )
+  const localizedGlossary = useMemo(
+    () => mergeSceneGlossary(glossary, localizedEquationConfig?.glossary),
+    [glossary, localizedEquationConfig?.glossary],
+  )
+  const hookCopy = localizedEquationConfig?.hook || hook
+  const hookActionCopy = localizedEquationConfig?.hookAction || hookAction
 
   // Progress tracking — writes to localStorage (and server for Pro)
   const { progress, updateProgress, markVariableExplored } = useProgress(resolvedId)
@@ -158,8 +240,8 @@ export function TeachableEquation({
   }, [lockedVarsMemo])
 
   const currentVariables = useMemo(
-    () => initialVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value })),
-    [initialVariables, vars],
+    () => localizedVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value })),
+    [localizedVariables, vars],
   )
   const currentStep = lessonSteps[lessonStep]
 
@@ -297,7 +379,7 @@ export function TeachableEquation({
     : "aspect-[4/3] max-h-[56vh]"
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const introFormulaVisible = appSettings.showHookText && appSettings.showFormulaLetters && Boolean(displayFormula)
-  const hasPresets = Boolean(presets && presets.length > 0)
+  const hasPresets = Boolean(localizedPresets && localizedPresets.length > 0)
   const hasLearnSurface = appSettings.showHookText || formulaCardVisible
   const letterFormula = introFormulaVisible ? "" : (appSettings.showFormulaLetters ? displayFormula : "")
   const liveFormula = useMemo(
@@ -338,8 +420,8 @@ export function TeachableEquation({
           />
         </div>
       )}
-      <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hook}</p>
-      <p className="mt-1.5 text-xs font-bold text-ocean">{"\u2192"} {hookAction}</p>
+      <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hookCopy}</p>
+      <p className="mt-1.5 text-xs font-bold text-ocean">{"\u2192"} {hookActionCopy}</p>
     </div>
   ) : null
 
@@ -387,7 +469,7 @@ export function TeachableEquation({
 
   const presetsBlock = hasPresets ? (
     <div className={`flex ${isMobile ? "-mx-1 overflow-x-auto px-1 pb-1" : "flex-wrap"} gap-1.5`}>
-      {presets?.map((p) => (
+      {localizedPresets?.map((p) => (
         <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className={`${isMobile ? "h-9 shrink-0 rounded-full px-3.5 text-[11px]" : "text-[10px]"}`}>
           {p.label}
         </Button>
@@ -412,7 +494,7 @@ export function TeachableEquation({
               steps={lessonSteps} currentStepIndex={lessonStep}
               onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
               variables={formulaVariables} onHighlight={setHighlightedVar}
-              glossary={glossary} onTermHighlight={setHighlightedTerm}
+              glossary={localizedGlossary} onTermHighlight={setHighlightedTerm}
               compact={isMobile}
             />
           </Suspense>

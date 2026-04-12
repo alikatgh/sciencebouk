@@ -7,7 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select, type Selection } from "d3-selection"
 import { curveBasis, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -87,9 +87,8 @@ const variables: Variable[] = [
   { name: 'wavelength', symbol: '\u03BB', latex: '\\lambda', value: 120, min: 60, max: 300, step: 5, color: VAR_COLORS.primary, unit: 'px', description: 'Wavelength of EM wave' },
 ]
 
-const lessonCopy = getLessonCopy("maxwell")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'field-lines',
     instruction: lessonCopy["field-lines"].instruction,
@@ -120,9 +119,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.wavelength.insight,
   },
-]
+  ]
+}
 
 export function MaxwellScene(): ReactElement {
+  const lessonCopy = useLessonCopy("maxwell")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="How does your WiFi signal get through walls? An electric field shaking back and forth launches a wave that travels at the speed of light."

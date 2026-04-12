@@ -13,6 +13,7 @@ import { Footer } from "./Footer"
 import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 import { clearStoredProgress } from "../progress/useProgress"
+import { LANGUAGE_OPTIONS } from "../i18n/locales"
 import { useSettings, type Settings } from "../settings/SettingsContext"
 
 const FONTS = [
@@ -250,7 +251,7 @@ export default function SettingsPage(): ReactElement {
               <Separator />
               <SettingRow label="Language">
                 <SegmentedControl value={settings.language} onChange={(v) => update("language", v)}
-                  options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }, { value: "fr", label: "FR" }, { value: "de", label: "DE" }, { value: "ru", label: "RU" }]} />
+                  options={[...LANGUAGE_OPTIONS]} />
               </SettingRow>
               <Separator />
               <SettingRow label="Keyboard shortcuts" description="Show hints in UI">

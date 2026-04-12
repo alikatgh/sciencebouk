@@ -7,7 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { area as d3area, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -18,9 +18,8 @@ const variables: Variable[] = [
   { name: 'L', symbol: 'L', latex: 'L', value: 1.0, min: 0.5, max: 2.0, step: 0.1, color: VAR_COLORS.secondary, description: 'Box width' },
 ]
 
-const lessonCopy = getLessonCopy("schrodinger")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'ground-state',
     instruction: lessonCopy["ground-state"].instruction,
@@ -53,9 +52,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy["shrink-box"].insight,
   },
-]
+  ]
+}
 
 export function SchrodingerScene(): ReactElement {
+  const lessonCopy = useLessonCopy("schrodinger")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="An electron isn't a tiny ball -- it's a cloud of probability. Confine it more, and it gets MORE energetic."

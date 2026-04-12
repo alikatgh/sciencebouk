@@ -6,8 +6,8 @@ import { TopNav } from "./TopNav"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Footer } from "./Footer"
 import { Button } from "./ui/button"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
-import { aboutPageContent, interpolateContent } from "../data/pageContent"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
+import { interpolateContent, useAboutPageContent } from "../data/pageContent"
 import { GITHUB_URL } from "../config/site"
 import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 
@@ -23,6 +23,8 @@ const COMING_SOON_ICONS: Record<string, LucideIcon> = {
 }
 
 export default function AboutPage(): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
+  const aboutPageContent = useAboutPageContent()
   const navigate = useNavigate()
   const manifestQuery = useEquationManifest()
   const manifest = useMemo(
@@ -146,7 +148,7 @@ export default function AboutPage(): ReactElement {
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {BILLING_ENABLED
                     ? aboutPageContent.funding.enabledBody
-                    : `${BILLING_DISABLED_COPY.detail} ${aboutPageContent.funding.disabledBody}`}
+                    : `${billingDisabledCopy.detail} ${aboutPageContent.funding.disabledBody}`}
                 </p>
               </div>
             </section>

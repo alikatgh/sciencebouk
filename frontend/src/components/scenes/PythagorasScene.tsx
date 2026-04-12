@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react"
 import { select } from "d3-selection"
 import { drag, type D3DragEvent } from "d3-drag"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep, GlossaryTerm } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -47,9 +47,8 @@ const variables: Variable[] = [
   { name: 'c', symbol: 'c', latex: 'c', value: 5, min: 0, max: 20, step: 0.01, color: VAR_COLORS.result, constant: true, description: 'Hypotenuse' },
 ]
 
-const lessonCopy = getLessonCopy("pythagoras")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'touch',
     instruction: lessonCopy.touch.instruction,
@@ -78,9 +77,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.classic.insight,
   },
-]
+  ]
+}
 
 export function PythagorasScene(): ReactElement {
+  const lessonCopy = useLessonCopy("pythagoras")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="You need to build a ramp. The step is 3 feet high, the base starts 4 feet away. How long is the ramp?"

@@ -6,7 +6,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -18,9 +18,8 @@ const variables: Variable[] = [
   { name: 'wavelength', symbol: '\u03BB', latex: '\\lambda', value: 120, min: 50, max: 200, step: 1, color: VAR_COLORS.tertiary, unit: 'px', description: 'Wavelength (distance between peaks)' },
 ]
 
-const lessonCopy = getLessonCopy("wave")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'change-freq',
     instruction: lessonCopy["change-freq"].instruction,
@@ -53,9 +52,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.superposition.insight,
   },
-]
+  ]
+}
 
 export function WaveScene(): ReactElement {
+  const lessonCopy = useLessonCopy("wave")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Pluck a guitar string. Why does it make a musical note instead of random noise? Because only certain wave shapes can fit on the string."

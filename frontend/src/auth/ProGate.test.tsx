@@ -27,6 +27,10 @@ vi.mock("../config/billing", () => ({
     badge: "Free beta",
     detail: "No subscriptions yet.",
   },
+  useBillingDisabledCopy: () => ({
+    badge: "Free beta",
+    detail: "No subscriptions yet.",
+  }),
 }))
 
 describe("ProGate", () => {

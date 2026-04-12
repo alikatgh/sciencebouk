@@ -2,7 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useMemo, useState } from "react"
 import { buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -11,9 +11,8 @@ const variables: Variable[] = [
   { name: 'x0', symbol: 'x\u2080', latex: 'x_0', value: 0.5, min: 0.1, max: 0.9, step: 0.01, color: VAR_COLORS.secondary, description: 'Initial population value' },
 ]
 
-const lessonCopy = getLessonCopy("chaos")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'stable',
     instruction: lessonCopy.stable.instruction,
@@ -57,9 +56,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.butterfly.insight,
   },
-]
+  ]
+}
 
 export function ChaosScene(): ReactElement {
+  const lessonCopy = useLessonCopy("chaos")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Weather forecasts are useless past 10 days. The tiniest change leads to a completely different outcome. This is the butterfly effect."

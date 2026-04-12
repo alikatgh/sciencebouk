@@ -7,8 +7,8 @@ import { useAllProgress } from "../progress/useProgress"
 import { resolveEquationManifest, useEquationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import type { DashboardData } from "../api/client"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
-import { dashboardPageContent, interpolateContent } from "../data/pageContent"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
+import { interpolateContent, useDashboardPageContent } from "../data/pageContent"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { Button } from "./ui/button"
@@ -16,6 +16,8 @@ import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 
 export default function Dashboard(): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
+  const dashboardPageContent = useDashboardPageContent()
   const { isPro, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const manifestQuery = useEquationManifest()
@@ -139,7 +141,7 @@ export default function Dashboard(): ReactElement {
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               {BILLING_ENABLED
                 ? dashboardPageContent.upgrade.enabledBody
-                : interpolateContent(dashboardPageContent.upgrade.disabledBodyTemplate, { badge: BILLING_DISABLED_COPY.badge })}
+                : interpolateContent(dashboardPageContent.upgrade.disabledBodyTemplate, { badge: billingDisabledCopy.badge })}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={() => navigate("/")} className="min-h-[48px] rounded-2xl sm:min-h-0 sm:rounded-md">{dashboardPageContent.upgrade.backButton}</Button>

@@ -7,7 +7,7 @@ import {
   useChartFrame,
 } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -20,15 +20,17 @@ const variables: Variable[] = [
   { name: 'p', symbol: 'p', latex: 'p', value: 0.5, min: 0.01, max: 0.99, step: 0.01, color: VAR_COLORS.primary, description: 'Probability of outcome A' },
 ]
 
-const lessonCopy = getLessonCopy("information")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   { id: 'max-entropy', instruction: lessonCopy["max-entropy"].instruction, hint: lessonCopy["max-entropy"].hint, highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'value_reached', target: 'p', value: 0.5, tolerance: 0.05 }, celebration: 'subtle', insight: lessonCopy["max-entropy"].insight },
   { id: 'low-entropy', instruction: lessonCopy["low-entropy"].instruction, hint: lessonCopy["low-entropy"].hint, highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'value_reached', target: 'p', value: 0.99, tolerance: 0.03 }, celebration: 'subtle', insight: lessonCopy["low-entropy"].insight },
   { id: 'explore-curve', instruction: lessonCopy["explore-curve"].instruction, hint: lessonCopy["explore-curve"].hint, highlightElements: ['p'], unlockedVariables: ['p'], successCondition: { type: 'variable_changed', target: 'p' }, celebration: 'big', insight: lessonCopy["explore-curve"].insight },
-]
+  ]
+}
 
 export function InformationScene(): ReactElement {
+  const lessonCopy = useLessonCopy("information")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="You're playing 20 Questions. If the answer is almost certainly 'yes', the question was useless. The most useful question is the one you're most uncertain about."

@@ -1,8 +1,17 @@
+import { useMemo } from "react"
+import { resolveLocaleCandidates } from "../../i18n/locales"
+import { useSettings } from "../../settings/SettingsContext"
 import type { LessonStep } from "./types"
 
 type LessonCopyEntry = Pick<LessonStep, "instruction" | "hint" | "insight">
 
-const lessonFiles = import.meta.glob("../../content/lessons/*.md", {
+const defaultLessonFiles = import.meta.glob("../../content/lessons/*.md", {
+  eager: true,
+  import: "default",
+  query: "?raw",
+}) as Record<string, string>
+
+const localizedLessonFiles = import.meta.glob("../../content/lessons/*/*.md", {
   eager: true,
   import: "default",
   query: "?raw",
@@ -14,6 +23,18 @@ function fileSlugFromPath(path: string): string {
     throw new Error(`Invalid lesson content path: ${path}`)
   }
   return slug
+}
+
+function localeAndSlugFromPath(path: string): { locale: string; slug: string } {
+  const match = path.match(/\/([A-Za-z0-9-]+)\/([^/]+)\.md$/)
+  if (!match) {
+    throw new Error(`Invalid localized lesson path: ${path}`)
+  }
+
+  return {
+    locale: match[1].toLowerCase(),
+    slug: match[2],
+  }
 }
 
 function parseLessonMarkdown(markdown: string, slug: string): Record<string, LessonCopyEntry> {
@@ -70,17 +91,72 @@ function parseLessonMarkdown(markdown: string, slug: string): Record<string, Les
   return parsedSteps
 }
 
-const lessonCopyBySlug = Object.fromEntries(
-  Object.entries(lessonFiles).map(([path, markdown]) => {
+function validateLessonTranslationStructure(
+  baseSteps: Record<string, LessonCopyEntry>,
+  translatedSteps: Record<string, LessonCopyEntry>,
+  slug: string,
+  locale: string,
+): void {
+  const baseStepIds = Object.keys(baseSteps)
+  const translatedStepIds = Object.keys(translatedSteps)
+
+  const missingStepIds = baseStepIds.filter((stepId) => !(stepId in translatedSteps))
+  if (missingStepIds.length > 0) {
+    throw new Error(`Lesson translation "${locale}/${slug}" is missing steps: ${missingStepIds.join(", ")}`)
+  }
+
+  const extraStepIds = translatedStepIds.filter((stepId) => !(stepId in baseSteps))
+  if (extraStepIds.length > 0) {
+    throw new Error(`Lesson translation "${locale}/${slug}" contains unknown steps: ${extraStepIds.join(", ")}`)
+  }
+}
+
+const defaultLessonCopyBySlug = Object.fromEntries(
+  Object.entries(defaultLessonFiles).map(([path, markdown]) => {
     const slug = fileSlugFromPath(path)
     return [slug, parseLessonMarkdown(markdown, slug)]
   }),
 ) as Record<string, Record<string, LessonCopyEntry>>
 
-export function getLessonCopy(slug: string): Record<string, LessonCopyEntry> {
-  const copy = lessonCopyBySlug[slug]
-  if (!copy) {
+const lessonCopyByLocale = Object.entries(localizedLessonFiles).reduce<Record<string, Record<string, Record<string, LessonCopyEntry>>>>(
+  (accumulator, [path, markdown]) => {
+    const { locale, slug } = localeAndSlugFromPath(path)
+    const translatedSteps = parseLessonMarkdown(markdown, `${locale}/${slug}`)
+    const baseSteps = defaultLessonCopyBySlug[slug]
+
+    if (!baseSteps) {
+      throw new Error(`Lesson translation "${locale}/${slug}" has no English source lesson`)
+    }
+
+    validateLessonTranslationStructure(baseSteps, translatedSteps, slug, locale)
+
+    accumulator[locale] ??= {}
+    accumulator[locale][slug] = translatedSteps
+    return accumulator
+  },
+  {},
+)
+
+export function getLessonCopy(slug: string, locale?: string | null): Record<string, LessonCopyEntry> {
+  for (const candidate of resolveLocaleCandidates(locale)) {
+    if (candidate === "en") {
+      const englishCopy = defaultLessonCopyBySlug[slug]
+      if (englishCopy) return englishCopy
+      break
+    }
+
+    const localizedCopy = lessonCopyByLocale[candidate]?.[slug]
+    if (localizedCopy) return localizedCopy
+  }
+
+  const fallbackCopy = defaultLessonCopyBySlug[slug]
+  if (!fallbackCopy) {
     throw new Error(`No lesson markdown found for slug "${slug}"`)
   }
-  return copy
+  return fallbackCopy
+}
+
+export function useLessonCopy(slug: string): Record<string, LessonCopyEntry> {
+  const { settings } = useSettings()
+  return useMemo(() => getLessonCopy(slug, settings.language), [settings.language, slug])
 }

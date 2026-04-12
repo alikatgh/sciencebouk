@@ -1,12 +1,17 @@
 import type { ReactElement } from "react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
-import { footerContent } from "../data/pageContent"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
+import { useFooterContent } from "../data/pageContent"
 import { GITHUB_URL, SITE_DOMAIN } from "../config/site"
 
 export function Footer(): ReactElement {
-  const [easterEgg] = useState(() => footerContent.easterEggLines[Math.floor(Math.random() * footerContent.easterEggLines.length)])
+  const footerContent = useFooterContent()
+  const billingDisabledCopy = useBillingDisabledCopy()
+  const easterEgg = useMemo(
+    () => footerContent.easterEggLines[Math.floor(Math.random() * footerContent.easterEggLines.length)],
+    [footerContent.easterEggLines],
+  )
   const [hovered, setHovered] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState(false)
 
@@ -40,7 +45,7 @@ export function Footer(): ReactElement {
             <Link to="/help" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Help</Link>
             <Link to="/about" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">About</Link>
             <Link to="/pro" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
-              {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
+              {BILLING_ENABLED ? "Pro" : billingDisabledCopy.badge}
             </Link>
             <Link to="/privacy" className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Privacy</Link>
             <Link to="/terms" className="col-span-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-center font-medium shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Terms</Link>
@@ -84,7 +89,7 @@ export function Footer(): ReactElement {
         <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-slate-400 dark:text-slate-500">
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition hover:text-slate-600 dark:hover:text-slate-300">GitHub</a>
           <Link to="/pro" className="transition hover:text-slate-600 dark:hover:text-slate-300">
-            {BILLING_ENABLED ? "Pro" : BILLING_DISABLED_COPY.badge}
+            {BILLING_ENABLED ? "Pro" : billingDisabledCopy.badge}
           </Link>
           <Link to="/help" className="transition hover:text-slate-600 dark:hover:text-slate-300">Help</Link>
           <Link to="/about" className="transition hover:text-slate-600 dark:hover:text-slate-300">About</Link>

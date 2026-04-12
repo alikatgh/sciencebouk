@@ -3,15 +3,12 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Check, Loader2, Sparkles, Zap, CheckCircle, XCircle } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 import { api } from "../api/client"
-import { interpolateContent, proUpgradeContent } from "../data/pageContent"
+import { interpolateContent, useProUpgradeContent } from "../data/pageContent"
 import { safeRedirect } from "../lib/safeRedirect"
 import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
-
-const FREE_FEATURES = proUpgradeContent.freeFeatures
-const PRO_FEATURES = proUpgradeContent.proFeatures
 
 export function ProPricingPage(): ReactElement {
   return <ProPricingPageContent mode="pricing" />
@@ -26,6 +23,9 @@ export function ProCancelPage(): ReactElement {
 }
 
 function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel" }): ReactElement {
+  const proUpgradeContent = useProUpgradeContent()
+  const FREE_FEATURES = proUpgradeContent.freeFeatures
+  const PRO_FEATURES = proUpgradeContent.proFeatures
   const { isAuthenticated, isPro, loading: authLoading, refreshUser } = useAuth()
 
   const [loading, setLoading] = useState(false)
@@ -310,6 +310,10 @@ interface SoftPromptProps {
 }
 
 function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
+  const proUpgradeContent = useProUpgradeContent()
+  const FREE_FEATURES = proUpgradeContent.freeFeatures
+  const PRO_FEATURES = proUpgradeContent.proFeatures
   const navigate = useNavigate()
 
   return (
@@ -317,13 +321,13 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
       <TopNav showBack />
       <div className="native-scroll flex flex-1 flex-col items-center px-4 py-5 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-8">
         <span className="rounded-full bg-ocean/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-ocean">
-          {BILLING_DISABLED_COPY.badge}
+          {billingDisabledCopy.badge}
         </span>
         <h1 className="mt-4 font-display text-center text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
-          {isPro ? proUpgradeContent.states.beta.titleForPro : BILLING_DISABLED_COPY.headline}
+          {isPro ? proUpgradeContent.states.beta.titleForPro : billingDisabledCopy.headline}
         </h1>
         <p className="mt-3 max-w-2xl text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          {isPro ? proUpgradeContent.states.beta.bodyForPro : BILLING_DISABLED_COPY.body}
+          {isPro ? proUpgradeContent.states.beta.bodyForPro : billingDisabledCopy.body}
         </p>
 
         <div className="native-scroll mt-8 flex w-full max-w-3xl snap-x snap-mandatory gap-4 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
@@ -371,9 +375,9 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
               className="mt-6 min-h-[48px] w-full rounded-2xl border border-slate-300 bg-white/80 py-2.5 text-sm font-bold text-slate-400 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-500"
               type="button"
             >
-              {BILLING_DISABLED_COPY.button}
+              {billingDisabledCopy.button}
             </button>
-            <p className="mt-2 text-center text-xs text-slate-400">{BILLING_DISABLED_COPY.detail}</p>
+            <p className="mt-2 text-center text-xs text-slate-400">{billingDisabledCopy.detail}</p>
           </div>
         </div>
 
@@ -391,6 +395,7 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
 }
 
 export function ConversionPrompt({ equationTitle, completedCount }: SoftPromptProps): ReactElement | null {
+  const proUpgradeContent = useProUpgradeContent()
   const { isPro } = useAuth()
   const [dismissed, setDismissed] = useState(false)
   const navigate = useNavigate()

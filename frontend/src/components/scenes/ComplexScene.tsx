@@ -4,7 +4,7 @@ import { drag, type D3DragEvent } from "d3-drag"
 import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -15,9 +15,8 @@ const variables: Variable[] = [
   { name: 'b', symbol: 'b', latex: 'b', value: 0.5, min: -2.5, max: 2.5, step: 0.1, color: VAR_COLORS.secondary, description: 'Imaginary part Im(z)' },
 ]
 
-const lessonCopy = getLessonCopy("complex")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'explore-real',
     instruction: lessonCopy["explore-real"].instruction,
@@ -50,9 +49,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy["multiply-by-i"].insight,
   },
-]
+  ]
+}
 
 export function ComplexScene(): ReactElement {
+  const lessonCopy = useLessonCopy("complex")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Your phone screen can rotate 90 degrees. How does the software know where each pixel goes? It multiplies by i."

@@ -7,7 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { curveMonotoneX, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -20,9 +20,8 @@ const variables: Variable[] = [
   { name: 'y', symbol: 'y', latex: 'y', value: 5, min: 1, max: 100, step: 1, color: VAR_COLORS.secondary, description: 'Second number' },
 ]
 
-const lessonCopy = getLessonCopy("logarithm")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'drag-x',
     instruction: lessonCopy["drag-x"].instruction,
@@ -54,9 +53,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.earthquake.insight,
   },
-]
+  ]
+}
 
 export function LogarithmScene(): ReactElement {
+  const lessonCopy = useLessonCopy("logarithm")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="An earthquake measures 7.0 on the Richter scale. Another measures 8.0. Is it 'a little bigger'? It's 10x more powerful. That's logarithms."

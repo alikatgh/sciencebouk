@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { User, ArrowLeft, Crown, ChevronDown } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { SITE_BASE } from "../config/api"
-import { BILLING_DISABLED_COPY, BILLING_ENABLED } from "../config/billing"
+import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Button } from "./ui/button"
@@ -42,6 +42,7 @@ function getUserInitials(user: { email: string; profile: { display_name: string 
 }
 
 export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
+  const billingDisabledCopy = useBillingDisabledCopy()
   const navigate = useNavigate()
   const { user, isAuthenticated, isPro, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -150,7 +151,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                       ? "border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400"
                       : "border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500"
                   }`}
-                  title={BILLING_ENABLED ? undefined : BILLING_DISABLED_COPY.detail}
+                  title={BILLING_ENABLED ? undefined : billingDisabledCopy.detail}
                 >
                   <Crown className="h-3 w-3" />
                   <span className="hidden sm:inline">{BILLING_ENABLED ? "Pro" : "Beta"}</span>

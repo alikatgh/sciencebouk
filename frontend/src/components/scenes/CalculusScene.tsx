@@ -2,7 +2,7 @@ import type { ReactElement } from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -25,9 +25,8 @@ const variables: Variable[] = [
   { name: 'f', symbol: 'f', latex: 'f', value: 0, min: 0, max: 0, step: 1, color: '#6b7280', constant: true, description: 'The function' },
 ]
 
-const lessonCopy = getLessonCopy("calculus")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'touch',
     instruction: lessonCopy.touch.instruction,
@@ -66,9 +65,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy.integral.insight,
   },
-]
+  ]
+}
 
 export function CalculusScene(): ReactElement {
+  const lessonCopy = useLessonCopy("calculus")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Your speedometer is broken. You only have the odometer. How do you figure out your speed from distance alone?"

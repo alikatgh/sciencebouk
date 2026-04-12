@@ -7,7 +7,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { curveBasis, line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
-import { getLessonCopy } from "../teaching/lessonContent"
+import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 
@@ -22,9 +22,8 @@ const variables: Variable[] = [
   { name: 'a4', symbol: 'a\u2084', latex: 'a_4', value: 0.0, min: 0, max: 1, step: 0.05, color: '#a855f7', description: '4th harmonic amplitude' },
 ]
 
-const lessonCopy = getLessonCopy("fourier")
-
-const lessons: LessonStep[] = [
+function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" | "hint" | "insight">>): LessonStep[] {
+  return [
   {
     id: 'fundamental',
     instruction: lessonCopy.fundamental.instruction,
@@ -55,9 +54,12 @@ const lessons: LessonStep[] = [
     celebration: 'big',
     insight: lessonCopy["square-wave"].insight,
   },
-]
+  ]
+}
 
 export function FourierScene(): ReactElement {
+  const lessonCopy = useLessonCopy("fourier")
+  const lessons = buildLessons(lessonCopy)
   return (
     <TeachableEquation
       hook="Every sound your phone plays is just a recipe of pure tones mixed together. This is how MP3 compression, voice recognition, and autotune work."

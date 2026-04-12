@@ -14,7 +14,7 @@ import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 import { DeferredInlineMath } from "./math/DeferredInlineMath"
 import { activeSubjects, getSubject, inactiveSubjects } from "../data/subjects"
-import { homePageContent, interpolateContent } from "../data/pageContent"
+import { interpolateContent, useHomePageContent } from "../data/pageContent"
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { useAllProgress } from "../progress/useProgress"
 
@@ -44,6 +44,7 @@ function FormulaPreview({ formula, muted = false }: { formula: string; muted?: b
 }
 
 export function HomePage(): ReactElement {
+  const homePageContent = useHomePageContent()
   const navigate = useNavigate()
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
   const { completedCount, total, progressByEquation } = useAllProgress()

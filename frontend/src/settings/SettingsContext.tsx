@@ -163,7 +163,7 @@ export function applySettingsToDocument(root: HTMLElement, settings: Settings, r
 export function SettingsProvider({ children }: { children: ReactNode }): ReactElement {
   const [settings, setSettings] = useState(load)
   const [systemDark, setSystemDark] = useState(() => {
-    if (typeof window === "undefined") return false
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false
     return window.matchMedia("(prefers-color-scheme: dark)").matches
   })
 
@@ -181,7 +181,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): ReactEl
   }, [])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
     const handleChange = (event: MediaQueryListEvent) => {

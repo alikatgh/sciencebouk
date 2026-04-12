@@ -6,11 +6,11 @@ import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 import { Button } from "./ui/button"
 import {
-  changelogContent,
   interpolateContent,
   type ChangelogEngineeringChangeType,
   type ChangelogGeneralChangeType,
   type ChangelogRelease,
+  useChangelogContent,
 } from "../data/pageContent"
 
 type ChangeMode = "general" | "engineering"
@@ -38,6 +38,7 @@ const LABEL_STYLES: Record<ReleaseLabel, string> = {
 }
 
 export default function ChangelogPage(): ReactElement {
+  const changelogContent = useChangelogContent()
   const navigate = useNavigate()
   const [mode, setMode] = useState<ChangeMode>("general")
 
