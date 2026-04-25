@@ -64,6 +64,28 @@ describe("VisualizationViewport", () => {
     expect(Number(frame.getAttribute("data-zoom-scale"))).toBeLessThanOrEqual(100)
   })
 
+  it("supports two-finger pinch zooming on mobile", () => {
+    render(
+      <div style={{ width: 420, height: 320 }}>
+        <VisualizationViewport mobileOptimized>
+          <div className="h-full w-full">Scene</div>
+        </VisualizationViewport>
+      </div>,
+    )
+
+    const frame = screen.getByTestId("visualization-zoom-frame")
+    const scrollArea = frame.parentElement as HTMLElement
+
+    fireEvent.pointerDown(scrollArea, { pointerId: 1, pointerType: "touch", clientX: 120, clientY: 120 })
+    fireEvent.pointerDown(scrollArea, { pointerId: 2, pointerType: "touch", clientX: 220, clientY: 120 })
+    fireEvent.pointerMove(scrollArea, { pointerId: 2, pointerType: "touch", clientX: 260, clientY: 120 })
+
+    expect(Number(frame.getAttribute("data-zoom-scale"))).toBeGreaterThan(100)
+
+    fireEvent.pointerMove(scrollArea, { pointerId: 2, pointerType: "touch", clientX: 180, clientY: 120 })
+    expect(Number(frame.getAttribute("data-zoom-scale"))).toBeLessThan(100)
+  })
+
   it("enters and exits focused mobile visualization mode", () => {
     render(
       <div style={{ width: 420, height: 320 }}>

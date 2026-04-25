@@ -729,18 +729,25 @@ export function TeachableEquation({
           </button>
         ) : (
           <div
-            className="flex-shrink-0 rounded-t-[28px] border border-b-0 border-slate-200 bg-white shadow-[0_-10px_35px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
+            className="flex-shrink-0 rounded-t-[28px] border border-b-0 border-slate-200 bg-white shadow-[0_-10px_35px_rgba(15,23,42,0.08)] transition-[max-height] duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
             style={{ maxHeight: panelMaxHeight, overflowY: "auto" }}
           >
             <div
               className="sticky top-0 z-10 rounded-t-[28px] border-b border-slate-100 bg-white/92 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92"
-              onPointerUp={(event) => handleMobilePanelGestureEnd(event.clientY)}
-              onTouchEnd={(event) => handleMobilePanelGestureEnd(event.changedTouches[0]?.clientY ?? 0)}
             >
               <div className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
                 <button
-                  onPointerDown={(event) => handleMobilePanelGestureStart(event.clientY)}
-                  onTouchStart={(event) => handleMobilePanelGestureStart(event.touches[0]?.clientY ?? 0)}
+                  onPointerDown={(event) => {
+                    handleMobilePanelGestureStart(event.clientY)
+                    try {
+                      event.currentTarget.setPointerCapture(event.pointerId)
+                    } catch {
+                      // Pointer capture is not available in every browser/test runtime.
+                    }
+                  }}
+                  onPointerUp={(event) => handleMobilePanelGestureEnd(event.clientY)}
+                  onPointerCancel={() => { dragStartYRef.current = null }}
+                  style={{ touchAction: "none" }}
                   className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full py-1 text-[10px] font-medium text-slate-400"
                   type="button"
                   aria-label="Resize teaching panel"

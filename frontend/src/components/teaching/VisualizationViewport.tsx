@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode, WheelEvent } from "react"
+import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode, WheelEvent } from "react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from "lucide-react"
 import { Button } from "../ui/button"
@@ -9,6 +9,7 @@ const DEFAULT_ZOOM = 1
 const MAX_ZOOM = 2
 const BUTTON_ZOOM_STEP = 0.05
 const WHEEL_ZOOM_SENSITIVITY = 0.0015
+const MIN_PINCH_DISTANCE = 24
 
 function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(2))))
@@ -29,6 +30,8 @@ export function VisualizationViewport({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pendingAnchorRef = useRef<{ x: number; y: number } | null>(null)
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>())
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null)
 
   const zoomPercent = Math.round(zoom * 100)
   const canZoomOut = zoom > MIN_ZOOM
@@ -94,6 +97,19 @@ export function VisualizationViewport({
     updateZoom(DEFAULT_ZOOM)
   }, [updateZoom])
 
+  const clearPinch = useCallback(() => {
+    activePointersRef.current.clear()
+    pinchRef.current = null
+  }, [])
+
+  const readPinchDistance = useCallback(() => {
+    const points = Array.from(activePointersRef.current.values())
+    if (points.length < 2) return null
+
+    const [first, second] = points
+    return Math.hypot(second.x - first.x, second.y - first.y)
+  }, [])
+
   useLayoutEffect(() => {
     const element = scrollRef.current
     const anchor = pendingAnchorRef.current
@@ -121,6 +137,63 @@ export function VisualizationViewport({
     updateZoom((previous) => previous * (1 + delta))
   }, [updateZoom])
 
+  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!mobileOptimized || event.pointerType === "mouse") return
+
+    activePointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    if (activePointersRef.current.size >= 2) {
+      event.preventDefault()
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+      } catch {
+        // Some browser/test environments do not expose pointer capture.
+      }
+
+      const distance = readPinchDistance()
+      if (distance && distance >= MIN_PINCH_DISTANCE) {
+        pinchRef.current = { distance, zoom }
+      }
+    }
+  }, [mobileOptimized, readPinchDistance, zoom])
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!mobileOptimized || event.pointerType === "mouse") return
+    if (!activePointersRef.current.has(event.pointerId)) return
+
+    activePointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    const pinch = pinchRef.current
+    if (!pinch) return
+
+    const distance = readPinchDistance()
+    if (!distance || distance < MIN_PINCH_DISTANCE) return
+
+    event.preventDefault()
+    updateZoom(pinch.zoom * (distance / pinch.distance))
+  }, [mobileOptimized, readPinchDistance, updateZoom])
+
+  const handlePointerEnd = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!mobileOptimized || event.pointerType === "mouse") return
+
+    activePointersRef.current.delete(event.pointerId)
+    if (activePointersRef.current.size < 2) {
+      pinchRef.current = null
+    }
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    } catch {
+      // Pointer capture is best-effort only.
+    }
+  }, [mobileOptimized])
+
   useEffect(() => {
     if (!isFullscreen || typeof document === "undefined") return
 
@@ -131,6 +204,8 @@ export function VisualizationViewport({
       document.body.style.overflow = previousOverflow
     }
   }, [isFullscreen])
+
+  useEffect(() => clearPinch, [clearPinch, isFullscreen])
 
   useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return
@@ -218,7 +293,13 @@ export function VisualizationViewport({
           "native-scroll h-full overflow-auto overscroll-contain",
           isFullscreen && "rounded-[28px]",
         )}
+        style={mobileOptimized ? { touchAction: "pan-x pan-y" } : undefined}
         onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={handlePointerEnd}
       >
         <div
           data-testid="visualization-zoom-frame"
