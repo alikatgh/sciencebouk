@@ -3,7 +3,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from unittest.mock import patch
 
-from .models import Profile, UserSettings
+from .models import InviteCode, InviteRedemption, Profile, UserSettings
 
 
 # ---------------------------------------------------------------------------
@@ -13,6 +13,13 @@ from .models import Profile, UserSettings
 def make_user(email='test@example.com', password='securepass123'):
     """Create a minimal valid User (username mirrors email, as register does)."""
     return User.objects.create_user(username=email, email=email, password=password)
+
+
+def make_invite(code='SCB-TEST-CODE-0001', **kwargs):
+    invite = InviteCode(**kwargs)
+    invite.set_code(code)
+    invite.save()
+    return invite, code
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +160,68 @@ class RegisterTests(TestCase):
         }, format='json')
         self.assertEqual(response.status_code, 400)
 
+    def test_register_requires_invite_when_gate_enabled(self):
+        with self.settings(INVITES_REQUIRED=True):
+            response = self.client.post('/api/auth/register/', {
+                'email': 'new@example.com',
+                'password': 'strongpass1',
+            }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Invite code is required.', response.json()['invite_code'])
+        self.assertFalse(User.objects.filter(email='new@example.com').exists())
+
+    def test_register_redeems_valid_invite_when_gate_enabled(self):
+        invite, code = make_invite(label='Launch list')
+
+        with self.settings(INVITES_REQUIRED=True):
+            response = self.client.post('/api/auth/register/', {
+                'email': 'new@example.com',
+                'password': 'strongpass1',
+                'invite_code': code,
+            }, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        invite.refresh_from_db()
+        self.assertEqual(invite.used_count, 1)
+        self.assertTrue(InviteRedemption.objects.filter(redeemed_email='new@example.com', invite=invite).exists())
+
+    def test_register_accepts_invite_with_different_formatting(self):
+        invite, _ = make_invite(code='SCB-TEST-CODE-0001')
+
+        with self.settings(INVITES_REQUIRED=True):
+            response = self.client.post('/api/auth/register/', {
+                'email': 'formatted@example.com',
+                'password': 'strongpass1',
+                'invite_code': 'scb test code 0001',
+            }, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        invite.refresh_from_db()
+        self.assertEqual(invite.used_count, 1)
+
+    def test_register_blocks_reused_single_use_invite(self):
+        invite, code = make_invite(max_uses=1)
+
+        with self.settings(INVITES_REQUIRED=True):
+            first = self.client.post('/api/auth/register/', {
+                'email': 'first@example.com',
+                'password': 'strongpass1',
+                'invite_code': code,
+            }, format='json')
+            second = self.client.post('/api/auth/register/', {
+                'email': 'second@example.com',
+                'password': 'strongpass1',
+                'invite_code': code,
+            }, format='json')
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 400)
+        self.assertIn('already been used', second.json()['invite_code'][0])
+        invite.refresh_from_db()
+        self.assertEqual(invite.used_count, 1)
+        self.assertFalse(User.objects.filter(email='second@example.com').exists())
+
 
 class GoogleAuthTests(TestCase):
     def setUp(self):
@@ -173,6 +242,59 @@ class GoogleAuthTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['error'], 'Google email is not verified')
         self.assertFalse(User.objects.filter(email='new-google@example.com').exists())
+
+    @patch('accounts.views.verify_google_credential')
+    def test_google_auth_requires_invite_for_new_user_when_gate_enabled(self, mock_verify):
+        mock_verify.return_value = {
+            'email': 'new-google@example.com',
+            'email_verified': True,
+        }
+
+        with self.settings(GOOGLE_OAUTH_CLIENT_ID='google-client-id', INVITES_REQUIRED=True):
+            response = self.client.post('/api/auth/google/', {
+                'credential': 'fake-token',
+            }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Invite code is required.', response.json()['invite_code'])
+        self.assertFalse(User.objects.filter(email='new-google@example.com').exists())
+
+    @patch('accounts.views.verify_google_credential')
+    def test_google_auth_redeems_invite_for_new_user(self, mock_verify):
+        invite, code = make_invite()
+        mock_verify.return_value = {
+            'email': 'new-google@example.com',
+            'email_verified': True,
+            'name': 'New Google',
+            'picture': 'https://example.com/avatar.png',
+        }
+
+        with self.settings(GOOGLE_OAUTH_CLIENT_ID='google-client-id', INVITES_REQUIRED=True):
+            response = self.client.post('/api/auth/google/', {
+                'credential': 'fake-token',
+                'invite_code': code,
+            }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(User.objects.filter(email='new-google@example.com').exists())
+        invite.refresh_from_db()
+        self.assertEqual(invite.used_count, 1)
+        self.assertTrue(InviteRedemption.objects.filter(redeemed_email='new-google@example.com', invite=invite).exists())
+
+    @patch('accounts.views.verify_google_credential')
+    def test_google_auth_existing_user_does_not_need_invite(self, mock_verify):
+        make_user(email='existing-google@example.com')
+        mock_verify.return_value = {
+            'email': 'existing-google@example.com',
+            'email_verified': True,
+        }
+
+        with self.settings(GOOGLE_OAUTH_CLIENT_ID='google-client-id', INVITES_REQUIRED=True):
+            response = self.client.post('/api/auth/google/', {
+                'credential': 'fake-token',
+            }, format='json')
+
+        self.assertEqual(response.status_code, 200)
 
 
 # ---------------------------------------------------------------------------

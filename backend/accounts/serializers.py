@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Profile, UserSettings
+from .invites import InviteCodeError, validate_invite_code
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -30,6 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(min_length=8, write_only=True)
+    invite_code = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -43,9 +46,17 @@ class RegisterSerializer(serializers.Serializer):
             validate_password(value['password'])
         except DjangoValidationError as e:
             raise serializers.ValidationError({'password': list(e.messages)})
+
+        invite_code = value.get('invite_code', '')
+        if getattr(settings, 'INVITES_REQUIRED', False):
+            try:
+                validate_invite_code(invite_code)
+            except InviteCodeError as exc:
+                raise serializers.ValidationError({'invite_code': [str(exc)]})
         return value
 
     def create(self, validated_data):
+        validated_data.pop('invite_code', None)
         user = User.objects.create_user(
             username=validated_data['email'],
             email=validated_data['email'],

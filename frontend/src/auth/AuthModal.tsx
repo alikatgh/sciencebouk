@@ -15,6 +15,7 @@ export function AuthModal({ open, onClose, initialMode = 'login' }: AuthModalPro
   const [mode, setMode] = useState<'login' | 'register'>(initialMode)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const { login, register } = useAuth()
@@ -24,6 +25,7 @@ export function AuthModal({ open, onClose, initialMode = 'login' }: AuthModalPro
     setMode(initialMode)
     setEmail("")
     setPassword("")
+    setInviteCode("")
     setError("")
     setSubmitting(false)
   }, [open, initialMode])
@@ -34,7 +36,7 @@ export function AuthModal({ open, onClose, initialMode = 'login' }: AuthModalPro
     setSubmitting(true)
     try {
       if (mode === 'login') await login(email, password)
-      else await register(email, password)
+      else await register(email, password, inviteCode)
       onClose()
       setEmail("")
       setPassword("")
@@ -61,6 +63,16 @@ export function AuthModal({ open, onClose, initialMode = 'login' }: AuthModalPro
             type="password" placeholder="Password (8+ characters)" value={password}
             onChange={(e) => setPassword(e.target.value)} required minLength={8}
           />
+          {mode === 'register' && (
+            <Input
+              type="text"
+              placeholder="Invite code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              required
+              autoComplete="one-time-code"
+            />
+          )}
           {error && <p className="text-xs text-red-500">{error}</p>}
           <Button type="submit" disabled={submitting} className="w-full">
             {submitting ? "..." : mode === 'login' ? 'Sign in' : 'Create account'}

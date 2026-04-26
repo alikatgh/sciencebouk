@@ -32,8 +32,8 @@ interface AuthContextValue {
   isPro: boolean
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
-  loginWithGoogle: (credential: string) => Promise<void>
+  register: (email: string, password: string, inviteCode?: string) => Promise<void>
+  loginWithGoogle: (credential: string, inviteCode?: string) => Promise<void>
   logout: () => void
   getAccessToken: () => string | null
   refreshUser: () => Promise<void>
@@ -56,7 +56,7 @@ async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({}))
     throw createHttpError(
       res.status,
-      body.detail ?? body.email?.[0] ?? body.password?.[0] ?? `HTTP ${res.status}`,
+      body.detail ?? body.invite_code?.[0] ?? body.email?.[0] ?? body.password?.[0] ?? `HTTP ${res.status}`,
     )
   }
   return res.json()
@@ -222,10 +222,10 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     await fetchMe(data.access)
   }, [saveTokens, fetchMe])
 
-  const register = useCallback(async (email: string, password: string) => {
+  const register = useCallback(async (email: string, password: string, inviteCode = "") => {
     const data = await fetchJSON<{ user: User; tokens: Tokens }>("/auth/register/", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, invite_code: inviteCode.trim() }),
     })
     saveTokens(data.tokens)
     if (mountedRef.current) {
@@ -233,10 +233,10 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     }
   }, [saveTokens])
 
-  const loginWithGoogle = useCallback(async (credential: string) => {
+  const loginWithGoogle = useCallback(async (credential: string, inviteCode = "") => {
     const data = await fetchJSON<{ user: User; tokens: Tokens }>("/auth/google/", {
       method: "POST",
-      body: JSON.stringify({ credential }),
+      body: JSON.stringify({ credential, invite_code: inviteCode.trim() }),
     })
     saveTokens(data.tokens)
     if (mountedRef.current) {

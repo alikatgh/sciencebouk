@@ -26,9 +26,18 @@ class CheckoutAuthTest(TestCase):
         user = User.objects.create_user(username='alice', password='pass', email='alice@test.com')
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(user).access_token))
-        with self.settings(STRIPE_SECRET_KEY=''):
+        with self.settings(BILLING_ENABLED=True, STRIPE_SECRET_KEY=''):
             response = client.post('/api/payments/checkout/')
         self.assertEqual(response.status_code, 503)
+
+    def test_checkout_returns_503_when_billing_disabled(self):
+        user = User.objects.create_user(username='beta', password='pass', email='beta@test.com')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(user).access_token))
+        with self.settings(BILLING_ENABLED=False):
+            response = client.post('/api/payments/checkout/')
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.data['detail'], 'Billing is paused during the free beta')
 
     def test_checkout_rejects_invalid_price_type(self):
         user = User.objects.create_user(username='alice2', password='pass', email='alice2@test.com')
@@ -36,7 +45,7 @@ class CheckoutAuthTest(TestCase):
         user.profile.save(update_fields=['stripe_customer_id'])
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(user).access_token))
-        with self.settings(STRIPE_SECRET_KEY='sk_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_SECRET_KEY='sk_test'):
             response = client.post('/api/payments/checkout/', data={'price_type': 'weekly'}, format='json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['error'], 'Invalid price type')
@@ -47,7 +56,8 @@ class PortalAuthTest(TestCase):
 
     def test_portal_requires_auth(self):
         client = APIClient()
-        response = client.post('/api/payments/portal/')
+        with self.settings(BILLING_ENABLED=True):
+            response = client.post('/api/payments/portal/')
         self.assertEqual(response.status_code, 401)
 
     def test_portal_free_user_is_blocked_even_with_customer_id(self):
@@ -56,7 +66,8 @@ class PortalAuthTest(TestCase):
         user.profile.save()
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(user).access_token))
-        response = client.post('/api/payments/portal/')
+        with self.settings(BILLING_ENABLED=True):
+            response = client.post('/api/payments/portal/')
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data['error'], 'Active Pro required')
 
@@ -67,7 +78,8 @@ class PortalAuthTest(TestCase):
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(user).access_token))
         # Profile has no stripe_customer_id by default
-        response = client.post('/api/payments/portal/')
+        with self.settings(BILLING_ENABLED=True):
+            response = client.post('/api/payments/portal/')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['error'], 'No billing account')
 
@@ -106,7 +118,7 @@ class WebhookTest(TestCase):
 
     def test_webhook_accepts_post_without_secret_returns_503(self):
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET=''):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET=''):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),
@@ -114,9 +126,21 @@ class WebhookTest(TestCase):
             )
         self.assertEqual(response.status_code, 503)
 
+    def test_webhook_noops_when_billing_disabled(self):
+        client = APIClient()
+        with self.settings(BILLING_ENABLED=False, STRIPE_WEBHOOK_SECRET=''):
+            response = client.post(
+                '/api/payments/webhook/',
+                data=json.dumps({}),
+                content_type='application/json',
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['received'])
+        self.assertFalse(response.json()['billing_enabled'])
+
     def test_webhook_rejects_invalid_signature(self):
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({'type': 'checkout.session.completed'}),
@@ -141,7 +165,7 @@ class WebhookTest(TestCase):
         mock_construct.return_value = mock_event
 
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),
@@ -150,7 +174,7 @@ class WebhookTest(TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.data['received'])
+        self.assertTrue(response.json()['received'])
         user.profile.refresh_from_db()
         self.assertEqual(user.profile.tier, 'pro')
         self.assertEqual(user.profile.stripe_subscription_id, 'sub_test456')
@@ -171,7 +195,7 @@ class WebhookTest(TestCase):
         mock_construct.return_value = mock_event
 
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),
@@ -199,7 +223,7 @@ class WebhookTest(TestCase):
         mock_construct.return_value = mock_event
 
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),
@@ -230,7 +254,7 @@ class WebhookTest(TestCase):
         mock_construct.return_value = mock_event
 
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),
@@ -262,7 +286,7 @@ class WebhookTest(TestCase):
         mock_construct.return_value = mock_event
 
         client = APIClient()
-        with self.settings(STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),

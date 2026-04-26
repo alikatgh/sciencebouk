@@ -64,6 +64,27 @@ describe("AuthPage", () => {
     expect(authState.register).not.toHaveBeenCalled()
   })
 
+  it("passes the invite code when creating an account", async () => {
+    render(
+      <MemoryRouter initialEntries={["/signup"]}>
+        <Routes>
+          <Route path="/signup" element={<AuthPage mode="signup" />} />
+          <Route path="/" element={<div>Home target</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "user@example.com" } })
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password123" } })
+    fireEvent.change(screen.getByLabelText("Invite code"), { target: { value: "SCB-ABCD-EFGH-IJKL" } })
+    fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "password123" } })
+    fireEvent.submit(screen.getByRole("button", { name: /create account/i }).closest("form")!)
+
+    await waitFor(() => {
+      expect(authState.register).toHaveBeenCalledWith("user@example.com", "password123", "SCB-ABCD-EFGH-IJKL")
+    })
+  })
+
   it("redirects authenticated users to the sanitized next path", async () => {
     authState.isAuthenticated = true
 

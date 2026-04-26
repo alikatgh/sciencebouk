@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser
@@ -11,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer, ProfileSerializer, UserSettingsSerializer
+from .invites import InviteCodeError, get_request_meta, redeem_invite_code, validate_invite_code
 
 User = get_user_model()
 
@@ -49,10 +51,27 @@ def google_auth(request):
     if not idinfo.get('email_verified'):
         return Response({"error": "Google email is not verified"}, status=status.HTTP_400_BAD_REQUEST)
 
-    user, created = User.objects.get_or_create(
-        email=email,
-        defaults={'username': email},
-    )
+    invite_code = request.data.get('invite_code', '').strip()
+    existing_user = User.objects.filter(email=email).first()
+
+    if not existing_user and getattr(settings, 'INVITES_REQUIRED', False):
+        try:
+            validate_invite_code(invite_code)
+        except InviteCodeError as exc:
+            return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={'username': email},
+        )
+
+        if created and getattr(settings, 'INVITES_REQUIRED', False):
+            try:
+                redeem_invite_code(invite_code, user, get_request_meta(request))
+            except InviteCodeError as exc:
+                user.delete()
+                return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
 
     if created:
         user.set_unusable_password()
@@ -83,7 +102,16 @@ def register(request):
     """Register a new user and return JWT tokens alongside the user payload."""
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+    invite_code = serializer.validated_data.get('invite_code', '')
     user = serializer.save()
+
+    if getattr(settings, 'INVITES_REQUIRED', False):
+        try:
+            redeem_invite_code(invite_code, user, get_request_meta(request))
+        except InviteCodeError as exc:
+            user.delete()
+            return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
+
     refresh = RefreshToken.for_user(user)
     return Response({
         'user': UserSerializer(user).data,

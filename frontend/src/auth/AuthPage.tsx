@@ -48,6 +48,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState("")
@@ -75,13 +76,13 @@ export default function AuthPage({ mode }: AuthPageProps) {
     googleCallbackRef.current = async ({ credential }: GoogleCredentialResponse) => {
       setGoogleError("")
       try {
-        await loginWithGoogle(credential)
+        await loginWithGoogle(credential, mode === "signup" ? inviteCode : "")
         navigate(nextUrl, { replace: true })
       } catch {
-        setGoogleError("Google sign-in failed. Please try again.")
+        setGoogleError(mode === "signup" ? "Google sign-up failed. Check your invite code and try again." : "Google sign-in failed. Please try again.")
       }
     }
-  }, [loginWithGoogle, navigate, nextUrl])
+  }, [inviteCode, loginWithGoogle, mode, navigate, nextUrl])
 
   // Initialise Google button whenever the script loads or mode changes
   useEffect(() => {
@@ -130,6 +131,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
     setEmail("")
     setPassword("")
     setConfirmPassword("")
+    setInviteCode("")
     setShowPassword(false)
     setShowConfirm(false)
   }, [mode])
@@ -155,7 +157,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         if (mode === "login") {
           await login(email, password)
         } else {
-          await register(email, password)
+          await register(email, password, inviteCode)
         }
         navigate(nextUrl, { replace: true })
       } catch (err) {
@@ -164,7 +166,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         setSubmitting(false)
       }
     },
-    [mode, email, password, confirmPassword, login, register, navigate, nextUrl],
+    [mode, email, password, confirmPassword, inviteCode, login, register, navigate, nextUrl],
   )
 
   if (!authLoading && isAuthenticated) {
@@ -242,6 +244,26 @@ export default function AuthPage({ mode }: AuthPageProps) {
                 <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Must be at least 8 characters</p>
               )}
             </div>
+
+            {!isLogin && (
+              <div>
+                <label htmlFor="inviteCode" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Invite code
+                </label>
+                <Input
+                  id="inviteCode"
+                  type="text"
+                  autoComplete="one-time-code"
+                  required
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="SCB-XXXX-XXXX-XXXX"
+                />
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  We are opening accounts through invites first.
+                </p>
+              </div>
+            )}
 
             {!isLogin && (
               <div>
