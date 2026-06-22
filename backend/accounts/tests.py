@@ -1,8 +1,13 @@
-from django.contrib.auth.models import User
-from django.test import TestCase
-from rest_framework.test import APIClient
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from unittest import skipUnless
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
+from django.db import connection, connections
+from django.test import TestCase, TransactionTestCase
+from rest_framework.test import APIClient
+
+from .invites import InviteCodeError, InviteRequestMeta, increment_invite_usage, redeem_invite_code
 from .models import InviteCode, InviteRedemption, Profile, UserSettings
 
 
@@ -73,6 +78,16 @@ class ProfileModelTests(TestCase):
         self.assertTrue(Profile._meta.get_field('stripe_customer_id').db_index)
         self.assertTrue(Profile._meta.get_field('stripe_subscription_id').db_index)
 
+    def test_profile_enforces_unique_nonempty_stripe_customer_id(self):
+        user_one = make_user(email='stripe-one@example.com')
+        user_two = make_user(email='stripe-two@example.com')
+        user_one.profile.stripe_customer_id = 'cus_shared'
+        user_one.profile.save(update_fields=['stripe_customer_id'])
+
+        user_two.profile.stripe_customer_id = 'cus_shared'
+        with self.assertRaises(Exception):
+            user_two.profile.save(update_fields=['stripe_customer_id'])
+
 
 # ---------------------------------------------------------------------------
 # Register Endpoint
@@ -139,6 +154,7 @@ class RegisterTests(TestCase):
             'password': 'strongpass1',
         }, format='json')
         self.assertEqual(response.status_code, 400)
+        self.assertIn('Registration failed', str(response.json()))
 
     def test_register_short_password_returns_400(self):
         response = self.client.post('/api/auth/register/', {
@@ -222,6 +238,25 @@ class RegisterTests(TestCase):
         self.assertEqual(invite.used_count, 1)
         self.assertFalse(User.objects.filter(email='second@example.com').exists())
 
+    def test_register_with_invalid_forwarded_ip_still_redeems_invite(self):
+        invite, code = make_invite()
+
+        with self.settings(INVITES_REQUIRED=True):
+            response = self.client.post(
+                '/api/auth/register/',
+                {
+                    'email': 'xff@example.com',
+                    'password': 'strongpass1',
+                    'invite_code': code,
+                },
+                format='json',
+                HTTP_X_FORWARDED_FOR='not-an-ip',
+            )
+
+        self.assertEqual(response.status_code, 201)
+        redemption = InviteRedemption.objects.get(redeemed_email='xff@example.com')
+        self.assertIsNone(redemption.ip_address)
+
 
 class GoogleAuthTests(TestCase):
     def setUp(self):
@@ -297,6 +332,50 @@ class GoogleAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class InviteUsageIncrementTests(TestCase):
+    def test_increment_invite_usage_rejects_when_max_uses_reached(self):
+        invite, code = make_invite(max_uses=1)
+        user = make_user(email='increment@example.com')
+        redeem_invite_code(code, user)
+
+        invite.refresh_from_db()
+        with self.assertRaises(InviteCodeError) as exc:
+            increment_invite_usage(invite)
+
+        self.assertIn('already been used', str(exc.exception))
+        invite.refresh_from_db()
+        self.assertEqual(invite.used_count, 1)
+
+
+@skipUnless(connection.vendor != 'sqlite', 'SQLite cannot run concurrent writes reliably')
+class InviteConcurrencyTests(TransactionTestCase):
+    def test_concurrent_single_use_redemption_allows_only_one(self):
+        invite, code = make_invite(max_uses=1)
+
+        def try_redeem(index):
+            connections.close_all()
+            user = User.objects.create_user(
+                username=f'concurrent{index}@example.com',
+                email=f'concurrent{index}@example.com',
+                password='pass12345',
+            )
+            try:
+                redeem_invite_code(code, user, InviteRequestMeta())
+                return 'success'
+            except InviteCodeError:
+                return 'failed'
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(try_redeem, index) for index in range(4)]
+            results = [future.result() for future in as_completed(futures)]
+
+        self.assertEqual(results.count('success'), 1)
+        self.assertEqual(results.count('failed'), 3)
+        invite.refresh_from_db()
+        self.assertEqual(invite.used_count, 1)
+        self.assertEqual(InviteRedemption.objects.filter(invite=invite).count(), 1)
+
+
 # ---------------------------------------------------------------------------
 # Login Endpoint
 # ---------------------------------------------------------------------------
@@ -338,6 +417,7 @@ class LoginTests(TestCase):
             'password': 'wrongpassword',
         }, format='json')
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['detail'], 'Invalid credentials')
 
     def test_login_with_nonexistent_user_returns_401(self):
         response = self.client.post('/api/auth/login/', {
@@ -345,6 +425,7 @@ class LoginTests(TestCase):
             'password': 'anypass123',
         }, format='json')
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['detail'], 'Invalid credentials')
 
 
 # ---------------------------------------------------------------------------

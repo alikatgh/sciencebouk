@@ -4,8 +4,11 @@ import { lazy } from "react"
 type SceneModule = { default: ComponentType }
 type SceneLoader = () => Promise<SceneModule>
 
+// Equations without a bespoke D3 scene fall back to the data-driven
+// ConfigurableEquationScene, which builds an interactive lesson (draggable
+// sliders, guided steps, presets) from the equation's API teaching payload.
 const genericSceneLoader: SceneLoader = () =>
-  import("./scenes/GenericEquationScene").then((m) => ({ default: m.GenericEquationScene }))
+  import("./scenes/ConfigurableEquationScene").then((m) => ({ default: m.ConfigurableEquationScene }))
 
 const genericScene = lazy(genericSceneLoader)
 

@@ -2,7 +2,7 @@ import { StrictMode } from "react"
 import { act, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthProvider, useAuth } from "./AuthContext"
-import { resetTokenStorageForTests } from "./tokenStorage"
+import { REFRESH_TOKEN_KEY, resetTokenStorageForTests, saveTokens } from "./tokenStorage"
 
 function createStorageMock(): Storage {
   const store = new Map<string, string>()
@@ -35,7 +35,7 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 function AuthProbe() {
-  const { user, login } = useAuth()
+  const { user, loading, login } = useAuth()
 
   return (
     <div>
@@ -43,6 +43,7 @@ function AuthProbe() {
         Login
       </button>
       <span data-testid="auth-email">{user?.email ?? "signed-out"}</span>
+      <span data-testid="auth-loading">{loading ? "loading" : "ready"}</span>
     </div>
   )
 }
@@ -114,5 +115,32 @@ describe("AuthProvider", () => {
     await waitFor(() => {
       expect(screen.getByTestId("auth-email").textContent).toBe("login@example.com")
     })
+  })
+
+  it("keeps refresh tokens on boot when refresh hits a transient network error", async () => {
+    resetTokenStorageForTests()
+    localStorage.setItem(REFRESH_TOKEN_KEY, "stored-refresh-token")
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith("/auth/refresh/")) {
+        return Promise.reject(new TypeError("Failed to fetch"))
+      }
+      throw new Error(`Unexpected fetch: ${url}`)
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-loading").textContent).toBe("ready")
+    })
+
+    expect(screen.getByTestId("auth-email").textContent).toBe("signed-out")
+    expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("stored-refresh-token")
   })
 })

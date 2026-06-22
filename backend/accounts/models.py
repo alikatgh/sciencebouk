@@ -4,6 +4,7 @@ import string
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -30,6 +31,15 @@ class Profile(models.Model):
     preferred_difficulty = models.CharField(max_length=20, default='beginner')
     onboarding_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["stripe_customer_id"],
+                condition=~Q(stripe_customer_id=""),
+                name="unique_nonempty_stripe_customer_id",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.user.username} ({self.tier})"

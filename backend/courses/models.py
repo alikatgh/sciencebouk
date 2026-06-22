@@ -22,6 +22,13 @@ class Equation(models.Model):
         ("information", "Information"),
         ("dynamical_systems", "Dynamical Systems"),
         ("finance", "Finance"),
+        ("chemistry", "Chemistry"),
+        ("biology", "Biology & Genetics"),
+        ("economics", "Economics & Finance"),
+        ("computer_science", "Computer Science"),
+        ("engineering", "Engineering"),
+        ("astronomy", "Astronomy & Astrophysics"),
+        ("linear_algebra", "Linear Algebra"),
     ]
 
     title = models.CharField(max_length=200)

@@ -48,9 +48,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response = await doFetch(path, options, accessToken)
 
   if (response.status === 401 && accessToken) {
-    const refreshedToken = await refreshAccessToken()
-    if (refreshedToken) {
-      response = await doFetch(path, options, refreshedToken)
+    const refreshed = await refreshAccessToken()
+    if (refreshed.ok) {
+      response = await doFetch(path, options, refreshed.access)
     }
     // Do NOT call clearTokens() here: tokenStorage.refreshAccessToken() already
     // calls clearTokens() on genuine auth failures (expired token, HTTP 4xx).
@@ -79,11 +79,11 @@ async function requestAllPages<T>(path: string): Promise<T[]> {
     })
 
     if (response.status === 401 && accessToken) {
-      const refreshedToken = await refreshAccessToken()
-      if (refreshedToken) {
+      const refreshed = await refreshAccessToken()
+      if (refreshed.ok) {
         response = await fetch(nextUrl, {
           method: "GET",
-          headers: withAuthHeaders(undefined, refreshedToken),
+          headers: withAuthHeaders(undefined, refreshed.access),
         })
       }
     }

@@ -4,32 +4,46 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
-from rest_framework.decorators import api_view, parser_classes, permission_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes, throttle_classes
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer, ProfileSerializer, UserSettingsSerializer
-from .invites import InviteCodeError, get_request_meta, redeem_invite_code, validate_invite_code
+from .invites import InviteCodeError, get_request_meta, redeem_invite_code
+from .models import InviteRedemption, Profile
+from .throttles import AuthRateThrottle
 
 User = get_user_model()
 
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
+    throttle_classes = [AuthRateThrottle]
+    throttle_scope = 'auth'
+
+
+class ThrottledTokenRefreshView(TokenRefreshView):
+    throttle_classes = [AuthRateThrottle]
+    throttle_scope = 'auth'
 
 
 def verify_google_credential(credential: str, client_id: str) -> dict:
     from google.oauth2 import id_token as google_id_token
     from google.auth.transport import requests as google_requests
 
-    return google_id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
+    return google_id_token.verify_oauth2_token(
+        credential,
+        google_requests.Request(),
+        client_id,
+        clock_skew_in_seconds=10,
+    )
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([AuthRateThrottle])
 def google_auth(request):
     """Verify a Google ID token and return JWT tokens, creating the user if needed."""
     credential = request.data.get('credential', '').strip()
@@ -53,25 +67,20 @@ def google_auth(request):
 
     invite_code = request.data.get('invite_code', '').strip()
     existing_user = User.objects.filter(email=email).first()
+    is_new_signup = existing_user is None
 
-    if not existing_user and getattr(settings, 'INVITES_REQUIRED', False):
-        try:
-            validate_invite_code(invite_code)
-        except InviteCodeError as exc:
-            return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        with transaction.atomic():
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={'username': email},
+            )
 
-    with transaction.atomic():
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={'username': email},
-        )
-
-        if created and getattr(settings, 'INVITES_REQUIRED', False):
-            try:
-                redeem_invite_code(invite_code, user, get_request_meta(request))
-            except InviteCodeError as exc:
-                user.delete()
-                return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
+            if is_new_signup and getattr(settings, 'INVITES_REQUIRED', False):
+                if not InviteRedemption.objects.filter(user=user).exists():
+                    redeem_invite_code(invite_code, user, get_request_meta(request))
+    except InviteCodeError as exc:
+        return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
 
     if created:
         user.set_unusable_password()
@@ -86,6 +95,7 @@ def google_auth(request):
                 user.profile.avatar_url = picture
             user.profile.save(update_fields=['display_name', 'avatar_url'])
 
+    from rest_framework_simplejwt.tokens import RefreshToken
     refresh = RefreshToken.for_user(user)
     return Response({
         'user': UserSerializer(user).data,
@@ -98,20 +108,22 @@ def google_auth(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([AuthRateThrottle])
 def register(request):
     """Register a new user and return JWT tokens alongside the user payload."""
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     invite_code = serializer.validated_data.get('invite_code', '')
-    user = serializer.save()
 
-    if getattr(settings, 'INVITES_REQUIRED', False):
-        try:
-            redeem_invite_code(invite_code, user, get_request_meta(request))
-        except InviteCodeError as exc:
-            user.delete()
-            return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        with transaction.atomic():
+            user = serializer.save()
+            if getattr(settings, 'INVITES_REQUIRED', False):
+                redeem_invite_code(invite_code, user, get_request_meta(request))
+    except InviteCodeError as exc:
+        return Response({"invite_code": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
 
+    from rest_framework_simplejwt.tokens import RefreshToken
     refresh = RefreshToken.for_user(user)
     return Response({
         'user': UserSerializer(user).data,
@@ -126,6 +138,7 @@ def register(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     """Return the authenticated user's profile."""
+    Profile.objects.get_or_create(user=request.user)
     return Response(UserSerializer(request.user).data)
 
 
@@ -133,7 +146,8 @@ def me(request):
 @permission_classes([IsAuthenticated])
 def update_profile(request):
     """Update mutable profile fields for the authenticated user."""
-    serializer = ProfileSerializer(request.user.profile, data=request.data, partial=True)
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    serializer = ProfileSerializer(profile, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(UserSerializer(request.user).data)

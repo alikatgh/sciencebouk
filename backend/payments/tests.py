@@ -7,6 +7,9 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import ProcessedStripeEvent
+from .views import should_downgrade_on_deleted
+
 
 def get_jwt_header(user):
     """Return an Authorization header dict for the given user."""
@@ -113,6 +116,31 @@ class SubscriptionStatusTest(TestCase):
         self.assertTrue(response.data['is_pro'])
 
 
+class ShouldDowngradeOnDeletedTest(TestCase):
+    """should_downgrade_on_deleted handles stale stored subscription ids."""
+
+    def test_downgrades_when_stored_subscription_id_is_blank(self):
+        user = User.objects.create_user(username='blank', password='pass', email='blank@test.com')
+        user.profile.tier = 'pro'
+        user.profile.stripe_subscription_id = ''
+        user.profile.save()
+        self.assertTrue(should_downgrade_on_deleted(user.profile, 'sub_deleted'))
+
+    def test_downgrades_when_stored_subscription_id_matches(self):
+        user = User.objects.create_user(username='match', password='pass', email='match@test.com')
+        user.profile.tier = 'pro'
+        user.profile.stripe_subscription_id = 'sub_same'
+        user.profile.save()
+        self.assertTrue(should_downgrade_on_deleted(user.profile, 'sub_same'))
+
+    def test_downgrades_when_stored_subscription_id_is_stale(self):
+        user = User.objects.create_user(username='stale', password='pass', email='stale@test.com')
+        user.profile.tier = 'pro'
+        user.profile.stripe_subscription_id = 'sub_old_stale'
+        user.profile.save()
+        self.assertTrue(should_downgrade_on_deleted(user.profile, 'sub_new_deleted'))
+
+
 class WebhookTest(TestCase):
     """webhook endpoint accepts POST requests."""
 
@@ -149,13 +177,15 @@ class WebhookTest(TestCase):
             )
         self.assertEqual(response.status_code, 400)
 
+    @patch('stripe.Subscription.retrieve')
     @patch('stripe.Webhook.construct_event')
-    def test_webhook_checkout_session_completed_upgrades_tier(self, mock_construct):
+    def test_webhook_checkout_session_completed_upgrades_tier(self, mock_construct, mock_retrieve):
         user = User.objects.create_user(username='eve', password='pass', email='eve@test.com')
         user.profile.stripe_customer_id = 'cus_test123'
         user.profile.save()
 
         mock_event = MagicMock()
+        mock_event.id = 'evt_checkout_completed_1'
         mock_event.type = 'checkout.session.completed'
         mock_event.data.object.get = lambda key, default=None: {
             'customer': 'cus_test123',
@@ -163,9 +193,16 @@ class WebhookTest(TestCase):
             'payment_status': 'paid',
         }.get(key, default)
         mock_construct.return_value = mock_event
+        mock_retrieve.return_value = {
+            'items': {'data': [{'price': {'id': 'price_pro_monthly'}}]},
+        }
 
         client = APIClient()
-        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
+        with self.settings(
+            BILLING_ENABLED=True,
+            STRIPE_WEBHOOK_SECRET='whsec_test',
+            STRIPE_PRO_MONTHLY_PRICE_ID='price_pro_monthly',
+        ):
             response = client.post(
                 '/api/payments/webhook/',
                 data=json.dumps({}),
@@ -186,6 +223,7 @@ class WebhookTest(TestCase):
         user.profile.save(update_fields=['stripe_customer_id'])
 
         mock_event = MagicMock()
+        mock_event.id = 'evt_checkout_completed_1'
         mock_event.type = 'checkout.session.completed'
         mock_event.data.object.get = lambda key, default=None: {
             'customer': 'cus_test999',
@@ -212,13 +250,47 @@ class WebhookTest(TestCase):
     def test_webhook_subscription_deleted_downgrades_tier(self, mock_construct):
         user = User.objects.create_user(username='frank', password='pass', email='frank@test.com')
         user.profile.tier = 'pro'
+        user.profile.stripe_customer_id = 'cus_del789'
         user.profile.stripe_subscription_id = 'sub_del789'
         user.profile.save()
 
         mock_event = MagicMock()
+        mock_event.id = 'evt_subscription_deleted_1'
         mock_event.type = 'customer.subscription.deleted'
         mock_event.data.object.get = lambda key, default=None: {
             'id': 'sub_del789',
+            'customer': 'cus_del789',
+        }.get(key, default)
+        mock_construct.return_value = mock_event
+
+        client = APIClient()
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
+            response = client.post(
+                '/api/payments/webhook/',
+                data=json.dumps({}),
+                content_type='application/json',
+                HTTP_STRIPE_SIGNATURE='t=1,v1=sig',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.tier, 'free')
+        self.assertEqual(user.profile.stripe_subscription_id, '')
+
+    @patch('stripe.Webhook.construct_event')
+    def test_webhook_subscription_deleted_downgrades_with_stale_stored_id(self, mock_construct):
+        user = User.objects.create_user(username='staleweb', password='pass', email='staleweb@test.com')
+        user.profile.tier = 'pro'
+        user.profile.stripe_customer_id = 'cus_staleweb'
+        user.profile.stripe_subscription_id = 'sub_old_stale'
+        user.profile.save()
+
+        mock_event = MagicMock()
+        mock_event.id = 'evt_subscription_deleted_stale'
+        mock_event.type = 'customer.subscription.deleted'
+        mock_event.data.object.get = lambda key, default=None: {
+            'id': 'sub_new_deleted',
+            'customer': 'cus_staleweb',
         }.get(key, default)
         mock_construct.return_value = mock_event
 
@@ -245,6 +317,7 @@ class WebhookTest(TestCase):
         user.profile.save()
 
         mock_event = MagicMock()
+        mock_event.id = 'evt_subscription_updated_1'
         mock_event.type = 'customer.subscription.updated'
         mock_event.data.object.get = lambda key, default=None: {
             'customer': 'cus_updated123',
@@ -276,6 +349,7 @@ class WebhookTest(TestCase):
         user.profile.save()
 
         mock_event = MagicMock()
+        mock_event.id = 'evt_invoice_failed_1'
         mock_event.type = 'invoice.payment_failed'
         mock_event.data.object.get = lambda key, default=None: {
             'customer': 'cus_failed123',
@@ -298,3 +372,105 @@ class WebhookTest(TestCase):
         user.profile.refresh_from_db()
         self.assertEqual(user.profile.tier, 'free')
         self.assertEqual(user.profile.stripe_subscription_id, '')
+
+    @patch('stripe.Webhook.construct_event')
+    def test_webhook_subscription_deleted_downgrades_when_subscription_id_blank(self, mock_construct):
+        user = User.objects.create_user(username='grace', password='pass', email='grace@test.com')
+        user.profile.tier = 'pro'
+        user.profile.stripe_customer_id = 'cus_blank_sub'
+        user.profile.stripe_subscription_id = ''
+        user.profile.save()
+
+        mock_event = MagicMock()
+        mock_event.id = 'evt_subscription_deleted_blank'
+        mock_event.type = 'customer.subscription.deleted'
+        mock_event.data.object.get = lambda key, default=None: {
+            'id': 'sub_actual123',
+            'customer': 'cus_blank_sub',
+        }.get(key, default)
+        mock_construct.return_value = mock_event
+
+        client = APIClient()
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
+            response = client.post(
+                '/api/payments/webhook/',
+                data=json.dumps({}),
+                content_type='application/json',
+                HTTP_STRIPE_SIGNATURE='t=1,v1=sig',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.tier, 'free')
+
+    @patch('stripe.Webhook.construct_event')
+    def test_webhook_skips_duplicate_event_ids(self, mock_construct):
+        user = User.objects.create_user(username='ida', password='pass', email='ida@test.com')
+        user.profile.stripe_customer_id = 'cus_idem'
+        user.profile.save()
+
+        mock_event = MagicMock()
+        mock_event.id = 'evt_duplicate_1'
+        mock_event.type = 'checkout.session.completed'
+        mock_event.data.object.get = lambda key, default=None: {
+            'customer': 'cus_idem',
+            'subscription': 'sub_idem',
+            'payment_status': 'paid',
+        }.get(key, default)
+        mock_construct.return_value = mock_event
+
+        ProcessedStripeEvent.objects.create(event_id='evt_duplicate_1', event_type='checkout.session.completed')
+
+        client = APIClient()
+        with self.settings(BILLING_ENABLED=True, STRIPE_WEBHOOK_SECRET='whsec_test'):
+            response = client.post(
+                '/api/payments/webhook/',
+                data=json.dumps({}),
+                content_type='application/json',
+                HTTP_STRIPE_SIGNATURE='t=1,v1=sig',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.tier, 'free')
+
+    @patch('stripe.Subscription.retrieve')
+    @patch('stripe.Webhook.construct_event')
+    def test_webhook_checkout_ignores_non_pro_price(self, mock_construct, mock_retrieve):
+        user = User.objects.create_user(username='jane', password='pass', email='jane@test.com')
+        user.profile.stripe_customer_id = 'cus_price_check'
+        user.profile.save()
+
+        mock_event = MagicMock()
+        mock_event.id = 'evt_checkout_wrong_price'
+        mock_event.type = 'checkout.session.completed'
+        mock_event.data.object.get = lambda key, default=None: {
+            'customer': 'cus_price_check',
+            'subscription': 'sub_wrong_price',
+            'payment_status': 'paid',
+        }.get(key, default)
+        mock_construct.return_value = mock_event
+        mock_retrieve.return_value = {
+            'items': {
+                'data': [
+                    {'price': {'id': 'price_not_pro'}},
+                ],
+            },
+        }
+
+        client = APIClient()
+        with self.settings(
+            BILLING_ENABLED=True,
+            STRIPE_WEBHOOK_SECRET='whsec_test',
+            STRIPE_PRO_MONTHLY_PRICE_ID='price_pro_monthly',
+        ):
+            response = client.post(
+                '/api/payments/webhook/',
+                data=json.dumps({}),
+                content_type='application/json',
+                HTTP_STRIPE_SIGNATURE='t=1,v1=sig',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.tier, 'free')

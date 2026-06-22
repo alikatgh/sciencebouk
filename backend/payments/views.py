@@ -2,12 +2,15 @@ import os
 
 import stripe
 from django.conf import settings
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+
+from .models import ProcessedStripeEvent
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -29,6 +32,72 @@ def upgrade_profile(profile, subscription_id: str = ''):
     profile.tier = 'pro'
     profile.stripe_subscription_id = subscription_id or profile.stripe_subscription_id
     profile.save(update_fields=['tier', 'stripe_subscription_id'])
+
+
+def configured_pro_price_ids():
+    return {
+        price_id
+        for price_id in (
+            settings.STRIPE_PRO_MONTHLY_PRICE_ID,
+            settings.STRIPE_PRO_YEARLY_PRICE_ID,
+            settings.STRIPE_PRO_PRICE_ID,
+        )
+        if price_id
+    }
+
+
+def subscription_has_pro_price(subscription) -> bool:
+    pro_prices = configured_pro_price_ids()
+    if not pro_prices:
+        return True
+
+    items = subscription.get('items', {}).get('data', [])
+    return any(item.get('price', {}).get('id') in pro_prices for item in items)
+
+
+def checkout_session_has_pro_price(session) -> bool:
+    pro_prices = configured_pro_price_ids()
+    if not pro_prices:
+        return True
+
+    subscription_id = session.get('subscription')
+    if not subscription_id:
+        return False
+
+    try:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+    except stripe.error.StripeError:
+        return False
+
+    return subscription_has_pro_price(subscription)
+
+
+def get_profile_by_customer_id(customer_id):
+    from accounts.models import Profile
+
+    if not customer_id:
+        return None
+
+    try:
+        return Profile.objects.get(stripe_customer_id=customer_id)
+    except Profile.DoesNotExist:
+        return None
+
+
+def should_downgrade_on_deleted(profile, subscription_id: str) -> bool:
+    """Decide whether a subscription.deleted event should downgrade the profile.
+
+    Caller has already matched the profile by stripe customer id. When the stored
+    subscription id is blank or matches the deleted subscription, downgrade.
+    When the stored id is stale (does not match the deleted subscription id),
+    still downgrade so cancellation is not blocked by an outdated id.
+    """
+    stored_subscription_id = profile.stripe_subscription_id or ''
+    if not stored_subscription_id:
+        return True
+    if stored_subscription_id == subscription_id:
+        return True
+    return True
 
 
 @api_view(['POST'])
@@ -137,56 +206,61 @@ def stripe_webhook(request):
     except (ValueError, stripe.error.SignatureVerificationError):
         return JsonResponse({'error': 'Invalid signature'}, status=400)
 
-    from accounts.models import Profile
+    event_id = getattr(event, 'id', None) or event.get('id')
+    if not event_id:
+        return JsonResponse({'error': 'Missing event id'}, status=400)
 
-    if event.type == 'checkout.session.completed':
-        session = event.data.object
-        payment_status = session.get('payment_status')
-        if payment_status not in {'paid', 'no_payment_required'}:
-            return JsonResponse({'received': True})
-        customer_id = session.get('customer')
-        subscription_id = session.get('subscription')
-        try:
-            profile = Profile.objects.get(stripe_customer_id=customer_id)
-            upgrade_profile(profile, subscription_id or '')
-        except Profile.DoesNotExist:
-            pass
+    try:
+        with transaction.atomic():
+            _, created = ProcessedStripeEvent.objects.get_or_create(
+                event_id=event_id,
+                defaults={'event_type': event.type},
+            )
+            if not created:
+                return JsonResponse({'received': True})
 
-    elif event.type == 'customer.subscription.updated':
-        subscription = event.data.object
-        customer_id = subscription.get('customer')
-        subscription_id = subscription.get('id') or ''
-        subscription_status = subscription.get('status') or ''
+            if event.type == 'checkout.session.completed':
+                session = event.data.object
+                payment_status = session.get('payment_status')
+                if payment_status in {'paid', 'no_payment_required'} and checkout_session_has_pro_price(session):
+                    customer_id = session.get('customer')
+                    subscription_id = session.get('subscription')
+                    profile = get_profile_by_customer_id(customer_id)
+                    if profile is not None:
+                        upgrade_profile(profile, subscription_id or '')
 
-        try:
-            profile = Profile.objects.get(stripe_customer_id=customer_id)
-            if subscription_status in {'active', 'trialing'}:
-                upgrade_profile(profile, subscription_id)
-            else:
-                downgrade_profile(profile)
-        except Profile.DoesNotExist:
-            pass
+            elif event.type == 'customer.subscription.updated':
+                subscription = event.data.object
+                customer_id = subscription.get('customer')
+                subscription_id = subscription.get('id') or ''
+                subscription_status = subscription.get('status') or ''
 
-    elif event.type == 'invoice.payment_failed':
-        invoice = event.data.object
-        customer_id = invoice.get('customer')
-        attempt_count = invoice.get('attempt_count') or 0
-        next_payment_attempt = invoice.get('next_payment_attempt')
+                profile = get_profile_by_customer_id(customer_id)
+                if profile is not None:
+                    if subscription_status in {'active', 'trialing'} and subscription_has_pro_price(subscription):
+                        upgrade_profile(profile, subscription_id)
+                    else:
+                        downgrade_profile(profile)
 
-        if attempt_count >= 3 or not next_payment_attempt:
-            try:
-                profile = Profile.objects.get(stripe_customer_id=customer_id)
-                downgrade_profile(profile)
-            except Profile.DoesNotExist:
-                pass
+            elif event.type == 'invoice.payment_failed':
+                invoice = event.data.object
+                customer_id = invoice.get('customer')
+                attempt_count = invoice.get('attempt_count') or 0
+                next_payment_attempt = invoice.get('next_payment_attempt')
 
-    elif event.type == 'customer.subscription.deleted':
-        sub = event.data.object
-        subscription_id = sub.get('id')
-        try:
-            profile = Profile.objects.get(stripe_subscription_id=subscription_id)
-            downgrade_profile(profile)
-        except Profile.DoesNotExist:
-            pass
+                if attempt_count >= 3 or not next_payment_attempt:
+                    profile = get_profile_by_customer_id(customer_id)
+                    if profile is not None:
+                        downgrade_profile(profile)
+
+            elif event.type == 'customer.subscription.deleted':
+                sub = event.data.object
+                customer_id = sub.get('customer')
+                subscription_id = sub.get('id') or ''
+                profile = get_profile_by_customer_id(customer_id)
+                if profile is not None and should_downgrade_on_deleted(profile, subscription_id):
+                    downgrade_profile(profile)
+    except IntegrityError:
+        return JsonResponse({'received': True})
 
     return JsonResponse({'received': True})

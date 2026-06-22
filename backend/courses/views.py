@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -18,6 +18,85 @@ from .models import Course, Equation, LearningEvent, UserProgress
 
 PRO_TIER = "pro"
 EQUATION_ATLAS_SLUG = "equations-that-changed-the-world"
+PROGRESS_MERGE_FIELDS = [
+    "completed",
+    "lesson_step",
+    "time_spent_seconds",
+    "variables_explored",
+    "notes",
+    "bookmarked",
+]
+
+
+def merge_progress_payload(target: dict, incoming: dict) -> dict:
+    """Merge validated progress payloads for duplicate equation ids in bulk sync."""
+    merged = dict(target)
+
+    if incoming.get("completed"):
+        merged["completed"] = True
+    elif "completed" in incoming and not merged.get("completed"):
+        merged["completed"] = False
+
+    if incoming.get("lesson_step"):
+        if not merged.get("lesson_step") or len(incoming["lesson_step"]) >= len(merged["lesson_step"]):
+            merged["lesson_step"] = incoming["lesson_step"]
+
+    if "time_spent_seconds" in incoming:
+        merged["time_spent_seconds"] = max(
+            merged.get("time_spent_seconds", 0),
+            incoming["time_spent_seconds"],
+        )
+
+    if "variables_explored" in incoming:
+        existing = list(merged.get("variables_explored") or [])
+        for item in incoming["variables_explored"]:
+            if item not in existing:
+                existing.append(item)
+        merged["variables_explored"] = existing
+
+    if incoming.get("notes") and not merged.get("notes"):
+        merged["notes"] = incoming["notes"]
+
+    if incoming.get("bookmarked"):
+        merged["bookmarked"] = True
+
+    return merged
+
+
+def apply_progress_merge(progress, vd):
+    """Merge client progress into server state without downgrading monotonic fields."""
+    if "completed" in vd:
+        if vd["completed"]:
+            progress.completed = True
+        elif not progress.completed:
+            progress.completed = False
+
+    if "lesson_step" in vd and vd["lesson_step"]:
+        if not progress.lesson_step or len(vd["lesson_step"]) >= len(progress.lesson_step):
+            progress.lesson_step = vd["lesson_step"]
+
+    if "time_spent_seconds" in vd:
+        progress.time_spent_seconds = max(progress.time_spent_seconds, vd["time_spent_seconds"])
+
+    if "variables_explored" in vd:
+        merged = list(progress.variables_explored or [])
+        for item in vd["variables_explored"]:
+            if item not in merged:
+                merged.append(item)
+        progress.variables_explored = merged
+
+    if "notes" in vd and vd["notes"]:
+        if not progress.notes:
+            progress.notes = vd["notes"]
+
+    if "bookmarked" in vd:
+        progress.bookmarked = progress.bookmarked or vd["bookmarked"]
+
+    if progress.completed:
+        if not progress.completed_at:
+            progress.completed_at = timezone.now()
+    elif vd.get("completed") is False:
+        progress.completed_at = None
 from .serializers import (
     AuthProgressUpdateSerializer,
     BulkProgressItemSerializer,
@@ -82,11 +161,15 @@ def update_progress(request, id):
         )
     except IntegrityError:
         # Two concurrent requests raced past get_or_create; retrieve the winner's row.
-        progress = UserProgress.objects.get(anon_id=anon_id, equation=equation, user=None)
+        progress = UserProgress.objects.filter(anon_id=anon_id, equation=equation, user=None).first()
+        if progress is None:
+            progress, _ = UserProgress.objects.get_or_create(
+                anon_id=anon_id,
+                equation=equation,
+                user=None,
+            )
     vd = serializer.validated_data
-    for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
-        if field in vd:
-            setattr(progress, field, vd[field])
+    apply_progress_merge(progress, vd)
     progress.last_viewed = timezone.now()
     progress.save()
 
@@ -252,13 +335,7 @@ def update_my_progress(request, equation_id):
         defaults={"anon_id": ""},
     )
     progress.anon_id = ""
-    for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
-        if field in vd:
-            setattr(progress, field, vd[field])
-    if vd.get("completed") and not progress.completed_at:
-        progress.completed_at = timezone.now()
-    elif vd.get("completed") is False:
-        progress.completed_at = None
+    apply_progress_merge(progress, vd)
     progress.last_viewed = timezone.now()
     progress.save()
     return Response(UserProgressSerializer(progress).data)
@@ -285,30 +362,40 @@ def bulk_sync_progress(request):
         else:
             valid_items.append((index, item_serializer.validated_data))
 
-    equation_ids = [vd["equation_id"] for _, vd in valid_items]
+    merged_items = {}
+    for index, vd in valid_items:
+        equation_id = vd["equation_id"]
+        if equation_id in merged_items:
+            merged_items[equation_id]["data"] = merge_progress_payload(
+                merged_items[equation_id]["data"],
+                vd,
+            )
+            continue
+        merged_items[equation_id] = {"index": index, "data": dict(vd)}
+
+    equation_ids = list(merged_items.keys())
     equations = {eq.sort_order: eq for eq in Equation.objects.filter(sort_order__in=equation_ids)}
 
     results = []
-    for index, vd in valid_items:
-        equation = equations.get(vd["equation_id"])
-        if equation is None:
-            continue
+    with transaction.atomic():
+        for equation_id, item in merged_items.items():
+            equation = equations.get(equation_id)
+            if equation is None:
+                errors.append({
+                    "index": item["index"],
+                    "errors": {"equation_id": [f"Unknown equation id: {equation_id}"]},
+                })
+                continue
 
-        progress, _ = UserProgress.objects.get_or_create(
-            user=request.user, equation=equation,
-            defaults={"anon_id": ""},
-        )
-        progress.anon_id = ""
-        for field in ["completed", "lesson_step", "time_spent_seconds", "variables_explored", "notes", "bookmarked"]:
-            if field in vd:
-                setattr(progress, field, vd[field])
-        if vd.get("completed") and not progress.completed_at:
-            progress.completed_at = timezone.now()
-        elif vd.get("completed") is False:
-            progress.completed_at = None
-        progress.last_viewed = timezone.now()
-        progress.save()
-        results.append(UserProgressSerializer(progress).data)
+            progress, _ = UserProgress.objects.get_or_create(
+                user=request.user, equation=equation,
+                defaults={"anon_id": ""},
+            )
+            progress.anon_id = ""
+            apply_progress_merge(progress, item["data"])
+            progress.last_viewed = timezone.now()
+            progress.save()
+            results.append(UserProgressSerializer(progress).data)
 
     if errors:
         return Response({"results": results, "errors": errors}, status=status.HTTP_207_MULTI_STATUS)
@@ -327,13 +414,10 @@ def learning_dashboard(request):
     completed = progress.filter(completed=True).count()
     total_time = progress.aggregate(total=Sum("time_spent_seconds"))["total"] or 0
 
-    # Streak: count consecutive days with activity
-    event_timestamps = (
-        LearningEvent.objects.filter(user=user)
-        .order_by("-created_at")
-        .values_list("created_at", flat=True)[:100]
+    # Streak: count consecutive days with activity (distinct days, no event cap)
+    dates = set(
+        LearningEvent.objects.filter(user=user).dates("created_at", "day")
     )
-    dates = set(ts.date() for ts in event_timestamps)
     streak = 0
     day = timezone.now().date()
     while day in dates:

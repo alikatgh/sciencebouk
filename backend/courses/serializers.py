@@ -1,6 +1,29 @@
+import re
+import uuid
+
 from rest_framework import serializers
 
 from .models import Course, Equation, Lesson, UserProgress
+
+UUID4_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def validate_uuid4_user_id(value: str) -> str:
+    if not UUID4_PATTERN.match(value):
+        raise serializers.ValidationError("user_id must be a valid UUIDv4.")
+
+    try:
+        parsed = uuid.UUID(value)
+    except ValueError as exc:
+        raise serializers.ValidationError("user_id must be a valid UUIDv4.") from exc
+
+    if parsed.version != 4:
+        raise serializers.ValidationError("user_id must be a valid UUIDv4.")
+
+    return str(parsed)
 
 
 class LocalizedEquationSerializerMixin:
@@ -75,7 +98,10 @@ class UserProgressSerializer(serializers.ModelSerializer):
 
 class ProgressUpdateSerializer(serializers.Serializer):
     """Validates a PATCH payload for UserProgress (anonymous endpoint — user_id required)."""
-    user_id = serializers.CharField(required=True, max_length=100)
+    user_id = serializers.CharField(required=True, max_length=36)
+
+    def validate_user_id(self, value):
+        return validate_uuid4_user_id(value)
     completed = serializers.BooleanField(required=False)
     notes = serializers.CharField(required=False, allow_blank=True, max_length=2000)
     lesson_step = serializers.CharField(required=False, allow_blank=True, max_length=50)

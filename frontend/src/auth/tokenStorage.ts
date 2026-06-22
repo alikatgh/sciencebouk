@@ -17,7 +17,7 @@ export interface Tokens {
 // does not have to re-authenticate, then promote the value back to memory.
 let _accessTokenMemory: string | null = null
 
-let refreshPromise: Promise<string | null> | null = null
+let refreshPromise: Promise<RefreshAccessTokenResult> | null = null
 
 function safeStorageGet(key: string): string | null {
   try {
@@ -91,14 +91,22 @@ function getRefreshToken(): string | null {
   return safeStorageGet(REFRESH_TOKEN_KEY)
 }
 
-export async function refreshAccessToken(): Promise<string | null> {
+export type RefreshAccessTokenResult =
+  | { ok: true; access: string }
+  | { ok: false; reason: "missing_refresh" | "auth" | "network" }
+
+export function isTransientRefreshFailure(result: RefreshAccessTokenResult): boolean {
+  return !result.ok && result.reason === "network"
+}
+
+export async function refreshAccessToken(): Promise<RefreshAccessTokenResult> {
   const refresh = getRefreshToken()
   if (!refresh) {
-    return null
+    return { ok: false, reason: "missing_refresh" }
   }
 
   if (!refreshPromise) {
-    refreshPromise = (async () => {
+    refreshPromise = (async (): Promise<RefreshAccessTokenResult> => {
       try {
         const response = await fetch(`${API_BASE}/auth/refresh/`, {
           method: "POST",
@@ -108,7 +116,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
         if (!response.ok) {
           clearTokens()
-          return null
+          return { ok: false, reason: "auth" }
         }
 
         const data = (await response.json()) as { access: string; refresh?: string }
@@ -117,15 +125,16 @@ export async function refreshAccessToken(): Promise<string | null> {
           refresh: data.refresh ?? refresh,
         })
 
-        return data.access
+        return { ok: true, access: data.access }
       } catch (err) {
         // Only clear tokens on actual HTTP failures (response.ok === false), not
         // on TypeError or other network-level errors so a momentary network blip
         // does not permanently log the user out.
         if (!(err instanceof TypeError)) {
           clearTokens()
+          return { ok: false, reason: "auth" }
         }
-        return null
+        return { ok: false, reason: "network" }
       } finally {
         refreshPromise = null
       }

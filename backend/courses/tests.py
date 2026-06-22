@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import TestCase
@@ -8,6 +11,16 @@ from rest_framework.test import APIClient
 
 from .importers import EquationImportError, import_equations_from_json
 from .models import Course, Equation, EquationTranslation, Lesson, LearningEvent, UserProgress
+
+ANON_USER_TEST = "550e8400-e29b-41d4-a716-446655440001"
+ANON_USER_NEW = "550e8400-e29b-41d4-a716-446655440002"
+ANON_USER_A = "550e8400-e29b-41d4-a716-446655440003"
+ANON_USER_B = "550e8400-e29b-41d4-a716-446655440004"
+ANON_USER_C = "550e8400-e29b-41d4-a716-446655440005"
+ANON_USER_D = "550e8400-e29b-41d4-a716-446655440006"
+ANON_USER_E = "550e8400-e29b-41d4-a716-446655440007"
+ANON_USER_F = "550e8400-e29b-41d4-a716-446655440008"
+ANON_USER_IDEM = "550e8400-e29b-41d4-a716-446655440009"
 
 
 # ---------------------------------------------------------------------------
@@ -548,7 +561,7 @@ class ProgressUpdateTests(BaseAPITest):
     def test_patch_progress_returns_200(self):
         response = self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-test", "completed": True},
+            {"user_id": ANON_USER_TEST, "completed": True},
             format="json",
         )
         self.assertEqual(response.status_code, 200)
@@ -556,45 +569,45 @@ class ProgressUpdateTests(BaseAPITest):
     def test_patch_progress_creates_user_progress_record(self):
         self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-new", "completed": True},
+            {"user_id": ANON_USER_NEW, "completed": True},
             format="json",
         )
         self.assertTrue(
-            UserProgress.objects.filter(anon_id="user-new", equation=self.eq_geometry).exists()
+            UserProgress.objects.filter(anon_id=ANON_USER_NEW, equation=self.eq_geometry).exists()
         )
 
     def test_patch_progress_sets_completed_true(self):
         self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-a", "completed": True},
+            {"user_id": ANON_USER_A, "completed": True},
             format="json",
         )
-        progress = UserProgress.objects.get(anon_id="user-a", equation=self.eq_geometry)
+        progress = UserProgress.objects.get(anon_id=ANON_USER_A, equation=self.eq_geometry)
         self.assertTrue(progress.completed)
 
     def test_patch_progress_sets_completed_false(self):
-        UserProgress.objects.create(anon_id="user-b", equation=self.eq_geometry, completed=True)
+        UserProgress.objects.create(anon_id=ANON_USER_B, equation=self.eq_geometry, completed=False)
         self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-b", "completed": False},
+            {"user_id": ANON_USER_B, "completed": False},
             format="json",
         )
-        progress = UserProgress.objects.get(anon_id="user-b", equation=self.eq_geometry)
+        progress = UserProgress.objects.get(anon_id=ANON_USER_B, equation=self.eq_geometry)
         self.assertFalse(progress.completed)
 
     def test_patch_progress_updates_notes(self):
         self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-c", "notes": "Great theorem!"},
+            {"user_id": ANON_USER_C, "notes": "Great theorem!"},
             format="json",
         )
-        progress = UserProgress.objects.get(anon_id="user-c", equation=self.eq_geometry)
+        progress = UserProgress.objects.get(anon_id=ANON_USER_C, equation=self.eq_geometry)
         self.assertEqual(progress.notes, "Great theorem!")
 
     def test_patch_progress_response_contains_expected_fields(self):
         response = self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-d"},
+            {"user_id": ANON_USER_D},
             format="json",
         )
         data = response.json()
@@ -604,7 +617,7 @@ class ProgressUpdateTests(BaseAPITest):
     def test_patch_progress_response_equation_id_matches(self):
         response = self.client.patch(
             "/api/equations/1/progress/",
-            {"user_id": "user-e"},
+            {"user_id": ANON_USER_E},
             format="json",
         )
         self.assertEqual(response.json()["equation_id"], 1)
@@ -612,7 +625,7 @@ class ProgressUpdateTests(BaseAPITest):
     def test_patch_progress_nonexistent_equation_returns_404(self):
         response = self.client.patch(
             "/api/equations/999/progress/",
-            {"user_id": "user-f"},
+            {"user_id": ANON_USER_F},
             format="json",
         )
         self.assertEqual(response.status_code, 404)
@@ -627,13 +640,60 @@ class ProgressUpdateTests(BaseAPITest):
 
     def test_patch_progress_is_idempotent_for_same_user(self):
         """Calling PATCH twice for the same user/equation should upsert, not duplicate."""
-        payload = {"user_id": "user-idem", "completed": True}
+        payload = {"user_id": ANON_USER_IDEM, "completed": True}
         self.client.patch("/api/equations/1/progress/", payload, format="json")
         self.client.patch("/api/equations/1/progress/", payload, format="json")
         self.assertEqual(
-            UserProgress.objects.filter(anon_id="user-idem", equation=self.eq_geometry).count(),
+            UserProgress.objects.filter(anon_id=ANON_USER_IDEM, equation=self.eq_geometry).count(),
             1,
         )
+
+    def test_patch_progress_rejects_invalid_user_id(self):
+        response = self.client.patch(
+            "/api/equations/1/progress/",
+            {"user_id": "not-a-uuid", "completed": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_patch_progress_sets_completed_at_for_anonymous_user(self):
+        self.client.patch(
+            "/api/equations/1/progress/",
+            {"user_id": ANON_USER_TEST, "completed": True},
+            format="json",
+        )
+        progress = UserProgress.objects.get(anon_id=ANON_USER_TEST, equation=self.eq_geometry)
+        self.assertIsNotNone(progress.completed_at)
+
+    def test_patch_progress_does_not_downgrade_time_spent(self):
+        UserProgress.objects.create(
+            anon_id=ANON_USER_TEST,
+            equation=self.eq_geometry,
+            time_spent_seconds=300,
+        )
+        self.client.patch(
+            "/api/equations/1/progress/",
+            {"user_id": ANON_USER_TEST, "time_spent_seconds": 60},
+            format="json",
+        )
+        progress = UserProgress.objects.get(anon_id=ANON_USER_TEST, equation=self.eq_geometry)
+        self.assertEqual(progress.time_spent_seconds, 300)
+
+    def test_patch_progress_does_not_downgrade_completed(self):
+        UserProgress.objects.create(
+            anon_id=ANON_USER_B,
+            equation=self.eq_geometry,
+            completed=True,
+            completed_at=timezone.now(),
+        )
+        self.client.patch(
+            "/api/equations/1/progress/",
+            {"user_id": ANON_USER_B, "completed": False},
+            format="json",
+        )
+        progress = UserProgress.objects.get(anon_id=ANON_USER_B, equation=self.eq_geometry)
+        self.assertTrue(progress.completed)
+        self.assertIsNotNone(progress.completed_at)
 
 
 # ---------------------------------------------------------------------------
@@ -1159,7 +1219,7 @@ class BulkSyncProgressTests(AuthProgressBase):
         progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertEqual(progress.anon_id, '')
 
-    def test_bulk_sync_skips_unknown_equation_ids(self):
+    def test_bulk_sync_reports_unknown_equation_ids(self):
         self._auth_as(self.pro_user)
         payload = {
             'items': [
@@ -1168,8 +1228,11 @@ class BulkSyncProgressTests(AuthProgressBase):
             ]
         }
         response = self.client.post('/api/progress/sync/', payload, format='json')
-        # Only the valid equation should be in the response.
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.status_code, 207)
+        data = response.json()
+        self.assertEqual(len(data['results']), 1)
+        self.assertEqual(len(data['errors']), 1)
+        self.assertIn('Unknown equation id', data['errors'][0]['errors']['equation_id'][0])
 
     def test_bulk_sync_empty_items_returns_empty_list(self):
         self._auth_as(self.pro_user)
@@ -1191,19 +1254,20 @@ class BulkSyncProgressTests(AuthProgressBase):
         progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
         self.assertEqual(progress.variables_explored, ['a', 'b'])
 
-    def test_bulk_sync_clears_completed_at_when_completed_false(self):
+    def test_bulk_sync_does_not_downgrade_completed_progress(self):
+        completed_at = timezone.now()
         UserProgress.objects.create(
             user=self.pro_user,
             equation=self.eq1,
             completed=True,
-            completed_at=timezone.now(),
+            completed_at=completed_at,
         )
         self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'completed': False}]}
         self.client.post('/api/progress/sync/', payload, format='json')
         progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
-        self.assertFalse(progress.completed)
-        self.assertIsNone(progress.completed_at)
+        self.assertTrue(progress.completed)
+        self.assertIsNotNone(progress.completed_at)
 
 
 # ---------------------------------------------------------------------------
@@ -1376,6 +1440,62 @@ class DashboardTests(AuthProgressBase):
         self._auth_as(self.pro_user)
         response = self.client.get('/api/analytics/dashboard/')
         self.assertEqual(response.json()['currentStreak'], 0)
+
+    @patch('courses.views.timezone.now')
+    def test_dashboard_streak_counts_consecutive_days(self, mock_now):
+        today = datetime(2026, 6, 22, 12, 0, 0, tzinfo=timezone.get_current_timezone())
+        mock_now.return_value = today
+        for offset in range(3):
+            event = LearningEvent.objects.create(
+                user=self.pro_user,
+                equation=self.eq1,
+                event_type='view',
+            )
+            LearningEvent.objects.filter(pk=event.pk).update(
+                created_at=today - timedelta(days=offset),
+            )
+        self._auth_as(self.pro_user)
+        response = self.client.get('/api/analytics/dashboard/')
+        self.assertEqual(response.json()['currentStreak'], 3)
+
+    @patch('courses.views.timezone.now')
+    def test_dashboard_streak_breaks_on_gap(self, mock_now):
+        today = datetime(2026, 6, 22, 12, 0, 0, tzinfo=timezone.get_current_timezone())
+        mock_now.return_value = today
+        today_event = LearningEvent.objects.create(
+            user=self.pro_user,
+            equation=self.eq1,
+            event_type='view',
+        )
+        LearningEvent.objects.filter(pk=today_event.pk).update(created_at=today)
+        gap_event = LearningEvent.objects.create(
+            user=self.pro_user,
+            equation=self.eq1,
+            event_type='view',
+        )
+        LearningEvent.objects.filter(pk=gap_event.pk).update(
+            created_at=today - timedelta(days=2),
+        )
+        self._auth_as(self.pro_user)
+        response = self.client.get('/api/analytics/dashboard/')
+        self.assertEqual(response.json()['currentStreak'], 1)
+
+    @patch('courses.views.timezone.now')
+    def test_dashboard_streak_not_capped_by_event_volume(self, mock_now):
+        today = datetime(2026, 6, 22, 12, 0, 0, tzinfo=timezone.get_current_timezone())
+        mock_now.return_value = today
+        for day_offset in range(5):
+            day = today - timedelta(days=day_offset)
+            for _ in range(30):
+                event = LearningEvent.objects.create(
+                    user=self.pro_user,
+                    equation=self.eq1,
+                    event_type='view',
+                )
+                LearningEvent.objects.filter(pk=event.pk).update(created_at=day)
+        self._auth_as(self.pro_user)
+        response = self.client.get('/api/analytics/dashboard/')
+        self.assertEqual(response.json()['currentStreak'], 5)
 
     def test_dashboard_free_user_error_message(self):
         self._auth_as(self.free_user)

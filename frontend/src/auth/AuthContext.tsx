@@ -5,8 +5,10 @@ import {
   REFRESH_TOKEN_KEY,
   clearTokens as clearStoredTokens,
   getAccessToken as getStoredAccessToken,
+  isTransientRefreshFailure,
   refreshAccessToken,
   saveTokens as saveStoredTokens,
+  type RefreshAccessTokenResult,
   type Tokens,
 } from "./tokenStorage"
 import { API_BASE } from "../config/api"
@@ -99,19 +101,28 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     }
   }, [])
 
+  const handleRefreshFailure = useCallback((result: Extract<RefreshAccessTokenResult, { ok: false }>) => {
+    if (isTransientRefreshFailure(result)) {
+      console.warn("[AuthContext] refreshUser: transient network error, keeping session")
+      return
+    }
+    clearStoredTokens()
+    if (mountedRef.current) setUser(null)
+  }, [])
+
   const refreshUser = useCallback(async () => {
     let access = getAccessToken()
     let hasRefreshed = false
 
     // No access token in memory (e.g. page reload) — try refresh token first
     if (!access) {
-      access = await refreshAccessToken()
+      const refreshed = await refreshAccessToken()
       hasRefreshed = true
-      if (!access) {
-        clearStoredTokens()
-        if (mountedRef.current) setUser(null)
+      if (!refreshed.ok) {
+        handleRefreshFailure(refreshed)
         return
       }
+      access = refreshed.access
     }
 
     try {
@@ -128,21 +139,20 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
       }
       // Access token expired — try refresh
       try {
-        const newAccess = await refreshAccessToken()
+        const refreshed = await refreshAccessToken()
         hasRefreshed = true
-        if (!newAccess) {
-          clearStoredTokens()
-          if (mountedRef.current) setUser(null)
+        if (!refreshed.ok) {
+          handleRefreshFailure(refreshed)
           return
         }
-        await fetchMe(newAccess)
+        await fetchMe(refreshed.access)
       } catch (refreshError) {
         console.warn("[AuthContext] refreshUser: token refresh failed", refreshError)
         clearStoredTokens()
         if (mountedRef.current) setUser(null)
       }
     }
-  }, [fetchMe, getAccessToken])
+  }, [fetchMe, getAccessToken, handleRefreshFailure])
 
   // Boot: check for existing tokens
   useEffect(() => {

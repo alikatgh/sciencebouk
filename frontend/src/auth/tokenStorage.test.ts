@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { getAccessToken, refreshAccessToken, resetTokenStorageForTests, saveTokens } from "./tokenStorage"
+import {
+  REFRESH_TOKEN_KEY,
+  getAccessToken,
+  isTransientRefreshFailure,
+  refreshAccessToken,
+  resetTokenStorageForTests,
+  saveTokens,
+} from "./tokenStorage"
 
 function createStorageMock(): Storage {
   const store = new Map<string, string>()
@@ -52,9 +59,22 @@ describe("tokenStorage", () => {
 
     const [first, second] = await Promise.all([refreshAccessToken(), refreshAccessToken()])
 
-    expect(first).toBe("fresh-access")
-    expect(second).toBe("fresh-access")
+    expect(first).toEqual({ ok: true, access: "fresh-access" })
+    expect(second).toEqual({ ok: true, access: "fresh-access" })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(getAccessToken()).toBe("fresh-access")
+  })
+
+  it("reports network failures without clearing refresh tokens", async () => {
+    saveTokens({ access: "expired-access", refresh: "refresh-token" })
+
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"))
+    vi.stubGlobal("fetch", fetchMock)
+
+    const result = await refreshAccessToken()
+
+    expect(result).toEqual({ ok: false, reason: "network" })
+    expect(isTransientRefreshFailure(result)).toBe(true)
+    expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-token")
   })
 })

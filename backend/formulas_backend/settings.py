@@ -3,6 +3,7 @@ from importlib.util import find_spec
 from pathlib import Path
 import os
 import re
+import sys
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -136,8 +137,12 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon_progress": os.getenv("DJANGO_ANON_PROGRESS_RATE", "60/minute"),
+        "auth": os.getenv("DJANGO_AUTH_RATE", "10/minute"),
     },
 }
+
+if "test" in sys.argv:
+    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["auth"] = "10000/minute"
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(seconds=int(os.getenv("JWT_ACCESS_LIFETIME_SECONDS", str(60 * 60)))),
@@ -148,6 +153,7 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "formulas_backend.middleware.SecurityHeadersMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -239,5 +245,7 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

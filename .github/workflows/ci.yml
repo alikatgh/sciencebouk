@@ -39,5 +39,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt
       - run: python manage.py migrate
-      - run: python manage.py test courses -v 2
+      - run: python manage.py test -v 2

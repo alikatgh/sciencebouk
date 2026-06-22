@@ -36,7 +36,7 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("An account with this email already exists.")
+            raise serializers.ValidationError("Registration failed. Please check your details and try again.")
         return value
 
     def validate(self, value):
@@ -66,11 +66,19 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class LoginSerializer(TokenObtainPairSerializer):
+    default_error_messages = {
+        **TokenObtainPairSerializer.default_error_messages,
+        'no_active_account': 'Invalid credentials',
+    }
+
     @classmethod
     def get_token(cls, user):
         return super().get_token(user)
 
     def validate(self, attrs):
-        data = super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except serializers.ValidationError:
+            raise serializers.ValidationError({'detail': 'Invalid credentials'})
         data['user'] = UserSerializer(self.user).data
         return data

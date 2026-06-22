@@ -28,7 +28,8 @@ cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_equations
+python manage.py seed_equations             # the core 17 equations
+python manage.py seed_subjects              # extra subjects (CS, chemistry, physics, …)
 python manage.py runserver                  # http://localhost:8000
 
 # Frontend (new terminal)
