@@ -70,6 +70,8 @@ interface CurveModel {
   xMaxLabel: string
   yMaxLabel: string
   yMinLabel: string
+  canLog: boolean
+  logActive: boolean
   gradientId: string
 }
 
@@ -147,6 +149,7 @@ function buildModel(
   equationId: number,
   variables: Variable[],
   vars: Record<string, number>,
+  logScale: boolean,
   sweepOverride?: string,
 ): CurveModel | null {
   const result = subjectResults[equationId]
@@ -167,18 +170,27 @@ function buildModel(
   const finite = samples.map((s) => s.y).filter((y): y is number => y !== null)
   if (finite.length < 2) return null
 
-  let yMin = Math.min(...finite)
-  let yMax = Math.max(...finite)
-  if (yMin === yMax) {
-    yMin -= 1
-    yMax += 1
+  // Log y-scale is only meaningful (and defined) when every sampled value is
+  // positive — otherwise fall back to linear so wide-range curves stay readable
+  // without ever taking log of a non-positive number.
+  const allPositive = finite.every((y) => y > 0)
+  const logActive = logScale && allPositive
+  const tf = (y: number) => (logActive ? Math.log10(y) : y)
+  const inv = (t: number) => (logActive ? 10 ** t : t)
+
+  let tMin = Math.min(...finite.map(tf))
+  let tMax = Math.max(...finite.map(tf))
+  if (tMin === tMax) {
+    tMin -= 1
+    tMax += 1
   }
-  const padY = (yMax - yMin) * 0.08
-  yMin -= padY
-  yMax += padY
+  const padT = (tMax - tMin) * 0.08
+  tMin -= padT
+  tMax += padT
 
   const sx = (x: number) => PAD_L + ((x - sweep.min) / (sweep.max - sweep.min)) * (W - PAD_L - PAD_R)
-  const sy = (y: number) => H - PAD_B - ((y - yMin) / (yMax - yMin)) * (H - PAD_T - PAD_B)
+  const syT = (t: number) => H - PAD_B - ((t - tMin) / (tMax - tMin)) * (H - PAD_T - PAD_B)
+  const sy = (y: number) => syT(tf(y))
 
   const points: CurvePoint[] = []
   let linePath = ""
@@ -199,7 +211,7 @@ function buildModel(
 
   let areaPath: string | null = null
   if (noGaps) {
-    const baseY = sy(Math.max(yMin, Math.min(yMax, 0)))
+    const baseY = logActive ? syT(tMin) : sy(Math.max(inv(tMin), Math.min(inv(tMax), 0)))
     const first = sx(samples[0].x)
     const last = sx(samples[samples.length - 1].x)
     areaPath = `M${first.toFixed(1)} ${baseY.toFixed(1)} ` + linePath.replace(/^M/, "L") + `L${last.toFixed(1)} ${baseY.toFixed(1)} Z`
@@ -207,7 +219,7 @@ function buildModel(
 
   // Reference gridlines at the quartiles (drawn as hairlines).
   const gridX = [0.25, 0.5, 0.75].map((f) => sx(sweep.min + (sweep.max - sweep.min) * f))
-  const gridY = [0.25, 0.5, 0.75].map((f) => sy(yMin + (yMax - yMin) * f))
+  const gridY = [0.25, 0.5, 0.75].map((f) => syT(tMin + (tMax - tMin) * f))
 
   // Adaptive notable-point markers — only appear where they mean something, so
   // monotonic curves stay clean while a logistic curve gets its peak + zero.
@@ -263,16 +275,19 @@ function buildModel(
     markers: markers.slice(0, 3),
     xMinLabel: tick(sweep.min),
     xMaxLabel: tick(sweep.max),
-    yMaxLabel: tick(yMax),
-    yMinLabel: tick(yMin),
+    yMaxLabel: tick(inv(tMax)),
+    yMinLabel: tick(inv(tMin)),
+    canLog: allPositive,
+    logActive,
     gradientId: `rc-grad-${equationId}`,
   }
 }
 
 export function ResponseCurve({ equationId, variables, vars, sweepOverride }: ResponseCurveProps): ReactElement | null {
+  const [logScale, setLogScale] = useState(false)
   const model = useMemo(
-    () => buildModel(equationId, variables, vars, sweepOverride),
-    [equationId, variables, vars, sweepOverride],
+    () => buildModel(equationId, variables, vars, logScale, sweepOverride),
+    [equationId, variables, vars, logScale, sweepOverride],
   )
   const [hoverPx, setHoverPx] = useState<number | null>(null)
   const hover = useMemo(() => {
@@ -297,13 +312,32 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
   const labelY = model.dot ? Math.max(model.dot.y - 12, PAD_T + 10) : 0
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      role="img"
-      aria-label={`Response curve of ${model.symbol} versus ${model.sweepSymbol}`}
-      className="w-full max-w-md text-slate-400 dark:text-slate-500"
-      style={{ cursor: "crosshair" }}
-      onPointerMove={handlePointerMove}
+    <div className="relative w-full max-w-md">
+      {model.canLog && (
+        <button
+          type="button"
+          onClick={() => setLogScale((v) => !v)}
+          aria-pressed={model.logActive}
+          aria-label={`Toggle logarithmic y-axis (currently ${model.logActive ? "on" : "off"})`}
+          className={`absolute right-1.5 top-1.5 z-10 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide transition ${
+            model.logActive ? "" : "text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-700"
+          }`}
+          style={
+            model.logActive
+              ? { backgroundColor: `${VAR_COLORS.result}22`, color: VAR_COLORS.result, boxShadow: `inset 0 0 0 1px ${VAR_COLORS.result}66` }
+              : undefined
+          }
+        >
+          log y
+        </button>
+      )}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={`Response curve of ${model.symbol} versus ${model.sweepSymbol}`}
+        className="w-full text-slate-400 dark:text-slate-500"
+        style={{ cursor: "crosshair" }}
+        onPointerMove={handlePointerMove}
       onPointerLeave={clearHover}
     >
       <defs>
@@ -421,6 +455,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       <text x={PAD_L - 5} y={H - PAD_B} textAnchor="end" fontSize="9.5" className="fill-current tabular-nums">
         {model.yMinLabel}
       </text>
-    </svg>
+      </svg>
+    </div>
   )
 }

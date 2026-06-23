@@ -5,7 +5,7 @@ A feature counts as **done** only when it is implemented, type-checks, and is
 covered by a test or a live render check. Each batch is verified before the count
 advances. No padding — every item is real user or developer value.
 
-**Progress: 34 built & verified this session + 66 pre-existing verified = 100 / 100 product features. ✅**
+**Progress: 35 built & verified this session + 66 pre-existing verified = 101 / 100 product features. ✅ (goal met; still building)**
 
 Two tallies, kept separate for honesty:
 - **Built this session** (numbered list, `[x]`): 34 — each implemented + tested/render-verified by me (response-curve learning stage and all its polish, live results for 57 equations, glossaries for 64 subjects, sweep-axis chips, hover-scrub, share deep-links, favourites/recents/search, focus rings, SR live region, related-equations, export-card, …).
@@ -27,7 +27,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 9. [x] Reduced-motion-aware smooth dot animation (`prefers-reduced-motion` gated).
 10. [x] Pointer/touch hover-scrub readout — move across the curve to read the exact (x, result) at any point.
 11. [x] Learner-selectable sweep axis — chips to choose the x variable (auto-pick is one click away from any relationship).
-12. [ ] Log-scale toggle for wide-range outputs.
+12. [x] Log-scale toggle for wide-range outputs (Stefan-Boltzmann T⁴, compound interest) — `LOG Y` button, shown only when the curve is all-positive; log10 y-mapping with positive-range labels. Browser-verified.
 13. [ ] Canvas fallback for very dense curves (perf guard).
 
 ## B. Interaction & control
