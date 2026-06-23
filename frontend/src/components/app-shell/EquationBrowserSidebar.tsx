@@ -18,7 +18,7 @@ import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
 import { ResizablePanel } from "../ui/resizable-panel"
 import { prefetchEquationScene } from "../sceneRegistry"
-import { EquationList, SidebarAccount } from "./EquationSidebarShared"
+import { EquationList, GroupedEquationList, SidebarAccount } from "./EquationSidebarShared"
 
 const EquationBrowserDrawer = lazy(() =>
   import("./EquationBrowserDrawer").then((module) => ({ default: module.EquationBrowserDrawer })),
@@ -154,9 +154,16 @@ function EquationBrowserSidebarComponent({
               <div className="space-y-0.5 pb-2">
                 {visibleEquations.length === 0 ? (
                   <p className="py-4 text-center text-xs text-slate-400">No results</p>
-                ) : (
+                ) : filteredEquations ? (
                   <EquationList
-                    equations={visibleEquations}
+                    equations={filteredEquations}
+                    selectedId={selectedId}
+                    progressByEquation={progressByEquation}
+                    onSelectEquation={onSelectEquation}
+                  />
+                ) : (
+                  <GroupedEquationList
+                    equations={equations}
                     selectedId={selectedId}
                     progressByEquation={progressByEquation}
                     onSelectEquation={onSelectEquation}

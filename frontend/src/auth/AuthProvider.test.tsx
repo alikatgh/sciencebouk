@@ -2,7 +2,7 @@ import { StrictMode } from "react"
 import { act, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthProvider, useAuth } from "./AuthContext"
-import { REFRESH_TOKEN_KEY, resetTokenStorageForTests, saveTokens } from "./tokenStorage"
+import { REFRESH_TOKEN_KEY, resetTokenStorageForTests } from "./tokenStorage"
 
 function createStorageMock(): Storage {
   const store = new Map<string, string>()

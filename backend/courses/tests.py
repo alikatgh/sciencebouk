@@ -781,6 +781,61 @@ class SeedEquationsCommandTests(TestCase):
         self.assertEqual(len(sort_orders), len(set(sort_orders)))
 
 
+class SeedSubjectsCommandTests(TestCase):
+    """Guards the 64 extra-subject equations (ids 18-81) seeded by seed_subjects.
+
+    These render through the data-driven ConfigurableEquationScene, so an
+    equation with an empty teaching payload silently ships a dead lesson. The
+    completeness test below is the regression net for that (was untested — audit
+    r2-tests-L2).
+    """
+
+    def test_seed_command_runs_and_creates_64_subject_equations(self):
+        out = StringIO()
+        call_command("seed_subjects", stdout=out)
+        self.assertIn("Seeded", out.getvalue())
+        self.assertEqual(Equation.objects.filter(sort_order__gte=18).count(), 64)
+
+    def test_seed_command_is_idempotent(self):
+        call_command("seed_subjects", stdout=StringIO())
+        call_command("seed_subjects", stdout=StringIO())
+        self.assertEqual(Equation.objects.filter(sort_order__gte=18).count(), 64)
+
+    def test_every_subject_equation_has_a_complete_interactive_payload(self):
+        call_command("seed_subjects", stdout=StringIO())
+        for eq in Equation.objects.filter(sort_order__gte=18):
+            self.assertTrue(eq.hook, msg=f"'{eq.title}' (id {eq.sort_order}) has no hook")
+            self.assertGreaterEqual(
+                len(eq.variables_data), 1, msg=f"'{eq.title}' has no variables (sliders)"
+            )
+            self.assertGreaterEqual(
+                len(eq.presets_data), 1, msg=f"'{eq.title}' has no presets"
+            )
+            self.assertGreaterEqual(
+                len(eq.lessons_data), 1, msg=f"'{eq.title}' has no guided lesson steps"
+            )
+            self.assertGreaterEqual(
+                len(eq.glossary_data), 1, msg=f"'{eq.title}' has an empty glossary"
+            )
+
+    def test_subject_glossary_terms_are_well_formed(self):
+        call_command("seed_subjects", stdout=StringIO())
+        for eq in Equation.objects.filter(sort_order__gte=18):
+            for term in eq.glossary_data:
+                self.assertTrue(term.get("words"), msg=f"'{eq.title}' glossary term missing words")
+                self.assertTrue(
+                    term.get("highlightClass"), msg=f"'{eq.title}' glossary term missing highlightClass"
+                )
+                self.assertTrue(term.get("tooltip"), msg=f"'{eq.title}' glossary term missing tooltip")
+
+    def test_seed_command_equations_have_unique_sort_orders(self):
+        call_command("seed_subjects", stdout=StringIO())
+        sort_orders = list(
+            Equation.objects.filter(sort_order__gte=18).values_list("sort_order", flat=True)
+        )
+        self.assertEqual(len(sort_orders), len(set(sort_orders)))
+
+
 # ---------------------------------------------------------------------------
 # Admin JSON Import
 # ---------------------------------------------------------------------------

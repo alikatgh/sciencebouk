@@ -1,11 +1,16 @@
 import type { ReactElement } from "react"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { BlockMath } from "react-katex"
+import { Check, Copy, Link2, RotateCcw, Shuffle } from "lucide-react"
+import { copyText } from "../../lib/clipboard"
+import { decodeVarsFromParam, encodeVarsToParam } from "../../lib/equationShareUrl"
 import { TeachableEquation, type Preset } from "../teaching/TeachableEquation"
 import { useEquationId } from "../teaching/EquationContext"
 import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useEquation } from "../../api/hooks"
+import { subjectResults, formatResultValue } from "../../data/subjectResults"
+import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
 
 /**
  * A data-driven scene used for every equation that does not ship a bespoke
@@ -196,21 +201,70 @@ export function ConfigurableEquationScene(): ReactElement {
       presets={presets}
       glossary={glossary}
     >
-      {({ vars }) => <GenericMetersVisual variables={variables} vars={vars} formula={equation.formula} />}
+      {({ vars, setVar }) => (
+        <GenericMetersVisual key={equationId} equationId={equationId} variables={variables} vars={vars} setVar={setVar} formula={equation.formula} />
+      )}
     </TeachableEquation>
   )
 }
 
 function GenericMetersVisual({
+  equationId,
   variables,
   vars,
+  setVar,
   formula,
 }: {
+  equationId: number
   variables: Variable[]
   vars: Record<string, number>
+  setVar: (name: string, value: number) => void
   formula: string
 }): ReactElement {
   const meters = variables.filter((v) => !v.constant)
+  const result = subjectResults[equationId]
+  const resultValue = result ? result.compute(vars) : null
+  const [sweepName, setSweepName] = useState<string | null>(null)
+  const activeSweep = result ? sweepName ?? pickSweepVariable(result, variables)?.name ?? null : null
+
+  const [copied, setCopied] = useState<string | null>(null)
+  const copy = (key: string, text: string) => {
+    void copyText(text).then((ok) => {
+      if (!ok) return
+      setCopied(key)
+      window.setTimeout(() => setCopied((current) => (current === key ? null : current)), 1500)
+    })
+  }
+
+  // Restore a shared configuration from ?v= on first mount (remounts per equation via key).
+  useEffect(() => {
+    const encoded = new URLSearchParams(window.location.search).get("v")
+    if (!encoded) return
+    const restored = decodeVarsFromParam(encoded)
+    for (const variable of variables) {
+      if (variable.constant) continue
+      const value = restored[variable.name]
+      if (value !== undefined) setVar(variable.name, Math.min(variable.max, Math.max(variable.min, value)))
+    }
+  }, [variables, setVar])
+
+  const shareConfiguration = () => {
+    const current: Record<string, number> = {}
+    for (const variable of meters) current[variable.name] = vars[variable.name] ?? variable.value
+    copy("share", `${window.location.origin}/equation/${equationId}?v=${encodeVarsToParam(current)}`)
+  }
+
+  const resetInputs = () => {
+    for (const variable of meters) setVar(variable.name, variable.value)
+  }
+  const randomizeInputs = () => {
+    for (const variable of meters) {
+      const step = variable.step || (variable.max - variable.min) / 100 || 1
+      const steps = Math.max(1, Math.round((variable.max - variable.min) / step))
+      const raw = variable.min + Math.round(Math.random() * steps) * step
+      setVar(variable.name, Math.min(variable.max, Math.max(variable.min, Number(raw.toFixed(6)))))
+    }
+  }
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-8 dark:border-slate-700 dark:bg-slate-800">
@@ -218,36 +272,137 @@ function GenericMetersVisual({
         <BlockMath math={formula} />
       </div>
 
-      <div className="flex w-full max-w-md flex-col gap-3.5">
-        {meters.map((variable) => {
-          const value = vars[variable.name] ?? variable.value
-          const span = variable.max - variable.min
-          const pct = span > 0 ? Math.min(100, Math.max(0, ((value - variable.min) / span) * 100)) : 0
-          const decimals = variable.step >= 1 ? 0 : variable.step >= 0.1 ? 1 : variable.step >= 0.01 ? 2 : 3
-          return (
-            <div key={variable.name} className="flex flex-col gap-1">
-              <div className="flex items-baseline justify-between text-sm">
-                <span className="font-bold" style={{ color: variable.color }}>
-                  {variable.symbol}
-                </span>
-                <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">
-                  {value.toFixed(decimals)}
-                  {variable.unit ? ` ${variable.unit}` : ""}
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                <div
-                  className="h-full rounded-full transition-[width] duration-150 ease-out"
-                  style={{ width: `${pct}%`, backgroundColor: variable.color }}
-                />
-              </div>
-            </div>
-          )
-        })}
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <button
+          type="button"
+          onClick={resetInputs}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset
+        </button>
+        <button
+          type="button"
+          onClick={randomizeInputs}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          <Shuffle className="h-3.5 w-3.5" aria-hidden="true" /> Randomize
+        </button>
+        <button
+          type="button"
+          onClick={shareConfiguration}
+          aria-label="Copy a shareable link to this exact configuration"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          {copied === "share" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Link2 className="h-3.5 w-3.5" aria-hidden="true" />}
+          {copied === "share" ? "Link copied" : "Share"}
+        </button>
+        <button
+          type="button"
+          onClick={() => copy("latex", formula)}
+          aria-label="Copy formula as LaTeX"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          {copied === "latex" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+          {copied === "latex" ? "Copied" : "LaTeX"}
+        </button>
+        {result && resultValue !== null && (
+          <button
+            type="button"
+            onClick={() => copy("result", `${result.symbol} = ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`)}
+            aria-label="Copy the computed result"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          >
+            {copied === "result" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+            {copied === "result" ? "Copied" : "Result"}
+          </button>
+        )}
       </div>
 
+      {result && resultValue !== null && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
+          className="flex flex-col items-center gap-0.5 rounded-2xl px-7 py-3"
+          style={{ backgroundColor: `${VAR_COLORS.result}1a`, border: `1px solid ${VAR_COLORS.result}55` }}
+        >
+          <span aria-hidden="true" className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Result</span>
+          <span className="font-mono text-2xl font-bold tabular-nums" style={{ color: VAR_COLORS.result }}>
+            <span className="text-base font-semibold text-slate-500 dark:text-slate-400">{result.symbol} = </span>
+            {formatResultValue(resultValue)}
+            {result.unit ? <span className="ml-1 text-base font-semibold text-slate-500 dark:text-slate-400">{result.unit}</span> : null}
+          </span>
+          {result.note ? <span className="text-[0.65rem] text-slate-400 dark:text-slate-500">{result.note}</span> : null}
+        </div>
+      )}
+
+      {result ? (
+        <div className="flex w-full max-w-md flex-col items-center gap-2.5">
+          <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
+          {meters.length > 1 && (
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <span className="mr-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                x-axis
+              </span>
+              {meters.map((variable) => {
+                const isActive = activeSweep === variable.name
+                return (
+                  <button
+                    key={variable.name}
+                    type="button"
+                    onClick={() => setSweepName(variable.name)}
+                    aria-pressed={isActive}
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${
+                      isActive ? "" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
+                    }`}
+                    style={
+                      isActive
+                        ? { backgroundColor: `${variable.color}22`, color: variable.color, boxShadow: `inset 0 0 0 1px ${variable.color}66` }
+                        : undefined
+                    }
+                  >
+                    {variable.symbol}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex w-full max-w-md flex-col gap-3.5">
+          {meters.map((variable) => {
+            const value = vars[variable.name] ?? variable.value
+            const span = variable.max - variable.min
+            const pct = span > 0 ? Math.min(100, Math.max(0, ((value - variable.min) / span) * 100)) : 0
+            const decimals = variable.step >= 1 ? 0 : variable.step >= 0.1 ? 1 : variable.step >= 0.01 ? 2 : 3
+            return (
+              <div key={variable.name} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="font-bold" style={{ color: variable.color }}>
+                    {variable.symbol}
+                  </span>
+                  <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">
+                    {value.toFixed(decimals)}
+                    {variable.unit ? ` ${variable.unit}` : ""}
+                  </span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-150 ease-out"
+                    style={{ width: `${pct}%`, backgroundColor: variable.color }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <p className="max-w-sm text-center text-xs text-slate-400 dark:text-slate-500">
-        Drag the sliders — each bar tracks a variable across its range.
+        {result
+          ? `Drag a slider — the curve traces ${result.symbol} across its range, and reshapes as you change the other inputs.`
+          : "Drag the sliders — each bar tracks a variable across its range."}
       </p>
     </div>
   )

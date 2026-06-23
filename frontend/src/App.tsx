@@ -9,11 +9,14 @@ import { EquationHeader } from "./components/app-shell/EquationHeader"
 import { prefetchEquationScene } from "./components/sceneRegistry"
 import { FormulaProvider } from "./components/teaching/FormulaContext"
 import {
+  getRandomEquationId,
   resolveEquationManifest,
   searchEquationManifest,
   useEquationManifest,
 } from "./data/equationManifest"
 import { useAllProgress, registerEquationIds } from "./progress/useProgress"
+import { pushRecentlyViewed } from "./lib/recentlyViewed"
+import { toggleFavorite } from "./lib/useFavorites"
 import { useSettings } from "./settings/SettingsContext"
 
 const ShortcutOverlay = lazy(() =>
@@ -244,6 +247,16 @@ export default function App(): ReactElement {
 
   const selectedId = selectedEquation?.id ?? firstEquationId
 
+  // Track recently-viewed equations (newest first, persisted).
+  useEffect(() => {
+    if (selectedEquation) pushRecentlyViewed(selectedEquation.id)
+  }, [selectedEquation])
+
+  const selectRandomEquation = useCallback(() => {
+    const randomId = getRandomEquationId(equationManifest, selectedId)
+    if (randomId != null) selectEquation(randomId)
+  }, [equationManifest, selectedId, selectEquation])
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return
@@ -278,6 +291,12 @@ export default function App(): ReactElement {
         setShowShortcuts((current) => !current)
       } else if (event.key === "h" || event.key === "H") {
         navigate("/")
+      } else if (event.key === "r" || event.key === "R") {
+        event.preventDefault()
+        selectRandomEquation()
+      } else if (event.key === "f" || event.key === "F") {
+        event.preventDefault()
+        toggleFavorite(selectedId)
       } else if (event.key >= "1" && event.key <= "9") {
         event.preventDefault()
         selectEquationFromShortcut(Number(event.key), event.shiftKey)
@@ -289,7 +308,7 @@ export default function App(): ReactElement {
 
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [navigate, selectEquation, selectEquationFromShortcut, selectedId, sidebarOpen, setSidebarOpenAndPersist])
+  }, [navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, sidebarOpen, setSidebarOpenAndPersist])
 
   const currentIndex = equationIndexById.get(selectedId) ?? -1
   const prevEquation = currentIndex > 0 ? equationManifest[currentIndex - 1] : null

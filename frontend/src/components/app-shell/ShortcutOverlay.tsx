@@ -51,6 +51,8 @@ export function ShortcutOverlay({
       ? ([[`⇧+1-${shiftedShortcutMax}`, `#11-${10 + shiftedShortcutMax}`]] as [string, string][])
       : []),
     ["/", "Search"],
+    ["r", "Random equation"],
+    ["f", "Favourite"],
     ["h", "Home"],
     ["⌘[", "Sidebar"],
     ["?", "Shortcuts"],
