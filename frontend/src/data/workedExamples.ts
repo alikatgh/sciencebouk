@@ -64,6 +64,46 @@ export const workedExamples: Record<number, WorkedExample> = {
     given: "A planet orbiting 4 AU from a 1 M☉ star.",
     steps: ["T = √(a³ / M)", "= √(4³ / 1)", "= √64 = 8 years"],
   },
+  30: {
+    given: "A solution with ε = 5000 M⁻¹cm⁻¹, in a 1 cm cell, at 0.001 M.",
+    steps: ["A = ε l c", "= 5000 × 1 × 0.001", "= 5"],
+  },
+  31: {
+    given: "A reaction with ΔH = −100 kJ/mol at 298 K, ΔS = 50 J/mol·K.",
+    steps: ["ΔG = ΔH − T·ΔS", "= −100 − (298 × 50/1000)", "= −100 − 14.9 = −114.9 kJ/mol"],
+  },
+  47: {
+    given: "An enzyme with V_max = 50, K_m = 10 µM, at [S] = 10 µM.",
+    steps: ["v = V_max·[S] / (K_m + [S])", "= 50 × 10 / (10 + 10)", "= 500 / 20 = 25"],
+  },
+  55: {
+    given: "Risk-free 3%, market 10%, an asset with beta = 1.5.",
+    steps: ["E(Rᵢ) = R_f + β(R_m − R_f)", "= 0.03 + 1.5 × (0.10 − 0.03)", "= 0.03 + 0.105 = 13.5%"],
+  },
+  58: {
+    given: "A dataset with a standard deviation of 5.",
+    steps: ["variance = σ²", "= 5²", "= 25"],
+  },
+  65: {
+    given: "Steel (E = 200 GPa) under a strain of 0.005.",
+    steps: ["σ = E · ε", "= 200 × 0.005", "= 1 GPa"],
+  },
+  69: {
+    given: "Water (ρ = 1000) flowing at 2 m/s through a 1 m pipe, µ = 0.001 Pa·s.",
+    steps: ["Re = ρ v L / µ", "= 1000 × 2 × 1 / 0.001", "= 2,000,000 (turbulent)"],
+  },
+  71: {
+    given: "A galaxy 100 Mpc away, with H₀ = 70 km/s/Mpc.",
+    steps: ["v = H₀ · d", "= 70 × 100", "= 7000 km/s"],
+  },
+  72: {
+    given: "A black hole of one solar mass.",
+    steps: ["r_s ≈ 2.95 km × (M / M☉)", "= 2.95 × 1", "≈ 2.95 km"],
+  },
+  73: {
+    given: "A Sun-like star: R = 1 R☉, T = 5772 K.",
+    steps: ["L/L☉ = R² · (T/5772)⁴", "= 1² × (5772/5772)⁴", "= 1 (one solar luminosity)"],
+  },
 }
 
 /** The worked example for an equation, or null if none is curated. */
