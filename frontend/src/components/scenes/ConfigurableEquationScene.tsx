@@ -14,6 +14,7 @@ import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
 import { getEquationFact } from "../../data/equationFacts"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
+import { ConceptCheck } from "./ConceptCheck"
 
 /**
  * A data-driven scene used for every equation that does not ship a bespoke
@@ -448,6 +449,8 @@ function GenericMetersVisual({
           <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{getEquationFact(equationId)}</p>
         </div>
       )}
+
+      <ConceptCheck equationId={equationId} />
     </div>
   )
 }
