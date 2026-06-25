@@ -13,6 +13,7 @@ import { VAR_COLORS } from "../teaching/types"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
 import { getEquationFact } from "../../data/equationFacts"
+import { getPrerequisites } from "../../data/prerequisites"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
 import { ConceptCheck } from "./ConceptCheck"
 
@@ -451,6 +452,23 @@ function GenericMetersVisual({
       )}
 
       <ConceptCheck equationId={equationId} />
+
+      {getPrerequisites(equationId) && (
+        <div className="max-w-sm text-center">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Builds on</p>
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+            {getPrerequisites(equationId)!.map((pre) => (
+              <a
+                key={pre.id}
+                href={`/equation/${pre.id}`}
+                className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-ocean transition hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
+              >
+                {pre.title} →
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
