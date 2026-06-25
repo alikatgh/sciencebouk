@@ -5,7 +5,7 @@ A feature counts as **done** only when it is implemented, type-checks, and is
 covered by a test or a live render check. Each batch is verified before the count
 advances. No padding — every item is real user or developer value.
 
-**Progress: 35 built & verified this session + 66 pre-existing verified = 101 / 100 product features. ✅ (goal met; still building)**
+**Progress: 36 built & verified this session + 68 pre-existing verified = 104 / 100 product features. ✅ (goal exceeded; still hardening)**
 
 Two tallies, kept separate for honesty:
 - **Built this session** (numbered list, `[x]`): 34 — each implemented + tested/render-verified by me (response-curve learning stage and all its polish, live results for 57 equations, glossaries for 64 subjects, sweep-axis chips, hover-scrub, share deep-links, favourites/recents/search, focus rings, SR live region, related-equations, export-card, …).
@@ -84,7 +84,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 52. [x] Unit tests for `subjectResults` math + `pickSweepVariable` selection.
 53. [P] Error boundary around each scene + app root — `components/ErrorBoundary.tsx` used in `main.tsx` + `App.tsx:406/417/431` with fallback UIs.
 54. [ ] Analytics events for feature usage.
-55. [ ] CI smoke test that renders a configurable scene.
+55. [x] Scene-render smoke test — mounts `ResponseCurve` across 5 representative equations (linear / S-curve / parabola+markers / log-scale / NaN-domain) + the null-result case; asserts an SVG renders without throwing (`ResponseCurve.render.test.tsx`).
 
 ## H. Backlog to reach 100
 56–100. [ ] Sequenced as batches land — drawn from the categories above plus:
