@@ -1,17 +1,20 @@
 import type { ReactElement } from "react"
-import { memo } from "react"
+import { memo, useMemo } from "react"
 import {
   CheckCircle2,
   Crown,
   LogOut,
+  Star,
   User,
   ChevronRight,
 } from "lucide-react"
+import { toggleFavorite, useIsFavorite } from "../../lib/useFavorites"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import { Button } from "../ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
+import { groupEquationsBySubject } from "../../data/equationGroups"
 import { prefetchEquationScene } from "../sceneRegistry"
 import { BILLING_ENABLED, useBillingDisabledCopy } from "../../config/billing"
 
@@ -50,6 +53,54 @@ export function EquationList({
   )
 }
 
+interface GroupedEquationListProps {
+  equations: EquationSummary[]
+  selectedId: number
+  progressByEquation: Map<number, EquationProgress>
+  onSelectEquation: (id: number) => void
+  variant?: "desktop" | "mobile"
+}
+
+/** The equation list grouped under subject headers, each with its own progress. */
+export function GroupedEquationList({
+  equations,
+  selectedId,
+  progressByEquation,
+  onSelectEquation,
+  variant = "desktop",
+}: GroupedEquationListProps): ReactElement {
+  const groups = useMemo(() => groupEquationsBySubject(equations), [equations])
+  return (
+    <>
+      {groups.map((group) => {
+        const completed = group.equations.reduce(
+          (count, equation) => count + (progressByEquation.get(equation.id)?.completed ? 1 : 0),
+          0,
+        )
+        return (
+          <div key={group.slug} className="mb-1.5">
+            <div className="flex items-center justify-between px-2 pb-0.5 pt-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                {group.name}
+              </span>
+              <span className="font-mono text-[10px] tabular-nums text-slate-300 dark:text-slate-600">
+                {completed}/{group.equations.length}
+              </span>
+            </div>
+            <EquationList
+              equations={group.equations}
+              selectedId={selectedId}
+              progressByEquation={progressByEquation}
+              onSelectEquation={onSelectEquation}
+              variant={variant}
+            />
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
 interface EquationListItemProps {
   equation: EquationSummary
   active: boolean
@@ -68,6 +119,7 @@ const EquationListItem = memo(function EquationListItem({
   const prefetch = () => {
     void prefetchEquationScene(equation.id)
   }
+  const isFavorite = useIsFavorite(equation.id)
 
   if (variant === "mobile") {
     return (
@@ -125,47 +177,60 @@ const EquationListItem = memo(function EquationListItem({
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          className={`group flex w-full items-center gap-2 rounded-md px-2 py-1 text-left transition-all ${
-            active ? "bg-slate-100 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
-          }`}
-          onClick={() => onSelectEquation(equation.id)}
-          onMouseEnter={prefetch}
-          onFocus={prefetch}
-          type="button"
-          aria-current={active ? "page" : undefined}
-        >
-          <span
-            className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold ${
-              done
-                ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
-                : active
-                  ? "bg-ocean/10 text-ocean"
-                  : "text-slate-300 dark:text-slate-600"
+    <div className="group/item relative">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            className={`group flex w-full items-center gap-2 rounded-md py-1 pl-2 pr-7 text-left transition-all ${
+              active ? "bg-slate-100 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
             }`}
+            onClick={() => onSelectEquation(equation.id)}
+            onMouseEnter={prefetch}
+            onFocus={prefetch}
+            type="button"
+            aria-current={active ? "page" : undefined}
           >
-            {done ? <><CheckCircle2 className="h-3 w-3" aria-hidden="true" /><span className="sr-only">Completed</span></> : equation.id}
-          </span>
-          <span
-            className={`truncate text-xs ${
-              active
-                ? "font-medium text-slate-900 dark:text-white"
-                : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-white"
-            }`}
-          >
-            {equation.title}
-          </span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="right">
-        <p className="font-semibold">{equation.title}</p>
-        <p className="text-white/70">
-          {equation.author}, {equation.year}
-        </p>
-      </TooltipContent>
-    </Tooltip>
+            <span
+              className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold ${
+                done
+                  ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
+                  : active
+                    ? "bg-ocean/10 text-ocean"
+                    : "text-slate-300 dark:text-slate-600"
+              }`}
+            >
+              {done ? <><CheckCircle2 className="h-3 w-3" aria-hidden="true" /><span className="sr-only">Completed</span></> : equation.id}
+            </span>
+            <span
+              className={`truncate text-xs ${
+                active
+                  ? "font-medium text-slate-900 dark:text-white"
+                  : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-white"
+              }`}
+            >
+              {equation.title}
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          <p className="font-semibold">{equation.title}</p>
+          <p className="text-white/70">
+            {equation.author}, {equation.year}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+      <button
+        type="button"
+        onClick={() => toggleFavorite(equation.id)}
+        aria-label={isFavorite ? "Remove from favourites" : "Add to favourites"}
+        aria-pressed={isFavorite}
+        className={`absolute right-0.5 top-1/2 -translate-y-1/2 rounded p-1 transition focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 ${
+          isFavorite ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
+        }`}
+      >
+        <Star className={`h-3 w-3 ${isFavorite ? "fill-amber-400 text-amber-400" : "text-slate-400 hover:text-amber-400"}`} />
+      </button>
+    </div>
   )
 })
 

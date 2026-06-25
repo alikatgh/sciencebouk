@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AuthProvider, useAuth } from "./auth/AuthContext"
 import { SettingsProvider } from "./settings/SettingsContext"
 import { ErrorBoundary } from "./components/ErrorBoundary"
+import { ToastHost } from "./components/ToastHost"
 import "./index.css"
 
 const App = lazy(() => import("./App"))
@@ -129,6 +130,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </Routes>
               </Suspense>
             </BrowserRouter>
+            <ToastHost />
           </AuthProvider>
         </SettingsProvider>
       </QueryClientProvider>

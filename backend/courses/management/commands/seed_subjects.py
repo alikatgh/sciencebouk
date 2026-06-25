@@ -114,7 +114,11 @@ COMPUTER_SCIENCE = [
                    "For tiny inputs a plain linear scan is just as fast and simpler. Binary search earns its keep on large, sorted data.",
                    hint="Drag n down to about 16.", unlocked=["n"], success_type="value_reached", target="n", value=16, tolerance=8, celebration="subtle"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["sorted"], "highlightClass": "g19-0", "color": "#3b82f6", "tooltip": "Binary search only works on pre-sorted data"},
+            {"words": ["half", "halves"], "highlightClass": "g19-1", "color": "#f59e0b", "tooltip": "Each comparison throws away half of what's left"},
+            {"words": ["logarithmic", "log"], "highlightClass": "g19-2", "color": "#10b981", "tooltip": "Doubling the list adds just one more step"},
+        ],
     },
     {
         "sort_order": 20,
@@ -146,7 +150,11 @@ COMPUTER_SCIENCE = [
                    "Strassen multiplies matrices with 7 subproblems instead of 8, dropping the exponent below the naive O(n³). Tiny changes in a reshape the whole running time.",
                    hint="Drag a to 7.", unlocked=["a", "b"], success_type="value_reached", target="a", value=7, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["subproblems", "subproblem"], "highlightClass": "g20-0", "color": "#3b82f6", "tooltip": "a — how many subproblems each split creates"},
+            {"words": ["divides", "shrinks"], "highlightClass": "g20-1", "color": "#f59e0b", "tooltip": "b — the factor each subproblem shrinks by"},
+            {"words": ["recurrence", "recursion"], "highlightClass": "g20-2", "color": "#10b981", "tooltip": "Cost of a problem written in terms of its smaller copies"},
+        ],
     },
     {
         "sort_order": 21,
@@ -213,7 +221,11 @@ COMPUTER_SCIENCE = [
                    "Too large a step overshoots the valley and the error grows instead of shrinks — the model diverges. Picking α is a balance between speed and stability.",
                    hint="Drag α past 1.0.", unlocked=["alpha", "theta"], success_type="value_reached", target="alpha", value=1.2, tolerance=0.2, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["learning rate", "rate"], "highlightClass": "g22-0", "color": "#3b82f6", "tooltip": "α — how far you step against the gradient"},
+            {"words": ["gradient"], "highlightClass": "g22-1", "color": "#f59e0b", "tooltip": "Slope of the error surface; it points uphill"},
+            {"words": ["minimum"], "highlightClass": "g22-2", "color": "#10b981", "tooltip": "The lowest-error point training is hunting for"},
+        ],
     },
     {
         "sort_order": 23,
@@ -246,7 +258,11 @@ COMPUTER_SCIENCE = [
                    "A large gap makes softmax nearly one-hot: class 1 takes almost all the probability. Temperature scaling tunes exactly how sharp this gets.",
                    hint="Drag z₁ to 5.", unlocked=["z1", "z2", "z3"], success_type="value_reached", target="z1", value=5, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["logits", "logit", "scores"], "highlightClass": "g23-0", "color": "#3b82f6", "tooltip": "Raw, unnormalised class scores"},
+            {"words": ["probabilities", "probability"], "highlightClass": "g23-1", "color": "#f59e0b", "tooltip": "Softmax turns scores into probabilities summing to 1"},
+            {"words": ["exponential", "exponentiating"], "highlightClass": "g23-2", "color": "#10b981", "tooltip": "Exponentiating makes the largest score dominate"},
+        ],
     },
     {
         "sort_order": 24,
@@ -277,7 +293,11 @@ COMPUTER_SCIENCE = [
                    "Confident and wrong is the worst case — the loss shoots toward infinity. That steep penalty is exactly what pushes the model to calibrate its confidence.",
                    hint="Drag q toward 0.", unlocked=["q"], success_type="value_reached", target="q", value=0.02, tolerance=0.05, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["predicted", "prediction"], "highlightClass": "g24-0", "color": "#3b82f6", "tooltip": "q — the probability the model assigned"},
+            {"words": ["loss"], "highlightClass": "g24-1", "color": "#f59e0b", "tooltip": "Penalty that grows as confident answers go wrong"},
+            {"words": ["surprise"], "highlightClass": "g24-2", "color": "#10b981", "tooltip": "−log q: how surprised the model is by the truth"},
+        ],
     },
     {
         "sort_order": 25,
@@ -309,7 +329,11 @@ COMPUTER_SCIENCE = [
                    "A high score means this query strongly matches this key, so softmax sends more weight to that value V. Attention is just a soft, learned lookup table.",
                    hint="Drag QKᵀ around.", unlocked=["dk", "score"], target="score", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["query", "key", "keys"], "highlightClass": "g25-0", "color": "#3b82f6", "tooltip": "Q·Kᵀ — how well a query matches each key"},
+            {"words": ["scale", "scaling"], "highlightClass": "g25-1", "color": "#f59e0b", "tooltip": "Dividing by √dₖ keeps the scores from exploding"},
+            {"words": ["weights", "softmax"], "highlightClass": "g25-2", "color": "#10b981", "tooltip": "Scores become weights that blend the values V"},
+        ],
     },
 ]
 
@@ -383,7 +407,11 @@ CHEMISTRY = [
                    "A taller barrier slows everything down exponentially. Catalysts work by lowering E_a, opening an easier path over the hill.",
                    hint="Drag E_a up to ~150.", unlocked=["T", "Ea"], success_type="value_reached", target="Ea", value=150, tolerance=15, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["temperature"], "highlightClass": "g27-0", "color": "#3b82f6", "tooltip": "T — raising it speeds the reaction"},
+            {"words": ["activation energy", "barrier"], "highlightClass": "g27-1", "color": "#f59e0b", "tooltip": "Eₐ — the energy hill reactants must clear"},
+            {"words": ["rate constant", "rate"], "highlightClass": "g27-2", "color": "#ef4444", "tooltip": "k — how fast the reaction proceeds"},
+        ],
     },
     {
         "sort_order": 28,
@@ -415,7 +443,11 @@ CHEMISTRY = [
                    "You choose a buffer by matching its pKa to the pH you want to hold. That is how chemists and your bloodstream lock in a target.",
                    hint="Drag pKa around.", unlocked=["pKa", "ratio"], target="pKa", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["acid strength", "pKa"], "highlightClass": "g28-0", "color": "#3b82f6", "tooltip": "pH at which half the acid is dissociated"},
+            {"words": ["ratio"], "highlightClass": "g28-1", "color": "#f59e0b", "tooltip": "[A⁻]/[HA] — the base-to-acid balance"},
+            {"words": ["buffer"], "highlightClass": "g28-2", "color": "#10b981", "tooltip": "Resists pH change near its pKa"},
+        ],
     },
     {
         "sort_order": 29,
@@ -448,7 +480,11 @@ CHEMISTRY = [
                    "More electrons per reaction flattens the voltage's sensitivity to concentration. F, Faraday's constant, converts moles of electrons into charge.",
                    hint="Drag n.", unlocked=["E0", "n", "Q"], target="n", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["standard potential", "potential"], "highlightClass": "g29-0", "color": "#3b82f6", "tooltip": "E⁰ — cell voltage at standard conditions"},
+            {"words": ["electrons"], "highlightClass": "g29-1", "color": "#f59e0b", "tooltip": "n — electrons transferred per reaction"},
+            {"words": ["reaction quotient", "quotient"], "highlightClass": "g29-2", "color": "#10b981", "tooltip": "Q — current ratio of products to reactants"},
+        ],
     },
     {
         "sort_order": 30,
@@ -481,7 +517,11 @@ CHEMISTRY = [
                    "ε is fixed by the molecule and the wavelength. Pick a wavelength where ε is large and even trace amounts become measurable — the heart of analytical chemistry.",
                    hint="Drag ε around.", unlocked=["eps", "l", "c"], target="eps", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["absorptivity"], "highlightClass": "g30-0", "color": "#3b82f6", "tooltip": "ε — how strongly the species absorbs light"},
+            {"words": ["path length", "path"], "highlightClass": "g30-1", "color": "#f59e0b", "tooltip": "l — distance light travels through the sample"},
+            {"words": ["concentration"], "highlightClass": "g30-2", "color": "#10b981", "tooltip": "c — amount of absorbing species present"},
+        ],
     },
     {
         "sort_order": 31,
@@ -514,7 +554,12 @@ CHEMISTRY = [
                    "At high temperature the −TΔS term dominates: entropy-driven reactions that refuse to go when cold suddenly become spontaneous. This is why heating drives so much chemistry.",
                    hint="Drag T to ~900.", unlocked=["dH", "T", "dS"], success_type="value_reached", target="T", value=900, tolerance=50, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["enthalpy"], "highlightClass": "g31-0", "color": "#3b82f6", "tooltip": "ΔH — heat released or absorbed"},
+            {"words": ["temperature"], "highlightClass": "g31-1", "color": "#f59e0b", "tooltip": "T — couples to the entropy term"},
+            {"words": ["entropy"], "highlightClass": "g31-2", "color": "#10b981", "tooltip": "ΔS — change in disorder"},
+            {"words": ["spontaneous"], "highlightClass": "g31-3", "color": "#ef4444", "tooltip": "ΔG < 0 means the reaction proceeds on its own"},
+        ],
     },
     {
         "sort_order": 32,
@@ -547,7 +592,11 @@ CHEMISTRY = [
                    "A zero-order reaction ignores concentration entirely — its rate is just k. This happens when a surface or enzyme is saturated and working flat out.",
                    hint="Drag m to 0.", unlocked=["A", "m", "k"], success_type="value_reached", target="m", value=0, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["concentration"], "highlightClass": "g32-0", "color": "#3b82f6", "tooltip": "[A] — amount of reactant"},
+            {"words": ["order"], "highlightClass": "g32-1", "color": "#f59e0b", "tooltip": "m — how sensitively rate depends on [A]"},
+            {"words": ["rate constant", "rate"], "highlightClass": "g32-2", "color": "#10b981", "tooltip": "k — the intrinsic speed of the reaction"},
+        ],
     },
     {
         "sort_order": 33,
@@ -580,7 +629,11 @@ CHEMISTRY = [
                    "Liquids that take more energy to vaporize have steeper pressure-temperature curves. This single relation underlies pressure cookers, refrigerators, and weather.",
                    hint="Drag ΔH_vap upward.", unlocked=["dHvap", "T", "dV"], target="dHvap", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["vaporization", "vaporisation"], "highlightClass": "g33-0", "color": "#3b82f6", "tooltip": "ΔH_vap — heat to turn liquid into gas"},
+            {"words": ["temperature"], "highlightClass": "g33-1", "color": "#f59e0b", "tooltip": "T — where the phase boundary sits"},
+            {"words": ["vapor pressure", "pressure"], "highlightClass": "g33-2", "color": "#ef4444", "tooltip": "How vapour pressure climbs with temperature"},
+        ],
     },
 ]
 
@@ -619,7 +672,11 @@ PHYSICS = [
                    "A huge mass barely accelerates under a modest force. This is why rockets need enormous thrust and why stopping a train takes kilometers.",
                    hint="Drag m to ~100.", unlocked=["m", "a"], success_type="value_reached", target="m", value=100, tolerance=10, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["mass"], "highlightClass": "g34-0", "color": "#3b82f6", "tooltip": "m — resistance to being accelerated"},
+            {"words": ["acceleration"], "highlightClass": "g34-1", "color": "#f59e0b", "tooltip": "a — the rate of change of velocity"},
+            {"words": ["force"], "highlightClass": "g34-2", "color": "#ef4444", "tooltip": "F = ma — the push that results"},
+        ],
     },
     {
         "sort_order": 35,
@@ -651,7 +708,11 @@ PHYSICS = [
                    "Mass matters linearly — double the mass, double the energy — but speed matters quadratically. That asymmetry shapes everything from car safety to ballistics.",
                    hint="Drag m around.", unlocked=["m", "v"], target="m", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["mass"], "highlightClass": "g35-0", "color": "#3b82f6", "tooltip": "m — heavier means more energy"},
+            {"words": ["velocity", "speed"], "highlightClass": "g35-1", "color": "#f59e0b", "tooltip": "v — energy grows with its square"},
+            {"words": ["kinetic energy", "energy"], "highlightClass": "g35-2", "color": "#ef4444", "tooltip": "½mv² — the energy of motion"},
+        ],
     },
     {
         "sort_order": 36,
@@ -684,7 +745,11 @@ PHYSICS = [
                    "Same signs repel, opposite signs attract. Unlike gravity, the electric force comes in two flavors — which is why atoms can both bind and push apart.",
                    hint="Drag q₂ below zero.", unlocked=["q1", "q2", "r"], target="q2", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["charge", "charges"], "highlightClass": "g36-0", "color": "#3b82f6", "tooltip": "q — like charges repel, opposite attract"},
+            {"words": ["distance"], "highlightClass": "g36-1", "color": "#10b981", "tooltip": "r — force falls off as 1/r²"},
+            {"words": ["force"], "highlightClass": "g36-2", "color": "#ef4444", "tooltip": "The electrostatic push between charges"},
+        ],
     },
     {
         "sort_order": 37,
@@ -716,7 +781,11 @@ PHYSICS = [
                    "Low resistance and high current means power (I²R) dumps as heat — exactly what happens in a short circuit, and why fuses exist.",
                    hint="Drag R near 1.", unlocked=["I", "R"], success_type="value_reached", target="R", value=1, tolerance=2, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["current"], "highlightClass": "g37-0", "color": "#3b82f6", "tooltip": "I — the flow of charge"},
+            {"words": ["resistance"], "highlightClass": "g37-1", "color": "#f59e0b", "tooltip": "R — opposition to the current"},
+            {"words": ["voltage"], "highlightClass": "g37-2", "color": "#ef4444", "tooltip": "V = IR — the driving push"},
+        ],
     },
     {
         "sort_order": 38,
@@ -749,7 +818,11 @@ PHYSICS = [
                    "Reverse the direction and at steep angles light can't escape at all — total internal reflection. That trapped light is what carries the internet through fiber optics.",
                    hint="Drag θ₁ toward 80°.", unlocked=["theta1", "n1", "n2"], success_type="value_reached", target="theta1", value=80, tolerance=8, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["angle"], "highlightClass": "g38-0", "color": "#3b82f6", "tooltip": "θ — measured from the surface normal"},
+            {"words": ["refractive index", "index"], "highlightClass": "g38-1", "color": "#f59e0b", "tooltip": "n — how much a medium slows light"},
+            {"words": ["refraction", "bends"], "highlightClass": "g38-2", "color": "#10b981", "tooltip": "Light bends toward the slower medium"},
+        ],
     },
     {
         "sort_order": 39,
@@ -781,7 +854,11 @@ PHYSICS = [
                    "The shift is proportional to the original frequency. Astronomers use the same idea on light: galaxies are redshifted because the universe is stretching them away.",
                    hint="Drag f.", unlocked=["f", "vs"], target="f", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["frequency", "pitch"], "highlightClass": "g39-0", "color": "#3b82f6", "tooltip": "f — the perceived pitch of the wave"},
+            {"words": ["source"], "highlightClass": "g39-1", "color": "#f59e0b", "tooltip": "v_s — speed of the emitter"},
+            {"words": ["shift"], "highlightClass": "g39-2", "color": "#10b981", "tooltip": "Approaching raises pitch, receding lowers it"},
+        ],
     },
     {
         "sort_order": 40,
@@ -813,7 +890,11 @@ PHYSICS = [
                    "Power scales linearly with area but with the fourth power of temperature. Temperature, not size, dominates how bright something glows.",
                    hint="Drag A.", unlocked=["T", "A"], target="A", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["temperature"], "highlightClass": "g40-0", "color": "#3b82f6", "tooltip": "T — radiated power scales as T⁴"},
+            {"words": ["area"], "highlightClass": "g40-1", "color": "#f59e0b", "tooltip": "A — a larger surface radiates more"},
+            {"words": ["radiated power", "power"], "highlightClass": "g40-2", "color": "#ef4444", "tooltip": "Total energy a hot body emits"},
+        ],
     },
     {
         "sort_order": 41,
@@ -845,7 +926,11 @@ PHYSICS = [
                    "Slow, light particles have the longest, most observable wavelengths. This wave-particle duality is the strange heart of quantum mechanics.",
                    hint="Drag v toward 0.1.", unlocked=["m", "v"], success_type="value_reached", target="v", value=0.1, tolerance=0.3, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["mass"], "highlightClass": "g41-0", "color": "#3b82f6", "tooltip": "m — heavier means a shorter wavelength"},
+            {"words": ["velocity", "speed"], "highlightClass": "g41-1", "color": "#f59e0b", "tooltip": "v — faster means a shorter wavelength"},
+            {"words": ["wavelength"], "highlightClass": "g41-2", "color": "#ef4444", "tooltip": "λ = h/mv — matter behaving as a wave"},
+        ],
     },
     {
         "sort_order": 42,
@@ -876,7 +961,11 @@ PHYSICS = [
                    "Confine an electron to an atom and its momentum uncertainty is enormous — that restless motion is exactly why electrons don't fall into the nucleus.",
                    hint="Drag Δx to ~0.1.", unlocked=["dx"], success_type="value_reached", target="dx", value=0.1, tolerance=0.1, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["position"], "highlightClass": "g42-0", "color": "#3b82f6", "tooltip": "Δx — uncertainty in location"},
+            {"words": ["momentum"], "highlightClass": "g42-1", "color": "#f59e0b", "tooltip": "Δp — pinning one blurs the other"},
+            {"words": ["uncertainty"], "highlightClass": "g42-2", "color": "#10b981", "tooltip": "Their product can't drop below ℏ/2"},
+        ],
     },
     {
         "sort_order": 43,
@@ -907,7 +996,11 @@ PHYSICS = [
                    "No matter how bright you make red light, each photon is too weak to do UV's job. Energy depends on frequency, not brightness — the insight that launched quantum theory.",
                    hint="Drag ν to ~4.", unlocked=["nu"], success_type="value_reached", target="nu", value=4.3, tolerance=1, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["frequency"], "highlightClass": "g43-0", "color": "#3b82f6", "tooltip": "ν — the colour of the light"},
+            {"words": ["quantum", "photon"], "highlightClass": "g43-1", "color": "#f59e0b", "tooltip": "Energy arrives in discrete packets"},
+            {"words": ["energy"], "highlightClass": "g43-2", "color": "#ef4444", "tooltip": "E = hν — the energy of one photon"},
+        ],
     },
     {
         "sort_order": 44,
@@ -940,7 +1033,11 @@ PHYSICS = [
                    "With v = 0 the magnetic force vanishes and only the electric field pushes. The v×B cross product is why magnetism is really electricity seen from a moving frame.",
                    hint="Drag v to 0.", unlocked=["q", "v", "B"], success_type="value_reached", target="v", value=0, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["charge"], "highlightClass": "g44-0", "color": "#3b82f6", "tooltip": "q — the moving particle's charge"},
+            {"words": ["velocity"], "highlightClass": "g44-1", "color": "#f59e0b", "tooltip": "v — only moving charges feel the magnetic part"},
+            {"words": ["magnetic field", "field"], "highlightClass": "g44-2", "color": "#10b981", "tooltip": "B — bends the path perpendicular to motion"},
+        ],
     },
 ]
 
@@ -978,7 +1075,11 @@ BIOLOGY = [
                    "When an allele is rare, almost every copy hides in a carrier rather than showing up as the recessive trait. That's why rare genetic diseases persist quietly for generations.",
                    hint="Drag p toward 0.1.", unlocked=["p"], success_type="value_reached", target="p", value=0.1, tolerance=0.05, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["allele frequency", "allele"], "highlightClass": "g45-0", "color": "#3b82f6", "tooltip": "p — fraction of one allele in the pool"},
+            {"words": ["genotype"], "highlightClass": "g45-1", "color": "#f59e0b", "tooltip": "p², 2pq, q² — the expected genotype shares"},
+            {"words": ["equilibrium"], "highlightClass": "g45-2", "color": "#10b981", "tooltip": "Frequencies stay fixed without selection"},
+        ],
     },
     {
         "sort_order": 46,
@@ -1011,7 +1112,11 @@ BIOLOGY = [
                    "r sets how quickly the population climbs the curve. Push r too high in the discrete version of this equation and you get chaos — the same logistic map behind chaos theory.",
                    hint="Drag r.", unlocked=["N", "r", "K"], target="r", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["population"], "highlightClass": "g46-0", "color": "#3b82f6", "tooltip": "N — the current number of individuals"},
+            {"words": ["growth rate", "rate"], "highlightClass": "g46-1", "color": "#f59e0b", "tooltip": "r — the intrinsic reproduction rate"},
+            {"words": ["carrying capacity", "capacity"], "highlightClass": "g46-2", "color": "#10b981", "tooltip": "K — the ceiling the environment allows"},
+        ],
     },
     {
         "sort_order": 47,
@@ -1044,7 +1149,11 @@ BIOLOGY = [
                    "K_m is the substrate level for half-maximum speed — a measure of affinity. A small K_m means the enzyme grabs substrate eagerly and saturates early.",
                    hint="Drag K_m down.", unlocked=["S", "Km", "Vmax"], target="Km", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["substrate"], "highlightClass": "g47-0", "color": "#3b82f6", "tooltip": "[S] — concentration feeding the enzyme"},
+            {"words": ["affinity"], "highlightClass": "g47-1", "color": "#f59e0b", "tooltip": "K_m — the [S] giving half the maximum rate"},
+            {"words": ["maximum rate"], "highlightClass": "g47-2", "color": "#10b981", "tooltip": "V_max — speed when the enzyme is saturated"},
+        ],
     },
     {
         "sort_order": 48,
@@ -1075,7 +1184,11 @@ BIOLOGY = [
                    "AT-rich regions unzip easily — which is why replication and transcription often start there. The pairing rule turns sequence into mechanical behavior.",
                    hint="Drag GC% toward 20.", unlocked=["gc"], success_type="value_reached", target="gc", value=20, tolerance=10, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["GC content", "GC"], "highlightClass": "g48-0", "color": "#3b82f6", "tooltip": "Fraction of G–C base pairs"},
+            {"words": ["bonds"], "highlightClass": "g48-1", "color": "#f59e0b", "tooltip": "G–C share three hydrogen bonds, A–T only two"},
+            {"words": ["stability", "melting"], "highlightClass": "g48-2", "color": "#10b981", "tooltip": "More G–C makes a hotter-melting, stabler helix"},
+        ],
     },
     {
         "sort_order": 49,
@@ -1107,7 +1220,11 @@ BIOLOGY = [
                    "Sodium has only a small effect at rest because the membrane barely lets it through. But open sodium channels and that stored gradient drives the spike of a nerve impulse.",
                    hint="Drag [Na⁺]ₒ.", unlocked=["Ko", "Nao"], target="Nao", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["potassium"], "highlightClass": "g49-0", "color": "#3b82f6", "tooltip": "[K⁺] — the dominant ion at rest"},
+            {"words": ["sodium"], "highlightClass": "g49-1", "color": "#f59e0b", "tooltip": "[Na⁺] — drives the depolarising swing"},
+            {"words": ["membrane potential", "potential"], "highlightClass": "g49-2", "color": "#ef4444", "tooltip": "Resting voltage across the membrane"},
+        ],
     },
     {
         "sort_order": 50,
@@ -1140,7 +1257,11 @@ BIOLOGY = [
                    "Strong predation crashes the prey, then the predators starve, then prey recover — the famous out-of-phase cycle seen in real lynx and hare records.",
                    hint="Drag β toward 0.5.", unlocked=["alpha", "beta", "x"], success_type="value_reached", target="beta", value=0.5, tolerance=0.15, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["prey"], "highlightClass": "g50-0", "color": "#3b82f6", "tooltip": "x — the prey population"},
+            {"words": ["predation"], "highlightClass": "g50-1", "color": "#f59e0b", "tooltip": "β — rate at which predators consume prey"},
+            {"words": ["oscillation", "cycle"], "highlightClass": "g50-2", "color": "#10b981", "tooltip": "Predator and prey rise and fall out of phase"},
+        ],
     },
 ]
 
@@ -1180,7 +1301,11 @@ ECONOMICS = [
                    "Even a couple of extra percentage points compounds into a huge difference over decades. This is why fees and returns matter enormously over a lifetime.",
                    hint="Drag r.", unlocked=["P", "r", "t"], target="r", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["principal"], "highlightClass": "g51-0", "color": "#3b82f6", "tooltip": "P — the starting amount"},
+            {"words": ["rate"], "highlightClass": "g51-1", "color": "#f59e0b", "tooltip": "r — the interest rate per period"},
+            {"words": ["compounding", "exponential"], "highlightClass": "g51-2", "color": "#10b981", "tooltip": "Interest earns interest over time"},
+        ],
     },
     {
         "sort_order": 52,
@@ -1211,7 +1336,11 @@ ECONOMICS = [
                    "At equilibrium, quantity demanded equals quantity supplied — the market clears with no shortage or surplus. This self-correcting balance is the heart of free markets.",
                    hint="Drag P to ~50.", unlocked=["P"], success_type="value_reached", target="P", value=50, tolerance=5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["price"], "highlightClass": "g52-0", "color": "#3b82f6", "tooltip": "P — adjusts until the market clears"},
+            {"words": ["equilibrium"], "highlightClass": "g52-1", "color": "#f59e0b", "tooltip": "Where quantity supplied meets quantity demanded"},
+            {"words": ["shortage", "surplus"], "highlightClass": "g52-2", "color": "#10b981", "tooltip": "A mispriced market over- or under-supplies"},
+        ],
     },
     {
         "sort_order": 53,
@@ -1244,7 +1373,11 @@ ECONOMICS = [
                    "Investment — factories, housing, equipment — is the most volatile component, swinging hard between booms and busts. The (X − M) trade term can be positive or negative.",
                    hint="Drag I.", unlocked=["C", "I", "G"], target="I", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["consumption"], "highlightClass": "g53-0", "color": "#3b82f6", "tooltip": "C — household spending"},
+            {"words": ["investment"], "highlightClass": "g53-1", "color": "#f59e0b", "tooltip": "I — business spending on capital"},
+            {"words": ["government"], "highlightClass": "g53-2", "color": "#10b981", "tooltip": "G — public spending"},
+        ],
     },
     {
         "sort_order": 54,
@@ -1276,7 +1409,11 @@ ECONOMICS = [
                    "A negative real rate means your money loses purchasing power even while it earns interest. Central banks sometimes engineer this on purpose to push people to spend.",
                    hint="Drag r below 0.", unlocked=["r", "pi"], success_type="value_reached", target="r", value=-0.03, tolerance=0.02, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["nominal"], "highlightClass": "g54-0", "color": "#3b82f6", "tooltip": "The stated, before-inflation interest rate"},
+            {"words": ["inflation"], "highlightClass": "g54-1", "color": "#f59e0b", "tooltip": "π — erodes purchasing power"},
+            {"words": ["real rate", "real"], "highlightClass": "g54-2", "color": "#ef4444", "tooltip": "Nominal rate minus inflation"},
+        ],
     },
     {
         "sort_order": 55,
@@ -1309,7 +1446,11 @@ ECONOMICS = [
                    "A beta of 2 amplifies the market's risk premium twofold — bigger gains in booms, bigger losses in busts. CAPM turns that risk into a precise required return.",
                    hint="Drag β to 2.", unlocked=["beta", "Rf", "Rm"], success_type="value_reached", target="beta", value=2, tolerance=0.3, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["beta"], "highlightClass": "g55-0", "color": "#3b82f6", "tooltip": "β — how much an asset swings with the market"},
+            {"words": ["risk-free", "risk"], "highlightClass": "g55-1", "color": "#f59e0b", "tooltip": "R_f — the return that carries no risk"},
+            {"words": ["market return", "market"], "highlightClass": "g55-2", "color": "#10b981", "tooltip": "R_m — return of the whole market"},
+        ],
     },
     {
         "sort_order": 56,
@@ -1340,7 +1481,11 @@ ECONOMICS = [
                    "With little temptation, cooperation becomes the stable equilibrium. Repeated games, reputations, and contracts all work by lowering the payoff to defection.",
                    hint="Drag T toward 0.5.", unlocked=["T"], success_type="value_reached", target="T", value=0.5, tolerance=0.5, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["strategy"], "highlightClass": "g56-0", "color": "#3b82f6", "tooltip": "A plan no player wants to change alone"},
+            {"words": ["payoff"], "highlightClass": "g56-1", "color": "#f59e0b", "tooltip": "The reward each outcome pays out"},
+            {"words": ["equilibrium"], "highlightClass": "g56-2", "color": "#10b981", "tooltip": "Stable when unilateral defection doesn't help"},
+        ],
     },
     {
         "sort_order": 57,
@@ -1373,7 +1518,11 @@ ECONOMICS = [
                    "α sets how much capital versus labor drives output. Economists estimate it around 0.3 for whole economies — labor earns roughly two-thirds of the pie.",
                    hint="Drag α.", unlocked=["K", "L", "alpha"], target="alpha", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["capital"], "highlightClass": "g57-0", "color": "#3b82f6", "tooltip": "K — machines and tools"},
+            {"words": ["labor", "labour"], "highlightClass": "g57-1", "color": "#f59e0b", "tooltip": "L — the workforce"},
+            {"words": ["output"], "highlightClass": "g57-2", "color": "#ef4444", "tooltip": "Production from combining capital and labour"},
+        ],
     },
 ]
 
@@ -1411,7 +1560,11 @@ STATISTICS = [
                    "A large σ means the average tells you little about any single point. About 68% of normal data falls within one σ of the mean — the rule that turns σ into probability.",
                    hint="Drag σ toward 22.", unlocked=["spread"], success_type="value_reached", target="spread", value=22, tolerance=3, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["spread", "deviation"], "highlightClass": "g58-0", "color": "#3b82f6", "tooltip": "σ — the typical distance from the mean"},
+            {"words": ["variance"], "highlightClass": "g58-1", "color": "#f59e0b", "tooltip": "σ² — the average squared deviation"},
+            {"words": ["mean"], "highlightClass": "g58-2", "color": "#10b981", "tooltip": "The centre the spread is measured from"},
+        ],
     },
     {
         "sort_order": 59,
@@ -1443,7 +1596,11 @@ STATISTICS = [
                    "The intercept shifts the whole line up or down — the predicted y when x is zero. Regression finds the β₀ and β₁ that minimize the total squared error ε.",
                    hint="Drag β₀.", unlocked=["beta1", "beta0"], target="beta0", celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["slope"], "highlightClass": "g59-0", "color": "#3b82f6", "tooltip": "β₁ — change in y per unit of x"},
+            {"words": ["intercept"], "highlightClass": "g59-1", "color": "#f59e0b", "tooltip": "β₀ — the value of y when x is zero"},
+            {"words": ["best fit", "fit"], "highlightClass": "g59-2", "color": "#10b981", "tooltip": "The line minimising squared residuals"},
+        ],
     },
     {
         "sort_order": 60,
@@ -1475,7 +1632,11 @@ STATISTICS = [
                    "Dividing by E means the same absolute gap matters more when few events were expected. Cross a χ² threshold and you reject the hypothesis as too unlikely to be chance.",
                    hint="Drag E.", unlocked=["O", "E"], target="E", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["observed"], "highlightClass": "g60-0", "color": "#3b82f6", "tooltip": "O — the counts you actually measured"},
+            {"words": ["expected"], "highlightClass": "g60-1", "color": "#f59e0b", "tooltip": "E — the counts the null hypothesis predicts"},
+            {"words": ["goodness of fit", "fit"], "highlightClass": "g60-2", "color": "#10b981", "tooltip": "How far observed strays from expected"},
+        ],
     },
     {
         "sort_order": 61,
@@ -1506,7 +1667,11 @@ STATISTICS = [
                    "Quadruple the sample size and you only halve the error — precision improves with √n, not n. This is why big studies are expensive: certainty gets pricey fast.",
                    hint="Drag n to 200.", unlocked=["n"], success_type="value_reached", target="n", value=200, tolerance=20, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["sample size", "sample"], "highlightClass": "g61-0", "color": "#3b82f6", "tooltip": "n — observations averaged together"},
+            {"words": ["normal", "bell"], "highlightClass": "g61-1", "color": "#f59e0b", "tooltip": "Sample means approach a bell curve"},
+            {"words": ["standard error"], "highlightClass": "g61-2", "color": "#10b981", "tooltip": "The spread of the mean shrinks as 1/√n"},
+        ],
     },
     {
         "sort_order": 62,
@@ -1538,7 +1703,11 @@ STATISTICS = [
                    "A high count when the rate is low is extremely improbable — exactly how Poisson flags surprising clusters, from disease outbreaks to server failures.",
                    hint="Drag λ toward 1.", unlocked=["lam", "k"], success_type="value_reached", target="lam", value=1, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["rate"], "highlightClass": "g62-0", "color": "#3b82f6", "tooltip": "λ — the average number of events per interval"},
+            {"words": ["events", "count"], "highlightClass": "g62-1", "color": "#f59e0b", "tooltip": "k — how many actually occur"},
+            {"words": ["rare"], "highlightClass": "g62-2", "color": "#10b981", "tooltip": "Models independent, rare events"},
+        ],
     },
     {
         "sort_order": 63,
@@ -1569,7 +1738,11 @@ STATISTICS = [
                    "A low stay-probability makes the system flip constantly. Over many steps a Markov chain settles into a steady-state distribution — the math behind PageRank ranking the whole web.",
                    hint="Drag p toward 0.1.", unlocked=["p"], success_type="value_reached", target="p", value=0.1, tolerance=0.1, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["transition"], "highlightClass": "g63-0", "color": "#3b82f6", "tooltip": "p — probability of switching state"},
+            {"words": ["state"], "highlightClass": "g63-1", "color": "#f59e0b", "tooltip": "Where the system currently sits"},
+            {"words": ["memoryless"], "highlightClass": "g63-2", "color": "#10b981", "tooltip": "The next step depends only on the present"},
+        ],
     },
 ]
 
@@ -1608,7 +1781,11 @@ ENGINEERING = [
                    "Compress instead of stretch and the force flips direction — still pushing back toward rest. This restoring force is what makes springs oscillate and clocks tick.",
                    hint="Drag x below 0.", unlocked=["k", "x"], success_type="value_reached", target="x", value=-6, tolerance=2, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["stiffness", "spring constant"], "highlightClass": "g64-0", "color": "#3b82f6", "tooltip": "k — how stiff the spring is"},
+            {"words": ["displacement", "stretch"], "highlightClass": "g64-1", "color": "#f59e0b", "tooltip": "x — distance from the rest position"},
+            {"words": ["restoring force", "force"], "highlightClass": "g64-2", "color": "#ef4444", "tooltip": "Pulls the spring back toward rest"},
+        ],
     },
     {
         "sort_order": 65,
@@ -1640,7 +1817,11 @@ ENGINEERING = [
                    "A low modulus stretches easily under little stress. Engineers pick materials by matching this stiffness to the job — rigid where it must hold, flexible where it must bend.",
                    hint="Drag E near 0.", unlocked=["E", "eps"], success_type="value_reached", target="E", value=0.01, tolerance=10, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["modulus", "stiffness"], "highlightClass": "g65-0", "color": "#3b82f6", "tooltip": "E — the material's stiffness"},
+            {"words": ["strain"], "highlightClass": "g65-1", "color": "#f59e0b", "tooltip": "ε — the fractional deformation"},
+            {"words": ["stress"], "highlightClass": "g65-2", "color": "#ef4444", "tooltip": "Internal force per unit area"},
+        ],
     },
     {
         "sort_order": 66,
@@ -1672,7 +1853,11 @@ ENGINEERING = [
                    "Lifting the fluid spends energy on the ρgh term, leaving less for pressure and motion. Speed, height, and pressure all trade against one fixed total.",
                    hint="Drag h up.", unlocked=["v", "h"], target="h", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["velocity", "speed"], "highlightClass": "g66-0", "color": "#3b82f6", "tooltip": "v — faster flow means lower pressure"},
+            {"words": ["height"], "highlightClass": "g66-1", "color": "#f59e0b", "tooltip": "h — elevation within the flow"},
+            {"words": ["pressure"], "highlightClass": "g66-2", "color": "#ef4444", "tooltip": "Trades off against speed and height"},
+        ],
     },
     {
         "sort_order": 67,
@@ -1704,7 +1889,11 @@ ENGINEERING = [
                    "Too much gain can make a feedback system overshoot and ring — or even go unstable. Tuning the transfer function is the central craft of control engineering.",
                    hint="Drag K toward 8.", unlocked=["K", "pole"], success_type="value_reached", target="K", value=8, tolerance=1.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["gain"], "highlightClass": "g67-0", "color": "#3b82f6", "tooltip": "K — the overall amplification"},
+            {"words": ["pole"], "highlightClass": "g67-1", "color": "#f59e0b", "tooltip": "p — where the response blows up"},
+            {"words": ["stability", "stable"], "highlightClass": "g67-2", "color": "#10b981", "tooltip": "Poles in the left half-plane stay stable"},
+        ],
     },
     {
         "sort_order": 68,
@@ -1736,7 +1925,11 @@ ENGINEERING = [
                    "Encircling −1 with no unstable poles to cancel means Z is positive — the loop will oscillate and blow up. That's the mathematical signature of the feedback howl.",
                    hint="Drag N to 2.", unlocked=["P", "N"], success_type="value_reached", target="N", value=2, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["poles"], "highlightClass": "g68-0", "color": "#3b82f6", "tooltip": "P — unstable open-loop poles"},
+            {"words": ["encirclements"], "highlightClass": "g68-1", "color": "#f59e0b", "tooltip": "N — times the plot circles the −1 point"},
+            {"words": ["stability", "stable"], "highlightClass": "g68-2", "color": "#10b981", "tooltip": "Z = N + P must be zero for stability"},
+        ],
     },
     {
         "sort_order": 69,
@@ -1769,7 +1962,12 @@ ENGINEERING = [
                    "Thick, sticky fluids resist turbulence and keep flow laminar even when fast. Because Re is dimensionless, a tiny model in a tank can faithfully mimic a full-size ship.",
                    hint="Drag µ up.", unlocked=["v", "L", "mu"], target="mu", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["velocity"], "highlightClass": "g69-0", "color": "#3b82f6", "tooltip": "v — the flow speed"},
+            {"words": ["length"], "highlightClass": "g69-1", "color": "#f59e0b", "tooltip": "L — the characteristic size"},
+            {"words": ["viscosity"], "highlightClass": "g69-2", "color": "#10b981", "tooltip": "µ — the fluid's resistance to flow"},
+            {"words": ["turbulent", "turbulence"], "highlightClass": "g69-3", "color": "#ef4444", "tooltip": "A high Reynolds number means chaotic flow"},
+        ],
     },
 ]
 
@@ -1808,7 +2006,11 @@ ASTRONOMY = [
                    "A heavier star pulls harder, speeding orbits up. Astronomers run this backward: time an orbit, and the law weighs the star or hidden black hole at its center.",
                    hint="Drag M.", unlocked=["a", "M"], target="M", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["semi-major axis", "orbit"], "highlightClass": "g70-0", "color": "#3b82f6", "tooltip": "a — the size of the orbit"},
+            {"words": ["mass"], "highlightClass": "g70-1", "color": "#f59e0b", "tooltip": "M — the mass of the central body"},
+            {"words": ["period"], "highlightClass": "g70-2", "color": "#ef4444", "tooltip": "T — how long one orbit takes"},
+        ],
     },
     {
         "sort_order": 71,
@@ -1840,7 +2042,11 @@ ASTRONOMY = [
                    "H₀ is the expansion rate, and its inverse estimates the age of the universe. Pinning down its exact value is one of cosmology's hottest open arguments.",
                    hint="Drag H₀.", unlocked=["d", "H0"], target="H0", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["distance"], "highlightClass": "g71-0", "color": "#3b82f6", "tooltip": "d — how far the galaxy is"},
+            {"words": ["Hubble constant", "constant"], "highlightClass": "g71-1", "color": "#f59e0b", "tooltip": "H₀ — the expansion rate of the universe"},
+            {"words": ["recession", "redshift"], "highlightClass": "g71-2", "color": "#ef4444", "tooltip": "More distant galaxies recede faster"},
+        ],
     },
     {
         "sort_order": 72,
@@ -1871,7 +2077,11 @@ ASTRONOMY = [
                    "Supermassive black holes lurk at galaxy centers, with horizons larger than our Solar System. The one in M87 was the first ever photographed.",
                    hint="Drag M to its maximum.", unlocked=["M"], success_type="value_reached", target="M", value=1000000, tolerance=100000, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["mass"], "highlightClass": "g72-0", "color": "#3b82f6", "tooltip": "M — the collapsed mass of the black hole"},
+            {"words": ["event horizon", "horizon"], "highlightClass": "g72-1", "color": "#f59e0b", "tooltip": "The radius of no return"},
+            {"words": ["escape"], "highlightClass": "g72-2", "color": "#10b981", "tooltip": "Below it, not even light escapes"},
+        ],
     },
     {
         "sort_order": 73,
@@ -1903,7 +2113,11 @@ ASTRONOMY = [
                    "A bloated red giant is cool yet luminous simply because it's so vast. Plotting luminosity against temperature for many stars gives the famous Hertzsprung-Russell diagram.",
                    hint="Drag R up.", unlocked=["R", "T"], target="R", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["radius"], "highlightClass": "g73-0", "color": "#3b82f6", "tooltip": "R — the size of the star"},
+            {"words": ["temperature"], "highlightClass": "g73-1", "color": "#f59e0b", "tooltip": "T — surface temperature, raised to the 4th power"},
+            {"words": ["luminosity"], "highlightClass": "g73-2", "color": "#ef4444", "tooltip": "The total power the star radiates"},
+        ],
     },
     {
         "sort_order": 74,
@@ -1936,7 +2150,11 @@ ASTRONOMY = [
                    "Make any single factor tiny and N collapses toward one — just us. The equation's real lesson is how little we know, not what the answer is.",
                    hint="Drag f_i toward 0.", unlocked=["fl", "fi", "L"], success_type="value_reached", target="fi", value=0, tolerance=0.05, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["life"], "highlightClass": "g74-0", "color": "#3b82f6", "tooltip": "f_l — fraction of worlds where life starts"},
+            {"words": ["intelligence"], "highlightClass": "g74-1", "color": "#f59e0b", "tooltip": "f_i — fraction that become intelligent"},
+            {"words": ["lifetime"], "highlightClass": "g74-2", "color": "#10b981", "tooltip": "L — how long a civilisation broadcasts"},
+        ],
     },
     {
         "sort_order": 75,
@@ -1968,7 +2186,11 @@ ASTRONOMY = [
                    "A perfectly flat universe sits on the knife-edge between expanding forever and collapsing. Measurements say ours is astonishingly close to exactly flat.",
                    hint="Drag k to 0.", unlocked=["rho", "k"], success_type="value_reached", target="k", value=0, tolerance=0.5, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["density"], "highlightClass": "g75-0", "color": "#3b82f6", "tooltip": "ρ — the matter and energy density"},
+            {"words": ["curvature"], "highlightClass": "g75-1", "color": "#f59e0b", "tooltip": "k — the geometry of space"},
+            {"words": ["expansion"], "highlightClass": "g75-2", "color": "#10b981", "tooltip": "Sets how fast the universe grows"},
+        ],
     },
 ]
 
@@ -2006,7 +2228,11 @@ LINEAR_ALGEBRA = [
                    "Matrix multiplication isn't commutative: AB usually differs from BA. Rotating then scaling is not the same as scaling then rotating — order is meaning.",
                    hint="Drag n down.", unlocked=["n"], target="n", celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["rows", "columns"], "highlightClass": "g76-0", "color": "#3b82f6", "tooltip": "Row i dotted with column j gives entry (i,j)"},
+            {"words": ["dimension", "size"], "highlightClass": "g76-1", "color": "#f59e0b", "tooltip": "n — only matched inner dimensions can multiply"},
+            {"words": ["dot product"], "highlightClass": "g76-2", "color": "#10b981", "tooltip": "Each output entry is one dot product"},
+        ],
     },
     {
         "sort_order": 77,
@@ -2037,7 +2263,11 @@ LINEAR_ALGEBRA = [
                    "A negative eigenvalue flips the eigenvector to point the opposite way. Eigenvalues run everything from PageRank to the vibration modes of a bridge.",
                    hint="Drag λ below 0.", unlocked=["lam"], success_type="value_reached", target="lam", value=-1, tolerance=0.5, celebration="big"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["eigenvalue"], "highlightClass": "g77-0", "color": "#3b82f6", "tooltip": "λ — the factor a vector is scaled by"},
+            {"words": ["eigenvector"], "highlightClass": "g77-1", "color": "#f59e0b", "tooltip": "A direction the matrix leaves unrotated"},
+            {"words": ["scaling"], "highlightClass": "g77-2", "color": "#10b981", "tooltip": "Av = λv — pure stretch, no turn"},
+        ],
     },
     {
         "sort_order": 78,
@@ -2071,7 +2301,11 @@ LINEAR_ALGEBRA = [
                    "A negative determinant means the transformation flips orientation — like a mirror. The sign tells you whether space was reflected, the size tells you by how much it grew.",
                    hint="Drag d below 0.", unlocked=["a", "b", "c", "d"], success_type="value_reached", target="d", value=-1, tolerance=0.5, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["determinant"], "highlightClass": "g78-0", "color": "#3b82f6", "tooltip": "ad − bc — the area-scaling factor"},
+            {"words": ["area"], "highlightClass": "g78-1", "color": "#f59e0b", "tooltip": "How the matrix scales a unit area"},
+            {"words": ["invertible", "singular"], "highlightClass": "g78-2", "color": "#10b981", "tooltip": "A zero determinant means non-invertible"},
+        ],
     },
     {
         "sort_order": 79,
@@ -2103,7 +2337,11 @@ LINEAR_ALGEBRA = [
                    "When all singular values matter, nothing can be discarded — the matrix is genuinely full-rank. SVD is the math behind PCA, latent semantic analysis, and Netflix-style recommenders.",
                    hint="Drag σ₂ back up near σ₁.", unlocked=["s1", "s2"], success_type="value_reached", target="s2", value=5, tolerance=1, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["singular values", "singular value"], "highlightClass": "g79-0", "color": "#3b82f6", "tooltip": "σ — the strength of each component"},
+            {"words": ["rank"], "highlightClass": "g79-1", "color": "#f59e0b", "tooltip": "The number of non-zero singular values"},
+            {"words": ["compression"], "highlightClass": "g79-2", "color": "#10b981", "tooltip": "Dropping small σ compresses the data"},
+        ],
     },
     {
         "sort_order": 80,
@@ -2136,7 +2374,11 @@ LINEAR_ALGEBRA = [
                    "Perfectly aligned vectors give the maximum dot product. Cosine similarity uses exactly this to measure how alike two documents, songs, or word-embeddings are.",
                    hint="Drag θ toward 0°.", unlocked=["theta", "magA", "magB"], success_type="value_reached", target="theta", value=0, tolerance=8, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["magnitude", "length"], "highlightClass": "g80-0", "color": "#3b82f6", "tooltip": "|a| — the length of a vector"},
+            {"words": ["angle"], "highlightClass": "g80-1", "color": "#f59e0b", "tooltip": "θ — the angle between the two vectors"},
+            {"words": ["projection"], "highlightClass": "g80-2", "color": "#10b981", "tooltip": "Measures how much one vector lies along another"},
+        ],
     },
     {
         "sort_order": 81,
@@ -2169,7 +2411,11 @@ LINEAR_ALGEBRA = [
                    "Parallel vectors span no area, so their cross product is zero. The result also points perpendicular to both inputs — which is how 3D graphics compute surface normals for lighting.",
                    hint="Drag θ toward 0°.", unlocked=["theta", "magA", "magB"], success_type="value_reached", target="theta", value=0, tolerance=8, celebration="medium"),
         ],
-        "glossary": [],
+        "glossary": [
+            {"words": ["magnitude", "length"], "highlightClass": "g81-0", "color": "#3b82f6", "tooltip": "|a| — the length of a vector"},
+            {"words": ["angle"], "highlightClass": "g81-1", "color": "#f59e0b", "tooltip": "θ — the angle between the two vectors"},
+            {"words": ["perpendicular", "normal"], "highlightClass": "g81-2", "color": "#10b981", "tooltip": "The result points perpendicular to both"},
+        ],
     },
 ]
 

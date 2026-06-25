@@ -14,18 +14,76 @@ export function resolveEquationManifest(
   return manifest && manifest.length > 0 ? manifest : coreEquationManifest
 }
 
+/** Lowercase + strip diacritics so "Schrodinger" matches "Schrödinger". */
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+}
+
+/** Strip LaTeX control words/markup so a formula is searchable as plain symbols. */
+function plainFormula(formula: string): string {
+  return formula.replace(/\\[a-zA-Z]+/g, " ").replace(/[{}\\^_$&]/g, " ")
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/**
+ * Rank-aware search across title, author, category, formula symbols, and year.
+ * Every query token must match somewhere (AND); results are ordered by relevance
+ * (title-prefix > title-word > title-substring > formula > author > category),
+ * and diacritics are folded so "schrodinger" finds "Schrödinger".
+ */
 export function searchEquationManifest(
   manifest: EquationSummary[],
   query: string,
 ): EquationSummary[] {
-  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedQuery = normalizeText(query.trim())
   if (!normalizedQuery) {
     return manifest
   }
 
-  return manifest.filter((equation) =>
-    `${equation.title} ${equation.author} ${equation.category}`.toLowerCase().includes(normalizedQuery),
-  )
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean)
+  // Compile each token's word-boundary regex ONCE per query, not per equation
+  // (was O(equations × tokens) regex compilations on every keystroke).
+  const wordBoundaries = new Map(tokens.map((token) => [token, new RegExp(`\\b${escapeRegExp(token)}`)]))
+  const scored: Array<{ equation: EquationSummary; score: number }> = []
+
+  for (const equation of manifest) {
+    const title = normalizeText(equation.title)
+    const author = normalizeText(equation.author ?? "")
+    const category = normalizeText((equation.category ?? "").replace(/_/g, " "))
+    const formula = normalizeText(plainFormula(equation.formula ?? ""))
+    const year = normalizeText(String(equation.year ?? ""))
+    const haystack = `${title} ${author} ${category} ${formula} ${year}`
+
+    if (!tokens.every((token) => haystack.includes(token))) continue
+
+    let score = 0
+    for (const token of tokens) {
+      const wordBoundary = wordBoundaries.get(token)
+      if (title.startsWith(token)) score += 100
+      else if (wordBoundary?.test(title)) score += 60
+      else if (title.includes(token)) score += 40
+      else if (formula.includes(token)) score += 25
+      else if (author.includes(token)) score += 15
+      else score += 5
+    }
+    scored.push({ equation, score })
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored.map((entry) => entry.equation)
+}
+
+/** A random equation id other than the one currently shown (for "surprise me"). */
+export function getRandomEquationId(manifest: EquationSummary[], excludeId?: number): number | null {
+  const pool = manifest.filter((equation) => equation.id !== excludeId)
+  if (pool.length === 0) return manifest[0]?.id ?? null
+  return pool[Math.floor(Math.random() * pool.length)].id
 }
 
 export function useEquationManifest() {

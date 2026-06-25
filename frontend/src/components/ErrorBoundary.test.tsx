@@ -29,6 +29,33 @@ describe("ErrorBoundary", () => {
     vi.restoreAllMocks()
   })
 
+  it("auto-resets when resetKey changes (navigating to a healthy scene)", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    let shouldThrow = true
+    function MaybeThrow() {
+      if (shouldThrow) throw new Error("scene crash")
+      return <div>New scene</div>
+    }
+
+    const { rerender } = render(
+      <ErrorBoundary resetKey={1}>
+        <MaybeThrow />
+      </ErrorBoundary>,
+    )
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument()
+
+    // Navigate to another equation: the new scene is healthy and resetKey changes.
+    shouldThrow = false
+    rerender(
+      <ErrorBoundary resetKey={2}>
+        <MaybeThrow />
+      </ErrorBoundary>,
+    )
+    expect(screen.getByText("New scene")).toBeInTheDocument()
+    expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument()
+    vi.restoreAllMocks()
+  })
+
   it("can recover with Try Again button", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {})
     let shouldThrow = true
