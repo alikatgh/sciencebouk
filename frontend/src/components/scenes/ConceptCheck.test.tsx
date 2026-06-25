@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest"
+import { afterEach, describe, it, expect } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ConceptCheck } from "./ConceptCheck"
+import { onTrack, resetAnalyticsForTests } from "../../lib/analytics"
+
+afterEach(() => resetAnalyticsForTests())
 
 describe("ConceptCheck", () => {
   it("renders nothing for an equation without a curated check", () => {
@@ -26,5 +29,16 @@ describe("ConceptCheck", () => {
     render(<ConceptCheck equationId={37} />)
     await userEvent.click(screen.getByText("decreases"))
     expect(screen.getByRole("status")).toHaveTextContent(/Correct/)
+  })
+
+  it("emits an analytics event recording the equation and correctness", async () => {
+    const events: Array<{ event: string; props: Record<string, unknown> }> = []
+    onTrack((event, props) => events.push({ event, props }))
+    render(<ConceptCheck equationId={37} />)
+    await userEvent.click(screen.getByText("decreases")) // correct
+    expect(events).toContainEqual({
+      event: "concept_check_answered",
+      props: { equationId: 37, correct: true },
+    })
   })
 })

@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest"
+import { afterEach, describe, it, expect } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { LearnMorePanel } from "./LearnMorePanel"
+import { onTrack, resetAnalyticsForTests } from "../../lib/analytics"
+
+afterEach(() => resetAnalyticsForTests())
 
 describe("LearnMorePanel", () => {
   it("renders nothing when the equation has no learning content", () => {
@@ -29,5 +32,16 @@ describe("LearnMorePanel", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Builds on" }))
     expect(screen.getByRole("link", { name: /Newton's Second Law/ })).toBeInTheDocument()
     expect(screen.queryByText(/four times the energy/i)).not.toBeInTheDocument()
+  })
+
+  it("emits an analytics event when a tab is switched", async () => {
+    const events: Array<{ event: string; props: Record<string, unknown> }> = []
+    onTrack((event, props) => events.push({ event, props }))
+    render(<LearnMorePanel equationId={35} />)
+    await userEvent.click(screen.getByRole("tab", { name: "Quick check" }))
+    expect(events).toContainEqual({
+      event: "learn_more_tab",
+      props: { equationId: 35, tab: "check" },
+    })
   })
 })
