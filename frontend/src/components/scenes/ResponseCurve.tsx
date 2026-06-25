@@ -1,5 +1,5 @@
 import type { PointerEvent as ReactPointerEvent, ReactElement } from "react"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import type { Variable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { subjectResults } from "../../data/subjectResults"
@@ -267,7 +267,7 @@ function buildModel(
     points,
     linePath: linePath.trim(),
     areaPath,
-    dot: curFinite ? { x: sx(curX), y: sy(curYraw) } : null,
+    dot: curFinite ? { x: sx(curX), y: Math.max(PAD_T - 6, Math.min(H - PAD_B + 6, sy(curYraw))) } : null,
     dotValue: curFinite ? curYraw : null,
     guideX: curFinite ? sx(curX) : null,
     gridX,
@@ -290,6 +290,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
     [equationId, variables, vars, logScale, sweepOverride],
   )
   const [hoverPx, setHoverPx] = useState<number | null>(null)
+  const hoverRafRef = useRef<number | null>(null)
   const hover = useMemo(() => {
     if (hoverPx === null || !model || model.points.length === 0) return null
     let best = model.points[0]
@@ -303,9 +304,16 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     if (rect.width === 0) return
-    setHoverPx(((event.clientX - rect.left) / rect.width) * W)
+    const px = ((event.clientX - rect.left) / rect.width) * W
+    // Coalesce to one update per animation frame — pointermove can fire faster
+    // than the display refreshes, and each update re-runs the nearest-point scan.
+    if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current)
+    hoverRafRef.current = requestAnimationFrame(() => setHoverPx(px))
   }
-  const clearHover = () => setHoverPx(null)
+  const clearHover = () => {
+    if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current)
+    setHoverPx(null)
+  }
 
   // Keep the value label inside the frame.
   const labelX = model.dot ? Math.min(Math.max(model.dot.x, PAD_L + 18), W - PAD_R - 18) : 0

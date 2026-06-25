@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { BlockMath } from "react-katex"
 import { Check, Copy, Link2, RotateCcw, Shuffle } from "lucide-react"
 import { copyText } from "../../lib/clipboard"
@@ -241,10 +241,15 @@ function GenericMetersVisual({
     })
   }
 
-  // Restore a shared configuration from ?v= on first mount (remounts per equation via key).
+  // Restore a shared configuration from ?v= ONCE per mount (the component remounts
+  // per equation via its key). The ref guard prevents re-applying over the user's
+  // edits if `variables`/`setVar` change identity after the first restore.
+  const sharedRestoredRef = useRef(false)
   useEffect(() => {
+    if (sharedRestoredRef.current || variables.length === 0) return
     const encoded = new URLSearchParams(window.location.search).get("v")
     if (!encoded) return
+    sharedRestoredRef.current = true
     const restored = decodeVarsFromParam(encoded)
     for (const variable of variables) {
       if (variable.constant) continue
