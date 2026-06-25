@@ -43,7 +43,9 @@ this session in commit `1011347` before this report was written.
 ## Remediation status (2026-06-23, same session)
 
 **Fixed & committed** (`1011347` → `dfa3532`, 8 commits): **both HIGH, all MEDIUM, and most LOW/INFO.**
-- H1 stale-closure (App deps) · **H2** URL-restore ref-guard · M1–M5 + L1–L5 math singularity guards (8 fns + test) · M6 `activeSweep` memo · M7… (see below) · M8/M9 ShortcutOverlay focus-return + `aria-labelledby` · **L6** dot-clamp · **L7** hover-scrub rAF · L8 search-regex hoist · **L10** SVG live region · L11 favourites cap · I1 escapeXml apostrophe · `__proto__` filter.
+- H1 stale-closure (App deps) · **H2** URL-restore ref-guard · M1–M4 + L1–L5 math domain guards (return `NaN` out-of-domain, + test) · M6 `activeSweep` memo · M7… (see below) · M8/M9 ShortcutOverlay focus-return + `aria-labelledby` · **L6** dot-clamp · **L7** hover-scrub rAF · L8 search-regex hoist · **L10** SVG live region · L11 favourites cap · I1 escapeXml apostrophe · `__proto__` filter.
+
+**Follow-up commit (post-PR-open):** **M5** Poisson now computes in log-space (`lnΓ` sum) — precise + finite at the `k=20` slider extreme where the naive factorial degraded past `MAX_SAFE_INTEGER`; **+ a previously-unflagged ÷0** in id 79 (condition number `σ₁/σ₂`, `σ₂` slider reaches 0) now returns `NaN`. Both covered by `subjectResults.test.ts`.
 
 **Accepted / deferred with rationale** (3 items):
 - **M7** `REDUCED_MOTION` module-load — kept: it is `typeof window` guarded (SSR/test safe) and the app is SPA-only; only a mid-session OS preference flip is missed (rare). Hookify if SSR is ever added.

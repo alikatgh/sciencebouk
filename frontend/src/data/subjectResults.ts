@@ -98,10 +98,13 @@ export const subjectResults: Record<number, SubjectResult> = {
   62: {
     symbol: "P(k)",
     compute: (v) => {
+      if (v.lam <= 0) return NaN
       const k = Math.max(0, Math.round(v.k))
-      let fact = 1
-      for (let i = 2; i <= k; i += 1) fact *= i
-      return (Math.pow(v.lam, k) * Math.exp(-v.lam)) / fact
+      // Log-space: a naive k! overflows past k≈170 and already loses integer
+      // precision by k=20 (20! > MAX_SAFE_INTEGER). Summing ln(i) is stable.
+      let lnFactorial = 0
+      for (let i = 2; i <= k; i += 1) lnFactorial += Math.log(i)
+      return Math.exp(k * Math.log(v.lam) - v.lam - lnFactorial)
     },
   },
   // ---- Engineering ----
@@ -120,7 +123,7 @@ export const subjectResults: Record<number, SubjectResult> = {
   // ---- Linear Algebra ----
   76: { symbol: "mults", note: "n×n naive", compute: (v) => Math.pow(v.n, 3) },
   78: { symbol: "det", compute: (v) => v.a * v.d - v.b * v.c },
-  79: { symbol: "κ", note: "condition number", compute: (v) => v.s1 / v.s2 },
+  79: { symbol: "κ", note: "condition number", compute: (v) => (v.s2 <= 0 ? NaN : v.s1 / v.s2) },
   80: { symbol: "a·b", compute: (v) => v.magA * v.magB * Math.cos(v.theta * RAD) },
   81: { symbol: "|a×b|", compute: (v) => v.magA * v.magB * Math.sin(v.theta * RAD) },
 }

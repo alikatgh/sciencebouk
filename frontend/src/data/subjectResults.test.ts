@@ -13,6 +13,8 @@ describe("subjectResults", () => {
     expect(subjectResults[28].compute({ pKa: 4.76, ratio: 0 })).toBeNaN() // H-H log10(0)
     expect(subjectResults[19].compute({ n: 0 })).toBeNaN() // binary search log2(0)
     expect(subjectResults[49].compute({ Ko: 0, Nao: 0 })).toBeNaN() // Goldman log(0)
+    expect(subjectResults[79].compute({ s1: 5, s2: 0 })).toBeNaN() // condition number ÷0
+    expect(subjectResults[62].compute({ lam: 0, k: 2 })).toBeNaN() // Poisson log(0) rate
     // and the readout formats NaN as an em dash, not "Infinity"
     expect(formatResultValue(subjectResults[39].compute({ f: 440, vs: 343 }))).toBe("—")
     // normal inputs still compute correctly after guarding
@@ -40,6 +42,10 @@ describe("subjectResults", () => {
     expect(subjectResults[43].compute({ nu: 5 })).toBeCloseTo(2.07, 1)
     // Gradient descent one step from θ=4, α=0.1 (J=θ²) → 3.2 (heads toward 0)
     expect(subjectResults[22].compute({ theta: 4, alpha: 0.1 })).toBeCloseTo(3.2, 5)
+    // Poisson P(k=2; λ=3) = 3²·e⁻³/2! ≈ 0.224 (log-space, precise)
+    expect(subjectResults[62].compute({ lam: 3, k: 2 })).toBeCloseTo(0.224, 3)
+    // ...and stays finite at the slider extreme (k=20) where a naive factorial degrades
+    expect(Number.isFinite(subjectResults[62].compute({ lam: 20, k: 20 }))).toBe(true)
   })
 
   it("returns NaN for out-of-domain inputs (Snell total internal reflection)", () => {
