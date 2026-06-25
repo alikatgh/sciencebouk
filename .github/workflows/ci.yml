@@ -28,6 +28,10 @@ jobs:
   backend:
     name: Backend (lint, test)
     runs-on: ubuntu-latest
+    env:
+      # Use dev settings (SQLite, dev SECRET_KEY) so the production startup
+      # guards in settings.py don't fire during migrate/test in CI.
+      DJANGO_DEBUG: "1"
     defaults:
       run:
         working-directory: backend
