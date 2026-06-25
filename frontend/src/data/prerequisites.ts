@@ -59,6 +59,9 @@ export const prerequisites: Record<number, Prerequisite[]> = {
   77: [{ id: 76, title: "Matrix Multiplication" }],
   78: [{ id: 76, title: "Matrix Multiplication" }],
   80: [{ id: 1, title: "Pythagoras's Theorem" }],
+  31: [{ id: 12, title: "Second Law of Thermodynamics" }],
+  32: [{ id: 27, title: "Arrhenius Equation" }],
+  39: [{ id: 5, title: "Wave Equation" }],
 }
 
 /** The prerequisite equations for an equation, or null if none are curated. */
