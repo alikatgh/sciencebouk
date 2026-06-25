@@ -189,6 +189,14 @@ Before reproducing, grep this list for the shape of your bug.
     precision by `k=20`, overflows by `k≈170`). (`subjectResults.ts`; audit
     2026-06-23 M1–M5/L1–L5.)
 
+28. **Duplicate object-literal keys: the build catches them, the runtime tests
+    can't.** Adding a `Record<id, …>` entry whose id already exists is a `tsc`
+    error (`TS1117`), but Vitest sees only the merged object (JS keeps the last
+    duplicate), so an integrity test passes while `npm run build` fails. When
+    extending the keyed data modules (`equationFacts`, `conceptChecks`,
+    `prerequisites`, …), trust the build — not just the test — as the dup-key
+    guard. (Hit while extending `prerequisites.ts`.)
+
 ---
 
 ## Reusable tools
