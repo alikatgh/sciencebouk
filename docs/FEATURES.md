@@ -82,7 +82,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 50. [x] `docs/BUG_JOURNAL.md` — patterns + chronological log mined from 11 audits.
 51. [x] `SeedSubjectsCommandTests` — guards complete payloads for all 64 subjects.
 52. [x] Unit tests for `subjectResults` math + `pickSweepVariable` selection.
-53. [P] Error boundary around each scene + app root — `components/ErrorBoundary.tsx` used in `main.tsx` + `App.tsx:406/417/431` with fallback UIs.
+53. [x] Per-scene error boundary — `EquationVisualization` wraps each scene so a crash stays contained to the viz panel; `resetKey={equationId}` auto-recovers on navigation (tested). Built on the pre-existing app-shell `ErrorBoundary` (`main.tsx`/`App.tsx`), which only covered the app root before.
 54. [ ] Analytics events for feature usage.
 55. [x] Scene-render smoke test — mounts `ResponseCurve` across 5 representative equations (linear / S-curve / parabola+markers / log-scale / NaN-domain) + the null-result case; asserts an SVG renders without throwing (`ResponseCurve.render.test.tsx`).
 
