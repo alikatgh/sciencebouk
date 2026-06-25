@@ -40,6 +40,15 @@ cluster of a11y polish round it out.
 ¹ The `__proto__`/`constructor`/`prototype` filter (LOW) was **already fixed**
 this session in commit `1011347` before this report was written.
 
+## Remediation status (2026-06-23, same session)
+
+**Fixed & committed** (`1011347`, `c0f2c54`, `32131c8`, `ee22780`):
+- H1 stale-closure (App.tsx deps) · M1–M5 + L1–L5 math singularity guards (8 compute fns + test) · M6 `activeSweep` memo · M8/M9 ShortcutOverlay focus-return + `aria-labelledby` · L8 search-regex hoist · L11 favourites cap · I1 escapeXml apostrophe · `__proto__` filter.
+
+**Still open** (lower priority, tracked here):
+- H2 URL-restore effect deps · M7 `REDUCED_MOTION` → hook · L6 dot-clamp · L7 hover-scrub rAF · L9 list role · L10 SVG live region · I2 glossary `repr()`.
+- **Re-run the 3 cut-off audit dimensions** (dangerous-APIs, edge-cases, tests) for full coverage.
+
 ---
 
 ## HIGH
