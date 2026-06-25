@@ -56,7 +56,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 ## D. Learning & pedagogy
 31. [x] Complete interactive glossaries for all 64 subject equations (tappable, colour-coded term tooltips).
 32. [x] Guided multi-step lessons with success conditions for all subjects.
-33. [x] One-question concept checks — 25 curated multiple-choice questions testing the *relationship* the sliders show (`data/conceptChecks.ts`, unit-tested); interactive `ConceptCheck` card marks ✓/✗ and reveals an explanation. Browser-verified on Ohm (wrong pick → "Not quite. I = V/R…").
+33. [x] One-question concept checks — 35 curated multiple-choice questions testing the *relationship* the sliders show (`data/conceptChecks.ts`, unit-tested); interactive `ConceptCheck` card marks ✓/✗ and reveals an explanation. Browser-verified on Ohm (wrong pick → "Not quite. I = V/R…").
 34. [x] "Did you know?" fact cards — accurate facts for **all 64** subject equations (`data/equationFacts.ts`, unit-tested); a hairline amber card renders in the scene stage only when a fact exists (graceful when absent).
 35. [x] Prerequisite / "builds-on" hints — 30 curated learning-path links (`data/prerequisites.ts`, unit-tested) shown as chips in the scene that jump to the foundational equation. Browser-verified: Schwarzschild → Relativity (/equation/13) + Law of Gravity (/equation/4).
 35b. [x] **Learn-more tabbed panel** — consolidates the fact / quick-check / builds-on aids into one tabbed panel in the scene (`LearnMorePanel`, unit + interaction tested) instead of three stacked cards; only tabs with content appear. Browser-verified.

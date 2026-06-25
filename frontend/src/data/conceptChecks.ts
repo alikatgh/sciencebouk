@@ -167,6 +167,66 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     correctIndex: 0,
     explanation: "The Schwarzschild radius r_s = 2GM/c² is linear in mass, so doubling M doubles it.",
   },
+  27: {
+    question: "You raise the temperature of a reaction. Its rate…",
+    options: ["decreases", "increases", "is unaffected"],
+    correctIndex: 1,
+    explanation: "Higher temperature gives more molecules the energy to clear the activation barrier, speeding the reaction (Arrhenius).",
+  },
+  29: {
+    question: "As products build up and the reaction quotient Q rises, a cell's voltage…",
+    options: ["rises", "falls", "stays the same"],
+    correctIndex: 1,
+    explanation: "E = E⁰ − (RT/nF)·ln Q, so a larger Q lowers the cell potential.",
+  },
+  41: {
+    question: "A heavier particle moving at the same speed has a de Broglie wavelength that is…",
+    options: ["longer", "shorter", "identical"],
+    correctIndex: 1,
+    explanation: "λ = h/mv, so more mass means a shorter wavelength.",
+  },
+  42: {
+    question: "Measuring a particle's position more precisely makes its momentum…",
+    options: ["more certain", "less certain", "unaffected"],
+    correctIndex: 1,
+    explanation: "Δx·Δp ≥ ℏ/2 — pinning down position necessarily blurs momentum.",
+  },
+  43: {
+    question: "Higher-frequency (bluer) light carries … energy per photon.",
+    options: ["less", "more", "the same"],
+    correctIndex: 1,
+    explanation: "E = hν: a photon's energy is proportional to its frequency.",
+  },
+  65: {
+    question: "Under the same strain, a stiffer material (higher Young's modulus) feels…",
+    options: ["less stress", "more stress", "the same stress"],
+    correctIndex: 1,
+    explanation: "σ = E·ε, so a higher modulus produces more stress for the same strain.",
+  },
+  66: {
+    question: "Where a fluid speeds up, its pressure…",
+    options: ["rises", "drops", "is unchanged"],
+    correctIndex: 1,
+    explanation: "Bernoulli's principle: faster flow comes with lower pressure.",
+  },
+  78: {
+    question: "A 2×2 matrix whose determinant is zero…",
+    options: ["scales area up", "cannot be inverted", "purely rotates space"],
+    correctIndex: 1,
+    explanation: "A zero determinant collapses area to nothing, so the matrix is singular — it has no inverse.",
+  },
+  80: {
+    question: "Two perpendicular vectors have a dot product of…",
+    options: ["their lengths multiplied", "zero", "one"],
+    correctIndex: 1,
+    explanation: "a·b = |a||b|cos θ, and cos 90° = 0, so perpendicular vectors give zero.",
+  },
+  57: {
+    question: "Cobb-Douglas output increases when you add more…",
+    options: ["only capital", "only labour", "either capital or labour"],
+    correctIndex: 2,
+    explanation: "Output rises with more of either input (with diminishing returns to each).",
+  },
 }
 
 /** The concept check for an equation, or null if none is curated. */
