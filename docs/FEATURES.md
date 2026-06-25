@@ -57,7 +57,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 31. [x] Complete interactive glossaries for all 64 subject equations (tappable, colour-coded term tooltips).
 32. [x] Guided multi-step lessons with success conditions for all subjects.
 33. [ ] One-question concept check per equation.
-34. [ ] "Did you know" fact card per equation.
+34. [x] "Did you know?" fact cards — 20 curated, accurate historical/scientific facts for subject equations (`data/equationFacts.ts`, unit-tested); a hairline amber card renders in the scene stage only when a fact exists (graceful when absent).
 35. [ ] Prerequisite hints / learning path.
 36. [ ] Worked-example walkthrough mode.
 37. [P] Lesson success celebrations (subtle/medium/big) — `LessonStep.celebration` + streak on Dashboard.

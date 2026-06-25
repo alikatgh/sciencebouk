@@ -12,6 +12,7 @@ import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
+import { getEquationFact } from "../../data/equationFacts"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
 
 /**
@@ -438,6 +439,15 @@ function GenericMetersVisual({
           ? `Drag a slider — the curve traces ${result.symbol} across its range, and reshapes as you change the other inputs.`
           : "Drag the sliders — each bar tracks a variable across its range."}
       </p>
+
+      {getEquationFact(equationId) && (
+        <div className="max-w-sm rounded-xl border border-amber-300/50 bg-amber-50/70 px-4 py-2.5 text-center dark:border-amber-500/20 dark:bg-amber-500/10">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-amber-600/90 dark:text-amber-400/90">
+            Did you know?
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{getEquationFact(equationId)}</p>
+        </div>
+      )}
     </div>
   )
 }
