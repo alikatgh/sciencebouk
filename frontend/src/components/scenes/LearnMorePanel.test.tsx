@@ -34,6 +34,19 @@ describe("LearnMorePanel", () => {
     expect(screen.queryByText(/four times the energy/i)).not.toBeInTheDocument()
   })
 
+  it("supports arrow-key navigation between tabs (WAI-ARIA roving focus)", async () => {
+    render(<LearnMorePanel equationId={35} />)
+    const firstTab = screen.getByRole("tab", { name: "Did you know?" })
+    firstTab.focus()
+    await userEvent.keyboard("{ArrowRight}")
+    expect(screen.getByRole("tab", { name: "Worked example" })).toHaveAttribute("aria-selected", "true")
+    expect(firstTab).toHaveAttribute("aria-selected", "false")
+    // wraps around: Left from the first tab goes to the last
+    firstTab.focus()
+    await userEvent.keyboard("{ArrowLeft}")
+    expect(screen.getByRole("tab", { name: "Builds on" })).toHaveAttribute("aria-selected", "true")
+  })
+
   it("emits an analytics event when a tab is switched", async () => {
     const events: Array<{ event: string; props: Record<string, unknown> }> = []
     onTrack((event, props) => events.push({ event, props }))

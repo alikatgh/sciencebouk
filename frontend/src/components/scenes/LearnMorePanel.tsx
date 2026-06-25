@@ -1,4 +1,4 @@
-import type { ReactElement } from "react"
+import type { KeyboardEvent as ReactKeyboardEvent, ReactElement } from "react"
 import { useState } from "react"
 import { getEquationFact } from "../../data/equationFacts"
 import { getConceptCheck } from "../../data/conceptChecks"
@@ -32,32 +32,59 @@ export function LearnMorePanel({ equationId }: { equationId: number }): ReactEle
   const [active, setActive] = useState<TabKey | null>(null)
   if (tabs.length === 0) return null
   const current = active && tabs.some((t) => t.key === active) ? active : tabs[0].key
+  const panelId = `lm-panel-${equationId}`
+  const tabId = (key: TabKey) => `lm-tab-${equationId}-${key}`
+
+  const selectTab = (key: TabKey) => {
+    setActive(key)
+    track("learn_more_tab", { equationId, tab: key })
+  }
+
+  // WAI-ARIA tabs keyboard pattern: Left/Right (and Home/End) move focus +
+  // selection between tabs, wrapping around.
+  const onTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const keys: Record<string, number> = {
+      ArrowRight: (index + 1) % tabs.length,
+      ArrowLeft: (index - 1 + tabs.length) % tabs.length,
+      Home: 0,
+      End: tabs.length - 1,
+    }
+    const nextIndex = keys[event.key]
+    if (nextIndex === undefined) return
+    event.preventDefault()
+    selectTab(tabs[nextIndex].key)
+    event.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="tab"]')[nextIndex]?.focus()
+  }
 
   return (
     <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white/50 p-1 dark:border-slate-700 dark:bg-slate-800/40">
       <div role="tablist" aria-label="Learn more" className="flex gap-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            role="tab"
-            type="button"
-            aria-selected={current === tab.key}
-            onClick={() => {
-              setActive(tab.key)
-              track("learn_more_tab", { equationId, tab: tab.key })
-            }}
-            className={`flex-1 rounded-lg px-2 py-1.5 text-[0.7rem] font-semibold transition ${
-              current === tab.key
-                ? "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100"
-                : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {tabs.map((tab, index) => {
+          const selected = current === tab.key
+          return (
+            <button
+              key={tab.key}
+              id={tabId(tab.key)}
+              role="tab"
+              type="button"
+              aria-selected={selected}
+              aria-controls={panelId}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => selectTab(tab.key)}
+              onKeyDown={(event) => onTabKeyDown(event, index)}
+              className={`flex-1 rounded-lg px-2 py-1.5 text-[0.7rem] font-semibold transition ${
+                selected
+                  ? "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100"
+                  : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
-      <div role="tabpanel" className="px-3 pb-2.5 pt-2 text-left">
+      <div id={panelId} role="tabpanel" aria-labelledby={tabId(current)} tabIndex={0} className="px-3 pb-2.5 pt-2 text-left">
         {current === "fact" && fact && (
           <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{fact}</p>
         )}
