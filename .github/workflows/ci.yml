@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend:
-    name: Frontend (lint, type-check, test)
+    name: Frontend (type-check, test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,7 +26,7 @@ jobs:
       - run: npm run build
 
   backend:
-    name: Backend (lint, test)
+    name: Backend (audit, test)
     runs-on: ubuntu-latest
     env:
       # Use dev settings (SQLite, dev SECRET_KEY) so the production startup
