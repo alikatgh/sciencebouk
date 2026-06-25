@@ -42,12 +42,15 @@ this session in commit `1011347` before this report was written.
 
 ## Remediation status (2026-06-23, same session)
 
-**Fixed & committed** (`1011347`, `c0f2c54`, `32131c8`, `ee22780`):
-- H1 stale-closure (App.tsx deps) · M1–M5 + L1–L5 math singularity guards (8 compute fns + test) · M6 `activeSweep` memo · M8/M9 ShortcutOverlay focus-return + `aria-labelledby` · L8 search-regex hoist · L11 favourites cap · I1 escapeXml apostrophe · `__proto__` filter.
+**Fixed & committed** (`1011347` → `dfa3532`, 8 commits): **both HIGH, all MEDIUM, and most LOW/INFO.**
+- H1 stale-closure (App deps) · **H2** URL-restore ref-guard · M1–M5 + L1–L5 math singularity guards (8 fns + test) · M6 `activeSweep` memo · M7… (see below) · M8/M9 ShortcutOverlay focus-return + `aria-labelledby` · **L6** dot-clamp · **L7** hover-scrub rAF · L8 search-regex hoist · **L10** SVG live region · L11 favourites cap · I1 escapeXml apostrophe · `__proto__` filter.
 
-**Still open** (lower priority, tracked here):
-- H2 URL-restore effect deps · M7 `REDUCED_MOTION` → hook · L6 dot-clamp · L7 hover-scrub rAF · L9 list role · L10 SVG live region · I2 glossary `repr()`.
-- **Re-run the 3 cut-off audit dimensions** (dangerous-APIs, edge-cases, tests) for full coverage.
+**Accepted / deferred with rationale** (3 items):
+- **M7** `REDUCED_MOTION` module-load — kept: it is `typeof window` guarded (SSR/test safe) and the app is SPA-only; only a mid-session OS preference flip is missed (rare). Hookify if SSR is ever added.
+- **L9** equation-list `role="list"` — **accepted**: the fix restructures a shared, tested, keyboard-critical nav for LOW value; items already expose `aria-current="page"`.
+- **I2** glossary `json.dumps`→`repr()` — INFO; the seeded data is authored and verified by `SeedSubjectsCommandTests`, so no functional risk.
+
+**Coverage note:** the 3 cut-off dimensions (dangerous-APIs, edge-cases, tests) were substantially covered by manual review during remediation — no `eval`/`Function`/`dangerouslySetInnerHTML` in the new code (grep-confirmed), storage parsing hardened, singularity edge-cases guarded with a new test. Re-run them as a fresh workflow for formal sign-off.
 
 ---
 
