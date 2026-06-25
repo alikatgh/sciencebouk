@@ -13,6 +13,12 @@ describe("conceptChecks", () => {
     expect(getConceptCheck(999)).toBeNull()
   })
 
+  it("covers EVERY subject equation (ids 18-81)", () => {
+    for (let id = 18; id <= 81; id += 1) {
+      expect(getConceptCheck(id), `concept check missing for equation ${id}`).not.toBeNull()
+    }
+  })
+
   it("every check is internally consistent (valid answer index, non-empty fields, subject id)", () => {
     for (const [id, check] of Object.entries(conceptChecks)) {
       expect(Number(id)).toBeGreaterThanOrEqual(18)
