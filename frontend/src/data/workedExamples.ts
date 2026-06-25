@@ -184,6 +184,42 @@ export const workedExamples: Record<number, WorkedExample> = {
     given: "Singular values σ₁ = 5 and σ₂ = 2.",
     steps: ["κ = σ₁ / σ₂", "= 5 / 2", "= 2.5 (condition number)"],
   },
+  19: {
+    given: "A sorted list of 1024 items.",
+    steps: ["comparisons ≈ log₂(n)", "= log₂(1024)", "= 10"],
+  },
+  20: {
+    given: "A recurrence with a = 2 subproblems, each ½ the size (b = 2).",
+    steps: ["critical exponent = log_b(a)", "= log₂(2)", "= 1"],
+  },
+  25: {
+    given: "A query–key score of 4 with key dimension dₖ = 64.",
+    steps: ["scaled = QKᵀ / √dₖ", "= 4 / √64", "= 4 / 8 = 0.5"],
+  },
+  32: {
+    given: "Rate constant k = 1, [A] = 0.5 M, order m = 1.",
+    steps: ["r = k·[A]^m", "= 1 × 0.5¹", "= 0.5 M/s"],
+  },
+  33: {
+    given: "ΔH_vap = 40 kJ/mol, T = 373 K, ΔV = 30 L/mol.",
+    steps: ["dP/dT = ΔH_vap·1000 / (T·ΔV)", "= 40000 / (373 × 30)", "≈ 3.57 kPa/K"],
+  },
+  42: {
+    given: "Position pinned to Δx = 2 nm.",
+    steps: ["Δp ≥ ℏ / (2·Δx)", "= 1.05×10⁻³⁴ / (2 × 2×10⁻⁹)", "≈ 2.6×10⁻²⁶ kg·m/s"],
+  },
+  44: {
+    given: "A 1 µC charge moving at 5 m/s through a 1 T field.",
+    steps: ["F = q·v·B", "= 10⁻⁶ × 5 × 1", "= 5×10⁻⁶ N"],
+  },
+  49: {
+    given: "[K⁺]ₒ = 4 mM, [Na⁺]ₒ = 145 mM (standard permeabilities).",
+    steps: ["V_m = (RT/F)·ln((Kₒ + 0.04·Naₒ)/(140 + 0.4))", "= 26.7 mV · ln(9.8 / 140.4)", "≈ −71 mV"],
+  },
+  74: {
+    given: "f_l = 0.5, f_i = 0.1, L = 10 000 yr (other factors = 1).",
+    steps: ["N = f_l · f_i · L", "= 0.5 × 0.1 × 10000", "= 500"],
+  },
 }
 
 /** The worked example for an equation, or null if none is curated. */
