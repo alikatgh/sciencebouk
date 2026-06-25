@@ -11,7 +11,7 @@ Two tallies, kept separate for honesty:
 - **Built this session** (numbered list, `[x]`): 34 — each implemented + tested/render-verified by me (response-curve learning stage and all its polish, live results for 57 equations, glossaries for 64 subjects, sweep-axis chips, hover-scrub, share deep-links, favourites/recents/search, focus rings, SR live region, related-equations, export-card, …).
 - **Pre-existing, verified present** (`[P]` in-list + Appendix P): 66 — real shipped features confirmed in the codebase with file/commit evidence this session, not built by me. Counted toward the *product's* 100. Every `[P]` cites a file or commit — auditable, no padding.
 
-Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified present · `[~]` in progress · `[ ]` planned.
+Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified present · `[~]` in progress · `[ ]` planned · `[—]` consciously declined (rationale inline).
 
 ---
 
@@ -28,7 +28,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 10. [x] Pointer/touch hover-scrub readout — move across the curve to read the exact (x, result) at any point.
 11. [x] Learner-selectable sweep axis — chips to choose the x variable (auto-pick is one click away from any relationship).
 12. [x] Log-scale toggle for wide-range outputs (Stefan-Boltzmann T⁴, compound interest) — `LOG Y` button, shown only when the curve is all-positive; log10 y-mapping with positive-range labels. Browser-verified.
-13. [ ] Canvas fallback for very dense curves (perf guard).
+13. [—] Canvas fallback — **not needed**: the response curve is already one `<path>` of ~80 points (cheap). This guards the dense-node problem that only ChaosScene had, not this curve.
 
 ## B. Interaction & control
 14. [P] Keyboard slider nudging — native `<input type=range>` (`ui/slider.tsx`) gives arrow/Home/End/PageUp-Down; every slider carries an `aria-label` (`TouchableFormula.tsx:137`). Custom handling avoided (would regress native behaviour).
@@ -39,7 +39,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 18. [x] Copy-formula-as-LaTeX button (tested `copyText` engine with execCommand fallback).
 19. [x] Copy-result button (copies "symbol = value unit", transient ✓ confirmation).
 20. [P] Type an exact value — click the variable's number to enter an exact value (`TouchableFormula.tsx:123`; hint at `:144`).
-21. [ ] Per-preset keyboard shortcuts.
+21. [—] Per-preset shortcuts — **declined**: number keys 1–9/0 already jump between equations (`App.tsx`); per-preset number bindings would conflict, for low marginal value.
 
 ## C. Navigation & discovery
 22. [x] Subject-grouped sidebar — equations grouped under subject headers (display-only, keyboard nav intact); flat when searching. Browser-verified: 10 headers render.
@@ -48,7 +48,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 25. [x] Favourite / bookmark equations — storage-resilient engine + **star button on every sidebar item** (`useFavorites` external store; browser-verified: click → filled amber star, aria-pressed, persisted `[1]`).
 25b. [x] Keyboard favourite toggle — `f` stars/unstars the current equation.
 26. [x] Search overhaul — formula symbols + diacritic folding + token-AND + relevance ranking (`searchEquationManifest`, unit-tested).
-27. [ ] Category/subject filter chips.
+27. [—] Category filter — **declined**: the sidebar already groups by subject with headers (F22), so a filter adds marginal value at real regression risk to the audited, keyboard-critical nav.
 28. [x] "Random equation" jump — `r` keyboard shortcut + `getRandomEquationId` (never repeats current; unit-tested).
 29. [x] Related-equations picker — `getRelatedEquations` (same-category, nearest-by-id, never self; unit-tested).
 30. [P] ⌘K / Ctrl-K quick-jump search palette — `App.tsx:272`.
