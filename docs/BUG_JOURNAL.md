@@ -180,6 +180,15 @@ Before reproducing, grep this list for the shape of your bug.
     `vitest`. The dev server bakes `.env` in at startup, so a running preview is
     unaffected by removing it.
 
+27. **Guard math singularities at the SOURCE, not just the display layer.** A
+    pure compute fn with user/slider-reachable ÷0, `log(≤0)`, `asin(>1)`, or
+    factorial-overflow returns `Infinity`/`NaN` — and a *downstream* consumer (a
+    chart, an aggregate) ingests the raw value even when the on-screen readout
+    formats it as `—`. Return `NaN` on out-of-domain input inside the function;
+    compute factorials/products in log-space (a naive `k!` loses integer
+    precision by `k=20`, overflows by `k≈170`). (`subjectResults.ts`; audit
+    2026-06-23 M1–M5/L1–L5.)
+
 ---
 
 ## Reusable tools
@@ -203,6 +212,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-23 · Slider-reachable math singularities feed Infinity/NaN downstream
+Symptom: `subjectResults.ts` compute fns hit ÷0 / log(≤0) / factorial-overflow at slider extremes (Doppler at Mach 1, Nernst Q=0, condition-number σ₂=0, Poisson k=20).
+Cause: pure math with no domain guard; the result readout was shielded (`formatResultValue`→`—`) but the response curve ingested raw `Infinity`/`NaN`.
+Fix: return `NaN` on out-of-domain input at the source (`subjectResults.ts` ~10 fns); Poisson in log-space; id-79 ÷0 guard. Commits `c0f2c54`→`8c18c41`. Surfaced by the 10-agent audit (`docs/audits/2026-06-23-*`).
+**Lesson:** new pattern #27 — guard singularities at the source, not just the display layer; a downstream consumer (chart) sees the raw value.
 
 ### 2026-06-23 · A local `.env` override silently fails URL-asserting tests
 Symptom: `vitest` showed 5 `client.test.ts` failures in the full run, but the files passed in isolation.
