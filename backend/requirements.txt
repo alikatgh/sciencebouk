@@ -1,8 +1,8 @@
-Django==5.2.1
+Django==5.2.15
 django-cors-headers==4.7.0
 djangorestframework==3.16.0
 django-filter==25.1
-djangorestframework-simplejwt==5.4.0
+djangorestframework-simplejwt==5.5.1
 stripe==12.2.0
 dj-database-url==2.2.0
 google-auth==2.40.0
