@@ -3,6 +3,8 @@
  * Resilient to unavailable/corrupt storage; preserves insertion order.
  */
 const STORAGE_KEY = "sciencebouk-favorite-equations"
+// Bound storage against a pre-seeded/corrupt value (only ~81 equations exist).
+const MAX_FAVORITES = 200
 
 function readIds(): number[] {
   try {
@@ -33,7 +35,7 @@ export function isFavorite(id: number): boolean {
 
 export function toggleFavorite(id: number): number[] {
   const current = readIds()
-  const next = current.includes(id) ? current.filter((value) => value !== id) : [...current, id]
+  const next = (current.includes(id) ? current.filter((value) => value !== id) : [...current, id]).slice(0, MAX_FAVORITES)
   writeIds(next)
   return next
 }

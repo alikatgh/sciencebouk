@@ -18,12 +18,15 @@ export function ShortcutOverlay({
   onClose,
 }: ShortcutOverlayProps): ReactElement {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
 
-  // Focus trap: keep Tab/Shift+Tab inside the dialog while open
+  // Focus trap: keep Tab/Shift+Tab inside the dialog while open, and restore
+  // focus to the element that opened it on close.
   useEffect(() => {
     if (!open) return
     const el = dialogRef.current
     if (!el) return
+    returnFocusRef.current = document.activeElement as HTMLElement | null
     const focusable = el.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     )
@@ -39,7 +42,10 @@ export function ShortcutOverlay({
       }
     }
     el.addEventListener("keydown", trap)
-    return () => el.removeEventListener("keydown", trap)
+    return () => {
+      el.removeEventListener("keydown", trap)
+      returnFocusRef.current?.focus?.()
+    }
   }, [open])
 
   const rows: [string, string][] = [
@@ -62,8 +68,8 @@ export function ShortcutOverlay({
     open ? (
       <>
         <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
-        <div ref={dialogRef} className="fixed left-1/2 top-1/2 z-50 w-80 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-800" role="dialog" aria-modal="true" aria-label="Keyboard Shortcuts">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Keyboard Shortcuts</h3>
+        <div ref={dialogRef} className="fixed left-1/2 top-1/2 z-50 w-80 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-800" role="dialog" aria-modal="true" aria-labelledby="shortcuts-dialog-title">
+          <h3 id="shortcuts-dialog-title" className="text-sm font-bold text-slate-900 dark:text-white">Keyboard Shortcuts</h3>
           <div className="mt-3 space-y-2 text-xs text-slate-600 dark:text-slate-300">
             {rows.map(([key, desc]) => (
               <div key={key} className="flex items-center justify-between">

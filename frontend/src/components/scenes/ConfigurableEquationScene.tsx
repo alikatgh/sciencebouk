@@ -225,7 +225,12 @@ function GenericMetersVisual({
   const result = subjectResults[equationId]
   const resultValue = result ? result.compute(vars) : null
   const [sweepName, setSweepName] = useState<string | null>(null)
-  const activeSweep = result ? sweepName ?? pickSweepVariable(result, variables)?.name ?? null : null
+  // Memoised so pickSweepVariable doesn't re-run on every drag frame (vars change
+  // each frame, but the sweep choice only depends on result/variables/sweepName).
+  const activeSweep = useMemo(
+    () => (result ? sweepName ?? pickSweepVariable(result, variables)?.name ?? null : null),
+    [result, sweepName, variables],
+  )
 
   const [copied, setCopied] = useState<string | null>(null)
   const copy = (key: string, text: string) => {
