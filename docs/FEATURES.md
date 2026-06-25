@@ -84,7 +84,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 52. [x] Unit tests for `subjectResults` math + `pickSweepVariable` selection.
 53. [x] Per-scene error boundary — `EquationVisualization` wraps each scene so a crash stays contained to the viz panel; `resetKey={equationId}` auto-recovers on navigation (tested). Built on the pre-existing app-shell `ErrorBoundary` (`main.tsx`/`App.tsx`), which only covered the app root before.
 54. [ ] Analytics events for feature usage.
-55. [x] Scene-registry smoke test — guards the equation→scene mapping (distinct bespoke scenes, shared generic fallback, stable cache); a build-uncatchable regression class. Full-render smoke deferred — the per-scene boundary (F53) now contains runtime render crashes.
+55. [x] Scene smoke tests — **(a) render:** mounts `ResponseCurve` across 5 representative equations (linear / S-curve / parabola+markers / log-scale / NaN-domain) + the null-result case; asserts an SVG renders without throwing (`ResponseCurve.render.test.tsx`). **(b) registry:** equation→scene mapping is distinct + cached with a shared generic fallback (`sceneRegistry.test.ts`) — a build-uncatchable regression class.
 
 ## H. Backlog to reach 100
 56–100. [ ] Sequenced as batches land — drawn from the categories above plus:
