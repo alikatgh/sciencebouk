@@ -107,6 +107,66 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     correctIndex: 1,
     explanation: "Luminosity ∝ R² (at fixed temperature), so twice the radius gives four times the luminosity.",
   },
+  30: {
+    question: "You double the concentration of a coloured solution. Its absorbance…",
+    options: ["doubles", "halves", "stays the same"],
+    correctIndex: 0,
+    explanation: "A = εlc is linear in concentration, so doubling c doubles the absorbance.",
+  },
+  31: {
+    question: "A reaction proceeds on its own (spontaneously) when ΔG is…",
+    options: ["positive", "negative", "exactly zero"],
+    correctIndex: 1,
+    explanation: "A negative Gibbs free-energy change means the reaction is thermodynamically favourable.",
+  },
+  38: {
+    question: "Light passes from air into glass, a slower medium. It bends…",
+    options: ["toward the normal", "away from the normal", "not at all"],
+    correctIndex: 0,
+    explanation: "Entering a slower (higher-index) medium, light bends toward the surface normal.",
+  },
+  39: {
+    question: "A train whistle, as the train rushes toward you, sounds…",
+    options: ["higher-pitched", "lower-pitched", "unchanged"],
+    correctIndex: 0,
+    explanation: "An approaching source compresses the sound waves, raising the perceived frequency.",
+  },
+  55: {
+    question: "An asset with beta 2 (twice as volatile as the market) should offer…",
+    options: ["a lower expected return", "a higher expected return", "the same return"],
+    correctIndex: 1,
+    explanation: "Higher beta means more market risk, so investors demand a higher expected return (CAPM).",
+  },
+  58: {
+    question: "In a normal distribution, roughly what fraction of data lies within two standard deviations of the mean?",
+    options: ["68%", "95%", "99.7%"],
+    correctIndex: 1,
+    explanation: "The 68–95–99.7 rule: about 95% of values fall within two standard deviations.",
+  },
+  61: {
+    question: "Averaging more independent samples makes the distribution of the sample mean…",
+    options: ["wider", "narrower", "unchanged"],
+    correctIndex: 1,
+    explanation: "The standard error shrinks as 1/√n, so the mean's distribution narrows as n grows.",
+  },
+  69: {
+    question: "A high Reynolds number indicates flow that is…",
+    options: ["smooth and laminar", "turbulent", "completely still"],
+    correctIndex: 1,
+    explanation: "A high Reynolds number means inertia dominates viscosity — the flow becomes turbulent.",
+  },
+  71: {
+    question: "A galaxy twice as far away recedes from us…",
+    options: ["at the same speed", "twice as fast", "half as fast"],
+    correctIndex: 1,
+    explanation: "Hubble's law v = H₀d is linear, so twice the distance means twice the recession speed.",
+  },
+  72: {
+    question: "You double a black hole's mass. Its event-horizon radius…",
+    options: ["doubles", "quadruples", "halves"],
+    correctIndex: 0,
+    explanation: "The Schwarzschild radius r_s = 2GM/c² is linear in mass, so doubling M doubles it.",
+  },
 }
 
 /** The concept check for an equation, or null if none is curated. */
