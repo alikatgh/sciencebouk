@@ -144,6 +144,46 @@ export const workedExamples: Record<number, WorkedExample> = {
     given: "Two vectors of length 5, perpendicular (90°).",
     steps: ["|a×b| = |a||b|sin θ", "= 5 × 5 × sin 90°", "= 25 × 1 = 25"],
   },
+  22: {
+    given: "Starting at θ = 4 with learning rate α = 0.1 (loss J = θ²).",
+    steps: ["θ′ = θ(1 − 2α)", "= 4 × (1 − 0.2)", "= 3.2 (one step toward 0)"],
+  },
+  23: {
+    given: "Class scores z = [2, 1, 0].",
+    steps: ["P(z₁) = e² / (e² + e¹ + e⁰)", "= 7.39 / (7.39 + 2.72 + 1)", "≈ 0.665"],
+  },
+  27: {
+    given: "Activation energy 50 kJ/mol at 298 K.",
+    steps: ["k/A = e^(−Eₐ/RT)", "= e^(−50000 / (8.314 × 298))", "≈ 1.7 × 10⁻⁹"],
+  },
+  29: {
+    given: "A cell with E° = 1.1 V, n = 2, at equilibrium-neutral Q = 1.",
+    steps: ["E = E° − (RT/nF)·ln Q", "= 1.1 − (…)·ln(1)", "= 1.1 V  (ln 1 = 0)"],
+  },
+  41: {
+    given: "A particle with mass 1 and speed 1 (SI units).",
+    steps: ["λ = h / (m·v)", "= 6.63×10⁻³⁴ / (1 × 1)", "≈ 6.63×10⁻³⁴ m"],
+  },
+  59: {
+    given: "A fit with intercept β₀ = 0 and slope β₁ = 1, predicting at x = 1.",
+    steps: ["ŷ = β₀ + β₁·x", "= 0 + 1 × 1", "= 1"],
+  },
+  67: {
+    given: "A first-order system with gain K = 1 and pole at 1.",
+    steps: ["DC gain = K / pole", "= 1 / 1", "= 1"],
+  },
+  68: {
+    given: "An open loop with no unstable poles (P = 0) and N = 0 encirclements.",
+    steps: ["Z = N + P", "= 0 + 0", "= 0  (closed loop stable)"],
+  },
+  76: {
+    given: "Multiplying two 3×3 matrices the naive way.",
+    steps: ["multiplications = n³", "= 3³", "= 27"],
+  },
+  79: {
+    given: "Singular values σ₁ = 5 and σ₂ = 2.",
+    steps: ["κ = σ₁ / σ₂", "= 5 / 2", "= 2.5 (condition number)"],
+  },
 }
 
 /** The worked example for an equation, or null if none is curated. */
