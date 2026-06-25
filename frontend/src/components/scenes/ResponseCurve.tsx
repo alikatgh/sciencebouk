@@ -321,6 +321,10 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
 
   return (
     <div className="relative w-full max-w-md">
+      {/* Screen-reader mirror of the live result — SVG text nodes are not announced. */}
+      <div className="sr-only" role="status" aria-live="polite">
+        {`${model.symbol} = ${model.dotValue !== null ? tick(model.dotValue) : "—"}${model.unit ? ` ${model.unit}` : ""}`}
+      </div>
       {model.canLog && (
         <button
           type="button"
