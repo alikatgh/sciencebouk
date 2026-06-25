@@ -31,14 +31,14 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 13. [ ] Canvas fallback for very dense curves (perf guard).
 
 ## B. Interaction & control
-14. [ ] Keyboard nudging of the focused slider (arrows / shift-arrows).
+14. [P] Keyboard slider nudging — native `<input type=range>` (`ui/slider.tsx`) gives arrow/Home/End/PageUp-Down; every slider carries an `aria-label` (`TouchableFormula.tsx:137`). Custom handling avoided (would regress native behaviour).
 15. [x] Reset-to-defaults button (restores every slider to its default).
 16. [x] Randomize-inputs button (snaps each slider to a random in-range, on-step value).
 17. [x] Deep-link slider state — round-trip engine (unit-tested).
 17b. [x] **Share button + restore-on-load** — copies `/equation/{id}?v=…`; loading it restores the exact sliders. Browser-verified: `?v=I~7,R~3` → I=7, R=3 → V=21 ✓.
 18. [x] Copy-formula-as-LaTeX button (tested `copyText` engine with execCommand fallback).
 19. [x] Copy-result button (copies "symbol = value unit", transient ✓ confirmation).
-20. [ ] Double-tap a slider to type an exact value.
+20. [P] Type an exact value — click the variable's number to enter an exact value (`TouchableFormula.tsx:123`; hint at `:144`).
 21. [ ] Per-preset keyboard shortcuts.
 
 ## C. Navigation & discovery
