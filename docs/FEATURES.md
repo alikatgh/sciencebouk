@@ -5,7 +5,7 @@ A feature counts as **done** only when it is implemented, type-checks, and is
 covered by a test or a live render check. Each batch is verified before the count
 advances. No padding — every item is real user or developer value.
 
-**Progress: 37 built & verified this session + 68 pre-existing verified = 105 / 100 product features. ✅ (goal exceeded; still hardening)**
+**Progress: 38 built & verified this session + 68 pre-existing verified = 106 / 100 product features. ✅ (goal exceeded; still hardening)**
 
 Two tallies, kept separate for honesty:
 - **Built this session** (numbered list, `[x]`): 34 — each implemented + tested/render-verified by me (response-curve learning stage and all its polish, live results for 57 equations, glossaries for 64 subjects, sweep-axis chips, hover-scrub, share deep-links, favourites/recents/search, focus rings, SR live region, related-equations, export-card, …).

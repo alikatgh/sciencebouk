@@ -5,6 +5,7 @@ import { Check, Copy, Link2, RotateCcw, Shuffle } from "lucide-react"
 import { copyText } from "../../lib/clipboard"
 import { decodeVarsFromParam, encodeVarsToParam } from "../../lib/equationShareUrl"
 import { pushToast } from "../../lib/toast"
+import { buildCitation } from "../../lib/citation"
 import { TeachableEquation, type Preset } from "../teaching/TeachableEquation"
 import { useEquationId } from "../teaching/EquationContext"
 import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
@@ -30,6 +31,7 @@ const COPY_LABELS: Record<string, string> = {
   share: "Link copied",
   latex: "LaTeX copied",
   result: "Result copied",
+  cite: "Citation copied",
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -209,7 +211,7 @@ export function ConfigurableEquationScene(): ReactElement {
       glossary={glossary}
     >
       {({ vars, setVar }) => (
-        <GenericMetersVisual key={equationId} equationId={equationId} variables={variables} vars={vars} setVar={setVar} formula={equation.formula} />
+        <GenericMetersVisual key={equationId} equationId={equationId} variables={variables} vars={vars} setVar={setVar} formula={equation.formula} citation={buildCitation(equation)} />
       )}
     </TeachableEquation>
   )
@@ -221,12 +223,14 @@ function GenericMetersVisual({
   vars,
   setVar,
   formula,
+  citation,
 }: {
   equationId: number
   variables: Variable[]
   vars: Record<string, number>
   setVar: (name: string, value: number) => void
   formula: string
+  citation: string
 }): ReactElement {
   const meters = variables.filter((v) => !v.constant)
   const result = subjectResults[equationId]
@@ -325,6 +329,15 @@ function GenericMetersVisual({
         >
           {copied === "latex" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
           {copied === "latex" ? "Copied" : "LaTeX"}
+        </button>
+        <button
+          type="button"
+          onClick={() => copy("cite", citation)}
+          aria-label="Copy a citation for this equation"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          {copied === "cite" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+          {copied === "cite" ? "Copied" : "Cite"}
         </button>
         {result && resultValue !== null && (
           <button
