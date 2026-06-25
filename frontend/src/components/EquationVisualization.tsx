@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { Suspense } from "react"
 import { EquationIdProvider } from "./teaching/EquationContext"
 import { getScene } from "./sceneRegistry"
+import { ErrorBoundary } from "./ErrorBoundary"
 
 function LoadingSkeleton(): ReactElement {
   return (
@@ -21,12 +22,16 @@ export function EquationVisualization({
 }): ReactElement {
   const SceneComponent = getScene(equationId)
 
-  // No ErrorBoundary here — App.tsx wraps us in one with a proper fallback UI.
+  // Scene-scoped ErrorBoundary: a crash in one visualization stays contained to
+  // the viz panel (App.tsx's boundary is the app-shell backstop), and `resetKey`
+  // clears it automatically when the learner navigates to another equation.
   return (
     <Suspense fallback={<LoadingSkeleton />}>
       <div key={equationId} className="h-full animate-fade-in-up motion-reduce:animate-none">
         <EquationIdProvider value={equationId}>
-          <SceneComponent />
+          <ErrorBoundary resetKey={equationId}>
+            <SceneComponent />
+          </ErrorBoundary>
         </EquationIdProvider>
       </div>
     </Suspense>

@@ -4,6 +4,12 @@ import type { ReactNode, ErrorInfo } from "react"
 interface ErrorBoundaryProps {
   children: ReactNode
   fallback?: ReactNode
+  /**
+   * When this value changes, a previously-caught error is cleared. Pass the
+   * equation id when wrapping a scene so navigating to a different equation
+   * recovers automatically instead of stranding the error UI on a healthy scene.
+   */
+  resetKey?: unknown
 }
 
 interface ErrorBoundaryState {
@@ -23,6 +29,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error("ErrorBoundary caught:", error, info)
+  }
+
+  componentDidUpdate(prevProps: ErrorBoundaryProps): void {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null })
+    }
   }
 
   render(): ReactNode {
