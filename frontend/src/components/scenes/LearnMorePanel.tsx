@@ -3,6 +3,7 @@ import { useState } from "react"
 import { getEquationFact } from "../../data/equationFacts"
 import { getConceptCheck } from "../../data/conceptChecks"
 import { getPrerequisites } from "../../data/prerequisites"
+import { getWorkedExample } from "../../data/workedExamples"
 import { ConceptCheck } from "./ConceptCheck"
 
 /**
@@ -13,15 +14,17 @@ import { ConceptCheck } from "./ConceptCheck"
  * renders nothing when none do. The parent keys the scene subtree by equation
  * id, so the active tab resets on navigation.
  */
-type TabKey = "fact" | "check" | "builds"
+type TabKey = "fact" | "example" | "check" | "builds"
 
 export function LearnMorePanel({ equationId }: { equationId: number }): ReactElement | null {
   const fact = getEquationFact(equationId)
+  const example = getWorkedExample(equationId)
   const hasCheck = getConceptCheck(equationId) !== null
   const prereqs = getPrerequisites(equationId)
 
   const tabs: Array<{ key: TabKey; label: string }> = []
   if (fact) tabs.push({ key: "fact", label: "Did you know?" })
+  if (example) tabs.push({ key: "example", label: "Worked example" })
   if (hasCheck) tabs.push({ key: "check", label: "Quick check" })
   if (prereqs) tabs.push({ key: "builds", label: "Builds on" })
 
@@ -53,6 +56,16 @@ export function LearnMorePanel({ equationId }: { equationId: number }): ReactEle
       <div role="tabpanel" className="px-3 pb-2.5 pt-2 text-left">
         {current === "fact" && fact && (
           <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{fact}</p>
+        )}
+        {current === "example" && example && (
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{example.given}</p>
+            <div className="mt-1.5 flex flex-col gap-0.5 font-mono text-xs text-slate-700 dark:text-slate-200">
+              {example.steps.map((step, i) => (
+                <span key={i}>{step}</span>
+              ))}
+            </div>
+          </div>
         )}
         {current === "check" && <ConceptCheck equationId={equationId} />}
         {current === "builds" && prereqs && (

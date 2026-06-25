@@ -10,15 +10,20 @@ describe("LearnMorePanel", () => {
   })
 
   it("shows a tab per available aid and switches panels", async () => {
-    render(<LearnMorePanel equationId={35} />) // Kinetic Energy: fact + check + builds-on
+    render(<LearnMorePanel equationId={35} />) // Kinetic Energy: fact + worked example + check + builds-on
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
       "Did you know?",
+      "Worked example",
       "Quick check",
       "Builds on",
     ])
 
     // first tab active by default — the fact is visible
     expect(screen.getByText(/four times the energy/i)).toBeInTheDocument()
+
+    // the worked example shows the substitution steps
+    await userEvent.click(screen.getByRole("tab", { name: "Worked example" }))
+    expect(screen.getByText(/= ½ × 10 × 100 = 500 J/)).toBeInTheDocument()
 
     // switching reveals the prerequisite link and hides the fact
     await userEvent.click(screen.getByRole("tab", { name: "Builds on" }))
