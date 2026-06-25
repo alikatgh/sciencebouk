@@ -29,18 +29,24 @@ const RAD = Math.PI / 180
 
 export const subjectResults: Record<number, SubjectResult> = {
   // ---- Computer Science ----
-  19: { symbol: "steps", compute: (v) => Math.ceil(Math.log2(v.n)) },
-  20: { symbol: "log_b a", note: "critical exponent", compute: (v) => Math.log(v.a) / Math.log(v.b) },
-  21: { symbol: "P(A|B)", compute: (v) => (v.sens * v.prior) / (v.sens * v.prior + v.fpr * (1 - v.prior)) },
+  19: { symbol: "steps", compute: (v) => (v.n < 1 ? NaN : Math.ceil(Math.log2(v.n))) },
+  20: { symbol: "log_b a", note: "critical exponent", compute: (v) => (v.a <= 0 || v.b <= 0 || v.b === 1 ? NaN : Math.log(v.a) / Math.log(v.b)) },
+  21: {
+    symbol: "P(A|B)",
+    compute: (v) => {
+      const denom = v.sens * v.prior + v.fpr * (1 - v.prior)
+      return denom === 0 ? NaN : (v.sens * v.prior) / denom
+    },
+  },
   22: { symbol: "θ′", note: "one step, J(θ)=θ²", compute: (v) => v.theta * (1 - 2 * v.alpha) },
   23: { symbol: "P(z₁)", compute: (v) => Math.exp(v.z1) / (Math.exp(v.z1) + Math.exp(v.z2) + Math.exp(v.z3)) },
-  24: { symbol: "H", unit: "nats", compute: (v) => -Math.log(v.q) },
+  24: { symbol: "H", unit: "nats", compute: (v) => (v.q <= 0 ? NaN : -Math.log(v.q)) },
   25: { symbol: "QKᵀ/√dₖ", compute: (v) => v.score / Math.sqrt(v.dk) },
   // ---- Chemistry ----
   26: { symbol: "P", unit: "atm", compute: (v) => (v.n * 0.082057 * v.T) / v.V },
   27: { symbol: "k/A", note: "relative to pre-factor A", compute: (v) => Math.exp(-(v.Ea * 1000) / (8.314 * v.T)) },
-  28: { symbol: "pH", compute: (v) => v.pKa + Math.log10(v.ratio) },
-  29: { symbol: "E", unit: "V", note: "at 298 K", compute: (v) => v.E0 - ((8.314 * 298) / (v.n * 96485)) * Math.log(v.Q) },
+  28: { symbol: "pH", compute: (v) => (v.ratio <= 0 ? NaN : v.pKa + Math.log10(v.ratio)) },
+  29: { symbol: "E", unit: "V", note: "at 298 K", compute: (v) => (v.Q <= 0 ? NaN : v.E0 - ((8.314 * 298) / (v.n * 96485)) * Math.log(v.Q)) },
   30: { symbol: "A", compute: (v) => v.eps * v.l * v.c },
   31: { symbol: "ΔG", unit: "kJ/mol", compute: (v) => v.dH - (v.T * v.dS) / 1000 },
   32: { symbol: "r", unit: "M/s", note: "[B] term set to 1", compute: (v) => v.k * Math.pow(v.A, v.m) },
@@ -59,7 +65,7 @@ export const subjectResults: Record<number, SubjectResult> = {
       return s > 1 ? NaN : Math.asin(s) / RAD
     },
   },
-  39: { symbol: "f′", unit: "Hz", note: "v_sound = 343 m/s", compute: (v) => (v.f * 343) / (343 - v.vs) },
+  39: { symbol: "f′", unit: "Hz", note: "v_sound = 343 m/s", compute: (v) => (343 - v.vs === 0 ? NaN : (v.f * 343) / (343 - v.vs)) },
   40: { symbol: "P", unit: "W", compute: (v) => 5.67e-8 * v.A * Math.pow(v.T, 4) },
   42: { symbol: "Δp_min", unit: "kg·m/s", compute: (v) => 1.0545718e-34 / (2 * v.dx * 1e-9) },
   41: { symbol: "λ", unit: "m", note: "m in kg, v in m/s", compute: (v) => 6.626e-34 / (v.m * v.v) },
@@ -73,7 +79,10 @@ export const subjectResults: Record<number, SubjectResult> = {
     symbol: "V_m",
     unit: "mV",
     note: "T=310 K, P_Na/P_K=0.04",
-    compute: (v) => ((8.314 * 310) / 96485) * Math.log((v.Ko + 0.04 * v.Nao) / (140 + 0.04 * 10)) * 1000,
+    compute: (v) => {
+      const num = v.Ko + 0.04 * v.Nao
+      return num <= 0 ? NaN : ((8.314 * 310) / 96485) * Math.log(num / (140 + 0.04 * 10)) * 1000
+    },
   },
   // ---- Economics ----
   51: { symbol: "A", unit: "$", note: "annual compounding", compute: (v) => v.P * Math.pow(1 + v.r, v.t) },

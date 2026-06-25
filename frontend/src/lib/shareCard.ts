@@ -19,6 +19,7 @@ function escapeXml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;") // defence-in-depth for any future single-quoted attribute
 }
 
 export function buildShareCardSvg(opts: ShareCardOptions): string {

@@ -308,7 +308,7 @@ export default function App(): ReactElement {
 
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, sidebarOpen, setSidebarOpenAndPersist])
+  }, [navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, sidebarOpen, setSidebarOpenAndPersist, equationManifest])
 
   const currentIndex = equationIndexById.get(selectedId) ?? -1
   const prevEquation = currentIndex > 0 ? equationManifest[currentIndex - 1] : null

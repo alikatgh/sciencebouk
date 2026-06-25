@@ -6,7 +6,7 @@ describe("buildShareCardSvg", () => {
     const svg = buildShareCardSvg({ title: "Ohm's Law", resultLabel: "V = 21 V", author: "Georg Ohm", year: "1827" })
     expect(svg.startsWith("<svg")).toBe(true)
     expect(svg.trimEnd().endsWith("</svg>")).toBe(true)
-    expect(svg).toContain("Ohm&apos;s Law".replace("&apos;", "'")) // title present (apostrophe kept)
+    expect(svg).toContain("Ohm&apos;s Law") // title present, apostrophe XML-escaped
     expect(svg).toContain("V = 21 V")
     expect(svg).toContain("Georg Ohm, 1827")
   })

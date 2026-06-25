@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest"
 import { subjectResults, formatResultValue } from "./subjectResults"
 
 describe("subjectResults", () => {
+  it("returns NaN (not Infinity/garbage) at slider-reachable singularities", () => {
+    // audit 2026-06-23: domain guards so the result readout shows "—" and the
+    // response curve never ingests Infinity.
+    expect(subjectResults[21].compute({ sens: 0, prior: 0, fpr: 0 })).toBeNaN() // Bayes 0/0
+    expect(subjectResults[39].compute({ f: 440, vs: 343 })).toBeNaN() // Doppler at Mach 1
+    expect(subjectResults[29].compute({ E0: 1.1, n: 2, Q: 0 })).toBeNaN() // Nernst log(0)
+    expect(subjectResults[20].compute({ a: 2, b: 1 })).toBeNaN() // change-of-base b=1
+    expect(subjectResults[24].compute({ q: 0 })).toBeNaN() // information -log(0)
+    expect(subjectResults[28].compute({ pKa: 4.76, ratio: 0 })).toBeNaN() // H-H log10(0)
+    expect(subjectResults[19].compute({ n: 0 })).toBeNaN() // binary search log2(0)
+    expect(subjectResults[49].compute({ Ko: 0, Nao: 0 })).toBeNaN() // Goldman log(0)
+    // and the readout formats NaN as an em dash, not "Infinity"
+    expect(formatResultValue(subjectResults[39].compute({ f: 440, vs: 343 }))).toBe("—")
+    // normal inputs still compute correctly after guarding
+    expect(subjectResults[21].compute({ sens: 0.99, prior: 0.01, fpr: 0.05 })).toBeCloseTo(0.167, 2)
+  })
+
   it("computes physically correct outputs from slider values", () => {
     // Ohm's law V = IR
     expect(subjectResults[37].compute({ I: 2, R: 10 })).toBe(20)
