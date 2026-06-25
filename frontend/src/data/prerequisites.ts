@@ -47,6 +47,18 @@ export const prerequisites: Record<number, Prerequisite[]> = {
   75: [{ id: 13, title: "Relativity" }],
   79: [{ id: 77, title: "Eigenvalue Equation" }],
   81: [{ id: 80, title: "Dot Product" }],
+  19: [{ id: 2, title: "Logarithms" }],
+  30: [{ id: 43, title: "Planck's Relation" }],
+  33: [{ id: 31, title: "Gibbs Free Energy" }],
+  50: [{ id: 46, title: "Logistic Growth" }],
+  54: [{ id: 51, title: "Compound Interest" }],
+  58: [{ id: 8, title: "Normal Distribution" }],
+  63: [{ id: 21, title: "Bayes' Theorem" }],
+  65: [{ id: 64, title: "Hooke's Law" }],
+  67: [{ id: 9, title: "Fourier Transform" }],
+  77: [{ id: 76, title: "Matrix Multiplication" }],
+  78: [{ id: 76, title: "Matrix Multiplication" }],
+  80: [{ id: 1, title: "Pythagoras's Theorem" }],
 }
 
 /** The prerequisite equations for an equation, or null if none are curated. */
