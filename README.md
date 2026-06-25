@@ -54,7 +54,7 @@ docker compose up --build
 | Visualization | D3.js 7.9, Konva 10.2, Framer Motion 12.6 |
 | Math rendering | KaTeX 0.16 |
 | Data fetching | TanStack React Query 5, React Router 7 |
-| Backend | Django 5.2, Django REST Framework 3.16, SQLite |
+| Backend | Django 5.2, Django REST Framework 3.16, SQLite (dev) / PostgreSQL (prod via `DATABASE_URL`) |
 | Testing | Vitest + React Testing Library (frontend), Django TestCase (backend) |
 | CI/CD | GitHub Actions |
 
@@ -106,11 +106,11 @@ docker compose up --build
 ## Testing
 
 ```bash
-# Frontend: 8 tests
+# Frontend
 cd frontend && npm run test
 
-# Backend: 76 tests
-cd backend && source .venv/bin/activate && python manage.py test courses -v 2
+# Backend (all apps — courses, accounts, payments)
+cd backend && source .venv/bin/activate && python manage.py test -v 2
 ```
 
 ## Environment Variables
