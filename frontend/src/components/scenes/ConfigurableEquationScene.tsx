@@ -4,6 +4,7 @@ import { BlockMath } from "react-katex"
 import { Check, Copy, Link2, RotateCcw, Shuffle } from "lucide-react"
 import { copyText } from "../../lib/clipboard"
 import { decodeVarsFromParam, encodeVarsToParam } from "../../lib/equationShareUrl"
+import { pushToast } from "../../lib/toast"
 import { TeachableEquation, type Preset } from "../teaching/TeachableEquation"
 import { useEquationId } from "../teaching/EquationContext"
 import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
@@ -24,6 +25,12 @@ import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
  * learner gets visual feedback as they drag the sliders and step through the
  * lesson.
  */
+
+const COPY_LABELS: Record<string, string> = {
+  share: "Link copied",
+  latex: "LaTeX copied",
+  result: "Result copied",
+}
 
 const COLOR_MAP: Record<string, string> = {
   primary: VAR_COLORS.primary,
@@ -235,8 +242,12 @@ function GenericMetersVisual({
   const [copied, setCopied] = useState<string | null>(null)
   const copy = (key: string, text: string) => {
     void copyText(text).then((ok) => {
-      if (!ok) return
+      if (!ok) {
+        pushToast("Couldn’t copy to clipboard", "error")
+        return
+      }
       setCopied(key)
+      pushToast(COPY_LABELS[key] ?? "Copied", "success")
       window.setTimeout(() => setCopied((current) => (current === key ? null : current)), 1500)
     })
   }

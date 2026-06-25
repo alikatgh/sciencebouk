@@ -5,7 +5,7 @@ A feature counts as **done** only when it is implemented, type-checks, and is
 covered by a test or a live render check. Each batch is verified before the count
 advances. No padding — every item is real user or developer value.
 
-**Progress: 36 built & verified this session + 68 pre-existing verified = 104 / 100 product features. ✅ (goal exceeded; still hardening)**
+**Progress: 37 built & verified this session + 68 pre-existing verified = 105 / 100 product features. ✅ (goal exceeded; still hardening)**
 
 Two tallies, kept separate for honesty:
 - **Built this session** (numbered list, `[x]`): 34 — each implemented + tested/render-verified by me (response-curve learning stage and all its polish, live results for 57 equations, glossaries for 64 subjects, sweep-axis chips, hover-scrub, share deep-links, favourites/recents/search, focus rings, SR live region, related-equations, export-card, …).
@@ -73,7 +73,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 ## F. Polish & UX states
 44. [P] Loading skeletons for scenes — `EquationVisualization` `LoadingSkeleton` + `Suspense`.
 45. [P] Friendly empty/error states — "Equation not found" page + `VisualizationFallback`.
-46. [ ] Toast notifications (copied, saved, synced).
+46. [x] Toast notifications — external-store toast system (`lib/toast.ts` + `ToastHost`, auto-expire, capped, `aria-live`); wired into copy/share, and now surfaces clipboard *failures* the inline ✓ silently dropped. Store unit-tested.
 47. [P] Theme toggle: light / dark / system — settings `theme` + header toggle.
 48. [P] Responsive / mobile layout — resizable mobile/desktop scene layout (`TeachableEquation`) + coarse-pointer sliders.
 49. [x] Export an equation card as an image — `buildShareCardSvg` (branded SVG with title + result + attribution; XML-escaped, unit-tested) + `downloadSvg`.
