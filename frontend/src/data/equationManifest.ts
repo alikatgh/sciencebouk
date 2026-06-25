@@ -47,6 +47,9 @@ export function searchEquationManifest(
   }
 
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean)
+  // Compile each token's word-boundary regex ONCE per query, not per equation
+  // (was O(equations × tokens) regex compilations on every keystroke).
+  const wordBoundaries = new Map(tokens.map((token) => [token, new RegExp(`\\b${escapeRegExp(token)}`)]))
   const scored: Array<{ equation: EquationSummary; score: number }> = []
 
   for (const equation of manifest) {
@@ -61,9 +64,9 @@ export function searchEquationManifest(
 
     let score = 0
     for (const token of tokens) {
-      const wordBoundary = new RegExp(`\\b${escapeRegExp(token)}`)
+      const wordBoundary = wordBoundaries.get(token)
       if (title.startsWith(token)) score += 100
-      else if (wordBoundary.test(title)) score += 60
+      else if (wordBoundary?.test(title)) score += 60
       else if (title.includes(token)) score += 40
       else if (formula.includes(token)) score += 25
       else if (author.includes(token)) score += 15
