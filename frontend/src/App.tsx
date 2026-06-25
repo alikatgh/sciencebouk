@@ -243,7 +243,7 @@ export default function App(): ReactElement {
     if (equationManifest.some(e => e.id === targetId)) {
       selectEquation(targetId)
     }
-  }, [selectEquation])
+  }, [selectEquation, equationManifest])
 
   const selectedId = selectedEquation?.id ?? firstEquationId
 

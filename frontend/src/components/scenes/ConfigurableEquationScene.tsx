@@ -339,7 +339,7 @@ function GenericMetersVisual({
           {copied === "cite" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
           {copied === "cite" ? "Copied" : "Cite"}
         </button>
-        {result && resultValue !== null && (
+        {result && resultValue !== null && Number.isFinite(resultValue) && (
           <button
             type="button"
             onClick={() => copy("result", `${result.symbol} = ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`)}
@@ -352,7 +352,7 @@ function GenericMetersVisual({
         )}
       </div>
 
-      {result && resultValue !== null && (
+      {result && resultValue !== null && Number.isFinite(resultValue) && (
         <div
           role="status"
           aria-live="polite"

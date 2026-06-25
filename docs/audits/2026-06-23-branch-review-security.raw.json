@@ -1,8 +1,8 @@
 {
   "dimensions": [
-    "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y",
+    "correctness — React: hooks, keys, effects, subscriptions, a11y",
     "client-storage-and-url-parsing",
-    "correctness \u2014 math",
+    "correctness — math",
     "security: injection / XSS",
     "performance"
   ],
@@ -12,60 +12,60 @@
       "file": "frontend/src/App.tsx",
       "line": "260-311",
       "title": "Keyboard handler closes over stale `equationManifest` when `selectEquationFromShortcut` dep is missing",
-      "detail": "`selectEquationFromShortcut` (line 241) captures `selectEquation` in its closure and is recreated when the manifest changes, but the `useCallback` dep array at line 245 lists only `[selectEquation]` \u2014 it does NOT list `equationManifest`. Because `selectEquationFromShortcut` is used in the `keydown` handler's dep array (line 311), this means the keyboard handler always has the latest callback. That part is fine. However, line 303 reads `equationManifest.length` DIRECTLY inside the handler closure, but `equationManifest` itself is NOT listed in the dep array of that `useEffect` (line 311 lists only `navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, sidebarOpen, setSidebarOpenAndPersist`). If `equationManifest` grows (e.g. after the manifest API resolves more items) the '0' shortcut branch at line 303 (`10 <= equationManifest.length`) and j/k navigation reading `equationManifest[index \u00b1 1]` (lines 267\u2013271) may stale-close over the old shorter array, potentially skipping a valid equation or silently doing nothing for the '0' key.",
+      "detail": "`selectEquationFromShortcut` (line 241) captures `selectEquation` in its closure and is recreated when the manifest changes, but the `useCallback` dep array at line 245 lists only `[selectEquation]` — it does NOT list `equationManifest`. Because `selectEquationFromShortcut` is used in the `keydown` handler's dep array (line 311), this means the keyboard handler always has the latest callback. That part is fine. However, line 303 reads `equationManifest.length` DIRECTLY inside the handler closure, but `equationManifest` itself is NOT listed in the dep array of that `useEffect` (line 311 lists only `navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, sidebarOpen, setSidebarOpenAndPersist`). If `equationManifest` grows (e.g. after the manifest API resolves more items) the '0' shortcut branch at line 303 (`10 <= equationManifest.length`) and j/k navigation reading `equationManifest[index ± 1]` (lines 267–271) may stale-close over the old shorter array, potentially skipping a valid equation or silently doing nothing for the '0' key.",
       "recommendation": "Add `equationManifest` to the `useEffect` dependency array at line 311. Because `equationManifest` is memoised (changes reference only when the manifest data changes), this does not cause excessive re-subscriptions. Alternatively, use a ref that is kept in sync: `const manifestRef = useRef(equationManifest); useEffect(() => { manifestRef.current = equationManifest; }, [equationManifest]);` and read from `manifestRef.current` inside the keyboard handler (then `equationManifest` can be removed from the handler dep array).",
       "confidence": "high",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "high",
       "file": "frontend/src/components/scenes/ConfigurableEquationScene.tsx",
       "line": "240-249",
       "title": "`useEffect` URL-restore dep `setVar` causes re-runs when `setVar` identity changes, and `variables` dep causes re-runs on every equation load",
-      "detail": "The `useEffect` on line 240 lists `[variables, setVar]` as deps. `variables` is a new array on every render in which `equation?.variables_data` reference changes. Because `variables` is produced by `useMemo` this is acceptable UNLESS `equation.variables_data` is a new array reference on every polling re-fetch. More critically: `setVar` likely comes from a parent state dispatcher or context whose identity may not be stable across renders. If `setVar` changes identity between renders (e.g. defined as an inline arrow in the render body of `TeachableEquation`) the effect fires AGAIN on re-renders AFTER the initial mount, re-reading `window.location.search` and overwriting any user-adjusted values. Because the component uses `key={equationId}` on `GenericMetersVisual` (line 205) the effect intent is correct for 'run once on mount' \u2014 but the dep array is wrong for that intent. The correct dep array for a true 'run on mount' effect is `[]`; with `key` guaranteeing remount this is safe.",
+      "detail": "The `useEffect` on line 240 lists `[variables, setVar]` as deps. `variables` is a new array on every render in which `equation?.variables_data` reference changes. Because `variables` is produced by `useMemo` this is acceptable UNLESS `equation.variables_data` is a new array reference on every polling re-fetch. More critically: `setVar` likely comes from a parent state dispatcher or context whose identity may not be stable across renders. If `setVar` changes identity between renders (e.g. defined as an inline arrow in the render body of `TeachableEquation`) the effect fires AGAIN on re-renders AFTER the initial mount, re-reading `window.location.search` and overwriting any user-adjusted values. Because the component uses `key={equationId}` on `GenericMetersVisual` (line 205) the effect intent is correct for 'run once on mount' — but the dep array is wrong for that intent. The correct dep array for a true 'run on mount' effect is `[]`; with `key` guaranteeing remount this is safe.",
       "recommendation": "Use an empty dependency array `[]` for this effect (it is explicitly noted as 'Restore a shared configuration from ?v= on first mount (remounts per equation via key)' at line 239). If ESLint `exhaustive-deps` complains, capture the variables and setVar values in refs before the effect: `const varsRef = useRef(variables); const setVarRef = useRef(setVar);` (updated synchronously in a preceding layout effect) and use those refs inside the `[]`-dep effect. Alternatively, read the URL param and build the initial value map outside the effect to pass as a prop to `GenericMetersVisual`.",
       "confidence": "high",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "medium",
       "file": "frontend/src/components/scenes/ConfigurableEquationScene.tsx",
       "line": "227",
-      "title": "`sweepName` state not reset when `equationId` changes \u2014 stale x-axis persists across equations",
-      "detail": "`sweepName` (line 227) is initialised to `null` and is set by the x-axis picker buttons (line 354). `GenericMetersVisual` is keyed by `equationId` (line 205), so the component unmounts/remounts when the equation changes. `useState` initial value is re-evaluated on mount, so `sweepName` will be reset to `null` on equation change \u2014 this is correct behaviour. However: if for any reason the parent does NOT remount the component (e.g. if the `key` prop is changed to something else in a future refactor) `sweepName` would retain a stale variable name from the previous equation. The current implementation is safe, but the correctness depends entirely on the `key` prop staying on the parent's render of `GenericMetersVisual`. Add a comment noting this dependency so future authors don't silently break it.",
+      "title": "`sweepName` state not reset when `equationId` changes — stale x-axis persists across equations",
+      "detail": "`sweepName` (line 227) is initialised to `null` and is set by the x-axis picker buttons (line 354). `GenericMetersVisual` is keyed by `equationId` (line 205), so the component unmounts/remounts when the equation changes. `useState` initial value is re-evaluated on mount, so `sweepName` will be reset to `null` on equation change — this is correct behaviour. However: if for any reason the parent does NOT remount the component (e.g. if the `key` prop is changed to something else in a future refactor) `sweepName` would retain a stale variable name from the previous equation. The current implementation is safe, but the correctness depends entirely on the `key` prop staying on the parent's render of `GenericMetersVisual`. Add a comment noting this dependency so future authors don't silently break it.",
       "recommendation": "Low-risk as-is given the current `key={equationId}` at line 205. Add a comment: `// sweepName intentionally lives here rather than in a keyed child so it resets on equationId change via the key prop above`. As a belt-and-suspenders measure, also include `useEffect(() => { setSweepName(null) }, [equationId])` inside `GenericMetersVisual`.",
       "confidence": "medium",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "medium",
       "file": "frontend/src/components/scenes/ResponseCurve.tsx",
       "line": "29-32",
-      "title": "`REDUCED_MOTION` evaluated once at module load \u2014 SSR hydration mismatch and dynamic preference change blindness",
-      "detail": "Line 29 evaluates `window.matchMedia('(prefers-reduced-motion: reduce)').matches` at module-load time. Two issues: (1) In SSR or test environments `window` may be absent even though the `typeof window !== 'undefined'` guard is present \u2014 the `false` fallback is safe, but the value is frozen at import time so if the module is loaded server-side and then reused client-side (Next.js/Remix style), the client won't pick up the user's real preference until a full reload. (2) More practically, if the user changes their OS motion preference while the page is open (this is possible on macOS via System Settings), `REDUCED_MOTION` never updates, so the `cx`/`cy` CSS transition on the dot at line 418 may incorrectly animate or not animate.",
+      "title": "`REDUCED_MOTION` evaluated once at module load — SSR hydration mismatch and dynamic preference change blindness",
+      "detail": "Line 29 evaluates `window.matchMedia('(prefers-reduced-motion: reduce)').matches` at module-load time. Two issues: (1) In SSR or test environments `window` may be absent even though the `typeof window !== 'undefined'` guard is present — the `false` fallback is safe, but the value is frozen at import time so if the module is loaded server-side and then reused client-side (Next.js/Remix style), the client won't pick up the user's real preference until a full reload. (2) More practically, if the user changes their OS motion preference while the page is open (this is possible on macOS via System Settings), `REDUCED_MOTION` never updates, so the `cx`/`cy` CSS transition on the dot at line 418 may incorrectly animate or not animate.",
       "recommendation": "Move `REDUCED_MOTION` into the component body as a state value backed by a `matchMedia` listener: `const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches); useEffect(() => { const mq = window.matchMedia('(prefers-reduced-motion: reduce)'); const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches); mq.addEventListener('change', handler); return () => mq.removeEventListener('change', handler); }, []);` Alternatively use the existing `REDUCED_MOTION` module constant but add a one-time `change` listener that forces a component re-render. The SSR concern only matters if this project ever adds SSR.",
       "confidence": "medium",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "medium",
       "file": "frontend/src/components/app-shell/ShortcutOverlay.tsx",
       "line": "23-43",
       "title": "Focus trap does not restore focus to the previously-focused element on close, and `querySelectorAll` runs before the DOM fully commits",
-      "detail": "When the overlay is opened, focus is moved to the first focusable element inside the dialog (line 31: `first?.focus()`). When the overlay closes (`open` becomes false), the `useEffect` cleanup runs `el.removeEventListener('keydown', trap)` \u2014 but nothing restores focus to the element that had focus before the overlay was opened. Screen-reader and keyboard users lose their position in the document. Additionally, `querySelectorAll` is called synchronously on the next microtask after `open` becomes true; if the dialog renders via a Suspense boundary this could run before the focusable children are in the DOM. The dialog is rendered conditionally (`open ? (\u2026) : <></>`) so this specific case is safe, but only incidentally.",
+      "detail": "When the overlay is opened, focus is moved to the first focusable element inside the dialog (line 31: `first?.focus()`). When the overlay closes (`open` becomes false), the `useEffect` cleanup runs `el.removeEventListener('keydown', trap)` — but nothing restores focus to the element that had focus before the overlay was opened. Screen-reader and keyboard users lose their position in the document. Additionally, `querySelectorAll` is called synchronously on the next microtask after `open` becomes true; if the dialog renders via a Suspense boundary this could run before the focusable children are in the DOM. The dialog is rendered conditionally (`open ? (…) : <></>`) so this specific case is safe, but only incidentally.",
       "recommendation": "(1) Before opening the dialog, capture the previously focused element: `const returnFocusRef = useRef<HTMLElement | null>(null); useEffect(() => { if (open) { returnFocusRef.current = document.activeElement as HTMLElement; } else { returnFocusRef.current?.focus(); } }, [open]);` (2) Move the `querySelectorAll` inside a `requestAnimationFrame` callback to guarantee the DOM is painted.",
       "confidence": "high",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "medium",
       "file": "frontend/src/components/app-shell/ShortcutOverlay.tsx",
       "line": "65",
-      "title": "Dialog missing `aria-labelledby` \u2014 title element is not programmatically associated",
+      "title": "Dialog missing `aria-labelledby` — title element is not programmatically associated",
       "detail": "The `role=\"dialog\"` element uses `aria-label=\"Keyboard Shortcuts\"` (line 65) but also renders a visible `<h3>` with the same text (line 66). Screen readers will announce the `aria-label` text AND then re-read the `<h3>` content, resulting in a double-announcement. The correct pattern is to use `aria-labelledby` pointing to the `<h3>`'s `id` instead of `aria-label`.",
-      "recommendation": "Remove `aria-label` from the dialog `div`. Add `id=\"shortcuts-dialog-title\"` to the `<h3>`. Add `aria-labelledby=\"shortcuts-dialog-title\"` to the dialog `div`. This avoids the duplicate announcement and is the pattern specified by ARIA Authoring Practices Guide \u00a7dialog.",
+      "recommendation": "Remove `aria-label` from the dialog `div`. Add `id=\"shortcuts-dialog-title\"` to the `<h3>`. Add `aria-labelledby=\"shortcuts-dialog-title\"` to the dialog `div`. This avoids the duplicate announcement and is the pattern specified by ARIA Authoring Practices Guide §dialog.",
       "confidence": "high",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "medium",
@@ -73,9 +73,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "34",
       "title": "id 21 Bayes: zero denominator produces NaN",
-      "detail": "When both `sens` and `fpr` are 0 the denominator `sens*prior + fpr*(1-prior)` evaluates to 0 regardless of `prior`, producing `0/0 = NaN`. The slider UI can reach these values (both probabilities can be dragged to 0). `formatResultValue` will display \"\u2014\" rather than crashing, but the ResponseCurve sweep will record every sample as `null` and the curve disappears entirely with no explanation to the learner.",
+      "detail": "When both `sens` and `fpr` are 0 the denominator `sens*prior + fpr*(1-prior)` evaluates to 0 regardless of `prior`, producing `0/0 = NaN`. The slider UI can reach these values (both probabilities can be dragged to 0). `formatResultValue` will display \"—\" rather than crashing, but the ResponseCurve sweep will record every sample as `null` and the curve disappears entirely with no explanation to the learner.",
       "recommendation": "Guard the denominator: `const denom = v.sens * v.prior + v.fpr * (1 - v.prior); return denom === 0 ? NaN : (v.sens * v.prior) / denom;`",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "medium",
@@ -85,7 +85,7 @@
       "title": "id 39 Doppler: division by zero when source speed equals sound speed",
       "detail": "`(v.f * 343) / (343 - v.vs)` produces `Infinity` when `vs = 343`. If the slider max for `vs` reaches or exceeds 343 m/s (Mach 1), the compute returns `Infinity`, which `formatResultValue` guards for the readout but which causes the ResponseCurve sampler to drop that sample as non-finite, creating a gap in the curve near the singularity with no label telling the learner why.",
       "recommendation": "Add a singularity check: `const denom = 343 - v.vs; if (denom === 0) return NaN; return (v.f * 343) / denom;`  Also confirm in `seed_subjects.py` that the `vs` slider max is set strictly below 343.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "medium",
@@ -93,9 +93,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "43",
       "title": "id 29 Nernst: log(0) = -Infinity when reaction quotient Q = 0",
-      "detail": "`Math.log(v.Q)` returns `-Infinity` when `Q = 0` (e.g. slider dragged to minimum). The Nernst equation has a genuine singularity at Q=0, but the unguarded `-Infinity` propagates into the full expression, and the result is `-Infinity` rather than `NaN`, which means `Number.isFinite` returns `false` correctly \u2014 but if a caller checked `!isNaN` instead of `!isFinite` it would miss this. Additionally the ResponseCurve loses the left tail of the Q sweep silently.",
+      "detail": "`Math.log(v.Q)` returns `-Infinity` when `Q = 0` (e.g. slider dragged to minimum). The Nernst equation has a genuine singularity at Q=0, but the unguarded `-Infinity` propagates into the full expression, and the result is `-Infinity` rather than `NaN`, which means `Number.isFinite` returns `false` correctly — but if a caller checked `!isNaN` instead of `!isFinite` it would miss this. Additionally the ResponseCurve loses the left tail of the Q sweep silently.",
       "recommendation": "Return `NaN` explicitly for non-positive Q to make the singularity unambiguous: `if (v.Q <= 0) return NaN;`",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "medium",
@@ -103,9 +103,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "33",
       "title": "id 20 Change-of-Base: division by zero when base b = 1",
-      "detail": "`Math.log(v.b)` returns `0` when `b = 1`, making the whole expression `Math.log(v.a) / 0 = \u00b1Infinity` (or `NaN` when `a = 1` too: `0/0`). The Change-of-Base formula is undefined for b = 1. If the slider min for `b` is \u2265 1 (a reasonable lower bound) users can reach this. No guard in the compute function.",
+      "detail": "`Math.log(v.b)` returns `0` when `b = 1`, making the whole expression `Math.log(v.a) / 0 = ±Infinity` (or `NaN` when `a = 1` too: `0/0`). The Change-of-Base formula is undefined for b = 1. If the slider min for `b` is ≥ 1 (a reasonable lower bound) users can reach this. No guard in the compute function.",
       "recommendation": "Add: `if (v.b <= 0 || v.b === 1 || v.a <= 0) return NaN;` before the computation.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "medium",
@@ -115,14 +115,14 @@
       "title": "id 62 Poisson: factorial loop overflows to Infinity for k > ~170",
       "detail": "The naive factorial loop has no upper bound. For `k > ~170`, JavaScript doubles overflow to `Infinity`. Then `Math.pow(v.lam, k) / Infinity = 0` for finite lam, which is numerically wrong (the true Poisson PMF is nonzero). For large lam where `pow(lam,k)` also overflows, `Infinity/Infinity = NaN`. The digest already flagged this; slider max in seed_subjects.py is not constrained in this file and must be relied upon entirely.",
       "recommendation": "Compute in log-space and exponentiate at the end: `const logP = k * Math.log(v.lam) - v.lam - logGamma(k+1)` where `logGamma` uses Stirling or a precomputed log-factorial table. Alternatively cap k in the compute: `if (k > 170) return NaN;` as a temporary guard while a proper implementation is added.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "medium",
       "file": "frontend/src/components/scenes/ConfigurableEquationScene.tsx",
       "line": "229",
       "title": "pickSweepVariable called on every drag frame (duplicate of buildModel's call)",
-      "detail": "Line 229 calls `pickSweepVariable(result, variables)?.name` unconditionally on every render of GenericMetersVisual to derive `activeSweep`. buildModel (called inside the useMemo at ResponseCurve line 289) already runs pickSweepVariable internally when no sweepOverride is set. pickSweepVariable evaluates the compute function 21 times per candidate variable (typically 3\u20136 variables = up to 126 arithmetic calls) on every drag frame. Having it run twice per frame doubles that cost.",
+      "detail": "Line 229 calls `pickSweepVariable(result, variables)?.name` unconditionally on every render of GenericMetersVisual to derive `activeSweep`. buildModel (called inside the useMemo at ResponseCurve line 289) already runs pickSweepVariable internally when no sweepOverride is set. pickSweepVariable evaluates the compute function 21 times per candidate variable (typically 3–6 variables = up to 126 arithmetic calls) on every drag frame. Having it run twice per frame doubles that cost.",
       "recommendation": "Memoize the sweep variable name in GenericMetersVisual: `const activeSweep = useMemo(() => result ? sweepName ?? pickSweepVariable(result, variables)?.name ?? null : null, [result, sweepName, variables])`. This collapses the double-call to a single cached result that only recomputes when variables or sweepName changes.",
       "confidence": "high",
       "dimension": "performance"
@@ -131,21 +131,21 @@
       "severity": "low",
       "file": "frontend/src/components/scenes/ResponseCurve.tsx",
       "line": "286-300",
-      "title": "`hoverPx` state triggers `useMemo` hover computation on EVERY pointer-move \u2014 no debounce on a potentially expensive nearest-point scan",
+      "title": "`hoverPx` state triggers `useMemo` hover computation on EVERY pointer-move — no debounce on a potentially expensive nearest-point scan",
       "detail": "`handlePointerMove` on line 303 calls `setHoverPx` on every `pointermove` event, which triggers a re-render, which runs the `useMemo` at line 293 to find the nearest curve point (a linear scan over up to 81 points). At 60 fps on a slow device this runs ~60 scans/second during hover. The scan itself is O(N) over SAMPLES=80 which is cheap, but it always causes a full re-render of the SVG (which includes the gradient, axes, gridlines, all text elements). No `requestAnimationFrame` throttling is in place.",
       "recommendation": "Throttle `setHoverPx` via `requestAnimationFrame`: use a `rafRef = useRef<number | null>(null)` and in `handlePointerMove`, cancel the previous frame and schedule a new one: `if (rafRef.current) cancelAnimationFrame(rafRef.current); rafRef.current = requestAnimationFrame(() => setHoverPx(px));`. Also add a cleanup: `useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }, [])`. This halves worst-case DOM writes on 120 Hz displays.",
       "confidence": "medium",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "low",
       "file": "frontend/src/components/app-shell/EquationSidebarShared.tsx",
       "line": "112-235",
-      "title": "`EquationListItem` uses `aria-current=\"page\"` for active item \u2014 correct usage, but the surrounding list has no list role or `aria-label`",
+      "title": "`EquationListItem` uses `aria-current=\"page\"` for active item — correct usage, but the surrounding list has no list role or `aria-label`",
       "detail": "The `EquationList` component renders buttons directly inside a `<>` fragment with no wrapping `<ul>` or `role=\"list\"`. Screen readers encountering a series of `<button>` elements inside an undifferentiated `<div>` don't announce the count or context (e.g. 'list of 17 items'). `aria-current=\"page\"` on the active button is correct and helpful, but the structural information is absent. This is a minor accessibility gap rather than a regression.",
       "recommendation": "Wrap the button list in a `<nav aria-label=\"Equations\">` or a `<ul role=\"list\">` with each item wrapped in a `<li>`. For `GroupedEquationList`, each subject group header (`span` at line 83) should be an `<h3>` or have `role=\"heading\" aria-level=\"3\"` so screen readers can navigate by heading.",
       "confidence": "medium",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "low",
@@ -155,7 +155,7 @@
       "detail": "The SVG has `role=\"img\" aria-label={...}` (line 337) which correctly marks it as a static image for screen readers. However, the hover scrub tooltip (lines 383-398) and the live dot value label (lines 421-433) are text nodes inside the SVG that are INSIDE the `role=\"img\"` boundary. Screen readers treat everything inside a `role=\"img\"` element as presentation-only and will not read dynamic text updates. Users relying on a screen reader cannot see live values as they interact.",
       "recommendation": "Add a visually-hidden live region (`role=\"status\" aria-live=\"polite\"`) outside the SVG that mirrors the current dot value and hover value as they change. This is the standard pattern for dynamic SVG data. Example: `<span className=\"sr-only\" role=\"status\" aria-live=\"polite\" aria-atomic=\"true\">{model.dotValue !== null ? `${model.symbol} = ${tick(model.dotValue)}${model.unit ? ' ' + model.unit : ''}` : ''}</span>`",
       "confidence": "high",
-      "dimension": "correctness \u2014 React: hooks, keys, effects, subscriptions, a11y"
+      "dimension": "correctness — React: hooks, keys, effects, subscriptions, a11y"
     },
     {
       "severity": "low",
@@ -163,8 +163,8 @@
       "file": "frontend/src/lib/equationShareUrl.ts",
       "line": "19",
       "title": "__proto__ and constructor keys pass through decodeVarsFromParam without filtering",
-      "detail": "decodeVarsFromParam builds a plain object literal `const out: Record<string,number> = {}` and then assigns decoded variable names directly: `out[name] = value`. A crafted URL parameter such as `?v=__proto__~1` or `?v=constructor~1` would assign to these reserved keys on the plain object. In V8/modern JS, assigning `out['__proto__'] = 1` on a plain-object literal actually mutates the object's prototype rather than writing a data property. This does NOT pollute Object.prototype here because `out` is a freshly created plain object and the assignment only changes that single object's prototype chain. In ConfigurableEquationScene (line 244-247) the decoded object is read only via `restored[variable.name]` using known server-provided variable names \u2014 `__proto__` is never retrieved as a value, and the object is never spread with `Object.assign({}, restored)` or `{...restored}`. So the issue is not currently exploitable. However it is a latent risk: if any future caller spreads the decoded record into another object or passes it to a prototype-aware function, pollution becomes possible.",
-      "recommendation": "Add an allowlist or blocklist filter in decodeVarsFromParam before writing to `out`. The simplest fix is to skip names that are not safe own-property names: `if (name === '__proto__' || name === 'constructor' || name === 'prototype') continue;`. Better still, validate against the known variable names for the current equation before applying values \u2014 ConfigurableEquationScene already does this at the call site (iterates known `variables` and reads by name), so a one-line guard in decodeVarsFromParam is the defense-in-depth layer.",
+      "detail": "decodeVarsFromParam builds a plain object literal `const out: Record<string,number> = {}` and then assigns decoded variable names directly: `out[name] = value`. A crafted URL parameter such as `?v=__proto__~1` or `?v=constructor~1` would assign to these reserved keys on the plain object. In V8/modern JS, assigning `out['__proto__'] = 1` on a plain-object literal actually mutates the object's prototype rather than writing a data property. This does NOT pollute Object.prototype here because `out` is a freshly created plain object and the assignment only changes that single object's prototype chain. In ConfigurableEquationScene (line 244-247) the decoded object is read only via `restored[variable.name]` using known server-provided variable names — `__proto__` is never retrieved as a value, and the object is never spread with `Object.assign({}, restored)` or `{...restored}`. So the issue is not currently exploitable. However it is a latent risk: if any future caller spreads the decoded record into another object or passes it to a prototype-aware function, pollution becomes possible.",
+      "recommendation": "Add an allowlist or blocklist filter in decodeVarsFromParam before writing to `out`. The simplest fix is to skip names that are not safe own-property names: `if (name === '__proto__' || name === 'constructor' || name === 'prototype') continue;`. Better still, validate against the known variable names for the current equation before applying values — ConfigurableEquationScene already does this at the call site (iterates known `variables` and reads by name), so a one-line guard in decodeVarsFromParam is the defense-in-depth layer.",
       "dimension": "client-storage-and-url-parsing"
     },
     {
@@ -172,9 +172,9 @@
       "confidence": "high",
       "file": "frontend/src/lib/favorites.ts",
       "line": "34-38",
-      "title": "favorites array has no upper-bound cap \u2014 unbounded localStorage growth",
+      "title": "favorites array has no upper-bound cap — unbounded localStorage growth",
       "detail": "toggleFavorite appends an id to the stored array without any size limit. There are only 81 known equation IDs so in normal use this cannot grow meaningfully. However, if the stored value is pre-seeded by another script or browser extension with thousands of numeric entries, the array would be written back in full on every toggle call. writeIds catches QuotaExceededError (via the try/catch in writeIds), so storage exhaustion causes a silent no-op rather than a crash. The stored array could grow to fill the entire localStorage quota for the origin, crowding out other keys (sync-dismissed, recent-equations, etc.).",
-      "recommendation": "Add a maximum cap consistent with the actual equation count: `const next = [...filtered].slice(0, MAX_FAVORITES)` where MAX_FAVORITES is e.g. 200. recentlyViewed.ts already applies MAX_RECENT=12 correctly \u2014 mirror that pattern here.",
+      "recommendation": "Add a maximum cap consistent with the actual equation count: `const next = [...filtered].slice(0, MAX_FAVORITES)` where MAX_FAVORITES is e.g. 200. recentlyViewed.ts already applies MAX_RECENT=12 correctly — mirror that pattern here.",
       "dimension": "client-storage-and-url-parsing"
     },
     {
@@ -183,9 +183,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "37",
       "title": "id 24 Information Content: log of non-positive probability is unguarded",
-      "detail": "`-Math.log(v.q)` \u2014 if the slider for `q` reaches 0 or goes below (slider min should be > 0 but the compute has no guard), `Math.log(0) = -Infinity` making the result `Infinity`. For q < 0 the result is `NaN`. `-log(0)` is a genuine singularity but should be returned as `NaN` to be explicit rather than relying on `formatResultValue`'s `isFinite` check catching `Infinity`.",
+      "detail": "`-Math.log(v.q)` — if the slider for `q` reaches 0 or goes below (slider min should be > 0 but the compute has no guard), `Math.log(0) = -Infinity` making the result `Infinity`. For q < 0 the result is `NaN`. `-log(0)` is a genuine singularity but should be returned as `NaN` to be explicit rather than relying on `formatResultValue`'s `isFinite` check catching `Infinity`.",
       "recommendation": "Add: `if (v.q <= 0 || v.q > 1) return NaN;` before the log.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "low",
@@ -193,9 +193,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "42",
       "title": "id 28 Henderson-Hasselbalch: log10 of non-positive ratio is unguarded",
-      "detail": "`Math.log10(v.ratio)` \u2014 if the `ratio` slider minimum is 0 or below, the result is `-Infinity` (ratio=0) or `NaN` (ratio<0). The pH formula requires ratio > 0 by definition. No guard in the compute function.",
+      "detail": "`Math.log10(v.ratio)` — if the `ratio` slider minimum is 0 or below, the result is `-Infinity` (ratio=0) or `NaN` (ratio<0). The pH formula requires ratio > 0 by definition. No guard in the compute function.",
       "recommendation": "Add: `if (v.ratio <= 0) return NaN;` before the log10.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "low",
@@ -203,9 +203,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "32",
       "title": "id 19 Binary Search: log2 of non-positive n is unguarded",
-      "detail": "`Math.ceil(Math.log2(v.n))` returns `NaN` for `n \u2264 0` and `0` or negative integers for `0 < n < 1`. Binary search steps are only meaningful for n \u2265 2. If the slider min is > 0 this is a runtime-only concern, but the compute function has no guard.",
+      "detail": "`Math.ceil(Math.log2(v.n))` returns `NaN` for `n ≤ 0` and `0` or negative integers for `0 < n < 1`. Binary search steps are only meaningful for n ≥ 2. If the slider min is > 0 this is a runtime-only concern, but the compute function has no guard.",
       "recommendation": "Add: `if (v.n < 1) return NaN;` before the log2.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "low",
@@ -213,9 +213,9 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "76",
       "title": "id 49 Goldman equation: log argument can be zero or negative",
-      "detail": "`Math.log((v.Ko + 0.04 * v.Nao) / 140.4)` \u2014 if both `Ko` and `Nao` are 0 (or their weighted sum is \u2264 0), the log argument is \u2264 0. The denominator 140.4 is a hardcoded constant (always positive), so the risk is in the numerator. Most physiology sliders clamp Ko/Nao > 0, but no guard exists in the compute.",
+      "detail": "`Math.log((v.Ko + 0.04 * v.Nao) / 140.4)` — if both `Ko` and `Nao` are 0 (or their weighted sum is ≤ 0), the log argument is ≤ 0. The denominator 140.4 is a hardcoded constant (always positive), so the risk is in the numerator. Most physiology sliders clamp Ko/Nao > 0, but no guard exists in the compute.",
       "recommendation": "Add: `const num = v.Ko + 0.04 * v.Nao; if (num <= 0) return NaN;` before the log.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "low",
@@ -223,26 +223,26 @@
       "file": "frontend/src/components/scenes/ResponseCurve.tsx",
       "line": "270",
       "title": "buildModel: tracking dot y-coordinate is not clamped to the SVG viewport",
-      "detail": "`dot: curFinite ? { x: sx(curX), y: sy(curYraw) } : null` \u2014 `curYraw = result.compute(vars)` uses all current slider values, which may produce a result outside the curve's y-range (the range is sampled with the sweep variable alone; other variables may have been adjusted to a value that pushes the result far outside the visible band). The dot is then rendered at a pixel y outside `[PAD_T, H-PAD_B]`, causing it to appear outside the SVG axis box or be clipped by the viewBox. The label at line 311 is correctly clamped, but the circle is not.",
+      "detail": "`dot: curFinite ? { x: sx(curX), y: sy(curYraw) } : null` — `curYraw = result.compute(vars)` uses all current slider values, which may produce a result outside the curve's y-range (the range is sampled with the sweep variable alone; other variables may have been adjusted to a value that pushes the result far outside the visible band). The dot is then rendered at a pixel y outside `[PAD_T, H-PAD_B]`, causing it to appear outside the SVG axis box or be clipped by the viewBox. The label at line 311 is correctly clamped, but the circle is not.",
       "recommendation": "Clamp the dot's y pixel before storing: `const dotPy = Math.max(PAD_T - 6, Math.min(H - PAD_B + 6, sy(curYraw)));` and use `dotPy` in the dot object, or apply `overflow: visible` to the SVG and accept out-of-bounds rendering as intentional.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "low",
       "confidence": "high",
       "file": "frontend/src/components/scenes/ResponseCurve.tsx",
       "line": "29-32",
-      "title": "REDUCED_MOTION evaluated once at module load \u2014 SSR hydration mismatch risk",
+      "title": "REDUCED_MOTION evaluated once at module load — SSR hydration mismatch risk",
       "detail": "`window.matchMedia(...)` is evaluated at module-import time, outside any render or effect. In a server-rendered (SSR) or test environment where the module is loaded without a real `window.matchMedia` (the guard `typeof window !== 'undefined'` handles hard-crashes but not environments where `matchMedia` exists but returns a different value), the constant is frozen to the server-time value. React hydration on the client may produce a mismatch if the client preference differs. Currently this is an SPA (no SSR), so the practical risk is limited to test environments.",
       "recommendation": "Move the `matchMedia` call into a `useReducedMotion` hook or inside a `useEffect` so it is always evaluated in the browser. Low urgency given SPA-only deployment.",
-      "dimension": "correctness \u2014 math"
+      "dimension": "correctness — math"
     },
     {
       "severity": "low",
       "file": "frontend/src/lib/equationShareUrl.ts",
       "line": "19",
       "title": "Decoded URL variable names not filtered against reserved property names",
-      "detail": "decodeVarsFromParam passes decodeURIComponent output directly as property keys on a plain object (out[name] = value). A crafted ?v=__proto__~5,constructor~3 URL assigns those keys on the plain {} literal. Direct property assignment of '__proto__' on a plain object does NOT modify Object.prototype in modern engines (V8, SpiderMonkey) \u2014 it creates an own property \u2014 so this is not exploitable prototype pollution as-is. However, if the returned Record is ever passed to Object.assign({}, decoded) or spread into a non-plain target (e.g. a class instance), prototype pollution becomes exploitable. ConfigurableEquationScene currently iterates with for...of, so it is safe today; the risk is one future refactor away.",
+      "detail": "decodeVarsFromParam passes decodeURIComponent output directly as property keys on a plain object (out[name] = value). A crafted ?v=__proto__~5,constructor~3 URL assigns those keys on the plain {} literal. Direct property assignment of '__proto__' on a plain object does NOT modify Object.prototype in modern engines (V8, SpiderMonkey) — it creates an own property — so this is not exploitable prototype pollution as-is. However, if the returned Record is ever passed to Object.assign({}, decoded) or spread into a non-plain target (e.g. a class instance), prototype pollution becomes exploitable. ConfigurableEquationScene currently iterates with for...of, so it is safe today; the risk is one future refactor away.",
       "recommendation": "Add a guard after line 19: if (['__proto__', 'constructor', 'prototype'].includes(name)) continue; Alternatively, validate name against the known variable names of the current equation before assigning. This closes the latent risk with a one-liner.",
       "confidence": "medium",
       "dimension": "security: injection / XSS"
@@ -251,8 +251,8 @@
       "severity": "low",
       "file": "frontend/src/data/equationManifest.ts",
       "line": "64",
-      "title": "RegExp compiled inside per-equation, per-token loop \u2014 O(M \u00d7 T) compilations per keystroke",
-      "detail": "In `searchEquationManifest`, `new RegExp(...)` is constructed at line 64 inside the `for (const equation of manifest)` loop, once per scoring token per equation. With M=81 equations and T tokens this is 81\u00d7T regex compilations per search call. At current scale (~81 equations, typical 1\u20133 tokens) this is ~243 compilations per keystroke \u2014 fast enough that it is not noticeable today, but will grow linearly as the manifest grows and is unnecessary work.",
+      "title": "RegExp compiled inside per-equation, per-token loop — O(M × T) compilations per keystroke",
+      "detail": "In `searchEquationManifest`, `new RegExp(...)` is constructed at line 64 inside the `for (const equation of manifest)` loop, once per scoring token per equation. With M=81 equations and T tokens this is 81×T regex compilations per search call. At current scale (~81 equations, typical 1–3 tokens) this is ~243 compilations per keystroke — fast enough that it is not noticeable today, but will grow linearly as the manifest grows and is unnecessary work.",
       "recommendation": "Move the per-token RegExp construction above the outer `for (const equation of manifest)` loop: `const wordBoundaries = tokens.map(t => new RegExp('\\\\b' + escapeRegExp(t)))`. Then use `wordBoundaries[i].test(title)` inside the scoring block. This compiles each regex once per search call instead of M times.",
       "confidence": "high",
       "dimension": "performance"
@@ -262,7 +262,7 @@
       "file": "frontend/src/components/scenes/ResponseCurve.tsx",
       "line": "288-291",
       "title": "vars object identity causes useMemo to recompute buildModel on every parent render",
-      "detail": "The `useMemo` at line 288 depends on `vars` (a `Record<string,number>`). If the parent creates a new object reference each render \u2014 which is typical when vars comes from a useState reducer or is spread \u2014 then `useMemo` recomputes buildModel on every render even when slider values are numerically unchanged. buildModel performs 80 compute evaluations plus path-string construction, which is cheap but non-trivial on a 120 Hz drag stream.",
+      "detail": "The `useMemo` at line 288 depends on `vars` (a `Record<string,number>`). If the parent creates a new object reference each render — which is typical when vars comes from a useState reducer or is spread — then `useMemo` recomputes buildModel on every render even when slider values are numerically unchanged. buildModel performs 80 compute evaluations plus path-string construction, which is cheap but non-trivial on a 120 Hz drag stream.",
       "recommendation": "No change needed if the caller already stabilises the `vars` reference (e.g. via its own useMemo or useReducer with stable identity). If profiling confirms repeated identical recomputes, add a shallow-equality guard or derive a stable `vars` reference upstream before passing it to ResponseCurve.",
       "confidence": "medium",
       "dimension": "performance"
@@ -273,7 +273,7 @@
       "file": "frontend/src/data/subjectResults.ts",
       "line": "92-96",
       "title": "Poisson factorial loop has no upper-bound guard; k=20 exceeds MAX_SAFE_INTEGER",
-      "detail": "The Poisson PMF compute function (id 62) calculates k! with a plain loop starting from 1 up to k. The slider in seed_subjects.py caps k at 20 (line 1688). 20! = 2,432,902,008,176,640,000 which is approximately 2.4\u00d710^18 \u2014 larger than Number.MAX_SAFE_INTEGER (9.007\u00d710^15) by a factor of ~270. The factorial is computed as a JS float64 and the result is representable (it fits in the 53-bit mantissa of a double as an approximation), but integer precision is lost for the intermediate and final value. In practice, P(k=20) for reasonable \u03bb values is astronomically small and the float64 approximation of 20! is accurate enough for display. The loop itself cannot overflow to Infinity at k=20. There is no URL-bypass to force k beyond 20 because ConfigurableEquationScene clamps the decoded value to [variable.min, variable.max] at line 247. No security impact; minor math accuracy note.",
+      "detail": "The Poisson PMF compute function (id 62) calculates k! with a plain loop starting from 1 up to k. The slider in seed_subjects.py caps k at 20 (line 1688). 20! = 2,432,902,008,176,640,000 which is approximately 2.4×10^18 — larger than Number.MAX_SAFE_INTEGER (9.007×10^15) by a factor of ~270. The factorial is computed as a JS float64 and the result is representable (it fits in the 53-bit mantissa of a double as an approximation), but integer precision is lost for the intermediate and final value. In practice, P(k=20) for reasonable λ values is astronomically small and the float64 approximation of 20! is accurate enough for display. The loop itself cannot overflow to Infinity at k=20. There is no URL-bypass to force k beyond 20 because ConfigurableEquationScene clamps the decoded value to [variable.min, variable.max] at line 247. No security impact; minor math accuracy note.",
       "recommendation": "For correctness, use a pre-computed lookup table for k! up to 20 or use log-space computation: `Math.exp(k * Math.log(lam) - lam - logGamma(k+1))`. This avoids the precision loss for large k and would also safely handle any future increase to the slider maximum.",
       "dimension": "client-storage-and-url-parsing"
     },
@@ -291,8 +291,8 @@
       "severity": "info",
       "file": "frontend/src/lib/shareCard.ts",
       "line": "16-22",
-      "title": "escapeXml does not escape single-quote \u2014 no exploitable path in current SVG template",
-      "detail": "escapeXml escapes &, <, >, and \" but not the apostrophe ('). In the generated SVG, all user-controlled values (title, resultLabel, author, year) are injected as child text of <text> elements, never inside attribute values. SVG attribute delimiters are all double-quotes (hardcoded). The <, > escaping blocks element break-out. Combined, there is no exploitable injection path from the missing ' escape in the current template. The SVG is also delivered as a blob download (image/svg+xml), not embedded via innerHTML, so the browser treats it as a standalone document \u2014 <script> injection would still require breaking out of <text> content, which is blocked by < escaping.",
+      "title": "escapeXml does not escape single-quote — no exploitable path in current SVG template",
+      "detail": "escapeXml escapes &, <, >, and \" but not the apostrophe ('). In the generated SVG, all user-controlled values (title, resultLabel, author, year) are injected as child text of <text> elements, never inside attribute values. SVG attribute delimiters are all double-quotes (hardcoded). The <, > escaping blocks element break-out. Combined, there is no exploitable injection path from the missing ' escape in the current template. The SVG is also delivered as a blob download (image/svg+xml), not embedded via innerHTML, so the browser treats it as a standalone document — <script> injection would still require breaking out of <text> content, which is blocked by < escaping.",
       "recommendation": "Add .replace(/'/g, \"&apos;\") to escapeXml as defence-in-depth, in case a future template change places user data inside a single-quoted attribute. The fix is a single line and has zero performance cost.",
       "confidence": "high",
       "dimension": "security: injection / XSS"
@@ -301,13 +301,196 @@
       "severity": "info",
       "file": "scripts/add_subject_glossaries.py",
       "line": "242",
-      "title": "json.dumps used to embed strings in Python source \u2014 latent encoding mismatch for backslash/quote content",
-      "detail": "build_block uses json.dumps to serialise each glossary term dict and appends the result verbatim into seed_subjects.py Python source. json.dumps produces JSON string literals (double-quoted, backslash-escaped). When Python later imports seed_subjects.py, the interpreter reads those as Python string literals. For the current glossary content (plain English, no backslashes or embedded quotes) this round-trips correctly. If a future tooltip contained a literal \\n or \", json.dumps would emit \\\\n or \\\" \u2014 correct in JSON but would appear as double-backslash-n or backslash-doublequote when Python reads the source, producing different text than intended, or a SyntaxError if the surrounding Python quoting conflicts. This is a correctness/latent-corruption risk, not a security vulnerability.",
-      "recommendation": "Replace json.dumps with repr() for each scalar string value, or use ast.literal_eval-safe construction. Since the glossary is authored data (not user input), the practical risk is low \u2014 add a comment warning future contributors not to include backslashes or embedded quotes in tooltip strings until the encoding is hardened.",
+      "title": "json.dumps used to embed strings in Python source — latent encoding mismatch for backslash/quote content",
+      "detail": "build_block uses json.dumps to serialise each glossary term dict and appends the result verbatim into seed_subjects.py Python source. json.dumps produces JSON string literals (double-quoted, backslash-escaped). When Python later imports seed_subjects.py, the interpreter reads those as Python string literals. For the current glossary content (plain English, no backslashes or embedded quotes) this round-trips correctly. If a future tooltip contained a literal \\n or \", json.dumps would emit \\\\n or \\\" — correct in JSON but would appear as double-backslash-n or backslash-doublequote when Python reads the source, producing different text than intended, or a SyntaxError if the surrounding Python quoting conflicts. This is a correctness/latent-corruption risk, not a security vulnerability.",
+      "recommendation": "Replace json.dumps with repr() for each scalar string value, or use ast.literal_eval-safe construction. Since the glossary is authored data (not user input), the practical risk is low — add a comment warning future contributors not to include backslashes or embedded quotes in tooltip strings until the encoding is hardened.",
       "confidence": "medium",
       "dimension": "security: injection / XSS"
     }
   ],
   "digest_files": 17,
-  "recovered_note": "Recovered from interrupted workflow wf_cd6583e4-65e (scribe interrupted before writing). 6 of 10 agents produced structured output (digest + 5 dimensions); 3 dimension agents (dangerous-apis, edge-cases, tests) were cut off."
+  "recovered_note": "Recovered from interrupted workflow wf_cd6583e4-65e (scribe interrupted before writing). 6 of 10 agents produced structured output (digest + 5 dimensions); 3 dimension agents (dangerous-apis, edge-cases, tests) were cut off.",
+  "signoff_dimensions": [
+    {
+      "dimension": "security — dangerous APIs & ReDoS",
+      "verdict": "minor-issues",
+      "rerun_date": "2026-06-23",
+      "findings": [
+        {
+          "id": "SEC1/R1",
+          "severity": "low",
+          "confidence": "high",
+          "file": "frontend/src/lib/clipboard.ts",
+          "line": "27",
+          "title": "execCommand(\"copy\") fallback may silently succeed and return true while writing nothing",
+          "detail": "document.execCommand(\"copy\") is deprecated. In Firefox (and some Chromium contexts without user-gesture-gated clipboard permission) the call can return true while silently not writing to the clipboard, so the caller shows \"Copied\" though nothing landed on it. No XSS sink: the textarea value is set via property assignment (not innerHTML), and the command name is a hardcoded literal — purely a reliability issue.",
+          "recommendation": "Surface a \"couldn't copy\" message instead of trusting the execCommand return value, or drop the legacy fallback entirely (navigator.clipboard is available in all modern secure-context browsers). If kept, degrade gracefully rather than reporting success unconditionally.",
+          "dedup_note": "Not previously remediated; new this re-run."
+        }
+      ],
+      "checkedClean": [
+        "eval — grep-confirmed absent in all 18 files that exist",
+        "new Function — grep-confirmed absent in all 18 files that exist",
+        "setTimeout/setInterval with string argument — all three setTimeout calls (ConfigurableEquationScene.tsx:255, App.tsx:46, App.tsx:278) pass arrow-function callbacks, not strings",
+        "innerHTML/outerHTML/insertAdjacentHTML — grep-confirmed absent; shareCard.ts builds an SVG string handed only to Blob/createObjectURL, never injected via these APIs",
+        "dangerouslySetInnerHTML — grep-confirmed absent in all in-scope TSX",
+        "document.write — grep-confirmed absent",
+        "shareCard.ts XSS — all user fields (title, resultLabel, author, year) pass through escapeXml(); SVG delivered only as a Blob/createObjectURL download, never injected into the DOM",
+        "prototype-pollution sink — equationShareUrl.ts:43 out[name]=value protected by FORBIDDEN_KEYS Set on a plain local {} (already remediated)",
+        "ReDoS — equationManifest.ts:52 builds only \\b<escaped-literal> via escapeRegExp; no quantifiers/nested groups/backtracking alternation",
+        "ReDoS — add_subject_glossaries.py so_re/empty_re are static compile-time patterns, no user input",
+        "equationTools.ts and numberFormat.ts — do not exist in the repository; not in the diff",
+        "seed_subjects.py — no eval/exec/subprocess-with-user-input/shell=True; all data is Python literals via the ORM"
+      ]
+    },
+    {
+      "dimension": "correctness — edge cases & error handling",
+      "verdict": "minor-issues",
+      "rerun_date": "2026-06-23",
+      "findings": [
+        {
+          "id": "EC1/TQ2",
+          "severity": "low",
+          "confidence": "high",
+          "file": "frontend/src/components/scenes/ConfigurableEquationScene.tsx",
+          "line": "342, 355",
+          "title": "NaN result passes the `resultValue !== null` guard — result box + copy button render and copy \"<symbol> = —\"",
+          "detail": "resultValue is number|null. compute(vars) can return NaN in normal slider use (Snell id 38 TIR n1=2.5/θ1=89°/n2=1; Doppler at Mach 1; Bayes all-zero priors). resultValue !== null is true for NaN, so both sites render. formatResultValue(NaN) returns — (visually harmless) but the copy button writes the useless \"<symbol> = —\" to the clipboard. Downstream of the now-guarded math; the remaining gap is the scene's render/copy guard, never part of the math batch.",
+          "recommendation": "Change both guards (lines 342, 355) from `resultValue !== null` to `resultValue !== null && Number.isFinite(resultValue)`. ResponseCurve dot already disappears on NaN via its own curFinite guard.",
+          "dedup_note": "Distinct from the remediated subjectResults math guards — this is the scene render/copy guard."
+        },
+        {
+          "id": "EC2",
+          "severity": "info",
+          "confidence": "high",
+          "file": "frontend/src/components/scenes/ResponseCurve.tsx",
+          "line": "310-314",
+          "title": "Pending hover RAF not cancelled on component unmount",
+          "detail": "clearHover (pointerLeave) cancels any pending requestAnimationFrame via hoverRafRef, but there is no unmount cleanup. Navigating to another equation while the pointer is inside the SVG lets a pending RAF fire post-unmount and call setHoverPx; React 18 discards the update (no crash, no real leak) but warns in strict-mode dev builds.",
+          "recommendation": "Add useEffect(() => () => { if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current) }, []).",
+          "dedup_note": "Adjacent to remediated L7 (rAF-coalesce) but specifically the unmount cleanup, which L7 did not include."
+        }
+      ],
+      "checkedClean": [
+        "lib/shareCard.ts — escapeXml covers all five XML metacharacters; downloadSvg has typeof document + URL.createObjectURL SSR guards; no crash paths",
+        "lib/equationShareUrl.ts — encode filters non-finite; decode caps at MAX_PAIRS=64, rejects empty names, FORBIDDEN_KEYS blocks __proto__/constructor/prototype, skips bare name~, rejects non-finite, catches URL-decode errors per pair",
+        "lib/clipboard.ts — async path falls through to legacy textarea on rejection; both paths try/catch; typeof navigator + typeof document SSR guards",
+        "lib/favorites.ts — readIds wraps getItem+JSON.parse in try/catch; Array.isArray + typeof-number filter; writeIds catches quota/disabled; MAX_FAVORITES=200 add-path cap never reached at 81 equations",
+        "lib/recentlyViewed.ts — same storage resilience; [id, ...dedup].slice(0,12) off-by-one correct; clearRecentlyViewed catches errors",
+        "lib/useFavorites.ts — module-level snapshot via getFavorites() (catches storage errors -> []); toggleFavorite re-reads after write; getServerSnapshot correct for React 18",
+        "lib/relatedEquations.ts — unknown currentId -> byDistance fallback; empty manifest -> []; Set dedup; >= limit cap exact",
+        "data/subjectResults.ts — all ÷0 and log-of-non-positive paths unreachable via slider minimums or return NaN; Snell TIR NaN intentional; Doppler 343-vs cannot reach 0 (vs max=100); Poisson log-space avoids factorial overflow; formatResultValue returns — for non-finite",
+        "data/equationGroups.ts — empty manifest -> []; unknown ids -> 'other' bucket; subjectSlugForEquation -> null for unknown",
+        "data/equationManifest.ts — search null-coalesces formula/author/category/year; empty/whitespace query -> full manifest; escapeRegExp prevents regex injection; getRandomEquationId handles empty/single; resolveEquationManifest falls back to coreEquationManifest",
+        "components/scenes/ResponseCurve.tsx — buildModel returns null on no-entry/no-sweep/zero-range/<2 finite samples; pickSweepVariable null for empty/all-constant; log scale only when all positive; areaPath only when noGaps; dot clamped to [PAD_T-6, H-PAD_B+6]; markers sliced to 3; REDUCED_MOTION typeof window guard",
+        "components/scenes/ConfigurableEquationScene.tsx — mapVariables/Lessons/Presets/Glossary filter with isRecord + type guards; randomizeInputs clamps via Math.min/max; URL restore browser-only effect, decoded values clamped to [min,max]",
+        "components/app-shell/EquationBrowserSidebar.tsx — pure prop delegation; completionPercent uses total>0 guard",
+        "components/app-shell/EquationSidebarShared.tsx — useMemo grouping; isFavorite hook subscribes to external store; progressByEquation.get() -> undefined (not crash), optional-chained ?? false",
+        "components/app-shell/ShortcutOverlay.tsx — focus trap handles empty focusable lists (optional-chained); returnFocusRef uses .focus?.()",
+        "App.tsx — rawSelectedId Number.isInteger guarded; equationManifest[0]?.id optional chain; SSR window typeof-guarded; dismissed-sync localStorage try/catch",
+        "backend/courses/management/commands/seed_subjects.py — var()/lesson() helpers default all fields; no NaN-producing Python math; sort_orders unique 18-81",
+        "scripts/add_subject_glossaries.py — SEED path relative to repo root; sort_order regex line-anchored; empty-glossary regex only replaces '[]'; GLOSSARY omits hand-written ids 18/21/26; count mismatch -> warning + non-zero exit"
+      ]
+    },
+    {
+      "dimension": "tests-and-quality",
+      "verdict": "minor-issues",
+      "rerun_date": "2026-06-23",
+      "findings": [
+        {
+          "id": "TQ1",
+          "severity": "medium",
+          "confidence": "high",
+          "file": "frontend/src/App.tsx",
+          "line": "246",
+          "title": "Stale closure: `equationManifest` missing from `selectEquationFromShortcut` useCallback deps",
+          "detail": "selectEquationFromShortcut closes over equationManifest (line 243, equationManifest.some(e => e.id === targetId)) but the useCallback dep array (line 246) lists only [selectEquation]. On a language switch the manifest re-fetches and the line-108 memo produces a new array; the callback keeps the old reference, so Shift+1–9 can silently fail to navigate to an equation that exists in the new manifest. Distinct from H1 (already fixed) which widened the keyboard effect's dep array, not the callback's own deps.",
+          "recommendation": "Add equationManifest to the useCallback deps: }, [selectEquation, equationManifest]).",
+          "dedup_note": "Distinct from remediated H1 (effect dep array). Re-confirm against HEAD before acting."
+        },
+        {
+          "id": "TQ2",
+          "severity": "low",
+          "confidence": "high",
+          "file": "frontend/src/components/scenes/ConfigurableEquationScene.tsx",
+          "line": "342",
+          "title": "NaN result passes `!== null` guard — copy button appears and copies an em-dash string",
+          "detail": "Same root cause as EC1. When compute(vars) returns NaN, resultValue !== null is true, both the Result copy button (line 342) and the live-result div (line 355) appear; the copy button copies \"<symbol> = —\", useless to paste.",
+          "recommendation": "Change both guards from `resultValue !== null` to `resultValue !== null && Number.isFinite(resultValue)`. Add a unit test: mount equation 38 (Snell) at θ1=80°, n1=2, n2=1 and assert the Result copy button is absent.",
+          "dedup_note": "Same finding as EC1/TQ2 in the correctness dimension."
+        },
+        {
+          "id": "TQ3",
+          "severity": "low",
+          "confidence": "high",
+          "file": "frontend/src/lib/equationTools.test.ts",
+          "line": "1",
+          "title": "Dead / misleadingly-named test file — imports nothing from equationTools",
+          "detail": "Named equationTools.test.ts but imports from no equationTools module (which does not exist). Its body duplicates the recentlyViewed/favorites/equationShareUrl tests already present in the named per-module test files. It passes only because imports resolve to the real modules; it tests nothing called equationTools. Dead weight that inflates run time slightly and confuses readers.",
+          "recommendation": "Delete frontend/src/lib/equationTools.test.ts (coverage fully replicated). If a genuine equationTools utility was planned, create the module and test it here instead.",
+          "dedup_note": "Consistent with the prior pass's note that equationTools.ts/numberFormat.ts do not exist."
+        },
+        {
+          "id": "TQ4",
+          "severity": "info",
+          "confidence": "medium",
+          "file": "frontend/src/lib/useFavorites.ts",
+          "line": "9",
+          "title": "Missing test: cross-tab favorite toggling silently goes stale",
+          "detail": "useFavorites uses an in-memory snapshot + Set of listeners. Toggling a favorite in a second tab writes localStorage but never fires toggleFavorite() in the first tab, so snapshot stays stale and the star icon stays wrong until the next render that touches the store. No storage event listener is wired; no test for this path.",
+          "recommendation": "Either (a) add window.addEventListener('storage', ...) that refreshes snapshot and notifies listeners on STORAGE_KEY change, tested with a synthetic StorageEvent; or (b) document cross-tab sync as out of scope with a comment.",
+          "dedup_note": "Test/coverage gap only; no production-code defect."
+        },
+        {
+          "id": "TQ5",
+          "severity": "info",
+          "confidence": "high",
+          "file": "frontend/src/data/subjectResults.ts",
+          "line": "132",
+          "title": "Missing test: formatResultValue boundary around the 1e-3 / 1e5 thresholds",
+          "detail": "Existing tests cover 0, NaN, Infinity, 123456 (>=1e5), 0.0001 (<1e-3), 20. The exact boundaries at 1e5 and 1e-3 are untested: formatResultValue(1e5) should use toExponential while formatResultValue(99999) uses toPrecision; formatResultValue(0.001) is the lower-threshold boundary. A threshold tweak would silently change display behavior.",
+          "recommendation": "Add boundary cases at 1e5, 99999, 1e-3, 9.999e-4.",
+          "dedup_note": "Test/coverage gap only."
+        },
+        {
+          "id": "TQ6",
+          "severity": "info",
+          "confidence": "medium",
+          "file": "frontend/src/components/scenes/ResponseCurve.tsx",
+          "line": "287",
+          "title": "Missing test: log-scale canLog=false path not covered",
+          "detail": "The smoke test uses equation 40 (Stefan-Boltzmann, all-positive) to exercise log scale. buildModel's canLog is false when any sampled y <= 0 (mixed-sign curves: logistic dN/dt, Coulomb opposite charges, Gibbs ΔG). No test asserts (a) the 'log y' button is absent for a mixed-sign equation, or (b) forcing logScale when allPositive flips to false falls back to linear without crashing.",
+          "recommendation": "Add a smoke case for equation 46 (Logistic) with N near K (mixed-sign dN/dt) asserting no 'log y' button; add a second case rendering id 46 with logScale=true when allPositive is false and assert linear fallback without crash.",
+          "dedup_note": "Test/coverage gap only."
+        },
+        {
+          "id": "TQ7",
+          "severity": "info",
+          "confidence": "high",
+          "file": "frontend/src/lib/equationShareUrl.ts",
+          "line": "27",
+          "title": "Missing test: value-less pair `name~` excluded but not explicitly tested",
+          "detail": "Line 41 explicitly skips name~ ('name~ with no value is not a real 0'). Existing tests check '~5' (no name) but not 'name~' (name present, value absent). A regression in the raw === \"\" guard would silently treat a value-less pair as 0.",
+          "recommendation": "Add: expect(decodeVarsFromParam(\"m~10,v~\")).toEqual({ m: 10 }).",
+          "dedup_note": "Test/coverage gap only."
+        }
+      ],
+      "checkedClean": [
+        "shareCard.ts — escapeXml covers all five XML chars (&,<,>,\",'); result-absent and attribution-absent branches tested",
+        "equationShareUrl.ts — prototype-pollution filter, 64-pair cap, malformed percent-encoding, Infinity/NaN rejection, null/empty input all tested",
+        "clipboard.ts — async success, fallback to execCommand, both-fail path all tested",
+        "favorites.ts — toggle idempotency, max-cap, JSON parse corruption resilience, storage unavailable all tested",
+        "recentlyViewed.ts — dedup + newest-first, cap at 12, clearRecentlyViewed, storage unavailable all tested",
+        "relatedEquations.ts — same-category preference, distance sort, limit, unknown-id fallback all tested",
+        "subjectResults.ts — all slider-reachable singularities (Bayes 0/0, Doppler Mach-1, Nernst log(0), change-of-base b=1, cross-entropy q=0, H-H log10(0), binary-search n<1, Goldman log(0), condition-number ÷0, Poisson log(0)) guarded and tested; Poisson log-space at k=20 tested; formatResultValue NaN/Infinity/0/large/small tested",
+        "equationManifest.ts — fallback to canonical manifest, search ranking, AND-token filtering, diacritics folding, random-id exclusion all tested",
+        "equationGroups.ts — core subject grouping, within-group order, empty list case tested",
+        "ResponseCurve.tsx/pickSweepVariable — nonlinearity scoring, reversal-preference, linear tiebreak, all-constant fallback unit-tested; NaN-domain (Snell TIR), log-scale, zero-result fallback smoke-tested",
+        "seed_subjects.py — typed var()/lesson() helpers, no eval, no dynamic field access; all 64 subject equations have authored teaching payloads",
+        "add_subject_glossaries.py — idempotent (only replaces empty []), covers exactly 61 equations (64 minus 3 hand-written), warning on count mismatch",
+        "ShortcutOverlay.tsx — focus-trap (Tab/Shift+Tab), returnFocusRef restore on close, Escape handled by caller; rows from props, no unguarded array access",
+        "EquationBrowserSidebar.tsx / EquationSidebarShared.tsx — purely presentational; all data paths render from props with no internal logic beyond tested helpers"
+      ]
+    }
+  ]
 }

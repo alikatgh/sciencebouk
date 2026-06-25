@@ -1,5 +1,5 @@
 import type { PointerEvent as ReactPointerEvent, ReactElement } from "react"
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { Variable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { subjectResults } from "../../data/subjectResults"
@@ -299,6 +299,14 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
     }
     return best
   }, [hoverPx, model])
+  // Cancel any pending hover-scrub frame on unmount (avoids a setState on an
+  // unmounted component if the pointer was moving as the scene changed).
+  useEffect(
+    () => () => {
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current)
+    },
+    [],
+  )
   if (!model) return null
 
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
