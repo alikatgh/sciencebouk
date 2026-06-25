@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { useState } from "react"
 import { getConceptCheck } from "../../data/conceptChecks"
+import { track } from "../../lib/analytics"
 
 /**
  * A one-question concept check for the data-driven subject scenes: tests
@@ -35,7 +36,10 @@ export function ConceptCheck({ equationId }: { equationId: number }): ReactEleme
             <button
               key={i}
               type="button"
-              onClick={() => setSelected(i)}
+              onClick={() => {
+                setSelected(i)
+                track("concept_check_answered", { equationId, correct: i === check.correctIndex })
+              }}
               aria-pressed={isChosen}
               className={`rounded-lg border px-3 py-1.5 text-left text-xs font-medium transition ${tone}`}
             >

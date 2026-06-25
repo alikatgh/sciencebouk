@@ -84,7 +84,7 @@ Legend: `[x]` shipped & verified this session · `[P]` pre-existing, verified pr
 51. [x] `SeedSubjectsCommandTests` — guards complete payloads for all 64 subjects.
 52. [x] Unit tests for `subjectResults` math + `pickSweepVariable` selection.
 53. [x] Per-scene error boundary — `EquationVisualization` wraps each scene so a crash stays contained to the viz panel; `resetKey={equationId}` auto-recovers on navigation (tested). Built on the pre-existing app-shell `ErrorBoundary` (`main.tsx`/`App.tsx`), which only covered the app root before.
-54. [ ] Analytics events for feature usage.
+54. [x] Feature-usage analytics — a tiny never-throwing `track()` dispatcher (`lib/analytics.ts`, unit-tested) with pluggable sinks (`onTrack`); wired into the learning aids (concept-check answers + Learn-more tab switches). Decoupled — a real sink (e.g. backend `log_event`) can subscribe later.
 55. [x] Scene smoke tests — **(a) render:** mounts `ResponseCurve` across 5 representative equations (linear / S-curve / parabola+markers / log-scale / NaN-domain) + the null-result case; asserts an SVG renders without throwing (`ResponseCurve.render.test.tsx`). **(b) registry:** equation→scene mapping is distinct + cached with a shared generic fallback (`sceneRegistry.test.ts`) — a build-uncatchable regression class.
 
 ## H. Backlog to reach 100

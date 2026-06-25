@@ -4,6 +4,7 @@ import { getEquationFact } from "../../data/equationFacts"
 import { getConceptCheck } from "../../data/conceptChecks"
 import { getPrerequisites } from "../../data/prerequisites"
 import { getWorkedExample } from "../../data/workedExamples"
+import { track } from "../../lib/analytics"
 import { ConceptCheck } from "./ConceptCheck"
 
 /**
@@ -41,7 +42,10 @@ export function LearnMorePanel({ equationId }: { equationId: number }): ReactEle
             role="tab"
             type="button"
             aria-selected={current === tab.key}
-            onClick={() => setActive(tab.key)}
+            onClick={() => {
+              setActive(tab.key)
+              track("learn_more_tab", { equationId, tab: tab.key })
+            }}
             className={`flex-1 rounded-lg px-2 py-1.5 text-[0.7rem] font-semibold transition ${
               current === tab.key
                 ? "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100"
