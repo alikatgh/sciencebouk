@@ -18,13 +18,8 @@ export function ConceptCheck({ equationId }: { equationId: number }): ReactEleme
   const isRight = selected === check.correctIndex
 
   return (
-    <div
-      role="group"
-      aria-label="Concept check"
-      className="w-full max-w-sm rounded-xl border border-slate-200 bg-white/60 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50"
-    >
-      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-ocean/90 dark:text-ocean">Concept check</p>
-      <p className="mt-1 text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-200">{check.question}</p>
+    <div role="group" aria-label="Concept check" className="w-full">
+      <p className="text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-200">{check.question}</p>
 
       <div className="mt-2.5 flex flex-col gap-1.5">
         {check.options.map((opt, i) => {

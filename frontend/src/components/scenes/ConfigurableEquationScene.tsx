@@ -12,10 +12,8 @@ import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
-import { getEquationFact } from "../../data/equationFacts"
-import { getPrerequisites } from "../../data/prerequisites"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
-import { ConceptCheck } from "./ConceptCheck"
+import { LearnMorePanel } from "./LearnMorePanel"
 
 /**
  * A data-driven scene used for every equation that does not ship a bespoke
@@ -442,33 +440,7 @@ function GenericMetersVisual({
           : "Drag the sliders — each bar tracks a variable across its range."}
       </p>
 
-      {getEquationFact(equationId) && (
-        <div className="max-w-sm rounded-xl border border-amber-300/50 bg-amber-50/70 px-4 py-2.5 text-center dark:border-amber-500/20 dark:bg-amber-500/10">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-amber-600/90 dark:text-amber-400/90">
-            Did you know?
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{getEquationFact(equationId)}</p>
-        </div>
-      )}
-
-      <ConceptCheck equationId={equationId} />
-
-      {getPrerequisites(equationId) && (
-        <div className="max-w-sm text-center">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Builds on</p>
-          <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
-            {getPrerequisites(equationId)!.map((pre) => (
-              <a
-                key={pre.id}
-                href={`/equation/${pre.id}`}
-                className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-ocean transition hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-              >
-                {pre.title} →
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+      <LearnMorePanel equationId={equationId} />
     </div>
   )
 }
