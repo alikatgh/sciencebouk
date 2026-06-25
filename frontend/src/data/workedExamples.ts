@@ -104,6 +104,46 @@ export const workedExamples: Record<number, WorkedExample> = {
     given: "A Sun-like star: R = 1 R☉, T = 5772 K.",
     steps: ["L/L☉ = R² · (T/5772)⁴", "= 1² × (5772/5772)⁴", "= 1 (one solar luminosity)"],
   },
+  24: {
+    given: "A model assigns probability q = 0.5 to the true outcome.",
+    steps: ["H = −ln q", "= −ln(0.5)", "≈ 0.693 nats"],
+  },
+  43: {
+    given: "Green light at ν = 5 (in units of 10¹⁴ Hz).",
+    steps: ["E = h·ν", "≈ 0.414 eV × 5", "≈ 2.07 eV"],
+  },
+  45: {
+    given: "An allele frequency p = 0.5.",
+    steps: ["2pq = 2·p·(1 − p)", "= 2 × 0.5 × 0.5", "= 0.5 (half the population are carriers)"],
+  },
+  53: {
+    given: "Consumption 60, investment 15, government 20.",
+    steps: ["Y = C + I + G", "= 60 + 15 + 20", "= 95"],
+  },
+  54: {
+    given: "A real rate of 2% with 3% inflation.",
+    steps: ["1 + i = (1 + r)(1 + π)", "= 1.02 × 1.03", "i ≈ 5.06%"],
+  },
+  57: {
+    given: "Capital K = 50, labour L = 50, α = 0.3.",
+    steps: ["Y = K^α · L^(1−α)", "= 50^0.3 × 50^0.7", "= 50"],
+  },
+  60: {
+    given: "Observed count 60 where 50 was expected.",
+    steps: ["χ² = (O − E)² / E", "= (60 − 50)² / 50", "= 100 / 50 = 2"],
+  },
+  78: {
+    given: "The matrix [[2, 1], [1, 2]].",
+    steps: ["det = ad − bc", "= 2×2 − 1×1", "= 4 − 1 = 3"],
+  },
+  80: {
+    given: "Two vectors of length 5, 60° apart.",
+    steps: ["a·b = |a||b|cos θ", "= 5 × 5 × cos 60°", "= 25 × 0.5 = 12.5"],
+  },
+  81: {
+    given: "Two vectors of length 5, perpendicular (90°).",
+    steps: ["|a×b| = |a||b|sin θ", "= 5 × 5 × sin 90°", "= 25 × 1 = 25"],
+  },
 }
 
 /** The worked example for an equation, or null if none is curated. */
