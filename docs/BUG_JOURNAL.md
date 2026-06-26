@@ -235,6 +235,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Avatar upload validated by extension only — added magic-byte check (security M1)
+Symptom: `upload_avatar` accepted any file whose *name* ended in an image extension — a non-image `evil.png` was stored under `media/avatars/` and served.
+Cause: validation read the `file.name` extension only; never inspected the bytes.
+Fix: `accounts/views.py` — `_detect_image_type()` matches PNG/JPEG/GIF/WebP signatures, rejects on no match, and derives the saved extension from the detected type (never the client name). 3 new tests (reject spoof / accept PNG / extension-follows-content); 273 backend tests pass.
+**Lesson:** realizes pattern #24 — validate upload *content*, not the filename; dependency-free magic-byte checks cover the common web image types.
+
 ### 2026-06-26 · Composite index for the dashboard streak scan (perf M2)
 Symptom: `learning_dashboard` streak runs `LearningEvent.objects.filter(user=user).dates("created_at","day")` against only a single-column `created_at` index + the FK index — neither serves the user-scoped, date-ordered scan well.
 Cause: no composite `(user, created_at)` index for that access pattern.
@@ -379,7 +385,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - M4 · `react-katex` is a maintenance risk but used in 9 files (wrapped by in-house renderer) — a scoped refactor, not a free deletion.
 
 **Residual security** (`r1`/`r5-security`)
-- M1 · avatar upload validated by extension only — no Pillow/magic-byte check; old files never deleted. (#24)
+- M1 · avatar upload — magic-byte content validation added 2026-06-26 (see log). **Still open:** old avatar files never deleted on re-upload. (#24)
 - M2/M3 · `X-Forwarded-For` trusted for IP audit; `SECURE_PROXY_SSL_HEADER` trusts client `X-Forwarded-Proto` (verify the cPanel/Passenger proxy overwrites it).
 - M5 · refresh token in `localStorage` (XSS-exfiltratable, 30-day) — move to `HttpOnly Secure SameSite` cookie.
 - L1/L3/L4 · DOMPurify the legal-page HTML; gate the API landing page behind `DEBUG`; bind Stripe upgrade to a configured Pro price id.

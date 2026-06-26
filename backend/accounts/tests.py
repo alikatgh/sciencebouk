@@ -1,10 +1,13 @@
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from unittest import skipUnless
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection, connections
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from rest_framework.test import APIClient
 
 from .invites import InviteCodeError, InviteRequestMeta, increment_invite_usage, redeem_invite_code
@@ -749,3 +752,41 @@ class SettingsPatchTests(SettingsAPIBase):
     def test_patch_settings_unauthenticated_returns_401(self):
         response = self.client.patch('/api/auth/settings/', {'data': {}}, format='json')
         self.assertEqual(response.status_code, 401)
+
+
+# A minimal but valid PNG header (8-byte signature + filler).
+_PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
+
+
+@override_settings(MEDIA_ROOT=Path(tempfile.mkdtemp()))
+class AvatarUploadTests(TestCase):
+    """upload_avatar must validate file *content* (magic bytes), not the
+    filename extension — a non-image named avatar.png must be rejected."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = make_user(email='avatar@example.com')
+        login = self.client.post('/api/auth/login/', {
+            'username': self.user.username,
+            'password': 'securepass123',
+        }, format='json')
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+
+    def test_rejects_non_image_content_with_image_extension(self):
+        bad = SimpleUploadedFile('evil.png', b'<html>not an image</html>', content_type='image/png')
+        response = self.client.post('/api/auth/me/avatar/', {'avatar': bad}, format='multipart')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Invalid file type', response.json().get('error', ''))
+
+    def test_accepts_real_png(self):
+        good = SimpleUploadedFile('me.png', _PNG_BYTES, content_type='image/png')
+        response = self.client.post('/api/auth/me/avatar/', {'avatar': good}, format='multipart')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['avatar_url'].endswith('.png'))
+
+    def test_extension_follows_detected_type_not_filename(self):
+        # PNG content carried by a .gif filename → saved as .png (content wins).
+        spoof = SimpleUploadedFile('mislabelled.gif', _PNG_BYTES, content_type='image/gif')
+        response = self.client.post('/api/auth/me/avatar/', {'avatar': spoof}, format='multipart')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['avatar_url'].endswith('.png'))
