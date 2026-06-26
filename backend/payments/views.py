@@ -13,6 +13,11 @@ from rest_framework.response import Response
 from .models import ProcessedStripeEvent
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+# Pin the Stripe API version explicitly so an SDK upgrade can't silently change
+# request/response shapes under us. This matches the version stripe-python 12.x
+# is built against; bump it deliberately (and re-verify against the Stripe
+# dashboard's account version) when upgrading the SDK.
+stripe.api_version = "2025-05-28.basil"
 
 
 def billing_disabled_response():
