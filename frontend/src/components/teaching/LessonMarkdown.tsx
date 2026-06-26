@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react"
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { cn } from "../../lib/utils"
-import { enhanceRichTextNodes } from "./richText"
+import { enhanceRichTextNodes, prepareRichText } from "./richText"
 import type { GlossaryTerm, Variable } from "./types"
 
 interface LessonMarkdownProps {
@@ -23,15 +23,23 @@ export function LessonMarkdown({
   onHighlight,
   onTermHighlight,
 }: LessonMarkdownProps): ReactElement {
-  const enhance = useCallback(
-    (children: ReactNode) =>
-      enhanceRichTextNodes(children, {
+  // Build the token list + matcher regex once per render (memoized), then reuse
+  // it across every markdown element and text node instead of rebuilding both
+  // for each node.
+  const prepared = useMemo(
+    () =>
+      prepareRichText({
         variables,
         glossary,
         onHighlight: (name) => onHighlight?.(name),
         onTermHighlight: (cls) => onTermHighlight?.(cls),
       }),
     [glossary, onHighlight, onTermHighlight, variables],
+  )
+
+  const enhance = useCallback(
+    (children: ReactNode) => enhanceRichTextNodes(children, prepared),
+    [prepared],
   )
 
   const components = useMemo<Components>(

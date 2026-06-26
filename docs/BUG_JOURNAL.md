@@ -241,6 +241,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Memoized math + rich-text rendering (perf M3/M4)
+Symptom: `InlineMathRenderer` re-ran KaTeX on every parent render (e.g. `AutoFitDeferredInlineMath`'s per-frame scale change during a slider drag); `richText` rebuilt the token list + matcher `RegExp` for every text node, every render.
+Cause: no memoization — react-katex re-renders unconditionally; tokens/regex (pure functions of variables+glossary) were rebuilt per node.
+Fix: `memo(InlineMathRenderer)` skips re-render when `math` is unchanged; `prepareRichText()` builds tokens+regex once, memoized in `LessonMarkdown` and threaded through `enhanceRichTextNodes`. Output identical: tsc + 163 tests + build green; `/equation/1` verified in preview (KaTeX + linked terms render, no console errors).
+**Lesson:** reinforces #15/#16 — memo components whose render is expensive-and-pure by props; hoist pure per-render derivations (token lists, regexes) above the nodes that consume them. (AutoFit's one-time mount still renders measure+display copies; the per-frame cost is what's gone.)
+
 ### 2026-06-26 · X-Forwarded-For client-IP was spoofable (security M2/M3)
 Symptom: `get_request_meta` logged `forwarded_for.split(",")[0]` — the *leftmost* XFF entry, which is fully client-controlled, so the audited invite-redemption IP could be spoofed.
 Cause: the leftmost XFF hop is the original client's claim; only the rightmost hops (added by our own proxies) are trustworthy.
@@ -382,7 +388,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - H3/M8 · `charts/simpleChart.ts:63` + `LiveFormula.tsx` — D3 scales + KaTeX rebuilt every render/drag tick; primitive deps + memo + rAF-coalesce. (#15,#16)
 - M1 · `learning_dashboard` queries collapsed 7→5 on 2026-06-26 (see log). **Still open (optional):** cache the seed-invariant counts.
 - M2 · `LearningEvent.Meta` index for the streak scan. → fixed 2026-06-26 (see chronological log); migration `0010`.
-- M3/M4 · KaTeX double-render in `AutoFitDeferredInlineMath`; per-text-node regex/token rebuild in `richText.tsx`.
+- M3/M4 · math + rich-text rendering memoized 2026-06-26 (see log) — per-frame KaTeX re-render and per-node token/regex rebuild eliminated. (AutoFit's one-time mount double-render remains, acceptable.) ✓
 - M5/M6 · locale-aware cache key (not header vary); cache `retrieve`. LocMemCache → Redis for multi-worker. (#17)
 - M7 · `useUpdateProgress` invalidates the wrong key (`["equations"]` list, not the detail key).
 
