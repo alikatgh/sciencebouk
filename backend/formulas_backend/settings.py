@@ -136,7 +136,9 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": int(os.getenv("DJANGO_PAGE_SIZE", "20")),
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Subclass that select_related's the profile to avoid an N+1 on every
+        # authenticated request (the user serializer embeds profile).
+        "accounts.authentication.ProfileJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

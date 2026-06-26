@@ -97,7 +97,7 @@ Before reproducing, grep this list for the shape of your bug.
 13. **N+1 from auth.** SimpleJWT `get_user` does `User.objects.get(...)` with no
     `select_related`, so every authenticated request fires a second query for
     `request.user.profile` (the serializer embeds it). Subclass `get_user` to
-    `select_related("profile")`. (r3perf-H1, r6perf-H1 — OPEN.)
+    `select_related("profile")`. (r3perf-H1, r6perf-H1 → fixed 2026-06-26, `accounts/authentication.py`.)
 
 14. **`request.user.profile` without a guard.** Users predating the `post_save`
     signal, or made via `bulk_create`/fixtures, lack the auto-created row →
@@ -240,6 +240,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · N+1 profile query on every authenticated request (perf r3perf-H1/r6perf-H1)
+Symptom: stock SimpleJWT `get_user` does `User.objects.get(...)` with no `select_related`, so the first `request.user.profile` access (the user serializer embeds it) fired a second query on every authenticated request.
+Cause: SimpleJWT doesn't `select_related` the profile OneToOne.
+Fix: `accounts/authentication.py` `ProfileJWTAuthentication.get_user` mirrors stock 5.5.1 but uses `select_related("profile")`; wired via `DEFAULT_AUTHENTICATION_CLASSES`. Tests: 0 queries to access profile post-auth + `/auth/me/` still 200. 281 backend tests pass.
+**Lesson:** pattern #13 — override the auth class's `get_user` to `select_related` the embedded relation; mirror the upstream method exactly and re-verify on SDK upgrade.
 
 ### 2026-06-26 · Memoized math + rich-text rendering (perf M3/M4)
 Symptom: `InlineMathRenderer` re-ran KaTeX on every parent render (e.g. `AutoFitDeferredInlineMath`'s per-frame scale change during a slider drag); `richText` rebuilt the token list + matcher `RegExp` for every text node, every render.
