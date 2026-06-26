@@ -153,6 +153,25 @@ def update_profile(request):
     return Response(UserSerializer(request.user).data)
 
 
+# Magic-byte signatures for the avatar image types we accept. Validating the
+# file *content* (not just the .ext in the filename) stops a non-image being
+# uploaded as avatar.png and later served from the media path.
+_IMAGE_SIGNATURES = (
+    ("png", lambda h: h.startswith(b"\x89PNG\r\n\x1a\n")),
+    ("jpg", lambda h: h.startswith(b"\xff\xd8\xff")),
+    ("gif", lambda h: h.startswith(b"GIF87a") or h.startswith(b"GIF89a")),
+    ("webp", lambda h: h[:4] == b"RIFF" and h[8:12] == b"WEBP"),
+)
+
+
+def _detect_image_type(header: bytes) -> str | None:
+    """Return the canonical extension for a recognised image header, else None."""
+    for ext, matches in _IMAGE_SIGNATURES:
+        if matches(header):
+            return ext
+    return None
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
@@ -162,15 +181,17 @@ def upload_avatar(request):
     if not file:
         return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate
     if file.size > 5 * 1024 * 1024:
         return Response({"error": "File too large (max 5MB)"}, status=status.HTTP_400_BAD_REQUEST)
 
-    ext = file.name.rsplit('.', 1)[-1].lower() if '.' in file.name else 'jpg'
-    if ext not in ('jpg', 'jpeg', 'png', 'webp', 'gif'):
+    # Validate actual content (magic bytes), not the filename extension.
+    header = file.read(12)
+    file.seek(0)
+    ext = _detect_image_type(header)
+    if ext is None:
         return Response({"error": "Invalid file type"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Save file
+    # Save file — extension from the DETECTED type, never the client-supplied name.
     filename = f"avatars/{request.user.id}_{uuid.uuid4().hex[:8]}.{ext}"
     filepath = settings.MEDIA_ROOT / filename
     filepath.parent.mkdir(parents=True, exist_ok=True)
