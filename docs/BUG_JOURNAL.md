@@ -211,6 +211,12 @@ Before reproducing, grep this list for the shape of your bug.
     fails `tsc`/`vite build` while Vitest stays green. (Missed `d3-transition`
     migrating off the `d3` meta-package.)
 
+31. **Replacing a stored upload orphans the old artifact.** A re-upload that only
+    rewrites the DB pointer (`avatar_url`, a file path) leaves the previous file
+    on disk forever. When replacing, delete the old one — but guard: only paths
+    under the media dir, never the file just written, and skip external URLs
+    (OAuth pictures). (Hit on avatar re-upload.)
+
 ---
 
 ## Reusable tools
@@ -234,6 +240,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · Avatar re-upload leaked old files — delete previous local avatar (security M1, completion)
+Symptom: every avatar re-upload wrote a new `media/avatars/<id>_<uuid>.<ext>` but never removed the prior file — unbounded storage growth.
+Cause: `upload_avatar` only rewrote `profile.avatar_url`; old files were orphaned on disk.
+Fix: `_remove_old_local_avatar()` (`accounts/views.py`) deletes the previous file, but only when the old URL is under `MEDIA_URL`/`avatars/` (skips external Google OAuth pictures) and isn't the file just written. 2 tests (re-upload deletes / external URL untouched); 275 backend tests pass.
+**Lesson:** new pattern #31 — replacing a stored upload must delete the old artifact, with path guards.
 
 ### 2026-06-26 · Avatar upload validated by extension only — added magic-byte check (security M1)
 Symptom: `upload_avatar` accepted any file whose *name* ended in an image extension — a non-image `evil.png` was stored under `media/avatars/` and served.
@@ -385,7 +397,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - M4 · `react-katex` is a maintenance risk but used in 9 files (wrapped by in-house renderer) — a scoped refactor, not a free deletion.
 
 **Residual security** (`r1`/`r5-security`)
-- M1 · avatar upload — magic-byte content validation added 2026-06-26 (see log). **Still open:** old avatar files never deleted on re-upload. (#24)
+- M1 · avatar upload — magic-byte validation + old-file cleanup on re-upload, both done 2026-06-26 (see log). ✓ (#24)
 - M2/M3 · `X-Forwarded-For` trusted for IP audit; `SECURE_PROXY_SSL_HEADER` trusts client `X-Forwarded-Proto` (verify the cPanel/Passenger proxy overwrites it).
 - M5 · refresh token in `localStorage` (XSS-exfiltratable, 30-day) — move to `HttpOnly Secure SameSite` cookie.
 - L1/L3/L4 · DOMPurify the legal-page HTML; gate the API landing page behind `DEBUG`; bind Stripe upgrade to a configured Pro price id.
