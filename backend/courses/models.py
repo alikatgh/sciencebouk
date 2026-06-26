@@ -213,6 +213,11 @@ class LearningEvent(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            # Serves the streak scan in learning_dashboard:
+            # LearningEvent.objects.filter(user=user).dates("created_at", "day").
+            models.Index(fields=["user", "-created_at"], name="learnevent_user_created_idx"),
+        ]
 
     def __str__(self):
         eq_title = self.equation.title if self.equation else "N/A"

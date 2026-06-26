@@ -235,6 +235,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Composite index for the dashboard streak scan (perf M2)
+Symptom: `learning_dashboard` streak runs `LearningEvent.objects.filter(user=user).dates("created_at","day")` against only a single-column `created_at` index + the FK index — neither serves the user-scoped, date-ordered scan well.
+Cause: no composite `(user, created_at)` index for that access pattern.
+Fix: added `Index(["user","-created_at"])` to `LearningEvent.Meta` (`courses/models.py:214`) + migration `0010_…`. `makemigrations --check` clean; index applies; 270 backend tests pass.
+**Lesson:** a single-column index on `created_at` plus an FK index on `user` do NOT add up to a composite `(user, -created_at)` index for `filter(user).dates(created_at)` — match the index to the query's leading columns.
+
 ### 2026-06-26 · Removed 4 dead React-Query hooks + orphaned api methods (r4-deadcode M1/M2)
 Symptom: 4 of 5 hooks in `api/hooks.ts` had zero consumers (`useEquations`, `useCourse`, `useSearchEquations`, `useUpdateProgress`); only `useEquation` is live.
 Cause: hooks + the `api` client methods they exclusively fed outlived the UI that used them.
@@ -339,7 +345,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - H2 · `data/equations.ts:1` — 37 KB `equations.json` statically bundled into every scene chunk; seed React Query via `initialData`.
 - H3/M8 · `charts/simpleChart.ts:63` + `LiveFormula.tsx` — D3 scales + KaTeX rebuilt every render/drag tick; primitive deps + memo + rAF-coalesce. (#15,#16)
 - M1 · `courses/views.py:318` — `learning_dashboard` = 7 uncached queries; collapse + cache seed-invariant counts.
-- M2 · `LearningEvent.Meta` — add `Index(["user","-created_at"])` for the streak scan.
+- M2 · `LearningEvent.Meta` index for the streak scan. → fixed 2026-06-26 (see chronological log); migration `0010`.
 - M3/M4 · KaTeX double-render in `AutoFitDeferredInlineMath`; per-text-node regex/token rebuild in `richText.tsx`.
 - M5/M6 · locale-aware cache key (not header vary); cache `retrieve`. LocMemCache → Redis for multi-worker. (#17)
 - M7 · `useUpdateProgress` invalidates the wrong key (`["equations"]` list, not the detail key).
