@@ -235,6 +235,12 @@ script name → one-line "what bug it was built to catch".
   lessons for all subjects" gap; re-running is a no-op. Does NOT validate
   variable/preset/lesson correctness. Re-seed with `manage.py seed_subjects`
   after running.
+- `scripts/gen_what_it_means.mjs` — assembles `frontend/src/data/whatItMeans.ts`
+  from a JSON array of authored "What does it mean?" entries (the output of the
+  `author-what-it-means` Sonnet workflow). Does the precise TS/escaping so the
+  generated module always compiles; does NOT judge prose quality (that's
+  `whatItMeans.test.ts` + a preview check). Usage:
+  `node scripts/gen_what_it_means.mjs /tmp/wim_entries.json`.
 - The verified findings live in [`docs/audits/`](audits/) (r1–r6, 2026-06-14) —
   read the relevant lens before re-deriving a finding. Per global rule §3, when
   you add a backend route harness, drive the real route handler (not just the

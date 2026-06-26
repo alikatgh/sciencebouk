@@ -12,6 +12,7 @@ import { useSettings } from "../../settings/SettingsContext"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { ResizablePanel } from "../ui/resizable-panel"
+import { LearnMorePanel } from "../scenes/LearnMorePanel"
 import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
 import type { Variable, LessonStep, GlossaryTerm } from "./types"
@@ -599,6 +600,12 @@ export function TeachableEquation({
     </Button>
   ) : null
 
+  // "What it means" + the other learn-more aids. Renders for every equation
+  // (core and subject) that has curated content; returns null otherwise.
+  const learnMoreBlock = resolvedId != null ? (
+    <LearnMorePanel equationId={resolvedId} />
+  ) : null
+
   const teachingContent = isMobile && isNarrow ? (
     <div className="native-scroll flex h-full flex-col overflow-y-auto">
       <div className="flex flex-1 flex-col gap-2 px-3 py-2.5 pb-24">
@@ -606,6 +613,7 @@ export function TeachableEquation({
           <>
             {hookBlock}
             {formulaBlock}
+            {learnMoreBlock}
           </>
         )}
         {mobileTeachingTab === "controls" && (
@@ -661,6 +669,7 @@ export function TeachableEquation({
       {presetsBlock}
       {lessonBlock}
       {restartLessonBlock}
+      {learnMoreBlock}
     </div>
   )
 

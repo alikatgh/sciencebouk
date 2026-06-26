@@ -3,6 +3,7 @@ import { useState } from "react"
 import { getEquationFact } from "../../data/equationFacts"
 import { getConceptCheck } from "../../data/conceptChecks"
 import { getPrerequisites } from "../../data/prerequisites"
+import { getWhatItMeans } from "../../data/whatItMeans"
 import { getWorkedExample } from "../../data/workedExamples"
 import { track } from "../../lib/analytics"
 import { ConceptCheck } from "./ConceptCheck"
@@ -15,15 +16,17 @@ import { ConceptCheck } from "./ConceptCheck"
  * renders nothing when none do. The parent keys the scene subtree by equation
  * id, so the active tab resets on navigation.
  */
-type TabKey = "fact" | "example" | "check" | "builds"
+type TabKey = "means" | "fact" | "example" | "check" | "builds"
 
 export function LearnMorePanel({ equationId }: { equationId: number }): ReactElement | null {
+  const meaning = getWhatItMeans(equationId)
   const fact = getEquationFact(equationId)
   const example = getWorkedExample(equationId)
   const hasCheck = getConceptCheck(equationId) !== null
   const prereqs = getPrerequisites(equationId)
 
   const tabs: Array<{ key: TabKey; label: string }> = []
+  if (meaning) tabs.push({ key: "means", label: "What it means" })
   if (fact) tabs.push({ key: "fact", label: "Did you know?" })
   if (example) tabs.push({ key: "example", label: "Worked example" })
   if (hasCheck) tabs.push({ key: "check", label: "Quick check" })
@@ -85,6 +88,32 @@ export function LearnMorePanel({ equationId }: { equationId: number }): ReactEle
       </div>
 
       <div id={panelId} role="tabpanel" aria-labelledby={tabId(current)} tabIndex={0} className="px-3 pb-2.5 pt-2 text-left">
+        {current === "means" && meaning && (
+          <div className="space-y-2">
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{meaning.plainEnglish}</p>
+            <dl className="space-y-1">
+              {meaning.variables.map((v) => (
+                <div key={v.symbol} className="flex gap-2 text-xs">
+                  <dt className="h-fit shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                    {v.symbol}
+                  </dt>
+                  <dd className="text-slate-600 dark:text-slate-300">
+                    <span className="font-medium text-slate-700 dark:text-slate-200">{v.name}</span>
+                    {v.unit ? <span className="text-slate-400"> ({v.unit})</span> : null} — {v.meaning}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-600 dark:text-slate-300">Result: </span>
+              {meaning.result}
+            </p>
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              <span className="font-semibold">Why it matters: </span>
+              {meaning.interpretation}
+            </p>
+          </div>
+        )}
         {current === "fact" && fact && (
           <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{fact}</p>
         )}
