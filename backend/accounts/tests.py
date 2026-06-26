@@ -874,3 +874,50 @@ class ProfileJWTAuthenticationTests(TestCase):
         response = client.get('/api/auth/me/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['email'], 'jwt2@example.com')
+
+
+class EmailCaseInsensitivityTests(TestCase):
+    """Email identity is case-insensitive: registration lowercases, a case
+    variant of an existing account is rejected, and login works regardless of
+    the case typed (for both new lowercase and pre-existing mixed-case accounts)."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_registration_lowercases_email(self):
+        response = self.client.post(
+            '/api/auth/register/',
+            {'email': 'MixedCase@Example.com', 'password': 'strongpass1'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(User.objects.filter(email='mixedcase@example.com').exists())
+        self.assertFalse(User.objects.filter(email='MixedCase@Example.com').exists())
+
+    def test_registration_rejects_case_variant_of_existing(self):
+        make_user(email='taken@example.com')
+        response = self.client.post(
+            '/api/auth/register/',
+            {'email': 'Taken@Example.com', 'password': 'strongpass1'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_login_is_case_insensitive_for_new_accounts(self):
+        make_user(email='person@example.com')  # username == email == lowercase
+        response = self.client.post(
+            '/api/auth/login/',
+            {'username': 'Person@Example.com', 'password': 'securepass123'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access', response.json())
+
+    def test_login_works_for_pre_existing_mixed_case_account(self):
+        make_user(email='Legacy@Example.com')  # stored mixed-case (pre-fix data)
+        response = self.client.post(
+            '/api/auth/login/',
+            {'username': 'legacy@example.com', 'password': 'securepass123'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)

@@ -159,6 +159,10 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
+# Case-insensitive login (the username is the email): lets users sign in
+# regardless of the case they type, matching the lowercased registration path.
+AUTHENTICATION_BACKENDS = ["accounts.authentication.CaseInsensitiveModelBackend"]
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "formulas_backend.middleware.SecurityHeadersMiddleware",

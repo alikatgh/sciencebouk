@@ -160,7 +160,8 @@ Before reproducing, grep this list for the shape of your bug.
     while the Google path lowercased → `Me@x.com` and `me@x.com` become two
     accounts. Lowercase on every ingress; add a case-insensitive DB unique
     (`UniqueConstraint(Lower('email'))`), ideally via a custom user model while
-    data is tiny. (r5research-H4/M5 — OPEN.)
+    data is tiny. (r5research-H4/M5 → normalization + case-insensitive auth fixed
+    2026-06-26; the DB `Lower('email')` unique constraint remains optional defense-in-depth.)
 
 24. **File upload validated by filename extension only.** No magic-byte/Pillow
     check → a `.png`-named polyglot is stored and served with an inferred
@@ -244,6 +245,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · Case-sensitive email allowed duplicate accounts (security/correctness, r5research-H4/M5)
+Symptom: registration's existence check + storage were case-sensitive while the Google path lowercases — so `Me@x.com` could register, then a Google sign-in (lowercased to `me@x.com`) created a SECOND account.
+Cause: `RegisterSerializer.validate_email` checked/stored the email as-typed; the default auth backend matches the username (=email) case-sensitively.
+Fix: register lowercases + `email__iexact` check (`accounts/serializers.py`); new `CaseInsensitiveModelBackend` makes login case-insensitive for both new (lowercase) and pre-existing (mixed-case) accounts — no data migration. 4 tests; 286 backend tests pass.
+**Lesson:** pattern #23 — normalize email at EVERY ingress (register / login / OAuth) and authenticate case-insensitively; one case-sensitive path reintroduces duplicates.
 
 ### 2026-06-26 · Tests shared a process-wide cache_page cache (test-isolation #17)
 Symptom: the equation-list view is `cache_page`'d, but tests ran on LocMemCache with no clearing between tests — a cached list response could leak a stale count into a later test.

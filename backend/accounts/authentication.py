@@ -1,8 +1,40 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.backends import ModelBackend
 from django.utils.translation import gettext_lazy as _
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import AuthenticationFailed, InvalidToken
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.utils import get_md5_hash_password
+
+
+class CaseInsensitiveModelBackend(ModelBackend):
+    """Authenticate by a case-insensitive username (the username is the email).
+
+    Registration lowercases new accounts, but pre-existing accounts may be
+    mixed-case; this lets either log in regardless of the case typed, without a
+    data migration. Falls back safely (returns None) if the lookup is ambiguous.
+    """
+
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        user_model = get_user_model()
+        if username is None:
+            username = kwargs.get(user_model.USERNAME_FIELD)
+        if username is None or password is None:
+            return None
+        try:
+            user = user_model._default_manager.get(
+                **{f"{user_model.USERNAME_FIELD}__iexact": username}
+            )
+        except user_model.DoesNotExist:
+            # Run the default password hasher once to reduce timing differences.
+            user_model().set_password(password)
+            return None
+        except user_model.MultipleObjectsReturned:
+            # Pre-existing case-duplicate accounts: ambiguous → fail closed.
+            return None
+        if user.check_password(password) and self.user_can_authenticate(user):
+            return user
+        return None
 
 
 class ProfileJWTAuthentication(JWTAuthentication):
