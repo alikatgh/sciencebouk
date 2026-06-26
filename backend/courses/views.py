@@ -411,7 +411,6 @@ def learning_dashboard(request):
         return Response({"error": "Pro required"}, status=status.HTTP_403_FORBIDDEN)
 
     progress = UserProgress.objects.filter(user=user)
-    completed = progress.filter(completed=True).count()
     total_time = progress.aggregate(total=Sum("time_spent_seconds"))["total"] or 0
 
     # Streak: count consecutive days with activity (distinct days, no event cap)
@@ -424,25 +423,33 @@ def learning_dashboard(request):
         streak += 1
         day -= timedelta(days=1)
 
-    # Category completion — two aggregated queries, no per-row iteration
+    # The completed-equation set drives the count, the category stats AND the
+    # recommendation — fetch it once rather than re-counting.
     completed_equation_ids = list(
         progress.filter(completed=True).values_list("equation_id", flat=True)
     )
-    category_stats = Equation.objects.values("category").annotate(
-        total=Count("id"),
-        completed=Count("id", filter=Q(id__in=completed_equation_ids)),
+    completed = len(completed_equation_ids)
+
+    # Category completion — one aggregated query. Its per-category totals also
+    # sum to the overall equation count, so no separate Equation.objects.count().
+    category_rows = list(
+        Equation.objects.values("category").annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(id__in=completed_equation_ids)),
+        )
     )
     categories = {
         row["category"]: {"total": row["total"], "completed": row["completed"]}
-        for row in category_stats
+        for row in category_rows
     }
+    total_equations = sum(row["total"] for row in category_rows)
 
     # Recommendation: first uncompleted equation
     next_eq = Equation.objects.exclude(id__in=completed_equation_ids).first()
 
     return Response({
         "completedCount": completed,
-        "totalEquations": Equation.objects.count(),
+        "totalEquations": total_equations,
         "totalTimeMinutes": round(total_time / 60),
         "currentStreak": streak,
         "categories": categories,
