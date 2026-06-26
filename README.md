@@ -40,11 +40,10 @@ npm run dev                                 # http://localhost:5173
 
 ### Docker
 
-```bash
-docker compose up --build
-# Frontend: http://localhost:3000
-# API: http://localhost:8000
-```
+The Docker Compose stack (`docker-compose.yml`, the Dockerfiles, and the nginx
+config) is part of the project's private deployment infrastructure and is **not
+included in this public repository**, so `docker compose up` will not work from a
+clean clone. Use the local dev setup above.
 
 ## Tech Stack
 
