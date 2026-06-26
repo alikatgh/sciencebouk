@@ -156,3 +156,12 @@ See [`.env.example`](.env.example) for all configuration options.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+Copyright (C) 2026 Albert Nikanorov.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the **GNU General Public License v3.0 or later** (GPL-3.0-or-later)
+as published by the Free Software Foundation. See [LICENSE](LICENSE) for the full
+text. It is distributed WITHOUT ANY WARRANTY; see the License for details.

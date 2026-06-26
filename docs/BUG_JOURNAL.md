@@ -415,7 +415,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - H3/H4/M4 · API table rebuilt complete + anon-progress relabeled + 17-equations table reordered to canonical ids (fixed 2026-06-26, see log). **Still open:** no dedicated Architecture/auth/Pro/invite prose docs. (#20)
 - H6 · "Adding an Equation" points at the wrong files (`equations.ts` not `.json`; `EquationVisualization` not `sceneRegistry`). → fixed PR #3 (`78bf8c9`).
 - M1/M2/M3 · three `.env.example` files disagreed; vars + load precedence undocumented. → fixed 2026-06-26 (see chronological log).
-- M8/L6 · no `LICENSE` (still open — needs a licensing decision); `SECURITY.md` added; L5 CI job rename done (`78bf8c9`). L4 README SQLite-vs-Postgres still open.
+- M8/L6 · `LICENSE` added 2026-06-26 — **GPL-3.0-or-later** (user's choice); `SECURITY.md` added; L5 CI job rename done (`78bf8c9`). L4 README already documents SQLite(dev)/Postgres(prod) correctly. ✓
 
 **Architecture** (`r3-arch`)
 - C1/C2 · quadruple source of truth for equation data; backend command walks `parents[4]` into the frontend tree. (#21)
