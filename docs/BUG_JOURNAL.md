@@ -241,6 +241,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Collapsed redundant dashboard queries 7→5 (perf M1)
+Symptom: `learning_dashboard` issued a separate `completed` COUNT and a standalone `Equation.objects.count()` that duplicated data it already fetched.
+Cause: `completed` re-counted what `completed_equation_ids` already lists; `totalEquations` re-counted what the per-category `total`s already sum to.
+Fix: `completed = len(completed_equation_ids)`; `total_equations = sum(row["total"] …)` over the materialized category rows (`courses/views.py:407`). 7→5 queries, byte-identical output; 18 dashboard tests pass.
+**Lesson:** before adding a COUNT/aggregate, check whether a list/aggregate already in the view yields it — `len()` and a row-sum beat extra round-trips. (Caching seed-invariant counts is a further, riskier step — left open.)
+
 ### 2026-06-26 · Avatar re-upload leaked old files — delete previous local avatar (security M1, completion)
 Symptom: every avatar re-upload wrote a new `media/avatars/<id>_<uuid>.<ext>` but never removed the prior file — unbounded storage growth.
 Cause: `upload_avatar` only rewrote `profile.avatar_url`; old files were orphaned on disk.
@@ -362,7 +368,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - H1 · SimpleJWT `get_user` — no `select_related("profile")`; +1 query on all authed traffic. (#13)
 - H2 · `data/equations.ts:1` — 37 KB `equations.json` statically bundled into every scene chunk; seed React Query via `initialData`.
 - H3/M8 · `charts/simpleChart.ts:63` + `LiveFormula.tsx` — D3 scales + KaTeX rebuilt every render/drag tick; primitive deps + memo + rAF-coalesce. (#15,#16)
-- M1 · `courses/views.py:318` — `learning_dashboard` = 7 uncached queries; collapse + cache seed-invariant counts.
+- M1 · `learning_dashboard` queries collapsed 7→5 on 2026-06-26 (see log). **Still open (optional):** cache the seed-invariant counts.
 - M2 · `LearningEvent.Meta` index for the streak scan. → fixed 2026-06-26 (see chronological log); migration `0010`.
 - M3/M4 · KaTeX double-render in `AutoFitDeferredInlineMath`; per-text-node regex/token rebuild in `richText.tsx`.
 - M5/M6 · locale-aware cache key (not header vary); cache `retrieve`. LocMemCache → Redis for multi-worker. (#17)
