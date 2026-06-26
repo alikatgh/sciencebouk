@@ -161,6 +161,24 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
     return points
   }, [])
 
+  // The bifurcation cloud (~9k points) is static; memoize the rendered circles
+  // so a slider drag — which only changes r/x0 — doesn't re-diff all of them.
+  // (Relies on the now-stable bifurcationFrame scales.)
+  const bifurcationCloud = useMemo(
+    () =>
+      bifurcationData.map((point, index) => (
+        <circle
+          key={`bif-point-${index}`}
+          cx={bifurcationFrame.xScale(point.r)}
+          cy={bifurcationFrame.yScale(point.x)}
+          r={1}
+          fill="#1e293b"
+          opacity={0.5}
+        />
+      )),
+    [bifurcationData, bifurcationFrame.xScale, bifurcationFrame.yScale],
+  )
+
   // Time series data
   const timeSeriesData = useMemo(() => {
     const pts: Array<{ t: number; x: number }> = []
@@ -260,16 +278,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
             <line x1={bifurcationFrame.plotLeft} x2={bifurcationFrame.plotRight} y1={bifurcationFrame.plotBottom} y2={bifurcationFrame.plotBottom} stroke="#cbd5e1" />
             <line x1={bifurcationFrame.plotLeft} x2={bifurcationFrame.plotLeft} y1={bifurcationFrame.plotTop} y2={bifurcationFrame.plotBottom} stroke="#cbd5e1" />
 
-            {bifurcationData.map((point, index) => (
-              <circle
-                key={`bif-point-${index}`}
-                cx={bifurcationFrame.xScale(point.r)}
-                cy={bifurcationFrame.yScale(point.x)}
-                r={1}
-                fill="#1e293b"
-                opacity={0.5}
-              />
-            ))}
+            {bifurcationCloud}
             <line
               x1={bifurcationFrame.xScale(r)}
               x2={bifurcationFrame.xScale(r)}

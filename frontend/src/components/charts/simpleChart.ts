@@ -60,17 +60,28 @@ export function useChartFrame({
   const plotWidth = Math.max(plotRight - plotLeft, 10)
   const plotHeight = Math.max(plotBottom - plotTop, 10)
 
+  // Depend on the domain *values*, not the array reference: callers pass inline
+  // literals (`xDomain={[2.5, 4]}`), a fresh array every render, which would
+  // otherwise rebuild every scale (and any chart memo keyed on them) each render.
+  const [xDomainStart, xDomainEnd] = xDomain
+  const [yDomainStart, yDomainEnd] = yDomain
+  const y2DomainStart = y2Domain?.[0] ?? null
+  const y2DomainEnd = y2Domain?.[1] ?? null
+
   const xScale = useMemo(
-    () => scaleLinear().domain(xDomain).range([plotLeft, plotRight]),
-    [plotLeft, plotRight, xDomain],
+    () => scaleLinear().domain([xDomainStart, xDomainEnd]).range([plotLeft, plotRight]),
+    [plotLeft, plotRight, xDomainStart, xDomainEnd],
   )
   const yScale = useMemo(
-    () => scaleLinear().domain(yDomain).range([plotBottom, plotTop]),
-    [plotBottom, plotTop, yDomain],
+    () => scaleLinear().domain([yDomainStart, yDomainEnd]).range([plotBottom, plotTop]),
+    [plotBottom, plotTop, yDomainStart, yDomainEnd],
   )
   const y2Scale = useMemo(
-    () => (y2Domain ? scaleLinear().domain(y2Domain).range([plotBottom, plotTop]) : null),
-    [plotBottom, plotTop, y2Domain],
+    () =>
+      y2DomainStart != null && y2DomainEnd != null
+        ? scaleLinear().domain([y2DomainStart, y2DomainEnd]).range([plotBottom, plotTop])
+        : null,
+    [plotBottom, plotTop, y2DomainStart, y2DomainEnd],
   )
 
   const clientXToX = useCallback((clientX: number): number | null => {
@@ -78,17 +89,19 @@ export function useChartFrame({
     if (!el) return null
     const rect = el.getBoundingClientRect()
     const ratio = clamp((clientX - rect.left - plotLeft) / plotWidth, 0, 1)
-    return xDomain[0] + ratio * (xDomain[1] - xDomain[0])
-  }, [plotLeft, plotWidth, xDomain])
+    return xDomainStart + ratio * (xDomainEnd - xDomainStart)
+  }, [plotLeft, plotWidth, xDomainStart, xDomainEnd])
 
   const clientYToY = useCallback((clientY: number, axis: "left" | "right" = "left"): number | null => {
     const el = containerRef.current
     if (!el) return null
     const rect = el.getBoundingClientRect()
     const ratio = clamp((clientY - rect.top - plotTop) / plotHeight, 0, 1)
-    const domain = axis === "right" && y2Domain ? y2Domain : yDomain
-    return domain[1] + ratio * (domain[0] - domain[1])
-  }, [plotHeight, plotTop, y2Domain, yDomain])
+    const useRightAxis = axis === "right" && y2DomainStart != null && y2DomainEnd != null
+    const domainStart = useRightAxis ? y2DomainStart : yDomainStart
+    const domainEnd = useRightAxis ? y2DomainEnd : yDomainEnd
+    return domainEnd + ratio * (domainStart - domainEnd)
+  }, [plotHeight, plotTop, y2DomainStart, y2DomainEnd, yDomainStart, yDomainEnd])
 
   return {
     containerRef,

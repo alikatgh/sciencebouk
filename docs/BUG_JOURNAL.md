@@ -109,13 +109,14 @@ Before reproducing, grep this list for the shape of your bug.
     drag frame. Render static clouds as one `<path>`/canvas; wrap the chart in
     `React.memo`. Drag handlers firing per-tick also re-parse KaTeX every frame →
     `requestAnimationFrame`-coalesce + memo each `InlineMath`. (r3perf-C1/M8,
-    r6perf-C1/M8 — OPEN.)
+    r6perf-C1/M8 → ChaosScene cloud memoized + `InlineMath` memoized 2026-06-26;
+    canvas/path rewrite still optional.)
 
 16. **`useMemo`/`useCallback` deps that are fresh literals each render.**
     `xDomain: [2.5, 4]` passed inline is a new array reference every render, so
     the referential dep check always misses and the D3 scale rebuilds. Destructure
     to primitive deps: `const [x0,x1]=xDomain; useMemo(..., [x0,x1,...])`.
-    (r3perf-H3, r6perf-H3 — OPEN.)
+    (r3perf-H3, r6perf-H3 → fixed 2026-06-26 in `useChartFrame` — stabilizes every D3 scene's scales.)
 
 17. **Cache correctness + test isolation.** `cache_page` + `vary_on_headers
     ("Accept-Language")` with a `?locale=` → header fallback: don't drop the vary
@@ -240,6 +241,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · D3 scales rebuilt every render; ChaosScene re-diffed 9,212 circles per frame (perf #15/#16)
+Symptom: `useChartFrame` rebuilt every scale on every render; ChaosScene re-reconciled its ~9,212-point static bifurcation cloud on every slider-drag frame.
+Cause: scale `useMemo` deps were the inline-literal `xDomain`/`yDomain` arrays (a fresh ref each render); the cloud's `<circle>`s were inline JSX (recreated each render).
+Fix: `useChartFrame` (`charts/simpleChart.ts`) keys scales + coord-helpers on the domain VALUES (destructured primitives) — a cascade fix for every D3 scene; ChaosScene memoizes the cloud JSX on the now-stable scales. tsc/163 tests/build green; preview-verified (marker tracks r: x 435→826 for r 3.2→3.9; cloud stable at 9,212 circles; no console errors).
+**Lesson:** patterns #15/#16 — destructure inline-array deps to primitives so memos hold; memoize large static element collections so a sibling state change doesn't re-diff them.
 
 ### 2026-06-26 · README drift: stale stack + incomplete/mis-ordered tables (docs H3/H4)
 Symptom: tech-stack listed removed deps (Konva, Framer Motion) + a stale D3 version; the API table omitted ~75% of routes and mislabeled the anon-progress endpoint; the "17 Equations" table order didn't match `/equation/N`.
