@@ -323,6 +323,15 @@ class EquationListTests(BaseAPITest):
         response = self.client.get("/api/equations/")
         self.assertEqual(response.json()["count"], 3)
 
+    def test_list_reflects_newly_created_equation(self):
+        # The list view is cache_page'd; a first call may populate the cache.
+        # A freshly created equation must still appear on the next call —
+        # guards the DummyCache-under-test isolation (a LocMemCache that isn't
+        # cleared between tests would serve a stale count here).
+        self.assertEqual(self.client.get("/api/equations/").json()["count"], 3)
+        make_equation(sort_order=999, title="Cache Buster")
+        self.assertEqual(self.client.get("/api/equations/").json()["count"], 4)
+
     def test_list_result_contains_expected_fields(self):
         response = self.client.get("/api/equations/")
         first = response.json()["results"][0]

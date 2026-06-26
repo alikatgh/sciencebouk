@@ -123,7 +123,8 @@ Before reproducing, grep this list for the shape of your bug.
     blindly; fold `get_requested_locale()` into the cache key. `LocMemCache` is
     per-process (not shared across workers, not rolled back between tests) → use
     `DummyCache`/`cache.clear()` under test, Redis in prod. (r2tests-C2,
-    r3perf-M6, r6perf-M5/M6 — OPEN.)
+    r3perf-M6, r6perf-M5/M6 → test isolation fixed 2026-06-26 via DummyCache-under-test;
+    prod key covered by cache_page's full-path; Redis configurable via `DJANGO_CACHE_BACKEND`.)
 
 18. **CI silently runs a subset.** `python manage.py test courses` skipped the
     `accounts`/`payments` suites — the most security-sensitive code never gated
@@ -241,6 +242,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · Tests shared a process-wide cache_page cache (test-isolation #17)
+Symptom: the equation-list view is `cache_page`'d, but tests ran on LocMemCache with no clearing between tests — a cached list response could leak a stale count into a later test.
+Cause: no per-test cache isolation; LocMemCache is per-process and not rolled back between tests.
+Fix: `settings.py` — under `if "test" in sys.argv` swap `CACHES["default"]` to `DummyCache` (mirrors the existing throttle-rate test override). Added a regression test (list → create equation → list reflects it). 282 backend tests pass.
+**Lesson:** pattern #17 — disable `cache_page` in tests (DummyCache) so cached responses can't leak; prod cache *correctness* here is already covered by cache_page's full-path key (the locale lives in `?locale=` / the `Vary`).
 
 ### 2026-06-26 · D3 scales rebuilt every render; ChaosScene re-diffed 9,212 circles per frame (perf #15/#16)
 Symptom: `useChartFrame` rebuilt every scale on every render; ChaosScene re-reconciled its ~9,212-point static bifurcation cloud on every slider-drag frame.
