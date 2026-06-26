@@ -102,4 +102,5 @@ frontend/public/legal/terms.html
 # =========================
 # Misc
 # =========================
-package-lock.json
+# Note: frontend/package-lock.json is intentionally committed — CI's `npm ci`
+# requires it, so it must NOT be ignored.

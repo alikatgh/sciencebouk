@@ -51,11 +51,17 @@ cd backend && source .venv/bin/activate && python manage.py test courses -v 2
 
 ## Adding a New Equation
 
-1. Add entry to `frontend/src/data/equations.ts`
-2. Create scene component in `frontend/src/components/scenes/`
-3. Register in `frontend/src/components/EquationVisualization.tsx`
-4. Add to backend seed command in `backend/courses/management/commands/seed_equations.py`
-5. Run migrations and seed: `python manage.py seed_equations`
+1. Add the equation data to `frontend/src/data/equations.json` (`equations.ts`
+   only declares the TypeScript types). Optionally add localized copy under
+   `frontend/src/data/content/equation-locales/`.
+2. Create a scene component in `frontend/src/components/scenes/` (or rely on the
+   data-driven `ConfigurableEquationScene` fallback).
+3. Register the scene loader by `sort_order` in
+   `frontend/src/components/sceneRegistry.ts`.
+4. Add it to the backend seed command in
+   `backend/courses/management/commands/seed_equations.py` (the 17 core
+   equations) or `seed_subjects.py` (the extra subjects).
+5. Run the seed: `python manage.py seed_equations` (and/or `seed_subjects`).
 
 ## Pull Request Guidelines
 
