@@ -241,6 +241,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · X-Forwarded-For client-IP was spoofable (security M2/M3)
+Symptom: `get_request_meta` logged `forwarded_for.split(",")[0]` — the *leftmost* XFF entry, which is fully client-controlled, so the audited invite-redemption IP could be spoofed.
+Cause: the leftmost XFF hop is the original client's claim; only the rightmost hops (added by our own proxies) are trustworthy.
+Fix: `client_ip_from_forwarded()` (`accounts/invites.py`) trusts only the rightmost `TRUSTED_PROXY_COUNT` hops (new `DJANGO_TRUSTED_PROXY_COUNT`, default 1), falling back to `REMOTE_ADDR`; documented the `SECURE_PROXY_SSL_HEADER` proxy-overwrite requirement. 279 backend tests pass.
+**Lesson:** the trustworthy XFF entry is the rightmost-N (proxy-added), never the leftmost (client-claimed); make the proxy depth a setting.
+
 ### 2026-06-26 · Pinned stripe.api_version (security M2)
 Symptom: `payments/views.py` set only `stripe.api_key`; the API version was implicit, so an SDK upgrade could silently change request/response shapes.
 Cause: no explicit `stripe.api_version` pin.
@@ -410,7 +416,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 
 **Residual security** (`r1`/`r5-security`)
 - M1 · avatar upload — magic-byte validation + old-file cleanup on re-upload, both done 2026-06-26 (see log). ✓ (#24)
-- M2/M3 · `X-Forwarded-For` trusted for IP audit; `SECURE_PROXY_SSL_HEADER` trusts client `X-Forwarded-Proto` (verify the cPanel/Passenger proxy overwrites it).
+- M2/M3 · X-Forwarded-For now trusts only the rightmost `DJANGO_TRUSTED_PROXY_COUNT` hops (fixed 2026-06-26, see log); `SECURE_PROXY_SSL_HEADER` proxy-overwrite requirement documented in settings (deployment must verify). ✓
 - M5 · refresh token in `localStorage` (XSS-exfiltratable, 30-day) — move to `HttpOnly Secure SameSite` cookie.
 - L1/L3/L4 · DOMPurify the legal-page HTML; gate the API landing page behind `DEBUG`; bind Stripe upgrade to a configured Pro price id.
 
