@@ -16,6 +16,19 @@ interface RichTextOptions {
   onTermHighlight: (cls: string | null) => void
 }
 
+/**
+ * Tokens + the matcher regex depend only on the variables/glossary, never on
+ * the text being linked. Building them once (via `prepareRichText`) and reusing
+ * the result across every text node — and every render, when the caller
+ * memoizes it — avoids rebuilding the token list and `RegExp` per node.
+ */
+export interface PreparedRichText {
+  tokens: RichTextToken[]
+  regex: RegExp | null
+  onHighlight: (name: string | null) => void
+  onTermHighlight: (cls: string | null) => void
+}
+
 function buildTokens(variables: Variable[], glossary: GlossaryTerm[]): RichTextToken[] {
   const tokens: RichTextToken[] = []
 
@@ -39,12 +52,27 @@ function buildTokens(variables: Variable[], glossary: GlossaryTerm[]): RichTextT
   return tokens
 }
 
-export function linkTermsText(text: string, options: RichTextOptions): ReactElement {
+export function prepareRichText(options: RichTextOptions): PreparedRichText {
   const tokens = buildTokens(options.variables, options.glossary)
-  if (tokens.length === 0) return <>{text}</>
+  const regex =
+    tokens.length === 0
+      ? null
+      : new RegExp(
+          `\\b(${tokens.map((token) => token.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+          "gi",
+        )
+  return {
+    tokens,
+    regex,
+    onHighlight: options.onHighlight,
+    onTermHighlight: options.onTermHighlight,
+  }
+}
 
-  const escaped = tokens.map((token) => token.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-  const regex = new RegExp(`\\b(${escaped.join("|")})\\b`, "gi")
+function renderLinkedText(text: string, prepared: PreparedRichText): ReactElement {
+  const { tokens, regex } = prepared
+  if (!regex || tokens.length === 0) return <>{text}</>
+
   const parts = text.split(regex)
 
   return (
@@ -60,8 +88,8 @@ export function linkTermsText(text: string, options: RichTextOptions): ReactElem
               key={index}
               className="cursor-pointer rounded px-0.5 font-bold transition hover:ring-1 hover:ring-current"
               style={{ color: token.varRef.color }}
-              onPointerEnter={() => options.onHighlight(token.varRef?.name ?? null)}
-              onPointerLeave={() => options.onHighlight(null)}
+              onPointerEnter={() => prepared.onHighlight(token.varRef?.name ?? null)}
+              onPointerLeave={() => prepared.onHighlight(null)}
             >
               {part}
             </span>
@@ -75,8 +103,8 @@ export function linkTermsText(text: string, options: RichTextOptions): ReactElem
               className="cursor-pointer border-b border-dashed border-current font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
               style={{ color: token.termRef.color }}
               title={token.termRef.tooltip}
-              onPointerEnter={() => options.onTermHighlight(token.termRef?.highlightClass ?? null)}
-              onPointerLeave={() => options.onTermHighlight(null)}
+              onPointerEnter={() => prepared.onTermHighlight(token.termRef?.highlightClass ?? null)}
+              onPointerLeave={() => prepared.onTermHighlight(null)}
             >
               {part}
             </span>
@@ -89,10 +117,15 @@ export function linkTermsText(text: string, options: RichTextOptions): ReactElem
   )
 }
 
-export function enhanceRichTextNodes(children: ReactNode, options: RichTextOptions): ReactNode {
+/** Convenience wrapper that prepares tokens for a single text run. */
+export function linkTermsText(text: string, options: RichTextOptions): ReactElement {
+  return renderLinkedText(text, prepareRichText(options))
+}
+
+export function enhanceRichTextNodes(children: ReactNode, prepared: PreparedRichText): ReactNode {
   return Children.map(children, (child) => {
     if (typeof child === "string") {
-      return linkTermsText(child, options)
+      return renderLinkedText(child, prepared)
     }
 
     if (!isValidElement(child)) {
@@ -105,7 +138,7 @@ export function enhanceRichTextNodes(children: ReactNode, options: RichTextOptio
     }
 
     return cloneElement(element, {
-      children: enhanceRichTextNodes(element.props.children, options),
+      children: enhanceRichTextNodes(element.props.children, prepared),
     })
   })
 }
