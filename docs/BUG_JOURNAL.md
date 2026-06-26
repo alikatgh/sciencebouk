@@ -241,6 +241,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Pinned stripe.api_version (security M2)
+Symptom: `payments/views.py` set only `stripe.api_key`; the API version was implicit, so an SDK upgrade could silently change request/response shapes.
+Cause: no explicit `stripe.api_version` pin.
+Fix: `stripe.api_version = "2025-05-28.basil"` (`payments/views.py:16`) — the version stripe-python 12.x targets; a no-op now (the SDK already defaults to it) but locked against silent upgrade drift. 25 payments tests pass.
+**Lesson:** pin third-party API versions explicitly — the SDK's implicit default moves on upgrade. (Inbound webhook payload version is set in the Stripe dashboard, not here, so this only governs outbound calls.)
+
 ### 2026-06-26 · Collapsed redundant dashboard queries 7→5 (perf M1)
 Symptom: `learning_dashboard` issued a separate `completed` COUNT and a standalone `Equation.objects.count()` that duplicated data it already fetched.
 Cause: `completed` re-counted what `completed_equation_ids` already lists; `totalEquations` re-counted what the per-category `total`s already sum to.
@@ -399,7 +405,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - C1 · `Django==5.2.1` hard-pinned off the 5.2 security line; bump + `pip-audit`.
 - H3 · avatar served via Django `SERVE_MEDIA` path with extension-inferred type — the real foot-gun. (#24)
 - H4/M5 · email not DB-unique + case-sensitive check; normalize + case-insensitive unique, ideally a custom user model. (#23)
-- M2/M3 · pin `stripe.api_version`; add a `ProcessedStripeEvent` idempotency guard before billing go-live (partly done in `f9a0ee8`).
+- M2/M3 · `stripe.api_version` pinned 2026-06-26 (see log); `ProcessedStripeEvent` idempotency guard already in place (`f9a0ee8`). ✓
 - M4 · `react-katex` is a maintenance risk but used in 9 files (wrapped by in-house renderer) — a scoped refactor, not a free deletion.
 
 **Residual security** (`r1`/`r5-security`)
