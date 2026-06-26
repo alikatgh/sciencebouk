@@ -247,6 +247,12 @@ CACHES = {
     }
 }
 
+if "test" in sys.argv:
+    # Isolate tests from cache_page: LocMemCache is per-process and isn't cleared
+    # between tests, so a cached list response could leak into a later test that
+    # expects fresh data. DummyCache makes every request hit the real view.
+    CACHES["default"] = {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}
+
 if not DEBUG:
     SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
