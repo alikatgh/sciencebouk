@@ -197,6 +197,13 @@ Before reproducing, grep this list for the shape of your bug.
     `prerequisites`, …), trust the build — not just the test — as the dup-key
     guard. (Hit while extending `prerequisites.ts`.)
 
+29. **Env-template drift: `.env.example` lies if it's hand-maintained.** Example
+    files silently fall behind the actual `os.getenv(...)` / `import.meta.env.*`
+    reads, so a fresh clone is missing vars or sets dead ones. Verify templates
+    against code mechanically: `comm -23 <(grep code-reads) <(grep documented-keys)`
+    should be empty for both tiers. Document load precedence too (here:
+    `backend/.env` overrides root `.env`). (Hit reconciling the 3 `.env.example`.)
+
 ---
 
 ## Reusable tools
@@ -220,6 +227,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · Three `.env.example` files disagreed; vars undocumented
+Symptom: root / `backend/` / `frontend/` `.env.example` contradicted each other; ~9 backend + 3 VITE vars the code reads were undocumented; load precedence undocumented; root duplicated `DJANGO_SECRET_KEY`.
+Cause: hand-maintained templates drifted from `settings.py` (`os.getenv`) and `import.meta.env.*` reads; root file mixed both tiers.
+Fix: `backend/.env.example` made authoritative (all 26 backend vars, grouped); `frontend/.env.example` all 6 VITE vars with in-code defaults; root `.env.example` → precedence guide (dup key removed). Coverage asserted by `comm -23` grep diff. (r4-docs M1/M2/M3.)
+**Lesson:** new pattern #29 — verify env templates against the actual code reads mechanically; document which `.env` wins.
 
 ### 2026-06-23 · Slider-reachable math singularities feed Infinity/NaN downstream
 Symptom: `subjectResults.ts` compute fns hit ÷0 / log(≤0) / factorial-overflow at slider extremes (Doppler at Mach 1, Nernst Q=0, condition-number σ₂=0, Poisson k=20).
@@ -315,9 +328,9 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 **Docs** (`r4-docs`)
 - C1 · README Docker quickstart fails from a clean clone (compose/Dockerfiles `.gitignore`d). (#20)
 - H3/H4/M4 · API table omits ~75% of routes + mislabels the anon progress endpoint; no Architecture/auth/Pro/invite docs; 17-equations table mis-ordered (breaks `/equation/N`). (#20)
-- H6 · "Adding an Equation" points at the wrong files (`equations.ts` not `.json`; `EquationVisualization` not `sceneRegistry`).
-- M1/M2/M3 · three `.env.example` files disagree; ~9 backend + 3 VITE vars undocumented; load precedence (`backend/.env` wins) undocumented.
-- M8/L6 · no `LICENSE`, no `SECURITY.md` (public repo with auth + Stripe). L4 README says SQLite (prod is Postgres). L5 CI job named "lint" runs no linter.
+- H6 · "Adding an Equation" points at the wrong files (`equations.ts` not `.json`; `EquationVisualization` not `sceneRegistry`). → fixed PR #3 (`78bf8c9`).
+- M1/M2/M3 · three `.env.example` files disagreed; vars + load precedence undocumented. → fixed 2026-06-26 (see chronological log).
+- M8/L6 · no `LICENSE` (still open — needs a licensing decision); `SECURITY.md` added; L5 CI job rename done (`78bf8c9`). L4 README SQLite-vs-Postgres still open.
 
 **Architecture** (`r3-arch`)
 - C1/C2 · quadruple source of truth for equation data; backend command walks `parents[4]` into the frontend tree. (#21)
