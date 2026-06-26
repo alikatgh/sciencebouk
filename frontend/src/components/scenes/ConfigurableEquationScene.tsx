@@ -13,7 +13,6 @@ import { VAR_COLORS } from "../teaching/types"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
-import { LearnMorePanel } from "./LearnMorePanel"
 
 /**
  * A data-driven scene used for every equation that does not ship a bespoke
@@ -439,8 +438,6 @@ function GenericMetersVisual({
           ? `Drag a slider — the curve traces ${result.symbol} across its range, and reshapes as you change the other inputs.`
           : "Drag the sliders — each bar tracks a variable across its range."}
       </p>
-
-      <LearnMorePanel equationId={equationId} />
     </div>
   )
 }

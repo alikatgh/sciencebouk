@@ -13,15 +13,17 @@ describe("LearnMorePanel", () => {
   })
 
   it("shows a tab per available aid and switches panels", async () => {
-    render(<LearnMorePanel equationId={35} />) // Kinetic Energy: fact + worked example + check + builds-on
+    render(<LearnMorePanel equationId={35} />) // Kinetic Energy: what-it-means + fact + worked example + check + builds-on
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
+      "What it means",
       "Did you know?",
       "Worked example",
       "Quick check",
       "Builds on",
     ])
 
-    // first tab active by default — the fact is visible
+    // "What it means" is the default tab; switch to the fact
+    await userEvent.click(screen.getByRole("tab", { name: "Did you know?" }))
     expect(screen.getByText(/four times the energy/i)).toBeInTheDocument()
 
     // the worked example shows the substitution steps
@@ -36,10 +38,10 @@ describe("LearnMorePanel", () => {
 
   it("supports arrow-key navigation between tabs (WAI-ARIA roving focus)", async () => {
     render(<LearnMorePanel equationId={35} />)
-    const firstTab = screen.getByRole("tab", { name: "Did you know?" })
+    const firstTab = screen.getByRole("tab", { name: "What it means" })
     firstTab.focus()
     await userEvent.keyboard("{ArrowRight}")
-    expect(screen.getByRole("tab", { name: "Worked example" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("tab", { name: "Did you know?" })).toHaveAttribute("aria-selected", "true")
     expect(firstTab).toHaveAttribute("aria-selected", "false")
     // wraps around: Left from the first tab goes to the last
     firstTab.focus()
