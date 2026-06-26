@@ -204,6 +204,13 @@ Before reproducing, grep this list for the shape of your bug.
     should be empty for both tiers. Document load precedence too (here:
     `backend/.env` overrides root `.env`). (Hit reconciling the 3 `.env.example`.)
 
+30. **Side-effect imports are invisible to a `from`-grep.** `import "d3-transition"`
+    (prototype augmentation, no binding) never matches `from ['"]…['"]`, so a dep it
+    needs looks unused. When pruning/migrating deps, grep BOTH `from '…'` AND bare
+    `import '…'`; and trust the *build*, not the tests — a missing runtime submodule
+    fails `tsc`/`vite build` while Vitest stays green. (Missed `d3-transition`
+    migrating off the `d3` meta-package.)
+
 ---
 
 ## Reusable tools
@@ -227,6 +234,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-06-26 · Pruned 6 unused npm deps + migrated d3 meta → 6 submodules (r4-deadcode M5/L2)
+Symptom: `package.json` shipped `framer-motion`, `@use-gesture/react`, 3 unused `@radix-ui/*`, and the whole `d3` meta-package, though only 6 d3 submodules + 8 radix were imported.
+Cause: deps accreted; the just-removed H1–H9 files were the last consumers of some.
+Fix: removed the 6 unused deps; replaced `d3`/`@types/d3` with direct `d3-{array,drag,scale,selection,shape,transition}` + matching `@types/*`. Lockfile −868 lines, npm-ci-synced. tsc + 165 tests + build green.
+**Lesson:** new pattern #30 — the audit said "5 submodules" but missed `d3-transition` (imported only as a side-effect); a `from`-only grep can't see it. Build caught it, tests didn't.
 
 ### 2026-06-26 · Removed 1,426 lines of orphaned frontend code (r4-deadcode H1–H9)
 Symptom: 10 modules with zero importers still in the tree: `AuthModal`+`LazyAuthModal`, `InteractiveEquation`, `PythagoreanTheoremExplorer`, `GenericEquationScene`, `teaching/hooks-data`, `scenes/layout`, `math/FormulaText`, `teaching/RealWorldContext`, `hooks/useMediaQuery`.
@@ -328,7 +341,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 **Dead code** (`r4-deadcode`, `r6-performance` L1/L2)
 - H1–H9 · ~1,426 lines orphaned. → fixed 2026-06-26 (see chronological log); all 10 files removed, build/tests green.
 - M1/M2 · 4-of-5 React-Query hooks dead → cascade-remove `api` client methods (`courses` block, `search`, `equations.list/updateProgress`, `payments.status`).
-- M5/L2 · drop unused deps (`@radix-ui/*` ×3, `@use-gesture/react`, `framer-motion`); replace `d3` meta-package with the 5 imported submodules.
+- M5/L2 · drop unused deps + d3-meta→submodules. → fixed 2026-06-26 (see chronological log); note it was **6** submodules, not 5 (`d3-transition` side-effect import).
 - B1/B2 · `equation_atlas_legacy` + aliases, `course_detail`, `subscription_status` — remove after confirming no external API consumers.
 
 **Docs** (`r4-docs`)
