@@ -241,6 +241,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · README drift: stale stack + incomplete/mis-ordered tables (docs H3/H4)
+Symptom: tech-stack listed removed deps (Konva, Framer Motion) + a stale D3 version; the API table omitted ~75% of routes and mislabeled the anon-progress endpoint; the "17 Equations" table order didn't match `/equation/N`.
+Cause: docs drifted from code (and from this session's dep pruning + dead-code removal).
+Fix: `README.md` — visualization row → modular D3/SVG; API table rebuilt complete + grouped (auth/Pro marked, anon-progress labeled); 17-equations table reordered to the canonical `equations.json` ids.
+**Lesson:** when you prune a dep or move a feature, grep the README for it — public docs drift silently; verify route tables against `urls.py` and the equation table against `equations.json`.
+
 ### 2026-06-26 · N+1 profile query on every authenticated request (perf r3perf-H1/r6perf-H1)
 Symptom: stock SimpleJWT `get_user` does `User.objects.get(...)` with no `select_related`, so the first `request.user.profile` access (the user serializer embeds it) fired a second query on every authenticated request.
 Cause: SimpleJWT doesn't `select_related` the profile OneToOne.
@@ -406,7 +412,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 
 **Docs** (`r4-docs`)
 - C1 · README/CONTRIBUTING Docker quickstart fixed 2026-06-26 — both now state the compose files are private infra, not in the repo (no more failing `docker compose up`). (#20)
-- H3/H4/M4 · API table omits ~75% of routes + mislabels the anon progress endpoint; no Architecture/auth/Pro/invite docs; 17-equations table mis-ordered (breaks `/equation/N`). (#20)
+- H3/H4/M4 · API table rebuilt complete + anon-progress relabeled + 17-equations table reordered to canonical ids (fixed 2026-06-26, see log). **Still open:** no dedicated Architecture/auth/Pro/invite prose docs. (#20)
 - H6 · "Adding an Equation" points at the wrong files (`equations.ts` not `.json`; `EquationVisualization` not `sceneRegistry`). → fixed PR #3 (`78bf8c9`).
 - M1/M2/M3 · three `.env.example` files disagreed; vars + load precedence undocumented. → fixed 2026-06-26 (see chronological log).
 - M8/L6 · no `LICENSE` (still open — needs a licensing decision); `SECURITY.md` added; L5 CI job rename done (`78bf8c9`). L4 README SQLite-vs-Postgres still open.

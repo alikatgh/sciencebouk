@@ -50,7 +50,7 @@ clean clone. Use the local dev setup above.
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19, TypeScript 5.8, Vite 6.3, Tailwind CSS 3.4 |
-| Visualization | D3.js 7.9, Konva 10.2, Framer Motion 12.6 |
+| Visualization | D3 (modular: `d3-scale`, `d3-shape`, `d3-selection`, `d3-drag`, `d3-array`, `d3-transition`), SVG |
 | Math rendering | KaTeX 0.16 |
 | Data fetching | TanStack React Query 5, React Router 7 |
 | Backend | Django 5.2, Django REST Framework 3.16, SQLite (dev) / PostgreSQL (prod via `DATABASE_URL`) |
@@ -71,14 +71,51 @@ clean clone. Use the local dev setup above.
 
 ## API Endpoints
 
+All under `/api/`. Auth is JWT (SimpleJWT); endpoints below are public unless
+marked **auth** (any signed-in user) or **Pro** (active Pro subscription).
+
+**Equations & content**
+
 | Method | URL | Description |
 |--------|-----|-------------|
 | GET | `/api/health/` | Health check |
-| GET | `/api/equations/` | Paginated list (filterable by `?category=`) |
-| GET | `/api/equations/{id}/` | Single equation detail |
-| PATCH | `/api/equations/{id}/progress/` | Update user progress |
-| GET | `/api/search/?q=` | Search equations |
-| GET | `/api/courses/{slug}/` | Course with nested lessons |
+| GET | `/api/equations/` | Paginated list (filterable by `?category=`, `?locale=`) |
+| GET | `/api/equations/{id}/` | Single equation detail (by `sort_order`) |
+| PATCH | `/api/equations/{id}/progress/` | **Anonymous** progress update (server-issued `user_id`) |
+| GET | `/api/search/?q=` | Search equations by title/author/category |
+| GET | `/api/courses/{slug}/` | Course with nested lessons (`equation-atlas`, `foundational-algebra` are legacy aliases) |
+
+**Progress & analytics** (auth)
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/api/progress/` | The signed-in user's progress |
+| PATCH | `/api/progress/{equation_id}/` | Update the user's progress on one equation |
+| POST | `/api/progress/sync/` | Bulk-sync progress from a device |
+| GET | `/api/analytics/dashboard/` | Learning dashboard aggregates (**Pro**) |
+| POST | `/api/analytics/event/` | Log a learning event (**Pro**) |
+
+**Auth** (`/api/auth/`)
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| POST | `/api/auth/register/` | Register (invite-gated when enabled) |
+| POST | `/api/auth/login/` | Obtain JWT access/refresh tokens |
+| POST | `/api/auth/google/` | Google OAuth (ID-token) sign-in |
+| POST | `/api/auth/refresh/` | Rotate the access token |
+| GET | `/api/auth/me/` | Current user + profile (auth) |
+| PATCH | `/api/auth/me/profile/` | Update profile (auth) |
+| POST | `/api/auth/me/avatar/` | Upload avatar image (auth) |
+| GET / PATCH | `/api/auth/settings/` | Read/update user settings (**Pro**) |
+
+**Payments** (`/api/payments/`)
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| POST | `/api/payments/checkout/` | Start a Stripe Checkout session (auth) |
+| POST | `/api/payments/portal/` | Open the Stripe billing portal (auth, Pro) |
+| GET | `/api/payments/status/` | Current tier / Pro status (auth) |
+| POST | `/api/payments/webhook/` | Stripe webhook (signature-verified) |
 
 ## The 17 Equations
 
@@ -88,19 +125,19 @@ clean clone. Use the local dev setup above.
 | 2 | Logarithms | Algebra | Log scale bars + adjustable base curve |
 | 3 | Calculus | Calculus | Tangent/secant line with h slider |
 | 4 | Law of Gravity | Physics | Draggable masses with force vectors |
-| 5 | Complex Numbers | Complex Numbers | Argand diagram with multiply-by-i |
-| 6 | Euler's Polyhedra Formula | Topology | 3D rotating polyhedra wireframes |
-| 7 | Normal Distribution | Statistics | Bell curve with adjustable mean/std |
-| 8 | Fourier Transform | Signal Processing | Waveform decomposition into harmonics |
-| 9 | Wave Equation | Physics | Standing waves with frequency/amplitude |
-| 10 | Navier-Stokes | Fluid Dynamics | Particle flow around obstacle |
+| 5 | Wave Equation | Physics | Standing waves with frequency/amplitude |
+| 6 | The Square Root of Minus One | Complex Numbers | Argand diagram with multiply-by-i |
+| 7 | Euler's Formula for Polyhedra | Topology | 3D rotating polyhedra wireframes |
+| 8 | Normal Distribution | Statistics | Bell curve with adjustable mean/std |
+| 9 | Fourier Transform | Signal Processing | Waveform decomposition into harmonics |
+| 10 | Navier-Stokes Equation | Fluid Dynamics | Particle flow around obstacle |
 | 11 | Maxwell's Equations | Electromagnetism | Field lines + EM wave propagation |
-| 12 | Thermodynamics | Thermodynamics | Entropy particle disorder simulation |
+| 12 | Second Law of Thermodynamics | Thermodynamics | Entropy particle disorder simulation |
 | 13 | Relativity | Physics | Lorentz factor, time dilation clocks |
 | 14 | Schrodinger's Equation | Quantum Mechanics | Particle-in-a-box wave functions |
 | 15 | Information Theory | Information | Shannon entropy + coin flip explorer |
 | 16 | Chaos Theory | Dynamical Systems | Bifurcation diagram + cobweb plot |
-| 17 | Black-Scholes | Finance | Option pricing with Greeks overlay |
+| 17 | Black-Scholes Equation | Finance | Option pricing with Greeks overlay |
 
 ## Testing
 
