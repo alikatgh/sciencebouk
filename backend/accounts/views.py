@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -172,6 +173,25 @@ def _detect_image_type(header: bytes) -> str | None:
     return None
 
 
+def _remove_old_local_avatar(old_url: str, keep: Path) -> None:
+    """Delete a previously-uploaded local avatar file so re-uploads don't leak
+    storage. No-ops for external URLs (e.g. Google OAuth pictures) and anything
+    resolving outside media/avatars/, and never deletes the file we just wrote."""
+    if not old_url or not old_url.startswith(settings.MEDIA_URL):
+        return
+    avatars_dir = (settings.MEDIA_ROOT / "avatars").resolve()
+    try:
+        old_path = (settings.MEDIA_ROOT / old_url[len(settings.MEDIA_URL):]).resolve()
+    except (OSError, ValueError):
+        return
+    if (
+        old_path != keep.resolve()
+        and old_path.is_relative_to(avatars_dir)
+        and old_path.is_file()
+    ):
+        old_path.unlink(missing_ok=True)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
@@ -200,11 +220,14 @@ def upload_avatar(request):
         for chunk in file.chunks():
             dest.write(chunk)
 
-    # Update profile
+    # Update profile, then remove the previous local avatar (external URLs kept).
     avatar_url = f"{settings.MEDIA_URL}{filename}"
     profile = request.user.profile
+    old_avatar_url = profile.avatar_url
     profile.avatar_url = avatar_url
     profile.save(update_fields=['avatar_url'])
+
+    _remove_old_local_avatar(old_avatar_url, keep=filepath)
 
     return Response({"avatar_url": avatar_url})
 

@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest import skipUnless
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection, connections
@@ -790,3 +791,23 @@ class AvatarUploadTests(TestCase):
         response = self.client.post('/api/auth/me/avatar/', {'avatar': spoof}, format='multipart')
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['avatar_url'].endswith('.png'))
+
+    def _upload(self, name='a.png'):
+        f = SimpleUploadedFile(name, _PNG_BYTES, content_type='image/png')
+        return self.client.post('/api/auth/me/avatar/', {'avatar': f}, format='multipart')
+
+    def test_reupload_deletes_previous_local_file(self):
+        first_url = self._upload('first.png').json()['avatar_url']
+        first_path = Path(settings.MEDIA_ROOT) / first_url[len(settings.MEDIA_URL):]
+        self.assertTrue(first_path.is_file())
+
+        response = self._upload('second.png')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(first_path.is_file())  # previous local avatar removed
+
+    def test_external_oauth_avatar_url_is_left_untouched(self):
+        # A Google OAuth picture URL must not be treated as a deletable local path.
+        self.user.profile.avatar_url = 'https://lh3.googleusercontent.com/a/pic.png'
+        self.user.profile.save(update_fields=['avatar_url'])
+        response = self._upload('me.png')
+        self.assertEqual(response.status_code, 200)  # no crash on the external URL
