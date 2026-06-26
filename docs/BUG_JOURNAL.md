@@ -422,11 +422,11 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - H1–H9 · ~1,426 lines orphaned. → fixed 2026-06-26 (see chronological log); all 10 files removed, build/tests green.
 - M1/M2 · 4-of-5 React-Query hooks dead → cascade-remove orphaned `api` methods. → fixed 2026-06-26 (see chronological log).
 - M5/L2 · drop unused deps + d3-meta→submodules. → fixed 2026-06-26 (see chronological log); note it was **6** submodules, not 5 (`d3-transition` side-effect import).
-- B1/B2 · `equation_atlas_legacy` + aliases, `course_detail`, `subscription_status` — remove after confirming no external API consumers.
+- B1/B2 · `equation_atlas_legacy` + aliases, `course_detail`, `subscription_status` are now frontend-unused (confirmed 2026-06-26) but are **deliberately retained** — they are public, "legacy"-named HTTP routes; removal is outward-facing and needs the owner to confirm no external/bookmarked consumers. Now documented in the README API table.
 
 **Docs** (`r4-docs`)
 - C1 · README/CONTRIBUTING Docker quickstart fixed 2026-06-26 — both now state the compose files are private infra, not in the repo (no more failing `docker compose up`). (#20)
-- H3/H4/M4 · API table rebuilt complete + anon-progress relabeled + 17-equations table reordered to canonical ids (fixed 2026-06-26, see log). **Still open:** no dedicated Architecture/auth/Pro/invite prose docs. (#20)
+- H3/H4/M4 · API table rebuilt + anon-progress relabeled + 17-equations table reordered (2026-06-26); `docs/ARCHITECTURE.md` added covering structure/auth/Pro/invites/billing/caching. ✓ (#20)
 - H6 · "Adding an Equation" points at the wrong files (`equations.ts` not `.json`; `EquationVisualization` not `sceneRegistry`). → fixed PR #3 (`78bf8c9`).
 - M1/M2/M3 · three `.env.example` files disagreed; vars + load precedence undocumented. → fixed 2026-06-26 (see chronological log).
 - M8/L6 · `LICENSE` added 2026-06-26 — **GPL-3.0-or-later** (user's choice); `SECURITY.md` added; L5 CI job rename done (`78bf8c9`). L4 README already documents SQLite(dev)/Postgres(prod) correctly. ✓

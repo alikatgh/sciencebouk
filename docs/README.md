@@ -7,6 +7,7 @@ in `audits/2026-06-14-r4-sciencebouk-docs.md` L3.)
 
 | File | What it is |
 |------|------------|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System map: backend apps, auth/authorization tiers, invites, billing, content model, caching, frontend layout. |
 | [`BUG_JOURNAL.md`](BUG_JOURNAL.md) | Generalized bug patterns ("scan first") + a chronological fix log. **Grep this before debugging.** |
 | [`FEATURES.md`](FEATURES.md) | Feature roadmap/tracker: `[x]` built, `[P]` pre-existing-verified, `[—]` consciously declined. |
 | [`LEARNING_AIDS.md`](LEARNING_AIDS.md) | The data-driven "Learn more" panel (facts / worked examples / concept checks / prerequisites) and how to extend it. |
