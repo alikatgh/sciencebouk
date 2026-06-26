@@ -35,7 +35,11 @@ class RegisterSerializer(serializers.Serializer):
     invite_code = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        # Normalize to lowercase so email identity is case-insensitive and
+        # consistent with the Google OAuth path (which lowercases). The check is
+        # iexact so a case-variant of an existing account can't slip through.
+        value = value.lower()
+        if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("Registration failed. Please check your details and try again.")
         return value
 
