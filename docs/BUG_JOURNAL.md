@@ -235,6 +235,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Removed 4 dead React-Query hooks + orphaned api methods (r4-deadcode M1/M2)
+Symptom: 4 of 5 hooks in `api/hooks.ts` had zero consumers (`useEquations`, `useCourse`, `useSearchEquations`, `useUpdateProgress`); only `useEquation` is live.
+Cause: hooks + the `api` client methods they exclusively fed outlived the UI that used them.
+Fix: removed the 4 hooks and the now-orphaned `api.equations.list`/`updateProgress`, `api.courses` (+`CourseResponse`/`LessonResponse`), `api.search`, `api.payments.status`, `ProgressResponse`; trimmed `client.test.ts`. Kept `equations.listAll`/`get` (live) and `progress.update` (canonical). tsc + 163 tests + build green.
+**Lesson:** reinforces #25/#30 — a dead hook orphans its api method only if no OTHER caller exists; distinguish siblings (`list` dead vs `listAll` live) and discount test-only references.
+
 ### 2026-06-26 · Pruned 6 unused npm deps + migrated d3 meta → 6 submodules (r4-deadcode M5/L2)
 Symptom: `package.json` shipped `framer-motion`, `@use-gesture/react`, 3 unused `@radix-ui/*`, and the whole `d3` meta-package, though only 6 d3 submodules + 8 radix were imported.
 Cause: deps accreted; the just-removed H1–H9 files were the last consumers of some.
@@ -340,7 +346,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 
 **Dead code** (`r4-deadcode`, `r6-performance` L1/L2)
 - H1–H9 · ~1,426 lines orphaned. → fixed 2026-06-26 (see chronological log); all 10 files removed, build/tests green.
-- M1/M2 · 4-of-5 React-Query hooks dead → cascade-remove `api` client methods (`courses` block, `search`, `equations.list/updateProgress`, `payments.status`).
+- M1/M2 · 4-of-5 React-Query hooks dead → cascade-remove orphaned `api` methods. → fixed 2026-06-26 (see chronological log).
 - M5/L2 · drop unused deps + d3-meta→submodules. → fixed 2026-06-26 (see chronological log); note it was **6** submodules, not 5 (`d3-transition` side-effect import).
 - B1/B2 · `equation_atlas_legacy` + aliases, `course_detail`, `subscription_status` — remove after confirming no external API consumers.
 
