@@ -108,6 +108,12 @@ if not DEBUG and SECRET_KEY == _DEV_SECRET_KEY:
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
 INVITES_REQUIRED = os.getenv("DJANGO_INVITES_REQUIRED", "0") == "1"
+# Number of trusted reverse proxies in front of the app. Only the rightmost
+# N entries of X-Forwarded-For (added by our own proxies) are trusted for the
+# client IP; anything further left is client-supplied and spoofable. Default 1
+# = a single reverse proxy (e.g. cPanel/Passenger, nginx). Raise it if you add
+# another hop (e.g. Cloudflare in front).
+TRUSTED_PROXY_COUNT = max(1, int(os.getenv("DJANGO_TRUSTED_PROXY_COUNT", "1")))
 SERVE_MEDIA_FROM_DJANGO = DEBUG or os.getenv("DJANGO_SERVE_MEDIA", "0") == "1"
 HAS_WHITENOISE = find_spec("whitenoise") is not None
 
@@ -243,6 +249,9 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    # Trusts X-Forwarded-Proto to decide request.is_secure(). REQUIRES that the
+    # reverse proxy (cPanel/Passenger, nginx, …) OVERWRITES this header on every
+    # request — if a client can set it, it can spoof HTTPS. Verify in deployment.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SECURE_CONTENT_TYPE_NOSNIFF = True

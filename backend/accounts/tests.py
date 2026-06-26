@@ -261,6 +261,39 @@ class RegisterTests(TestCase):
         redemption = InviteRedemption.objects.get(redeemed_email='xff@example.com')
         self.assertIsNone(redemption.ip_address)
 
+    def test_register_ignores_spoofed_leftmost_forwarded_ip(self):
+        # XFF = "<client-spoofed>, <real client, appended by our one proxy>".
+        # We must record the rightmost trusted hop (8.8.8.8), not the spoof.
+        invite, code = make_invite()
+        with self.settings(INVITES_REQUIRED=True, TRUSTED_PROXY_COUNT=1):
+            response = self.client.post(
+                '/api/auth/register/',
+                {'email': 'spoof@example.com', 'password': 'strongpass1', 'invite_code': code},
+                format='json',
+                HTTP_X_FORWARDED_FOR='6.6.6.6, 8.8.8.8',
+            )
+
+        self.assertEqual(response.status_code, 201)
+        redemption = InviteRedemption.objects.get(redeemed_email='spoof@example.com')
+        self.assertEqual(redemption.ip_address, '8.8.8.8')
+
+
+class ClientIpFromForwardedTests(TestCase):
+    def test_single_proxy_takes_rightmost_entry(self):
+        from .invites import client_ip_from_forwarded
+        with self.settings(TRUSTED_PROXY_COUNT=1):
+            self.assertEqual(client_ip_from_forwarded('6.6.6.6, 8.8.8.8', '10.0.0.1'), '8.8.8.8')
+
+    def test_two_proxies_takes_second_from_right(self):
+        from .invites import client_ip_from_forwarded
+        with self.settings(TRUSTED_PROXY_COUNT=2):
+            self.assertEqual(client_ip_from_forwarded('6.6.6.6, 8.8.8.8, 10.0.0.2', '10.0.0.1'), '8.8.8.8')
+
+    def test_no_forwarded_header_falls_back_to_remote_addr(self):
+        from .invites import client_ip_from_forwarded
+        with self.settings(TRUSTED_PROXY_COUNT=1):
+            self.assertEqual(client_ip_from_forwarded('', '10.0.0.1'), '10.0.0.1')
+
 
 class GoogleAuthTests(TestCase):
     def setUp(self):

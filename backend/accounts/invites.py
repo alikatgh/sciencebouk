@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_ipv46_address
 from django.db import transaction
@@ -35,10 +36,22 @@ def normalize_client_ip(ip_address: str | None) -> str | None:
     return candidate
 
 
+def client_ip_from_forwarded(forwarded_for: str, remote_addr: str | None) -> str | None:
+    """Pick the client IP, trusting only the rightmost TRUSTED_PROXY_COUNT hops
+    of X-Forwarded-For (entries our own proxies added). Anything further left is
+    client-supplied and spoofable, so it is never used. Falls back to
+    REMOTE_ADDR when there are fewer hops than expected (e.g. no proxy / direct)."""
+    parts = [p.strip() for p in forwarded_for.split(",") if p.strip()]
+    trusted = getattr(settings, "TRUSTED_PROXY_COUNT", 1)
+    if len(parts) >= trusted >= 1:
+        return parts[-trusted]
+    return remote_addr
+
+
 def get_request_meta(request) -> InviteRequestMeta:
     forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
     remote_addr = request.META.get("REMOTE_ADDR")
-    ip_address = normalize_client_ip(forwarded_for.split(",")[0].strip() or remote_addr)
+    ip_address = normalize_client_ip(client_ip_from_forwarded(forwarded_for, remote_addr))
     return InviteRequestMeta(
         ip_address=ip_address,
         user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
