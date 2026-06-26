@@ -167,13 +167,15 @@ Before reproducing, grep this list for the shape of your bug.
     `Content-Type`; old avatars are never deleted (unbounded disk growth). Decode
     + re-encode (`PIL.Image.open(fp).verify()`), reject SVG, serve with
     `Content-Disposition: attachment` from a cookieless path. (r1-M1, r5-M1,
-    r6-L4, r5research-H3 — OPEN.)
+    r6-L4, r5research-H3 → magic-byte validation + old-file cleanup done
+    2026-06-26 (PRs #9/#10); PIL re-encode / SVG-reject / Content-Disposition
+    remain optional hardening.)
 
 25. **`noUnusedLocals` can't see dead *modules* or *exports*.** ~1,426 lines of
     orphaned frontend files, a dead API/hook cluster, 4 unused npm deps, and the
     `d3` meta-package (only submodules imported) survived tsc. Grep for importers
     across static + dynamic `import()` + tests before assuming a file is live.
-    (r4deadcode-H1–H9/M1–M5, r6perf-L1/L2 — OPEN.)
+    (r4deadcode-H1–H9/M1–M5, r6perf-L1/L2 → all fixed 2026-06-26, PRs #5/#6/#7.)
 
 26. **Vite `.env` is shared by dev server, build, AND Vitest.** A temporary
     `frontend/.env` (`VITE_API_URL=…`) added for a live preview shifts `API_BASE`
@@ -408,15 +410,15 @@ lens; `id · file — one-line lesson`. Full detail + fixes in [`docs/audits/`](
 When you fix one, move it up into the Chronological log with its commit SHA.
 
 **Performance** (`r3`/`r6-performance`)
-- C1 · `scenes/ChaosScene.tsx:263` — 9,212 React `<circle>`s reconcile every drag; single `<path>`/canvas + `React.memo`. (#15)
-- H1 · SimpleJWT `get_user` — no `select_related("profile")`; +1 query on all authed traffic. (#13)
-- H2 · `data/equations.ts:1` — 37 KB `equations.json` statically bundled into every scene chunk; seed React Query via `initialData`.
-- H3/M8 · `charts/simpleChart.ts:63` + `LiveFormula.tsx` — D3 scales + KaTeX rebuilt every render/drag tick; primitive deps + memo + rAF-coalesce. (#15,#16)
+- C1 · ChaosScene 9,212-circle re-diff → cloud memoized 2026-06-26 (PR #19). ✓ (single `<path>`/canvas rewrite still optional.)
+- H1 · SimpleJWT `get_user` N+1 → `select_related("profile")` 2026-06-26 (PR #16). ✓
+- H2 · `data/equations.ts:1` — 37 KB `equations.json` statically bundled into every scene chunk; seed React Query via `initialData`. **OPEN.**
+- H3/M8 · D3 scales rebuilt every render → fixed in `simpleChart.ts` 2026-06-26 (PR #19); KaTeX memoized (PR #15). ✓ (per-tick rAF-coalesce of drag handlers still optional.)
 - M1 · `learning_dashboard` queries collapsed 7→5 on 2026-06-26 (see log). **Still open (optional):** cache the seed-invariant counts.
 - M2 · `LearningEvent.Meta` index for the streak scan. → fixed 2026-06-26 (see chronological log); migration `0010`.
 - M3/M4 · math + rich-text rendering memoized 2026-06-26 (see log) — per-frame KaTeX re-render and per-node token/regex rebuild eliminated. (AutoFit's one-time mount double-render remains, acceptable.) ✓
-- M5/M6 · locale-aware cache key (not header vary); cache `retrieve`. LocMemCache → Redis for multi-worker. (#17)
-- M7 · `useUpdateProgress` invalidates the wrong key (`["equations"]` list, not the detail key).
+- M5/M6 · test isolation done via DummyCache 2026-06-26 (PR #20); prod key already includes locale (full-path); Redis configurable via `DJANGO_CACHE_BACKEND`. ✓ (caching `retrieve` still optional.)
+- M7 · `useUpdateProgress` wrong-key invalidation — **resolved by removal**: the hook was deleted as dead code (PR #7).
 
 **Dead code** (`r4-deadcode`, `r6-performance` L1/L2)
 - H1–H9 · ~1,426 lines orphaned. → fixed 2026-06-26 (see chronological log); all 10 files removed, build/tests green.
