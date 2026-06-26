@@ -228,6 +228,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-26 · Removed 1,426 lines of orphaned frontend code (r4-deadcode H1–H9)
+Symptom: 10 modules with zero importers still in the tree: `AuthModal`+`LazyAuthModal`, `InteractiveEquation`, `PythagoreanTheoremExplorer`, `GenericEquationScene`, `teaching/hooks-data`, `scenes/layout`, `math/FormulaText`, `teaching/RealWorldContext`, `hooks/useMediaQuery`.
+Cause: superseded by the data-driven scene + dedicated auth pages; never deleted.
+Fix: removed all 10 (exactly 1,426 lines). Re-verified each unreferenced against HEAD with a *substring* grep (not import-path only), confirming no barrel re-export / string-keyed dynamic import; `scenes/layout` is distinct from the live `layoutMode`. tsc + 165 tests + build all green.
+**Lesson:** reinforces pattern #25 — before deleting "dead" code, grep the bare symbol (catches barrel re-exports and dynamic-import path strings an import-only grep misses); also beware shell glob eating `grep --include` flags (a false ZERO-importers result).
+
 ### 2026-06-26 · Three `.env.example` files disagreed; vars undocumented
 Symptom: root / `backend/` / `frontend/` `.env.example` contradicted each other; ~9 backend + 3 VITE vars the code reads were undocumented; load precedence undocumented; root duplicated `DJANGO_SECRET_KEY`.
 Cause: hand-maintained templates drifted from `settings.py` (`os.getenv`) and `import.meta.env.*` reads; root file mixed both tiers.
@@ -320,7 +326,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - M7 · `useUpdateProgress` invalidates the wrong key (`["equations"]` list, not the detail key).
 
 **Dead code** (`r4-deadcode`, `r6-performance` L1/L2)
-- H1–H9 · ~1,426 lines orphaned: `AuthModal`+`LazyAuthModal`, `InteractiveEquation`, `PythagoreanTheoremExplorer`, `GenericEquationScene`, `teaching/hooks-data.ts`, `scenes/layout.ts`, `math/FormulaText.tsx`, `teaching/RealWorldContext.tsx`, `hooks/useMediaQuery.ts`. (#25)
+- H1–H9 · ~1,426 lines orphaned. → fixed 2026-06-26 (see chronological log); all 10 files removed, build/tests green.
 - M1/M2 · 4-of-5 React-Query hooks dead → cascade-remove `api` client methods (`courses` block, `search`, `equations.list/updateProgress`, `payments.status`).
 - M5/L2 · drop unused deps (`@radix-ui/*` ×3, `@use-gesture/react`, `framer-motion`); replace `d3` meta-package with the 5 imported submodules.
 - B1/B2 · `equation_atlas_legacy` + aliases, `course_detail`, `subscription_status` — remove after confirming no external API consumers.
