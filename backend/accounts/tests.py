@@ -844,3 +844,33 @@ class AvatarUploadTests(TestCase):
         self.user.profile.save(update_fields=['avatar_url'])
         response = self._upload('me.png')
         self.assertEqual(response.status_code, 200)  # no crash on the external URL
+
+
+class ProfileJWTAuthenticationTests(TestCase):
+    """The custom auth class must select_related the profile (no N+1) while
+    behaving exactly like stock JWTAuthentication."""
+
+    def test_get_user_prefetches_profile_with_no_extra_query(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+        from .authentication import ProfileJWTAuthentication
+
+        user = make_user(email='jwt@example.com')
+        token = AccessToken.for_user(user)
+
+        fetched = ProfileJWTAuthentication().get_user(token)
+        # profile is loaded via select_related → accessing it costs 0 queries
+        with self.assertNumQueries(0):
+            _ = fetched.profile
+
+    def test_authenticated_request_still_succeeds(self):
+        client = APIClient()
+        user = make_user(email='jwt2@example.com')
+        login = client.post(
+            '/api/auth/login/',
+            {'username': user.username, 'password': 'securepass123'},
+            format='json',
+        )
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+        response = client.get('/api/auth/me/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['email'], 'jwt2@example.com')
