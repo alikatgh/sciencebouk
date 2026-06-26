@@ -46,12 +46,10 @@ describe("api client", () => {
 
   it("exports api object with expected methods", () => {
     expect(api.equations).toBeDefined()
-    expect(api.equations.list).toBeTypeOf("function")
+    expect(api.equations.listAll).toBeTypeOf("function")
     expect(api.equations.get).toBeTypeOf("function")
-    expect(api.equations.updateProgress).toBeTypeOf("function")
-    expect(api.courses).toBeDefined()
-    expect(api.courses.get).toBeTypeOf("function")
-    expect(api.search).toBeTypeOf("function")
+    expect(api.progress.getAll).toBeTypeOf("function")
+    expect(api.payments.checkout).toBeTypeOf("function")
   })
 
   it("refreshes expired access tokens and retries the request", async () => {
@@ -115,21 +113,6 @@ describe("api client", () => {
     expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify({ price_type: "yearly" }))
   })
 
-  it("unwraps paginated search responses", async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, {
-      count: 1,
-      next: null,
-      previous: null,
-      results: [{ id: 1, title: "Pythagoras", formula: "a^2+b^2=c^2", author: "Pythagoras", year: "530 BC", category: "geometry", description: "", stage: "live" }],
-    }))
-
-    vi.stubGlobal("fetch", fetchMock)
-
-    await expect(api.search("pyth")).resolves.toEqual([
-      expect.objectContaining({ id: 1, title: "Pythagoras" }),
-    ])
-  })
-
   it("appends locale to equation detail requests when provided", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, {
       id: 1,
@@ -154,21 +137,6 @@ describe("api client", () => {
     await api.equations.get(1, "de-DE")
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe("http://localhost:8000/api/equations/1/?locale=de-DE")
-  })
-
-  it("appends locale to search requests when provided", async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, {
-      count: 0,
-      next: null,
-      previous: null,
-      results: [],
-    }))
-
-    vi.stubGlobal("fetch", fetchMock)
-
-    await api.search("satz", "de")
-
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://localhost:8000/api/search/?q=satz&locale=de")
   })
 
   it("flattens paginated progress responses across pages", async () => {

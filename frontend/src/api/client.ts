@@ -132,24 +132,6 @@ export interface PaginatedResponse<T> {
   results: T[]
 }
 
-export interface CourseResponse {
-  slug: string
-  title: string
-  description: string
-  progress_percent: number
-  tone: string
-  lessons: LessonResponse[]
-}
-
-export interface LessonResponse {
-  id: number
-  title: string
-  objective: string
-  steps: string[]
-  duration_minutes: number
-  sort_order: number
-}
-
 export interface ProgressItem {
   equation_id: number
   completed: boolean
@@ -161,9 +143,6 @@ export interface ProgressItem {
   bookmarked: boolean
   last_viewed: string | null
 }
-
-/** @deprecated Use ProgressItem directly */
-export type ProgressResponse = ProgressItem
 
 export interface BulkSyncItem {
   equation_id: number
@@ -202,36 +181,10 @@ export interface AuthenticatedUser {
 
 export const api = {
   equations: {
-    list: (category?: string, locale?: string | null) => {
-      const params = category ? `?category=${encodeURIComponent(category)}` : ""
-      return request<PaginatedResponse<EquationSummaryResponse>>(withLocaleParam(`/equations/${params}`, locale))
-    },
     listAll: (locale?: string | null) => requestAllPages<EquationSummaryResponse>(withLocaleParam("/equations/", locale)),
     get: (id: number, locale?: string | null) =>
       request<EquationResponse>(withLocaleParam(`/equations/${id}/`, locale)),
-    updateProgress: (id: number, data: { user_id: string; completed?: boolean; notes?: string }) => {
-      // Authenticated users must use the canonical progress endpoint.
-      // Anonymous users (no access token) fall back to the legacy route.
-      if (getAccessToken()) {
-        const { user_id: _user_id, ...progressData } = data
-        return request<ProgressResponse>(`/progress/${id}/`, {
-          method: "PATCH",
-          body: JSON.stringify(progressData),
-        })
-      }
-      return request<ProgressResponse>(`/equations/${id}/progress/`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      })
-    },
   },
-  courses: {
-    get: (slug: string) =>
-      request<CourseResponse>(`/courses/${slug}/`),
-  },
-  search: (q: string, locale?: string | null) =>
-    request<EquationSummaryResponse[] | PaginatedResponse<EquationSummaryResponse>>(withLocaleParam(`/search/?q=${encodeURIComponent(q)}`, locale))
-      .then((payload) => Array.isArray(payload) ? payload : payload.results),
 
   progress: {
     getAll: () => requestAllPages<ProgressItem>('/progress/'),
@@ -256,8 +209,6 @@ export const api = {
       request<{ url: string }>('/payments/checkout/', { method: 'POST', body: JSON.stringify({ price_type: priceType }) }),
     portal: () =>
       request<{ url: string }>('/payments/portal/', { method: 'POST' }),
-    status: () =>
-      request<{ tier: string; is_pro: boolean; billing_enabled?: boolean }>('/payments/status/'),
   },
 
   profile: {
