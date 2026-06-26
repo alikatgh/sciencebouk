@@ -375,7 +375,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - B1/B2 · `equation_atlas_legacy` + aliases, `course_detail`, `subscription_status` — remove after confirming no external API consumers.
 
 **Docs** (`r4-docs`)
-- C1 · README Docker quickstart fails from a clean clone (compose/Dockerfiles `.gitignore`d). (#20)
+- C1 · README/CONTRIBUTING Docker quickstart fixed 2026-06-26 — both now state the compose files are private infra, not in the repo (no more failing `docker compose up`). (#20)
 - H3/H4/M4 · API table omits ~75% of routes + mislabels the anon progress endpoint; no Architecture/auth/Pro/invite docs; 17-equations table mis-ordered (breaks `/equation/N`). (#20)
 - H6 · "Adding an Equation" points at the wrong files (`equations.ts` not `.json`; `EquationVisualization` not `sceneRegistry`). → fixed PR #3 (`78bf8c9`).
 - M1/M2/M3 · three `.env.example` files disagreed; vars + load precedence undocumented. → fixed 2026-06-26 (see chronological log).

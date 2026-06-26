@@ -28,10 +28,9 @@ npm run dev
 App available at http://localhost:5173
 
 ### Docker (full stack)
-```bash
-docker compose up --build
-```
-Frontend at http://localhost:3000, API at http://localhost:8000
+The Compose files and Dockerfiles are part of private deployment infrastructure
+and are **not committed to this repository**, so `docker compose up` will not work
+from a clean clone. Use the backend + frontend dev setup above instead.
 
 ## Running Tests
 
