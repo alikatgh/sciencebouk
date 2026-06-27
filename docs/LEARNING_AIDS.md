@@ -46,6 +46,40 @@ No component changes are needed — the panel and its tabs are entirely data-dri
 - **Containment:** the whole subject scene is wrapped in a per-scene
   `ErrorBoundary` (`EquationVisualization`), so a bad aid can't blank the app.
 
+## Clickable terminology popups (docs)
+
+When these docs are served as HTML (MkDocs, a static preview, or any page that
+loads the assets below), glossary terms in prose are **dotted-underlined**.
+Click one to open a plain-English popup: lead sentence, simple analogy,
+breakdown sections, and links to related terms — the same pattern as the 101
+courses.
+
+Assets live in `docs/assets/`:
+
+- `terms-popup.js` / `terms-popup.css` — auto-link + modal UI
+- `terms.json` — built registry (`python3 scripts/build_terms_registry.py …`)
+- `terms-rich.json` — rich overlay source (`python3 scripts/generate_terms_rich.py …`)
+
+Minimal include when rendering HTML:
+
+```html
+<link rel="stylesheet" href="assets/terms-popup.css">
+<script src="assets/terms-popup.js" defer></script>
+```
+
+Regenerate after editing docs:
+
+```bash
+python3 scripts/generate_terms_rich.py --project sciencebouk \
+  --glossary docs/ARCHITECTURE.md --glossary docs/LEARNING_AIDS.md \
+  --lessons docs --lessons frontend/src/data \
+  --out docs/assets/terms-rich.json
+python3 scripts/build_terms_registry.py \
+  --glossary docs/ARCHITECTURE.md --glossary docs/LEARNING_AIDS.md \
+  --lessons docs --lessons frontend/src/data \
+  --rich docs/assets/terms-rich.json --out docs/assets/terms.json
+```
+
 ## Not covered, by design
 
 Worked examples and prerequisites are curated only where they genuinely fit.

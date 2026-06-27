@@ -1,0 +1,170 @@
+/* Clickable terminology — popup explainer (Vingt-Un 101 + shared across 101 courses) */
+
+.term-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--md-accent-fg-color, #b07a1e);
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  border-radius: 2px;
+}
+.term-link:hover,
+.term-link:focus-visible {
+  text-decoration-style: solid;
+  outline: 2px solid var(--md-accent-fg-color, #b07a1e);
+  outline-offset: 2px;
+}
+
+.term-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.term-popup-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.term-popup {
+  width: min(42rem, 100%);
+  max-height: min(85vh, 720px);
+  overflow: auto;
+  background: var(--md-default-bg-color, #fff);
+  color: var(--md-default-fg-color, #1a1a1a);
+  border: 1px solid var(--md-default-fg-color--lightest, #e8e8e8);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  padding: 1.5rem 1.65rem 1.35rem;
+  font-size: 0.94rem;
+  line-height: 1.65;
+  transform: translateY(8px) scale(0.98);
+  transition: transform 0.18s ease;
+}
+.term-popup-backdrop.is-open .term-popup {
+  transform: translateY(0) scale(1);
+}
+
+.term-popup__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.term-popup__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.term-popup__close {
+  flex-shrink: 0;
+  border: none;
+  background: var(--md-default-fg-color--lightest, #eee);
+  color: inherit;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.term-popup__close:hover { opacity: 0.85; }
+
+.term-popup__lead {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid var(--md-accent-fg-color, #b07a1e);
+  background: var(--md-default-fg-color--lightest, #f6f6f6);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.95em;
+}
+[data-md-color-scheme="slate"] .term-popup__lead {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.term-popup__analogy-title,
+.term-popup__section-title {
+  margin: 1.15rem 0 0.45rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+.term-popup__analogy {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--md-default-fg-color--lightest, #e8e8e8);
+  font-style: normal;
+}
+.term-popup__analogy p { margin: 0.35rem 0; }
+
+.term-popup__section-body { margin: 0 0 0.65rem; }
+.term-popup__section-body p { margin: 0.45rem 0; }
+
+.term-popup pre {
+  margin: 0.55rem 0 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  background: var(--md-code-bg-color, #f5f5f5);
+  border: 1px solid var(--md-default-fg-color--lightest, #e8e8e8);
+}
+.term-popup code {
+  font-family: var(--md-code-font, "JetBrains Mono", monospace);
+}
+
+.term-popup__table-wrap {
+  overflow-x: auto;
+  margin: 0.75rem 0 1rem;
+}
+.term-popup table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88em;
+}
+.term-popup th,
+.term-popup td {
+  border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+.term-popup th {
+  background: var(--md-default-fg-color--lightest, #f0f0f0);
+  font-weight: 600;
+}
+
+.term-popup__confused {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest, #e8e8e8);
+  font-size: 0.9em;
+}
+.term-popup__confused ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+.term-popup__confused .term-link {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .term-popup-backdrop,
+  .term-popup { transition: none; }
+}
