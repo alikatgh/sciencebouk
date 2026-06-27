@@ -283,6 +283,16 @@ def pick_confused(tid: str, all_ids: list[str], category_map: dict[str, str], n:
     return pool[:n]
 
 
+def is_hand_authored(entry: dict) -> bool:
+    """True when entry looks hand-written, not from generate_rich template."""
+    if entry.get("table") or any(s.get("code") for s in (entry.get("sections") or [])):
+        return True
+    if not has_full_rich(entry):
+        return False
+    body = (entry.get("analogy") or {}).get("body", "")
+    return "not a toy example" not in body and "shows up in real shipped code" not in body
+
+
 def has_full_rich(t: dict) -> bool:
     sections = t.get("sections") or []
     confused = t.get("confused") or []
@@ -386,6 +396,7 @@ def main() -> int:
     ap.add_argument("--glossary", action="append", default=[], type=Path)
     ap.add_argument("--lessons", action="append", default=[], type=Path)
     ap.add_argument("--existing-rich", type=Path, default=None)
+    ap.add_argument("--handcrafted-seed", type=Path, default=None)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--frontend-data", type=Path, default=None)
     ap.add_argument("--scan-prose", action="store_true")
@@ -402,13 +413,26 @@ def main() -> int:
             categories.setdefault(tid, "Lesson prose")
 
     hand_crafted: dict[str, dict] = {}
+    if args.handcrafted_seed and args.handcrafted_seed.exists():
+        hand_crafted.update(
+            json.loads(args.handcrafted_seed.read_text(encoding="utf-8")).get("terms", {})
+        )
     if args.existing_rich and args.existing_rich.exists():
-        hand_crafted = json.loads(args.existing_rich.read_text(encoding="utf-8")).get("terms", {})
-        # Preserve only entries that were hand-authored (have table or code in sections)
-        hand_crafted = {
-            k: v for k, v in hand_crafted.items()
-            if v.get("table") or any(s.get("code") for s in (v.get("sections") or []))
-        }
+        for k, v in json.loads(args.existing_rich.read_text(encoding="utf-8")).get("terms", {}).items():
+            if is_hand_authored(v):
+                hand_crafted[k] = v
+
+    # Seed-only hand entries (e.g. first-class-function) must appear even if absent from glossary scan
+    for tid, overlay in hand_crafted.items():
+        if tid not in terms:
+            terms[tid] = {
+                "id": tid,
+                "label": overlay.get("label", tid),
+                "title": overlay.get("title", overlay.get("label", tid)),
+                "short": overlay.get("short") or overlay.get("lead", ""),
+                "lead": overlay.get("lead", ""),
+            }
+            categories.setdefault(tid, "Hand-authored")
 
     all_ids = sorted(terms.keys())
     rich_terms: dict[str, dict] = {}
