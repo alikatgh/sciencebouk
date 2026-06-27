@@ -27,29 +27,10 @@ def slug(label: str) -> str:
     return s.strip("-")
 
 
-STOPWORD_IDS = frozenset({
-    "a", "an", "and", "are", "as", "at", "be", "by", "do", "for", "from", "go",
-    "he", "her", "him", "his", "if", "in", "is", "it", "its", "me", "my", "no",
-    "not", "of", "on", "or", "our", "she", "so", "the", "their", "them", "then",
-    "there", "these", "they", "this", "to", "up", "us", "was", "we", "when",
-    "who", "why", "will", "with", "you", "your", "all", "any", "can", "had",
-    "has", "have", "how", "into", "just", "like", "may", "more", "most", "new",
-    "now", "old", "one", "only", "other", "out", "over", "same", "see", "some",
-    "such", "than", "that", "too", "two", "use", "very", "what", "which",
-    "while", "yes", "yet", "h1", "h2", "h3", "dt", "dd", "li", "ul", "ol",
-    "div", "span", "href", "src", "alt",
-})
-
-
 def is_junk_term(tid: str, label: str = "") -> bool:
-    low = (label or tid).lower().strip()
-    if tid in STOPWORD_IDS or low in STOPWORD_IDS:
-        return True
-    if re.fullmatch(r"\d+([.-]\d+)*", low):
-        return True
-    if re.fullmatch(r"[a-z]{1,2}", low):
-        return True
-    return False
+    from test_terms_common import is_junk_id  # noqa: WPS433
+
+    return is_junk_id(tid) or is_junk_id(slug(label or tid))
 
 
 def parse_glossary_h3(text: str) -> dict[str, dict]:

@@ -1,0 +1,1055 @@
+{
+  "version": 1,
+  "rejected": [
+    {
+      "id": "login",
+      "label": "Login",
+      "reason": "not_technical",
+      "source": "ARCHITECTURE.md"
+    },
+    {
+      "id": "hash",
+      "label": "hash",
+      "reason": "not_technical",
+      "source": "ARCHITECTURE.md"
+    },
+    {
+      "id": "atomically",
+      "label": "atomically",
+      "reason": "not_technical",
+      "source": "ARCHITECTURE.md"
+    },
+    {
+      "id": "17-core-equations",
+      "label": "17 core equations",
+      "reason": "leading_digit",
+      "source": "ARCHITECTURE.md"
+    },
+    {
+      "id": "vary",
+      "label": "Vary",
+      "reason": "not_technical",
+      "source": "ARCHITECTURE.md"
+    },
+    {
+      "id": "fix",
+      "label": "Fix:",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "model-objects-create-get-or-create-skip-full-clean",
+      "label": "`Model.objects.create()` / `get_or_create()` skip `full_clean()`.",
+      "reason": "too_long",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "usememo-usecallback-deps-that-are-fresh-literals-each-render",
+      "label": "`useMemo`/`useCallback` deps that are fresh literals each render.",
+      "reason": "too_long",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "dont-assert-a-framework-default-is-missing-check-the-version",
+      "label": "Don't assert a framework default is missing — check the version.",
+      "reason": "too_long",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "guard-math-singularities-at-the-source-not-just-the-display-layer",
+      "label": "Guard math singularities at the SOURCE, not just the display layer.",
+      "reason": "too_long",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "env-template-drift-env-example-lies-if-its-hand-maintained",
+      "label": "Env-template drift: `.env.example` lies if it's hand-maintained.",
+      "reason": "too_long",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "test",
+      "label": "test",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "still-open",
+      "label": "still open",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "open",
+      "label": "OPEN.",
+      "reason": "stopword",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "resolved-by-removal",
+      "label": "resolved by removal",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "deliberately-retained",
+      "label": "deliberately retained",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "docs",
+      "label": "Docs",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "together",
+      "label": "together",
+      "reason": "not_technical",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "none",
+      "label": "None",
+      "reason": "stopword",
+      "source": "BUG_JOURNAL.md"
+    },
+    {
+      "id": "done",
+      "label": "done",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "not-needed",
+      "label": "not needed",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "declined",
+      "label": "declined",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "star-button-on-every-sidebar-item",
+      "label": "star button on every sidebar item",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "all-64",
+      "label": "all 64",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "a-render",
+      "label": "(a) render:",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "b-registry",
+      "label": "(b) registry:",
+      "reason": "not_technical",
+      "source": "FEATURES.md"
+    },
+    {
+      "id": "learn-more-panel",
+      "label": "\"Learn more\" panel",
+      "reason": "not_technical",
+      "source": "LEARNING_AIDS.md"
+    },
+    {
+      "id": "only-when-that-equation-has-curated-content",
+      "label": "only when that equation has\ncurated content",
+      "reason": "not_technical",
+      "source": "LEARNING_AIDS.md"
+    },
+    {
+      "id": "result-direction",
+      "label": "result direction",
+      "reason": "not_technical",
+      "source": "LEARNING_AIDS.md"
+    },
+    {
+      "id": "full-18-81-coverage",
+      "label": "full 18–81 coverage",
+      "reason": "not_technical",
+      "source": "LEARNING_AIDS.md"
+    },
+    {
+      "id": "file",
+      "label": "File:",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "files",
+      "label": "Files:",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "no",
+      "label": "no",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "filename-extension",
+      "label": "filename extension",
+      "reason": "not_technical",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "not",
+      "label": "not",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "refresh-token",
+      "label": "refresh token",
+      "reason": "not_technical",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "only",
+      "label": "only",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "m1",
+      "label": "M1:",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "h1",
+      "label": "H1",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "l4",
+      "label": "L4",
+      "reason": "stopword",
+      "source": "2026-06-14-r1-sciencebouk-security.md"
+    },
+    {
+      "id": "skips-redemption-entirely-and-still-returns-200-with-valid-tokens",
+      "label": "skips redemption entirely, and still returns 200 with valid tokens.",
+      "reason": "too_long",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "both",
+      "label": "both",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "original-401-response",
+      "label": "original 401 response",
+      "reason": "not_technical",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "all",
+      "label": "all",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "cache-page-on-equationviewset-list-courses-views-py-53-56",
+      "label": "`cache_page` on `EquationViewSet.list` (`courses/views.py:53-56`)",
+      "reason": "too_long",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "c2",
+      "label": "C2:",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "h4",
+      "label": "H4",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-correctness.md"
+    },
+    {
+      "id": "6-tests-all-hitting-the-identical-bare-url",
+      "label": "6 tests all hitting the identical bare URL",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "object",
+      "label": "object",
+      "reason": "not_technical",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "never-reads-the-resolved-value",
+      "label": "never reads the resolved value",
+      "reason": "not_technical",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "rejected",
+      "label": "rejected",
+      "reason": "not_technical",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "text",
+      "label": "text",
+      "reason": "not_technical",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "false",
+      "label": "false",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "c1",
+      "label": "C1",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "m6",
+      "label": "M6",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "m3",
+      "label": "M3",
+      "reason": "stopword",
+      "source": "2026-06-14-r2-sciencebouk-tests.md"
+    },
+    {
+      "id": "0-title-mismatches-vs-the-json-today",
+      "label": "0 title mismatches vs the JSON today",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "copy-fields-only",
+      "label": "copy fields only",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "owned-solely-by-the-scene-props",
+      "label": "owned solely by the scene props",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "frontend",
+      "label": "frontend",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "pure",
+      "label": "pure",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "no-shared-test",
+      "label": "no shared test",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "verbatim-three-times",
+      "label": "verbatim three times",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "every",
+      "label": "every",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "no-method",
+      "label": "no method",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "usecourse-course-detail-2-legacy-atlas-aliases-are-unused",
+      "label": "`useCourse` + `course_detail` + 2 legacy atlas aliases are unused.",
+      "reason": "too_long",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "zero-components",
+      "label": "zero components",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "670-lines-70",
+      "label": "670 lines, 70",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "300-lines-18",
+      "label": "300 lines, 18",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "no-shared-constant-or-type",
+      "label": "no shared constant or type",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "after",
+      "label": "after",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "11",
+      "label": "11",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "12",
+      "label": "12",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "extract-apply-progress-update-collapse-the-3-progress-serializers-h4",
+      "label": "Extract `apply_progress_update()` + collapse the 3 progress serializers (H4).",
+      "reason": "too_long",
+      "source": "2026-06-14-r3-sciencebouk-arch.md"
+    },
+    {
+      "id": "188-r-steps",
+      "label": "188 r-steps",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "49-points-step",
+      "label": "49 points/step",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "9-212-points",
+      "label": "9,212 points",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "single-path",
+      "label": "single `<path>`",
+      "reason": "measurement_or_symbol",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "but-this-still-pays-reacts-mount-cost-once-and-keeps-9k-dom-nodes-live",
+      "label": "but this still pays React's mount cost once and keeps 9k DOM nodes live",
+      "reason": "too_long",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "37-kb-17-equations",
+      "label": "37 KB / 17 equations",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "seven",
+      "label": "seven",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "alone",
+      "label": "alone",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "plus",
+      "label": "plus",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "sorts",
+      "label": "sorts",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "per-text-node",
+      "label": "per text node",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "list",
+      "label": "list",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "every-scene-open",
+      "label": "every scene open",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "and",
+      "label": "and",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "h3",
+      "label": "H3",
+      "reason": "stopword",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "sum",
+      "label": "Sum",
+      "reason": "not_technical",
+      "source": "2026-06-14-r3-sciencebouk-performance.md"
+    },
+    {
+      "id": "exports",
+      "label": "exports",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "modules",
+      "label": "modules",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "corrections-made-to-the-draft-during-verification-called-out-inline-below",
+      "label": "Corrections made to the draft during verification (called out inline below):",
+      "reason": "too_long",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "1-426-lines",
+      "label": "1,426 lines",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "more-dead-than-stated",
+      "label": "more dead than stated",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "inside",
+      "label": "inside",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "1-426-lines-of-fully-orphaned-frontend-code",
+      "label": "~1,426 lines of fully orphaned frontend code",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "4-unused-npm-deps",
+      "label": "4 unused npm deps",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "why",
+      "label": "Why:",
+      "reason": "stopword",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "own-local",
+      "label": "own local",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "zero",
+      "label": "zero",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "fully-dead",
+      "label": "fully dead",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "live",
+      "label": "live",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-deadcode.md"
+    },
+    {
+      "id": "1-critical-6-high-8-medium-5-low",
+      "label": "1 Critical, 6 High, 8 Medium, 5 Low",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "247-total",
+      "label": "247 total",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "93",
+      "label": "93",
+      "reason": "stopword",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "verified-present-in-settings-py-absent-from-env-example",
+      "label": "Verified present in `settings.py`, absent from `.env.example`:",
+      "reason": "too_long",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "backend",
+      "label": "backend",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "first",
+      "label": "first",
+      "reason": "stopword",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "esc",
+      "label": "Esc",
+      "reason": "not_technical",
+      "source": "2026-06-14-r4-sciencebouk-docs.md"
+    },
+    {
+      "id": "repo",
+      "label": "Repo:",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "lens",
+      "label": "Lens:",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "date",
+      "label": "Date:",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "mode",
+      "label": "Mode:",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "are",
+      "label": "are",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "6-4-1",
+      "label": "6.4.1",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "0-25-12",
+      "label": "0.25.12",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "process",
+      "label": "process",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "is",
+      "label": "is",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "drafts-not-served-at-all-claim-corrected",
+      "label": "draft's \"not served at all\" claim corrected",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "or",
+      "label": "or",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "no-lowercasing",
+      "label": "no lowercasing",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "does",
+      "label": "does",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "low-today",
+      "label": "low today",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "9-source-files",
+      "label": "9 source files",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "12-38-0",
+      "label": "12.38.0",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "drafts-not-served-at-all-corrected",
+      "label": "draft's \"not served at all\" corrected",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "new",
+      "label": "NEW",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "h2",
+      "label": "H2",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "before",
+      "label": "before",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "m4",
+      "label": "M4",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-research.md"
+    },
+    {
+      "id": "prior-r1-audit-made-the-same-mistake",
+      "label": "prior r1 audit made the same mistake",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "12-are-confirmed-as-written",
+      "label": "12 are confirmed as written",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "1-m4-is-materially-overstated-and-corrected-below",
+      "label": "1 (M4) is materially overstated and corrected below",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "1-l2-is-confirmed-but-its-severity-wording-is-tightened",
+      "label": "1 (L2) is confirmed but its severity/wording is tightened",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "31",
+      "label": "`:31`",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "99",
+      "label": "`:99`",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "extension-string",
+      "label": "extension string",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "no-content-disposition-attachment-and-no-cookieless-media-origin",
+      "label": "no `Content-Disposition: attachment` and no cookieless media origin",
+      "reason": "too_long",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "correction-important-the-draft-and-the-prior-r1-audit-are-both-wrong-here",
+      "label": "Correction (important — the draft and the prior r1 audit are both wrong here):",
+      "reason": "too_long",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "are-emitted",
+      "label": "are emitted",
+      "reason": "not_technical",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "2-5-mb",
+      "label": "2.5 MB",
+      "reason": "leading_digit",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "155-166",
+      "label": "`:155-166`",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "true",
+      "label": "True",
+      "reason": "stopword",
+      "source": "2026-06-14-r5-sciencebouk-security.md"
+    },
+    {
+      "id": "settings-path-is-formulas-backend-settings-py-not-sciencebouk-settings-py",
+      "label": "Settings path is `formulas_backend/settings.py`, not `sciencebouk/settings.py`",
+      "reason": "too_long",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "and-still-returns-200-with-valid-tokens",
+      "label": "and still returns 200 with valid tokens",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "partly-a-false-alarm",
+      "label": "partly a false alarm",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "inaccurate",
+      "label": "inaccurate",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "boot-path",
+      "label": "boot path",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "tokenstorage-single-flight-refresh-memory-only-access-token",
+      "label": "`tokenStorage` single-flight refresh + memory-only access token",
+      "reason": "too_long",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "low",
+      "label": "Low",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "app",
+      "label": "App",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-correctness.md"
+    },
+    {
+      "id": "new-generalizes-prior-l5-line-citations-corrected-one-fix-detail-corrected",
+      "label": "(new — generalizes prior L5; line citations corrected, one fix detail corrected)",
+      "reason": "too_long",
+      "source": "2026-06-14-r6-sciencebouk-performance.md"
+    },
+    {
+      "id": "101-107-141",
+      "label": "101, 107, 141",
+      "reason": "stopword",
+      "source": "2026-06-14-r6-sciencebouk-performance.md"
+    },
+    {
+      "id": "new-verified",
+      "label": "(new — verified)",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-performance.md"
+    },
+    {
+      "id": "neither-file-is-imported-by-any-route-component-or-test",
+      "label": "neither file is imported by any route, component, or test",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-performance.md"
+    },
+    {
+      "id": "meta",
+      "label": "Meta",
+      "reason": "not_technical",
+      "source": "2026-06-14-r6-sciencebouk-performance.md"
+    },
+    {
+      "id": "6-of-10-agents-produced-structured-output",
+      "label": "6 of 10 agents produced structured output",
+      "reason": "leading_digit",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "30-findings",
+      "label": "30 findings",
+      "reason": "leading_digit",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "broadly-solid",
+      "label": "broadly solid",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "unguarded-mathematical-singularities",
+      "label": "unguarded mathematical singularities",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "already-fixed",
+      "label": "already fixed",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "l6",
+      "label": "L6",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "l7",
+      "label": "L7",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "l10",
+      "label": "L10",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "m5",
+      "label": "M5",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "m7",
+      "label": "M7",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "l9",
+      "label": "L9",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "accepted",
+      "label": "accepted",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "i2",
+      "label": "I2",
+      "reason": "stopword",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "math-singularities-in-subjectresults-ts-slider-reachable-feed-the-curve",
+      "label": "Math singularities in `subjectResults.ts` (slider-reachable; feed the curve):",
+      "reason": "too_long",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "agree",
+      "label": "agree",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "missing-test-notes-info-test-only-no-production-code-change",
+      "label": "Missing-test notes (INFO — test-only, no production-code change):",
+      "reason": "too_long",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "usecallback",
+      "label": "useCallback",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    },
+    {
+      "id": "blob",
+      "label": "Blob",
+      "reason": "not_technical",
+      "source": "2026-06-23-branch-review-security.md"
+    }
+  ]
+}

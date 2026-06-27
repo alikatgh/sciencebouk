@@ -17,6 +17,7 @@ from build_terms_registry import (  # noqa: E402
     parse_lesson_bullets,
     slug,
 )
+from term_inventory import build_inventory, scan_prose_candidates, write_manifest  # noqa: E402
 
 BOLD_RE = re.compile(r"\*\*([^*]{2,80})\*\*")
 CODE_TERM_RE = re.compile(r"`([a-zA-Z_][a-zA-Z0-9_.]{2,48})`")
@@ -397,19 +398,42 @@ def main() -> int:
     ap.add_argument("--lessons", action="append", default=[], type=Path)
     ap.add_argument("--existing-rich", type=Path, default=None)
     ap.add_argument("--handcrafted-seed", type=Path, default=None)
+    ap.add_argument("--manifest", type=Path, default=None)
+    ap.add_argument("--manifest-out", type=Path, default=None)
+    ap.add_argument("--rejected-out", type=Path, default=None)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--frontend-data", type=Path, default=None)
-    ap.add_argument("--scan-prose", action="store_true")
+    ap.add_argument("--scan-prose", action="store_true", help="deprecated: use term_inventory.py + --manifest")
     args = ap.parse_args()
 
     meta = PROJECT_META[args.project]
     terms, categories = collect_terms(args.glossary, args.lessons, args.frontend_data)
 
-    known_ids = set(terms.keys())
-    if args.scan_prose:
-        extra = scan_lesson_prose(args.lessons, known_ids)
-        for tid, t in extra.items():
-            terms[tid] = t
+    manifest: dict | None = None
+    if args.manifest and args.manifest.exists():
+        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    elif args.manifest_out:
+        inv = build_inventory(
+            args.glossary, args.lessons, args.frontend_data, args.handcrafted_seed
+        )
+        inv["project"] = args.project
+        write_manifest(inv, args.manifest_out, args.rejected_out)
+        manifest = {k: v for k, v in inv.items() if k != "prose_rejected"}
+    elif args.scan_prose:
+        inv = build_inventory(
+            args.glossary, args.lessons, args.frontend_data, args.handcrafted_seed
+        )
+        manifest = {k: v for k, v in inv.items() if k != "prose_rejected"}
+    else:
+        print("error: pass --manifest or --manifest-out (run term_inventory.py first)", file=sys.stderr)
+        return 2
+
+    allowed = set(manifest.get("all_ids") or [])
+    known = set(manifest.get("required") or [])
+    prose_meta, _ = scan_prose_candidates(args.lessons, known)
+    for tid, t in prose_meta.items():
+        if tid in allowed:
+            terms[tid] = {**terms.get(tid, {}), **t}
             categories.setdefault(tid, "Lesson prose")
 
     hand_crafted: dict[str, dict] = {}
@@ -417,32 +441,27 @@ def main() -> int:
         hand_crafted.update(
             json.loads(args.handcrafted_seed.read_text(encoding="utf-8")).get("terms", {})
         )
-    if args.existing_rich and args.existing_rich.exists():
-        for k, v in json.loads(args.existing_rich.read_text(encoding="utf-8")).get("terms", {}).items():
-            if is_hand_authored(v):
-                hand_crafted[k] = v
 
-    # Seed-only hand entries (e.g. first-class-function) must appear even if absent from glossary scan
-    for tid, overlay in hand_crafted.items():
-        if tid not in terms:
-            terms[tid] = {
-                "id": tid,
-                "label": overlay.get("label", tid),
-                "title": overlay.get("title", overlay.get("label", tid)),
-                "short": overlay.get("short") or overlay.get("lead", ""),
-                "lead": overlay.get("lead", ""),
-            }
+    for tid in manifest.get("handcrafted") or []:
+        if tid in hand_crafted:
             categories.setdefault(tid, "Hand-authored")
 
-    all_ids = sorted(terms.keys())
+    all_ids = sorted(allowed)
     rich_terms: dict[str, dict] = {}
 
     for tid in all_ids:
-        base = terms[tid]
-        gen = generate_rich(tid, base, meta, categories.get(tid, "General"), all_ids, categories)
         if tid in hand_crafted and has_full_rich(hand_crafted[tid]):
-            rich_terms[tid] = ensure_full_rich(hand_crafted[tid], gen)
-        elif tid in hand_crafted:
+            rich_terms[tid] = hand_crafted[tid]
+            continue
+        base = terms.get(tid) or {
+            "id": tid,
+            "label": hand_crafted.get(tid, {}).get("label", tid),
+            "title": hand_crafted.get(tid, {}).get("title", tid),
+            "short": "",
+            "lead": "",
+        }
+        gen = generate_rich(tid, base, meta, categories.get(tid, "General"), all_ids, categories)
+        if tid in hand_crafted:
             rich_terms[tid] = ensure_full_rich(hand_crafted[tid], gen)
         else:
             rich_terms[tid] = gen
