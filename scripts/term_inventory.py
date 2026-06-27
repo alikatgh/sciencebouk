@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Pure term inventory: glossary + bullets + filtered prose candidates → manifest."""
+"""Pure term inventory: glossary + bullets + filtered prose candidates → manifest.
+
+Manifest-driven popup pipeline (goal 2026-06-27): required ∪ prose_approved only.
+"""
 
 from __future__ import annotations
 

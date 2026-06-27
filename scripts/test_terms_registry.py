@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for terms registry rich coverage + manifest contract."""
+"""Tests for terms registry rich coverage + manifest contract (AC1–AC4)."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared assertions for terms registry + manifest tests."""
+"""Shared assertions for terms registry + manifest contract tests."""
 
 from __future__ import annotations
 

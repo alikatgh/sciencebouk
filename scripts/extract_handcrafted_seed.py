@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Extract hand-authored rich entries into terms-handcrafted-seed.json."""
+"""Extract hand-authored rich entries into terms-handcrafted-seed.json.
+
+Used before manifest regen so seed ids always win in generate_terms_rich.py.
+"""
 
 from __future__ import annotations
 
