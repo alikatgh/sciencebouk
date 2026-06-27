@@ -9,18 +9,50 @@ import re
 import sys
 from pathlib import Path
 
-# Reuse parsers from sibling script
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_terms_registry import (  # noqa: E402
+    parse_frontend_data,
     parse_glossary_bullets,
     parse_glossary_h3,
     parse_lesson_bullets,
     slug,
 )
 
-BOLD_RE = re.compile(r"\*\*([^*]{2,60})\*\*")
-CODE_TERM_RE = re.compile(r"`([a-zA-Z_][a-zA-Z0-9_.]{1,40})`")
-SECTION_RE = re.compile(r"^## (.+)$", re.MULTILINE)
+BOLD_RE = re.compile(r"\*\*([^*]{2,80})\*\*")
+CODE_TERM_RE = re.compile(r"`([a-zA-Z_][a-zA-Z0-9_.]{2,48})`")
+CONTEXT_RE = re.compile(r".{0,120}\*\*([^*]+)\*\*.{0,120}", re.DOTALL)
+
+STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "do", "for", "from", "go",
+    "he", "her", "him", "his", "if", "in", "is", "it", "its", "me", "my", "no",
+    "not", "of", "on", "or", "our", "she", "so", "the", "their", "them", "then",
+    "there", "these", "they", "this", "to", "up", "us", "was", "we", "when",
+    "who", "why", "will", "with", "you", "your", "all", "any", "can", "had",
+    "has", "have", "how", "into", "just", "like", "may", "more", "most", "new",
+    "now", "old", "one", "only", "other", "out", "over", "same", "see", "some",
+    "such", "than", "that", "them", "too", "two", "use", "very", "what", "which",
+    "while", "work", "yes", "yet", "each", "make", "made", "here", "also", "both",
+    "does", "done", "even", "back", "been", "before", "after", "being", "between",
+    "could", "should", "would", "about", "above", "below", "under", "again",
+    "once", "where", "because", "through", "during", "without", "within",
+    "part", "step", "steps", "note", "tips", "try", "read", "open", "file",
+    "files", "line", "lines", "code", "list", "table", "figure", "summary",
+    "objectives", "reveal", "warning", "tip", "example", "examples", "result",
+    "results", "output", "input", "type", "types", "name", "names", "value",
+    "values", "true", "false", "null", "none", "self", "return", "import",
+    "class", "function", "method", "module", "test", "tests", "run", "runs",
+    "first", "second", "third", "next", "last", "left", "right", "top", "bottom",
+    "less", "many", "much", "few", "every", "whole", "full", "half", "way",
+    "bg", "dt", "fn", "fw", "gs", "h1", "h2", "h3", "id", "iq", "ui", "ux",
+    "fr", "f6", "f7", "f8", "f9", "10", "11", "12",
+}
+
+SKIP_BOLD = {
+    "Objectives", "Why it matters", "Try it", "Check yourself", "Simple analogy",
+    "What it actually means", "The mental model", "Where you see it",
+    "Predict before reading", "Still not clear?", "Part A", "Part B", "Part C",
+    "Note", "Warning", "Tip", "Reveal", "Summary", "Table", "Figure",
+}
 
 PROJECT_META = {
     "21": {
@@ -90,8 +122,64 @@ PROJECT_META = {
     },
 }
 
+MIN_SECTIONS = 3
+MIN_CONFUSED = 3
 
-def collect_terms(glossaries: list[Path], lessons_dirs: list[Path]) -> dict[str, dict]:
+
+def is_stopword(label: str, tid: str) -> bool:
+    low = label.lower().strip()
+    if low in STOPWORDS or tid in STOPWORDS:
+        return True
+    if re.fullmatch(r"\d+([.-]\d+)*", low):
+        return True
+    if re.fullmatch(r"[a-z]{1,2}", low):
+        return True
+    return False
+
+
+def is_technical_label(label: str) -> bool:
+    """True if label looks like a domain term, not plain prose."""
+    if is_stopword(label, slug(label)):
+        return False
+    if label in SKIP_BOLD:
+        return False
+    if re.search(r"[_.\\/]", label):
+        return True
+    if re.search(r"[A-Z]{2,}", label):  # acronym
+        return True
+    if re.search(r"[A-Z][a-z]+[A-Z]", label):  # camelCase
+        return True
+    if "`" in label:
+        return True
+    if label.startswith("src/") or label.startswith("http"):
+        return False
+    # Multi-word title-case phrases (Game state machine)
+    words = re.findall(r"[A-Za-z]+", label)
+    if len(words) >= 2 and any(w[0].isupper() for w in words[1:]):
+        return True
+    # Single technical-looking tokens
+    if len(label) >= 5 and re.search(r"[-_]", label):
+        return True
+    if len(label) >= 6 and label[0].isupper():
+        return True
+    return False
+
+
+def extract_context(text: str, label: str) -> str:
+    for m in CONTEXT_RE.finditer(text):
+        if m.group(1).strip() == label:
+            ctx = m.group(0).replace("**", "").replace("\n", " ")
+            ctx = re.sub(r"\s+", " ", ctx).strip()
+            if len(ctx) > 40:
+                return ctx[:320]
+    return ""
+
+
+def collect_terms(
+    glossaries: list[Path],
+    lessons_dirs: list[Path],
+    frontend_data: Path | None = None,
+) -> tuple[dict[str, dict], dict[str, str]]:
     terms: dict[str, dict] = {}
     categories: dict[str, str] = {}
     current_cat = "General"
@@ -117,43 +205,55 @@ def collect_terms(glossaries: list[Path], lessons_dirs: list[Path]) -> dict[str,
             terms[tid] = {**terms.get(tid, {}), **t}
         categories.setdefault(tid, categories.get(tid, "Lessons"))
 
+    if frontend_data:
+        for tid, t in parse_frontend_data(frontend_data).items():
+            if tid not in terms or len(t.get("short", "")) > len(terms[tid].get("short", "")):
+                terms[tid] = {**terms.get(tid, {}), **t}
+            categories.setdefault(tid, t.get("source_category", "Frontend data"))
+
     return terms, categories
 
 
 def scan_lesson_prose(lessons_dirs: list[Path], known: set[str]) -> dict[str, dict]:
-    """Extract bold/code tokens from lesson bodies not yet in registry."""
+    """Extract only technical bold/code tokens not already in glossary/bullets."""
     extra: dict[str, dict] = {}
-    skip = {
-        "Objectives", "Why it matters", "Try it", "Check yourself", "Part A", "Part B",
-        "Note", "Warning", "Tip", "Reveal", "Summary", "Table", "Figure",
-    }
     for lessons_dir in lessons_dirs:
         if not lessons_dir.exists():
             continue
-        for path in lessons_dir.rglob("*.md"):
+        for path in sorted(lessons_dir.rglob("*.md")):
             if path.name in ("index.md", "glossary.md", "README.md"):
                 continue
+            if path.suffix not in (".md",):
+                continue
             text = path.read_text(encoding="utf-8", errors="replace")
-            # skip front matter blocks
-            for m in BOLD_RE.finditer(text):
+            # Only scan lesson body after plain-english block to avoid nav junk
+            body = text
+            if "## Part" in text:
+                body = text.split("## Part", 1)[-1]
+
+            for m in BOLD_RE.finditer(body):
                 label = m.group(1).strip()
-                if len(label) < 3 or label in skip or label.startswith("http"):
+                if not is_technical_label(label):
                     continue
                 tid = slug(label)
-                if not tid or tid in known:
+                if not tid or tid in known or tid in extra or is_stopword(label, tid):
                     continue
-                if tid in extra:
-                    continue
+                ctx = extract_context(text, label)
+                short = ctx or f"{label} is a technical concept used when reading {path.stem.replace('-', ' ')}."
                 extra[tid] = {
                     "id": tid,
                     "label": label,
                     "title": label,
-                    "short": f"Technical term used in {path.name}.",
-                    "lead": f"“{label}” appears in the lesson {path.stem} — here's what it means in context.",
+                    "short": short,
+                    "lead": f"**{label}** — let's unpack this in plain English.\n\n{short}",
+                    "source_lesson": path.name,
                 }
-            for m in CODE_TERM_RE.finditer(text):
+
+            for m in CODE_TERM_RE.finditer(body):
                 label = m.group(1)
-                if label in ("true", "false", "null", "None", "self", "return"):
+                if not re.search(r"[_.]", label) and not label[0].isupper():
+                    continue
+                if is_stopword(label, slug(label)):
                     continue
                 tid = slug(label)
                 if not tid or tid in known or tid in extra:
@@ -162,26 +262,55 @@ def scan_lesson_prose(lessons_dirs: list[Path], known: set[str]) -> dict[str, di
                     "id": tid,
                     "label": label,
                     "title": label,
-                    "short": f"Identifier referenced in {path.name}.",
-                    "lead": f"`{label}` is used in {path.stem} — open that file when you see it in prose.",
+                    "short": f"`{label}` is a symbol or API name referenced in {path.name}.",
+                    "lead": (
+                        f"When you see `{label}` in the lesson, open {path.name} and grep for it — "
+                        f"it names real code in this repository."
+                    ),
+                    "source_lesson": path.name,
                 }
     return extra
 
 
-def pick_confused(tid: str, all_ids: list[str], category_map: dict[str, str], n: int = 3) -> list[str]:
+def pick_confused(tid: str, all_ids: list[str], category_map: dict[str, str], n: int = MIN_CONFUSED) -> list[str]:
     cat = category_map.get(tid, "")
-    same = [x for x in all_ids if x != tid and category_map.get(x) == cat]
-    if len(same) >= n:
-        return same[:n]
-    others = [x for x in all_ids if x != tid and x not in same]
-    out = same + others
-    # stable-ish pick by hash
-    out.sort(key=lambda x: (category_map.get(x) != cat, x))
-    return [x for x in out if x != tid][:n]
+    same = [x for x in all_ids if x != tid and category_map.get(x) == cat and not is_stopword(x, x)]
+    pool = same if len(same) >= n else same + [x for x in all_ids if x != tid and x not in same]
+    pool = [x for x in pool if x != tid and not is_stopword(x, x)]
+    pool.sort(key=lambda x: (category_map.get(x) != cat, x))
+    if len(pool) < n:
+        pool = pool + [x for x in all_ids if x not in pool and x != tid][: n - len(pool)]
+    return pool[:n]
 
 
-def has_rich(t: dict) -> bool:
-    return bool(t.get("analogy") and t.get("sections") and t.get("confused"))
+def has_full_rich(t: dict) -> bool:
+    sections = t.get("sections") or []
+    confused = t.get("confused") or []
+    analogy = t.get("analogy") or {}
+    body = analogy.get("body") or ""
+    return bool(
+        t.get("lead")
+        and analogy
+        and len(body) > 60
+        and len(sections) >= MIN_SECTIONS
+        and len(confused) >= MIN_CONFUSED
+    )
+
+
+def ensure_full_rich(entry: dict, gen: dict) -> dict:
+    """Merge generated fill-ins; never leave partial sections/confused."""
+    out = {**gen, **entry}
+    if not out.get("lead"):
+        out["lead"] = gen["lead"]
+    if not out.get("analogy") or len((out.get("analogy") or {}).get("body", "")) < 60:
+        out["analogy"] = gen["analogy"]
+    secs = out.get("sections") or []
+    if len(secs) < MIN_SECTIONS:
+        out["sections"] = gen["sections"]
+    conf = out.get("confused") or []
+    if len(conf) < MIN_CONFUSED:
+        out["confused"] = gen["confused"]
+    return out
 
 
 def generate_rich(
@@ -194,48 +323,60 @@ def generate_rich(
 ) -> dict:
     label = base.get("title") or base.get("label") or tid
     short = base.get("short") or ""
-    lead = base.get("lead") or f"Let's explain “{label}” in plain English."
+    lead = base.get("lead") or f"Let's explain **{label}** in plain English."
+    if not lead.startswith("Okay") and not lead.startswith("**"):
+        lead = f"Okay, let's try explaining **{label}** in a much simpler way.\n\n{lead}"
+
     pool = meta["analogy_pool"]
+    analogy_pick = pool[hash(tid) % len(pool)]
     analogy_body = (
-        f"Think of **{label}** in the context of {meta['domain']}.\n\n"
+        f"Think of **{label}** like {analogy_pick}.\n\n"
         f"{short or lead}\n\n"
-        f"Picture it like {pool[hash(tid) % len(pool)]} — that's the role **{label}** plays in this project."
+        f"In {meta['name']}, this idea shows up in real shipped code — not a toy example."
     )
+
+    lesson_ref = base.get("source_lesson", "the course glossary")
     sections = [
-        {
-            "heading": "What it actually means",
-            "body": short or lead,
-        },
+        {"heading": "What it actually means", "body": short or lead},
         {
             "heading": f"Where you see it in {meta['name']}",
             "body": (
-                f"Category: {category}. {meta['where_hint']} "
-                f"Grep for “{label}” or `{label}` in the repo to land on the real call site."
+                f"Category: {category}. Introduced in {lesson_ref}. "
+                f"{meta['where_hint']} Search the repo for `{label}` or «{label}»."
+            ),
+        },
+        {
+            "heading": "Try it yourself",
+            "body": (
+                f"Open the lesson that mentions **{label}**, then grep the codebase. "
+                f"Can you name one file and one line where it matters? If yes, you've understood it."
             ),
         },
         {
             "heading": "Why it matters",
             "body": (
-                f"If **{label}** still feels abstract, read the lesson that introduces it, "
-                f"then grep the codebase — every term in this course is grounded in shipped code, not toy examples."
+                f"Skipping **{label}** makes the next lesson feel like magic. "
+                f"With this popup you have the plain-English version before diving into code."
             ),
         },
     ]
-    confused = pick_confused(tid, all_ids, category_map, 3)
-    if not confused:
-        confused = [x for x in all_ids if x != tid][:3]
 
-    out = {
+    confused = pick_confused(tid, all_ids, category_map, MIN_CONFUSED)
+
+    out: dict = {
         "label": base.get("label", label),
         "title": label,
-        "lead": lead if len(lead) > 40 else f"Okay — let's explain **{label}** in a much simpler way.\n\n{lead}",
+        "lead": lead,
         "analogy": {"title": "Simple analogy", "body": analogy_body},
-        "sections": sections,
+        "sections": sections[: max(MIN_SECTIONS, 4)],
         "confused": confused,
     }
-    aliases = base.get("aliases")
-    if aliases:
-        out["aliases"] = aliases
+    if base.get("aliases"):
+        out["aliases"] = base["aliases"]
+    if base.get("table"):
+        out["table"] = base["table"]
+    if base.get("code"):
+        out["sections"] = out["sections"][:2] + [{"heading": "Code example", "body": "", "code": base["code"]}] + out["sections"][2:]
     return out
 
 
@@ -246,11 +387,12 @@ def main() -> int:
     ap.add_argument("--lessons", action="append", default=[], type=Path)
     ap.add_argument("--existing-rich", type=Path, default=None)
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--scan-prose", action="store_true", default=True)
+    ap.add_argument("--frontend-data", type=Path, default=None)
+    ap.add_argument("--scan-prose", action="store_true")
     args = ap.parse_args()
 
     meta = PROJECT_META[args.project]
-    terms, categories = collect_terms(args.glossary, args.lessons)
+    terms, categories = collect_terms(args.glossary, args.lessons, args.frontend_data)
 
     known_ids = set(terms.keys())
     if args.scan_prose:
@@ -259,39 +401,35 @@ def main() -> int:
             terms[tid] = t
             categories.setdefault(tid, "Lesson prose")
 
-    existing: dict[str, dict] = {}
+    hand_crafted: dict[str, dict] = {}
     if args.existing_rich and args.existing_rich.exists():
-        existing = json.loads(args.existing_rich.read_text(encoding="utf-8")).get("terms", {})
+        hand_crafted = json.loads(args.existing_rich.read_text(encoding="utf-8")).get("terms", {})
+        # Preserve only entries that were hand-authored (have table or code in sections)
+        hand_crafted = {
+            k: v for k, v in hand_crafted.items()
+            if v.get("table") or any(s.get("code") for s in (v.get("sections") or []))
+        }
 
     all_ids = sorted(terms.keys())
     rich_terms: dict[str, dict] = {}
 
     for tid in all_ids:
         base = terms[tid]
-        if tid in existing and has_rich(existing[tid]):
-            rich_terms[tid] = existing[tid]
-            continue
-        if tid in existing:
-            # merge hand partial with generated fill
-            gen = generate_rich(tid, {**base, **existing[tid]}, meta, categories.get(tid, "General"), all_ids, categories)
-            merged = {**gen, **existing[tid]}
-            if not merged.get("analogy"):
-                merged["analogy"] = gen["analogy"]
-            if not merged.get("sections"):
-                merged["sections"] = gen["sections"]
-            if not merged.get("confused"):
-                merged["confused"] = gen["confused"]
-            rich_terms[tid] = merged
+        gen = generate_rich(tid, base, meta, categories.get(tid, "General"), all_ids, categories)
+        if tid in hand_crafted and has_full_rich(hand_crafted[tid]):
+            rich_terms[tid] = ensure_full_rich(hand_crafted[tid], gen)
+        elif tid in hand_crafted:
+            rich_terms[tid] = ensure_full_rich(hand_crafted[tid], gen)
         else:
-            rich_terms[tid] = generate_rich(tid, base, meta, categories.get(tid, "General"), all_ids, categories)
+            rich_terms[tid] = gen
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps({"version": 1, "terms": rich_terms}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    rich_count = sum(1 for t in rich_terms.values() if has_rich(t))
-    print(f"Wrote {len(rich_terms)} rich terms ({rich_count} complete) → {args.out}")
+    full = sum(1 for t in rich_terms.values() if has_full_rich(t))
+    print(f"Wrote {len(rich_terms)} rich terms ({full} full) → {args.out}")
     return 0
 
 

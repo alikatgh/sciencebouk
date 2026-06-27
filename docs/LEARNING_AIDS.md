@@ -72,11 +72,11 @@ Regenerate after editing docs:
 ```bash
 python3 scripts/generate_terms_rich.py --project sciencebouk \
   --glossary docs/ARCHITECTURE.md --glossary docs/LEARNING_AIDS.md \
-  --lessons docs --lessons frontend/src/data \
+  --lessons docs --frontend-data frontend/src/data \
   --out docs/assets/terms-rich.json
 python3 scripts/build_terms_registry.py \
   --glossary docs/ARCHITECTURE.md --glossary docs/LEARNING_AIDS.md \
-  --lessons docs --lessons frontend/src/data \
+  --lessons docs --frontend-data frontend/src/data \
   --rich docs/assets/terms-rich.json --out docs/assets/terms.json
 ```
 

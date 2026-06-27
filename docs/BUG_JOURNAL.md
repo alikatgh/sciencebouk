@@ -18,6 +18,12 @@ Global rules: `~/.claude/CLAUDE.md`.
 
 ---
 
+### 2026-06-27 — Terms popup registry had 4 entries
+- **Symptom:** `terms.json` only covered auth roles from ARCHITECTURE.md; equation variables had no popups.
+- **Cause:** `build_terms_registry.py` only parsed markdown glossaries/bullets; sciencebouk terms live in `equations.json` + `whatItMeans.ts`.
+- **Fix:** `parse_frontend_data()` + `--frontend-data`; regen to 240 full-rich terms; `test_terms_registry.py`.
+- **Lesson:** non-Markdown learning data needs an explicit parser path in the registry builder.
+
 ## Patterns to scan for FIRST
 
 Before reproducing, grep this list for the shape of your bug.
