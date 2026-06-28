@@ -258,6 +258,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-06-28 · Avatar served without Content-Disposition: attachment (residual security r5research-H3 / r1-M1 / r6-L4)
+Symptom: `SERVE_MEDIA_FROM_DJANGO` mode (dev/staging) used Django's raw `static()` helper which served avatar files with no `Content-Disposition` header — letting the browser render them inline, leaving a content-sniffing attack surface even after magic-byte validation.
+Cause: `urls.py` wired `static(MEDIA_URL, document_root=MEDIA_ROOT)` with no post-processing of response headers.
+Fix: replaced with a custom `serve_media` view (`formulas_backend/views.py`) that wraps `django.views.static.serve` and appends `Content-Disposition: attachment` + `Cache-Control: no-store, private` on 200 responses; `safe_join` guard preserves path-traversal protection. 286 tests pass.
+Lesson: see pattern #24 — magic-byte validation is not enough; `Content-Disposition: attachment` prevents browsers from executing a valid-image polyglot as an HTML/JS resource.
+
 ### 2026-06-26 · Case-sensitive email allowed duplicate accounts (security/correctness, r5research-H4/M5)
 Symptom: registration's existence check + storage were case-sensitive while the Google path lowercases — so `Me@x.com` could register, then a Google sign-in (lowercased to `me@x.com`) created a SECOND account.
 Cause: `RegisterSerializer.validate_email` checked/stored the email as-typed; the default auth backend matches the username (=email) case-sensitively.
@@ -462,7 +468,7 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 
 **Research / currency** (`r5-research`)
 - C1 · `Django==5.2.1` hard-pinned off the 5.2 security line; bump + `pip-audit`.
-- H3 · avatar served via Django `SERVE_MEDIA` path with extension-inferred type — the real foot-gun. (#24)
+- H3 · avatar served via Django `SERVE_MEDIA` path with extension-inferred type — the real foot-gun. (#24) → `Content-Disposition: attachment` + `Cache-Control: no-store, private` added to custom `serve_media` view 2026-06-28. ✓
 - H4/M5 · email not DB-unique + case-sensitive check; normalize + case-insensitive unique, ideally a custom user model. (#23)
 - M2/M3 · `stripe.api_version` pinned 2026-06-26 (see log); `ProcessedStripeEvent` idempotency guard already in place (`f9a0ee8`). ✓
 - M4 · `react-katex` is a maintenance risk but used in 9 files (wrapped by in-house renderer) — a scoped refactor, not a free deletion.
@@ -471,7 +477,9 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 - M1 · avatar upload — magic-byte validation + old-file cleanup on re-upload, both done 2026-06-26 (see log). ✓ (#24)
 - M2/M3 · X-Forwarded-For now trusts only the rightmost `DJANGO_TRUSTED_PROXY_COUNT` hops (fixed 2026-06-26, see log); `SECURE_PROXY_SSL_HEADER` proxy-overwrite requirement documented in settings (deployment must verify). ✓
 - M5 · refresh token in `localStorage` (XSS-exfiltratable, 30-day) — move to `HttpOnly Secure SameSite` cookie.
-- L1/L3/L4 · DOMPurify the legal-page HTML; gate the API landing page behind `DEBUG`; bind Stripe upgrade to a configured Pro price id.
+- L1 · DOMPurify the legal-page HTML — legal docs are developer-controlled static files (`/legal/terms.html`, `/legal/privacy.html`), not user content; risk is very low. Deferred to owner.
+- L3 · API landing page admin link — already DEBUG-gated at `formulas_backend/views.py:10`. ✓ Already fixed.
+- L4 · Stripe price-id server-side — already fixed: `payments/views.py:127-134` takes `price_type` enum and maps to settings price_id server-side. ✓ Already fixed.
 
 ---
 

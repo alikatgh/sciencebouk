@@ -1,5 +1,9 @@
+import posixpath
+
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
+from django.utils._os import safe_join
+from django.views.static import serve as django_static_serve
 
 
 def backend_home(_: object) -> HttpResponse:
@@ -84,3 +88,40 @@ def backend_home(_: object) -> HttpResponse:
 </body>
 </html>"""
     )
+
+
+def serve_media(request, path):
+    """Serve user-uploaded media files during development / staging.
+
+    Wraps Django's static-file serve with hardened headers for user-uploaded
+    content:
+    - ``Content-Disposition: attachment`` — tells the browser to download the
+      file rather than render it inline, mitigating polyglot/content-sniffing
+      attacks even when X-Content-Type-Options: nosniff is already set.
+    - ``Cache-Control: no-store, private`` — prevents CDN/shared caches from
+      storing potentially-private user assets.
+
+    In production the web server (nginx/Apache) should serve MEDIA_ROOT
+    directly with equivalent headers; SERVE_MEDIA_FROM_DJANGO should be False.
+    """
+    # Sanitise the path: strip leading slashes, normalise, and verify it
+    # resolves inside MEDIA_ROOT (safe_join raises SuspiciousFileOperation
+    # if the result would escape the root).
+    clean_path = posixpath.normpath(path).lstrip("/")
+    try:
+        safe_join(str(settings.MEDIA_ROOT), clean_path)
+    except Exception:
+        raise Http404
+
+    response = django_static_serve(
+        request,
+        path=clean_path,
+        document_root=str(settings.MEDIA_ROOT),
+    )
+
+    # Harden only successful file responses (not 304 Not Modified, etc.)
+    if response.status_code == 200:
+        response["Content-Disposition"] = "attachment"
+        response["Cache-Control"] = "no-store, private"
+
+    return response
