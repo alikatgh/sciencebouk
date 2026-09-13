@@ -1,11 +1,7 @@
 import type { ReactElement } from "react"
 import { lazy, Suspense, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import {
-  Lock, ArrowRight, CheckCircle2,
-  Pi, Atom, FlaskConical, Dna, TrendingUp, Cpu,
-  BarChart3, Wrench, Telescope, Grid3X3,
-} from "lucide-react"
+import { Lock, ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
@@ -21,19 +17,6 @@ import { useAllProgress } from "../progress/useProgress"
 const HeroDemo = lazy(() =>
   import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
 )
-
-const iconMap: Record<string, ReactElement> = {
-  "pi": <Pi className="h-5 w-5" />,
-  "atom": <Atom className="h-5 w-5" />,
-  "flask-conical": <FlaskConical className="h-5 w-5" />,
-  "dna": <Dna className="h-5 w-5" />,
-  "trending-up": <TrendingUp className="h-5 w-5" />,
-  "cpu": <Cpu className="h-5 w-5" />,
-  "bar-chart-3": <BarChart3 className="h-5 w-5" />,
-  "wrench": <Wrench className="h-5 w-5" />,
-  "telescope": <Telescope className="h-5 w-5" />,
-  "grid-3x3": <Grid3X3 className="h-5 w-5" />,
-}
 
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
@@ -84,7 +67,7 @@ export function HomePage(): ReactElement {
   const hasComingSoonSubjects = inactiveSubjects.length > 0
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-white dark:bg-slate-950">
+    <main className="flex min-h-[100dvh] flex-col bg-transparent dark:bg-slate-950">
         {/* Header */}
         <TopNav
           showBack={!!activeSubject}
@@ -186,7 +169,7 @@ export function HomePage(): ReactElement {
                         onFocus={() => {
                           void prefetchEquationExperience(f.id!)
                         }}
-                        className="flex min-w-[15rem] snap-start flex-shrink-0 flex-col rounded-[22px] border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-ocean/30 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0"
+                        className="flex min-w-[15rem] snap-start flex-shrink-0 flex-col rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 sm:min-w-0"
                         type="button"
                       >
                         <span className="text-sm text-slate-600 dark:text-slate-300">
@@ -201,41 +184,41 @@ export function HomePage(): ReactElement {
 
             {/* === FEATURED: 17 Equations === */}
             <div id="subjects-section" className="space-y-3">
-              {activeSubjectCards.map(({ subject, completedInSubject }) => {
+              {activeSubjectCards.map(({ subject, completedInSubject }, index) => {
                 return (
                   <Card
                     key={subject.slug}
                     role="button"
                     tabIndex={0}
-                    className="group cursor-pointer overflow-hidden rounded-[28px] border-2 border-slate-900 bg-slate-900 text-white transition-all hover:shadow-xl active:scale-[0.995] dark:border-slate-700 dark:bg-slate-800"
+                    className="group cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
                     onClick={() => setSelectedSubject(subject.slug)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSubject(subject.slug) } }}
                     aria-label={`Open ${subject.name}`}
                   >
                     <div className="flex items-start gap-3 p-4 sm:items-center sm:gap-4 sm:p-5">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-slate-900 sm:h-12 sm:w-12">
-                        {iconMap[subject.icon] ?? <Pi className="h-6 w-6" />}
-                      </div>
+                      <span className="w-6 shrink-0 font-mono text-xs tabular-nums text-ocean">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <h2 className="text-base font-bold leading-tight sm:text-lg">{subject.name}</h2>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:mt-0.5 sm:text-sm">{subject.description}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:mt-0.5 sm:text-sm dark:text-slate-400">{subject.description}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="text-xs font-medium text-slate-400">
+                          <span className="text-xs font-medium tabular-nums text-slate-500 dark:text-slate-400">
                             {interpolateContent(homePageContent.sections.subjectCountTemplate, { count: subject.formulas.length })}
                           </span>
                           {completedInSubject > 0 && (
-                            <span className="text-xs font-medium text-emerald-400">
+                            <span className="text-xs font-medium tabular-nums text-slate-700 dark:text-slate-200">
                               {interpolateContent(homePageContent.sections.subjectCompletedTemplate, { count: completedInSubject })}
                             </span>
                           )}
                         </div>
                       </div>
-                      <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-500 transition group-hover:text-white sm:h-5 sm:w-5" />
+                      <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400 transition-colors group-hover:text-slate-700 dark:group-hover:text-slate-200 sm:h-5 sm:w-5" />
                     </div>
-                    <div className="border-t border-slate-700 bg-slate-800/50 px-4 py-2 sm:px-5 sm:py-2.5 dark:bg-slate-900/50">
+                    <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 sm:px-5 sm:py-2.5 dark:border-slate-800 dark:bg-slate-950/50">
                       <div className="native-scroll flex snap-x snap-mandatory gap-x-4 gap-y-1 overflow-x-auto pb-1 [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0 md:[mask-image:none]">
                         {subject.formulas.slice(0, 5).map((f, i) => (
-                          <span key={i} className="shrink-0 snap-start text-[11px] text-slate-400 md:shrink md:text-xs">
+                          <span key={i} className="shrink-0 snap-start text-[11px] text-slate-500 md:shrink md:text-xs dark:text-slate-400">
                             <FormulaPreview formula={f.formula} />
                           </span>
                         ))}
@@ -249,21 +232,18 @@ export function HomePage(): ReactElement {
             {/* === COMING NEXT === */}
             {hasComingSoonSubjects && (
               <div className="mt-8">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">{homePageContent.sections.comingNext}</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{homePageContent.sections.comingNext}</h3>
                 <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {inactiveSubjects.map((subject) => (
                     <button
                       key={subject.slug}
                       type="button"
-                      className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-200 px-4 py-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:hover:border-slate-600 dark:hover:bg-slate-800/50"
+                      className="flex cursor-pointer items-center rounded-xl border border-dashed border-slate-200 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900"
                       onClick={() => setSelectedSubject(subject.slug)}
                     >
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
-                        {iconMap[subject.icon] ?? <Pi className="h-4 w-4" />}
-                      </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subject.name}</p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{subject.name}</p>
+                        <p className="text-[10px] tabular-nums text-slate-500 dark:text-slate-400">
                           {interpolateContent(homePageContent.sections.comingSoonCountTemplate, { count: subject.formulas.length })}
                         </p>
                       </div>
@@ -288,9 +268,9 @@ export function HomePage(): ReactElement {
                         role={isActive ? "button" : undefined}
                         tabIndex={isActive ? 0 : undefined}
                         aria-label={isActive ? `Open ${f.title}` : undefined}
-                          className={`overflow-hidden rounded-[22px] transition-all ${
+                          className={`overflow-hidden rounded-xl transition-colors ${
                             isActive
-                              ? "cursor-pointer hover:border-slate-300 hover:shadow-md active:scale-[0.98]"
+                              ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
                               : "border-dashed opacity-40"
                         }`}
                         onClick={isActive ? () => navigate(`/equation/${f.id}`) : undefined}

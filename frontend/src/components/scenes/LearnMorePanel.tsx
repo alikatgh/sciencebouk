@@ -60,8 +60,8 @@ export function LearnMorePanel({ equationId }: { equationId: number }): ReactEle
   }
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white/50 p-1 dark:border-slate-700 dark:bg-slate-800/40">
-      <div role="tablist" aria-label="Learn more" className="flex gap-1">
+    <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+      <div role="tablist" aria-label="Learn more" className="flex flex-wrap gap-1">
         {tabs.map((tab, index) => {
           const selected = current === tab.key
           return (
@@ -75,10 +75,10 @@ export function LearnMorePanel({ equationId }: { equationId: number }): ReactEle
               tabIndex={selected ? 0 : -1}
               onClick={() => selectTab(tab.key)}
               onKeyDown={(event) => onTabKeyDown(event, index)}
-              className={`flex-1 rounded-lg px-2 py-1.5 text-[0.7rem] font-semibold transition ${
+              className={`rounded-lg px-2 py-1.5 text-[0.7rem] font-semibold transition-colors ${
                 selected
-                  ? "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100"
-                  : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
             >
               {tab.label}

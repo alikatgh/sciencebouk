@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { BookOpen, PanelBottomOpen, PanelRightOpen, SlidersHorizontal, Sparkles } from "lucide-react"
+import { PanelBottomOpen, PanelRightOpen } from "lucide-react"
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { useAuth } from "../../auth/AuthContext"
@@ -19,7 +19,6 @@ import type { Variable, LessonStep, GlossaryTerm } from "./types"
 import { ErrorBoundary } from "../ErrorBoundary"
 import { VisualizationViewport } from "./VisualizationViewport"
 import { shouldUseStackedTeachingLayout } from "./layoutMode"
-import { AutoFitDeferredInlineMath } from "../math/AutoFitDeferredInlineMath"
 import { useEquationConfig } from "../../data/equationConfig"
 
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
@@ -469,10 +468,9 @@ export function TeachableEquation({
     ? "aspect-square min-h-[18rem] max-h-[24rem]"
     : "aspect-[4/3] max-h-[56vh]"
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
-  const introFormulaVisible = appSettings.showHookText && appSettings.showFormulaLetters && Boolean(displayFormula)
   const hasPresets = Boolean(localizedPresets && localizedPresets.length > 0)
   const hasLearnSurface = appSettings.showHookText || formulaCardVisible
-  const letterFormula = introFormulaVisible ? "" : (appSettings.showFormulaLetters ? displayFormula : "")
+  const letterFormula = appSettings.showFormulaLetters ? displayFormula : ""
   const liveFormula = useMemo(
     () => appSettings.showFormulaNumbers && buildLiveFormula ? buildLiveFormula(vars) : "",
     [appSettings.showFormulaNumbers, buildLiveFormula, vars],
@@ -501,51 +499,46 @@ export function TeachableEquation({
     setMobilePanelState("peek")
   }, [isMobile, isNarrow, teachingPanelOpen, resolvedId])
 
-  const hookBlock = appSettings.showHookText ? (
-    <div className={`rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}>
-      {introFormulaVisible && (
-        <div className="mb-3 text-center text-sm text-slate-700 dark:text-slate-200">
-          <AutoFitDeferredInlineMath
-            math={displayFormula}
-            className="inline-block whitespace-nowrap"
-          />
+  const learnBlock = hasLearnSurface ? (
+    <div className={`rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${isMobile ? "px-3 py-2.5" : "px-3 py-3"}`}>
+      {appSettings.showHookText && (
+        <>
+          <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hookCopy}</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hookActionCopy}</p>
+        </>
+      )}
+      {formulaCardVisible && (
+        <div className={appSettings.showHookText ? "mt-3" : undefined}>
+          <ErrorBoundary fallback={<FormulaFallback />}>
+            <Suspense fallback={<FormulaFallback />}>
+              {buildLiveFormula ? (
+                <LiveFormula
+                  letterFormula={letterFormula}
+                  liveFormula={liveFormula}
+                  resultLine={resultLine}
+                  resultNote={resultNote}
+                  variables={formulaVariables}
+                  onVariableChange={setVar}
+                  compact={isMobile}
+                />
+              ) : displayFormula && appSettings.showFormulaLetters ? (
+                <LiveFormula
+                  letterFormula={displayFormula}
+                  liveFormula={displayFormula}
+                  variables={formulaVariables}
+                  onVariableChange={setVar}
+                  compact={isMobile}
+                />
+              ) : null}
+            </Suspense>
+          </ErrorBoundary>
         </div>
       )}
-      <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hookCopy}</p>
-      <p className="mt-1.5 text-xs font-bold text-ocean">{"\u2192"} {hookActionCopy}</p>
-    </div>
-  ) : null
-
-  const formulaBlock = formulaCardVisible ? (
-    <div className={`${isMobile ? "rounded-[20px] border border-ocean/25 px-3.5 py-3" : "rounded-xl border-2 px-4 py-4"} border-ocean/30 bg-white dark:border-ocean/40 dark:bg-slate-900`}>
-      <ErrorBoundary fallback={<FormulaFallback />}>
-        <Suspense fallback={<FormulaFallback />}>
-          {buildLiveFormula ? (
-            <LiveFormula
-              letterFormula={letterFormula}
-              liveFormula={liveFormula}
-              resultLine={resultLine}
-              resultNote={resultNote}
-              variables={formulaVariables}
-              onVariableChange={setVar}
-              compact={isMobile}
-            />
-          ) : displayFormula && appSettings.showFormulaLetters ? (
-            <LiveFormula
-              letterFormula={displayFormula}
-              liveFormula={displayFormula}
-              variables={formulaVariables}
-              onVariableChange={setVar}
-              compact={isMobile}
-            />
-          ) : null}
-        </Suspense>
-      </ErrorBoundary>
     </div>
   ) : null
 
   const variablesBlock = (
-    <Card className={isMobile ? "rounded-[20px]" : undefined}>
+    <Card className={isMobile ? "rounded-xl" : undefined}>
       <CardHeader className={isMobile ? "p-3 pb-1.5" : "p-3 pb-1"}>
         <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Variables</CardTitle>
       </CardHeader>
@@ -569,12 +562,12 @@ export function TeachableEquation({
   ) : null
 
   const lessonBlock = hasLessons && lessonMode ? (
-    <Card className={`${isMobile ? "rounded-[22px]" : ""} border-ocean/30 bg-ocean/5 dark:border-ocean/40 dark:bg-ocean/10`}>
-      <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3.5 pb-2.5" : "p-3 pb-2"}`}>
-        <CardTitle className="flex items-center gap-1.5 text-xs text-ocean">
-          <BookOpen className="h-3.5 w-3.5" /> Guided lesson
+    <Card className={`${isMobile ? "rounded-xl" : ""} border-slate-200 dark:border-slate-700`}>
+      <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3 pb-2" : "p-3 pb-2"}`}>
+        <CardTitle className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          Guided lesson
         </CardTitle>
-        <Button variant="ghost" size="xs" onClick={disableLessonMode} className={`${isMobile ? "min-h-[36px] rounded-full px-3 text-[11px]" : ""} text-ocean/60 hover:text-ocean`}>
+        <Button variant="ghost" size="xs" onClick={disableLessonMode} className={`${isMobile ? "min-h-[36px] rounded-full px-3 text-[11px]" : ""} text-slate-500 hover:text-slate-800 dark:hover:text-slate-200`}>
           Skip
         </Button>
       </CardHeader>
@@ -595,8 +588,8 @@ export function TeachableEquation({
   ) : null
 
   const restartLessonBlock = hasLessons && !lessonMode ? (
-    <Button variant="outline" className={`${isMobile ? "min-h-[46px] rounded-[18px]" : ""} w-full justify-start gap-2 border-dashed border-ocean/30 text-ocean`} onClick={restartLessonMode}>
-      <Sparkles className="h-3.5 w-3.5" /> Restart lesson
+    <Button variant="outline" className={`${isMobile ? "min-h-[44px] rounded-xl" : ""} w-full justify-start border-dashed text-slate-600 dark:text-slate-300`} onClick={restartLessonMode}>
+      Restart lesson
     </Button>
   ) : null
 
@@ -611,8 +604,7 @@ export function TeachableEquation({
       <div className="flex flex-1 flex-col gap-2 px-3 py-2.5 pb-24">
         {mobileTeachingTab === "learn" && (
           <>
-            {hookBlock}
-            {formulaBlock}
+            {learnBlock}
             {learnMoreBlock}
           </>
         )}
@@ -629,18 +621,13 @@ export function TeachableEquation({
           </>
         )}
       </div>
-      <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-2 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/92 dark:shadow-none">
+      <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-950/92">
         <div
           className="grid gap-2"
           style={{ gridTemplateColumns: `repeat(${mobileTabOrder.length}, minmax(0, 1fr))` }}
         >
           {mobileTabOrder.map((tab) => {
-            const tabMeta = tab === "learn"
-              ? { label: "Learn", icon: Sparkles }
-              : tab === "controls"
-                ? { label: "Controls", icon: SlidersHorizontal }
-                : { label: "Lesson", icon: BookOpen }
-            const Icon = tabMeta.icon
+            const label = tab === "learn" ? "Learn" : tab === "controls" ? "Controls" : "Lesson"
 
             return (
               <Button
@@ -649,12 +636,11 @@ export function TeachableEquation({
                 variant={mobileTeachingTab === tab ? "secondary" : "ghost"}
                 size="sm"
                 className={mobileTeachingTab === tab
-                  ? "min-h-[44px] rounded-2xl bg-slate-900 text-white shadow-sm hover:bg-slate-900/95 dark:bg-white dark:text-slate-950 dark:hover:bg-white"
-                  : "min-h-[44px] rounded-2xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}
+                  ? "min-h-[44px] rounded-xl bg-slate-900 text-white hover:bg-slate-900/95 dark:bg-white dark:text-slate-950 dark:hover:bg-white"
+                  : "min-h-[44px] rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}
                 onClick={() => setMobileTeachingTab(tab)}
               >
-                <Icon className="h-3.5 w-3.5" />
-                {tabMeta.label}
+                {label}
               </Button>
             )
           })}
@@ -662,9 +648,8 @@ export function TeachableEquation({
       </div>
     </div>
   ) : (
-    <div className={`native-scroll flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2.5 pl-2"}`}>
-      {hookBlock}
-      {formulaBlock}
+    <div className={`native-scroll flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2 pl-2 pr-1"}`}>
+      {learnBlock}
       {variablesBlock}
       {presetsBlock}
       {lessonBlock}
@@ -727,7 +712,7 @@ export function TeachableEquation({
               setTeachingPanelOpen(true)
               setMobilePanelState("peek")
             }}
-            className="mb-1 flex-shrink-0 self-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            className="mb-1 flex-shrink-0 self-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             type="button"
             aria-label="Open teaching panel"
           >
@@ -738,7 +723,7 @@ export function TeachableEquation({
           </button>
         ) : (
           <div
-            className="flex-shrink-0 rounded-t-[28px] border border-b-0 border-slate-200 bg-white shadow-[0_-10px_35px_rgba(15,23,42,0.08)] transition-[max-height] duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
+            className="flex-shrink-0 rounded-t-xl border border-b-0 border-slate-200 bg-white transition-[max-height] duration-300 ease-out dark:border-slate-700 dark:bg-slate-900"
             style={{ maxHeight: panelMaxHeight, overflowY: "auto" }}
           >
             <div

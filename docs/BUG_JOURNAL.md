@@ -263,6 +263,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-09-13 · Home cards were dark-on-dark; teaching column stacked two formula boxes
+Symptom: Subject tiles were always `bg-slate-900` (invisible on dark canvas) with decorative Lucide icons; the teaching column showed hook formula + live formula as two cards.
+Cause: leftover "featured dark tile" styling; hook and formula were separate blocks even when both were on.
+Fix: theme-aware hairline cards, numbered subjects not icons (`HomePage.tsx`); one `learnBlock` in `TeachableEquation.tsx`; drop `shadow-sm` from `Card`.
+Lesson: canvas/card contrast is a token-layer job. Don't ship a dark tile as the default card in both themes.
+
 ### 2026-09-13 · Equation chrome clipped titles, wrapped live formula, Formulas/Sciencebouk split
 Symptom: Sidebar titles hard-cut at 220px; live KaTeX wrapped mid-equation in the 272px teaching column; chrome said "Formulas" while auth + domain said Sciencebouk.
 Cause: Flex title had `truncate` without `min-w-0`; live formula used `text-2xl` without nowrap/fit; product name was hardcoded in five chrome surfaces.
