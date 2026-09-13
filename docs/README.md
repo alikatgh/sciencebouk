@@ -23,6 +23,8 @@ already documented.
 - **`2026-06-23-branch-review-security.md`** (+ `.raw.json`): the 10-dimension
   multi-agent review + security audit of this feature branch, with remediation
   status. Verdict: **APPROVED**, all findings triaged.
+- **Rounds r7–r9 (2026-07-06):** docs, research, and API-contract follow-ups.
+  Ledger: [`audits/ROUND-STATUS.md`](audits/ROUND-STATUS.md).
 
 > These are internal working artifacts (AI-assisted, dated). They are not user
 > documentation; the README/CONTRIBUTING at the repo root cover setup and usage.
