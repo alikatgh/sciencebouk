@@ -109,16 +109,6 @@ section .katex {
 }
 
 @layer components {
-  .glass-panel {
-    @apply rounded-[28px] border border-stone-200 bg-white/90 shadow-panel backdrop-blur dark:border-slate-700 dark:bg-slate-800/90;
-  }
-
-  .soft-ring {
-    box-shadow:
-      0 0 0 6px rgba(27, 141, 99, 0.08),
-      0 20px 40px rgba(32, 56, 47, 0.12);
-  }
-
   .animate-fade-in {
     animation: formulas-fade-in calc(220ms * var(--animation-speed, 1)) ease-out both;
   }

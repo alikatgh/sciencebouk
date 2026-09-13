@@ -263,6 +263,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-09-13 · Unused glass-panel / soft-ring CSS + leftover shadow-panel token
+Symptom: Working tree had comment-only "box-shadow removed per UI rules" edits on classes nothing imported.
+Cause: `.glass-panel` and `.soft-ring` lived only in `index.css`; `shadow-panel` existed only to feed `.glass-panel`.
+Fix: deleted both classes (`index.css`); dropped unused `boxShadow.panel` (`tailwind.config.ts`); restored live slider-thumb shadows.
+Lesson: a design-rules pass on unused CSS is still unused CSS. Grep the class name before restyling it.
+
 ### 2026-09-13 · Pythagoras a/b/c labels stacked inside the triangle
 Symptom: On `/equation/1` the live 3-4-5 figure showed `a = 3`, `b = 4`, and `c = 5.0` piled on top of each other in the triangle interior.
 Cause: `updateGeometry` offset every side label toward the incenter by `max(20, s * 0.8)` — as the figure scaled, all three labels converged.
