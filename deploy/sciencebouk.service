@@ -1,0 +1,26 @@
+[Unit]
+Description=Sciencebouk interactive education API
+Wants=network-online.target shared-egress-limit.service
+After=network-online.target postgresql.service shared-egress-limit.service
+
+[Service]
+User=sciencebouk
+Group=sciencebouk
+WorkingDirectory=/home/sciencebouk/app/backend
+EnvironmentFile=/home/sciencebouk/state/production.env
+ExecStart=/home/sciencebouk/venv/bin/gunicorn formulas_backend.wsgi:application --bind 127.0.0.1:8015 --workers 1 --threads 2 --timeout 30 --access-logfile - --error-logfile -
+Restart=on-failure
+RestartSec=5
+MemoryHigh=448M
+MemoryMax=512M
+CPUQuota=50%
+TasksMax=64
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/sciencebouk/state
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target
