@@ -54,11 +54,12 @@ class Migration(migrations.Migration):
             name='presets_data',
             field=models.JSONField(blank=True, default=list, help_text='Preset value configurations'),
         ),
-        # Add slug without unique first so data migration can run
+        # Defer indexes too: PostgreSQL would otherwise queue a pattern index
+        # here and create the same index again when uniqueness is added.
         migrations.AddField(
             model_name='equation',
             name='slug',
-            field=models.SlugField(blank=True, max_length=200, default=''),
+            field=models.SlugField(blank=True, max_length=200, default='', db_index=False),
         ),
         migrations.AddField(
             model_name='equation',

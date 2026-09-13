@@ -491,3 +491,19 @@ When you fix one, move it up into the Chronological log with its commit SHA.
 4. Commit the fix + the journal entry **together**. Same SHA.
 
 Skip step 2 and the journal decays. Don't.
+
+### 2026-09-13 — PostgreSQL first-deploy slug migration
+
+- Reproduced migration 0007 failing on PostgreSQL 16 with duplicate relation
+  `courses_equation_slug_36cca451_like`. SlugField initially queued a normal
+  pattern index; adding uniqueness in the same migration created it again.
+- The intermediate field now has db_index=False. The final unique SlugField is
+  unchanged. Already-applied installations require no schema change.
+- Added a populated migration regression: duplicate titles receive distinct
+  slugs, rows survive, and the final uniqueness constraint rejects duplicates.
+  Passed on SQLite and a dedicated PostgreSQL test database. Fresh production
+  migration chain then completed; Django deployment checks found no issues.
+- Before this patch, 281 backend tests passed (one skipped). Frontend production
+  build passed. Of 167 frontend tests, four expected the local test API URL but
+  inherited the production build URL. The affected six-test file passed when
+  rerun without the deployment URL override; other 161 tests had passed.
