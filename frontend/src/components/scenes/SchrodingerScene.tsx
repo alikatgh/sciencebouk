@@ -13,6 +13,30 @@ import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 
 const F = "Manrope, sans-serif"
+const L_MAX = 2
+const OCEAN = "#4f73ff"
+const PROB = "#10b981"
+
+export function particleEnergy(n: number, L: number): number {
+  return (n * n * Math.PI * Math.PI) / (2 * L * L)
+}
+
+/** Map box width L onto a plot whose domain is always [0, L_MAX]. */
+export function wallX(L: number, plotLeft: number, plotRight: number): number {
+  const t = Math.max(0, Math.min(1, L / L_MAX))
+  return plotLeft + t * (plotRight - plotLeft)
+}
+
+function scenePalette(dark: boolean) {
+  return {
+    ink: dark ? "#e2e8f0" : "#1e293b",
+    muted: dark ? "#94a3b8" : "#64748b",
+    faint: dark ? "#64748b" : "#94a3b8",
+    hair: dark ? "#334155" : "#e2e8f0",
+    forbidden: dark ? "rgba(148,163,184,0.16)" : "rgba(15,23,42,0.06)",
+    plot: dark ? "rgba(15,23,42,0.35)" : "transparent",
+  }
+}
 
 const variables: Variable[] = [
   { name: 'n', symbol: 'n', latex: 'n', value: 1, min: 1, max: 5, step: 1, color: VAR_COLORS.primary, description: 'Quantum number (energy level)' },
@@ -68,11 +92,11 @@ export function SchrodingerScene(): ReactElement {
       variables={variables}
       lessonSteps={lessons}
       buildLiveFormula={(v) => {
-        const energy = (v.n * v.n * Math.PI * Math.PI) / (2 * v.L * v.L)
+        const energy = particleEnergy(v.n, v.L)
         return `E_{{\\color{#3b82f6}${v.n}}} = \\frac{{\\color{#3b82f6}${v.n}}^2 \\pi^2 \\hbar^2}{2m \\cdot {\\color{#f59e0b}${v.L.toFixed(1)}}^2} = {\\color{#ef4444}${energy.toFixed(2)}}`
       }}
       buildResultLine={(v) => {
-        const energy = (v.n * v.n * Math.PI * Math.PI) / (2 * v.L * v.L)
+        const energy = particleEnergy(v.n, v.L)
         return interpolateSceneCopy(sceneCopy.resultLine.energy, {
           n: v.n,
           energy: energy.toFixed(2),
@@ -117,40 +141,23 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
 
-  // Live values during drag — bypasses React render cycle for 60fps SVG
   const liveRef = useRef({ n: quantumN, L: wellWidth })
   const draggingRef = useRef(false)
-
-  // Store the geometry update function so external effects can call it
   const updateRef = useRef<((n: number, L: number) => void) | null>(null)
-
-  // Animation state — all in refs so the animation loop never needs React deps
   const playingRef = useRef(true)
   const timeRef = useRef(0)
   const rafRef = useRef(0)
   const lastTimeRef = useRef(0)
-
-  // Store the wave-only update function for the animation loop
   const updateWaveRef = useRef<((time: number) => void) | null>(null)
-
-  // Store the play/pause visual update function
   const updatePlayBtnRef = useRef<((isPlaying: boolean) => void) | null>(null)
-
-  // yScale invert ref so the drag handler can use accurate energy→n mapping
-  // Updated inside updateGeometry on every geometry rebuild
   const yScaleInvertRef = useRef<((y: number) => number) | null>(null)
 
-  // Sync React props -> SVG when not dragging (handles presets, lesson steps)
   useEffect(() => {
     if (draggingRef.current) return
     liveRef.current = { n: quantumN, L: wellWidth }
     updateRef.current?.(quantumN, wellWidth)
   }, [quantumN, wellWidth])
 
-  // ═══════════════════════════════════════════════════════════════
-  // Main SVG — created ONCE, rebuilt only on container resize.
-  // Drag updates go through updateGeometry() directly, not React.
-  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -169,23 +176,23 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       currentW = W
       currentH = H
 
-      // Wave plot dimensions — proportional to container W/H
-      const wavePlotLeft = W * 0.07
-      const wavePlotRight = W * 0.58
-      const wavePlotTop = H * 0.19
-      const wavePlotBottom = H * 0.72
-      const wavePlotMidY = (wavePlotTop + wavePlotBottom) / 2
-
-      // Energy diagram dimensions — proportional to container W/H
-      const energyLeft = W * 0.63
-      const energyRight = W * 0.93
-      const energyTop = H * 0.19
-      const energyBottom = H * 0.72
-
+      const dark = document.documentElement.classList.contains("dark")
+      const pal = scenePalette(dark)
       const compact = W < 500 || H < 430
       const ultraCompact = W < 410 || H < 380
-      const fontSize = Math.max(12, Math.min(18, H / 28))
-      const fontSizeSm = Math.max(10, Math.min(15, H / 32))
+      const fontSizeSm = Math.max(10, Math.min(13, H / 38))
+
+      const pad = Math.max(16, W * 0.028)
+      const controlBand = Math.max(40, Math.min(52, H * 0.12))
+      const gap = Math.max(16, W * 0.024)
+      const energyW = Math.max(132, Math.min(W * 0.28, 240))
+      const plotLeft = pad
+      const plotRight = W - pad - energyW - gap
+      const plotTop = pad + 8
+      const plotBottom = H - controlBand
+      const energyLeft = plotRight + gap
+      const energyRight = W - pad
+      const plotMidY = (plotTop + plotBottom) / 2
 
       const svg = select(el)
         .append("svg")
@@ -193,190 +200,131 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("height", H)
         .style("display", "block")
         .attr("role", "img")
-        .attr("aria-label", "Particle in a Box -- Schrodinger equation visualization")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#f8fbff")
+        .attr("aria-label", "Particle in a box — Schrödinger equation visualization")
 
       const g = svg.append("g")
 
-      // Title
-      g.append("text").attr("x", W / 2).attr("y", H * 0.07).attr("text-anchor", "middle")
-        .attr("font-size", Math.max(14, Math.min(22, H / 22))).attr("fill", "#1e293b").attr("font-family", "Newsreader, serif").attr("font-weight", 700)
-        .text(compact ? "Quantum Box" : "Particle in a Box")
+      g.append("rect")
+        .attr("x", plotLeft)
+        .attr("y", plotTop)
+        .attr("width", plotRight - plotLeft)
+        .attr("height", plotBottom - plotTop)
+        .attr("fill", pal.plot)
 
-      // Wave function plot background
-      const wavePad = W * 0.012
-      g.append("rect").attr("class", "wave-bg")
-        .attr("x", wavePlotLeft - wavePad).attr("y", wavePlotTop - wavePad * 1.6).attr("width", wavePlotRight - wavePlotLeft + wavePad * 2).attr("height", wavePlotBottom - wavePlotTop + wavePad * 3.2)
-        .attr("rx", 16).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
+      g.append("rect").attr("class", "forbidden")
+        .attr("y", plotTop)
+        .attr("height", plotBottom - plotTop)
+        .attr("fill", pal.forbidden)
 
-      // Potential walls
       g.append("line").attr("class", "wall-left")
-        .attr("x1", wavePlotLeft).attr("y1", wavePlotTop).attr("x2", wavePlotLeft).attr("y2", wavePlotBottom)
-        .attr("stroke", "#1e293b").attr("stroke-width", 4)
+        .attr("x1", plotLeft).attr("y1", plotTop).attr("x2", plotLeft).attr("y2", plotBottom)
+        .attr("stroke", pal.ink).attr("stroke-width", 3)
       g.append("line").attr("class", "wall-right")
-        .attr("x1", wavePlotRight).attr("y1", wavePlotTop).attr("x2", wavePlotRight).attr("y2", wavePlotBottom)
-        .attr("stroke", "#1e293b").attr("stroke-width", 4)
+        .attr("y1", plotTop).attr("y2", plotBottom)
+        .attr("stroke", pal.ink).attr("stroke-width", 3)
 
-      // Draggable right wall handle
       const wallHandle = g.append("g").attr("class", "wall-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
       wallHandle.append("rect")
-        .attr("x", -15).attr("y", wavePlotTop)
-        .attr("width", 30).attr("height", wavePlotBottom - wavePlotTop)
+        .attr("x", -14).attr("y", plotTop)
+        .attr("width", 28).attr("height", plotBottom - plotTop)
         .attr("fill", "transparent")
       wallHandle.append("line")
-        .attr("y1", wavePlotTop).attr("y2", wavePlotBottom)
-        .attr("stroke", "#f59e0b").attr("stroke-width", 6).attr("stroke-linecap", "round").attr("opacity", 0.5)
+        .attr("y1", plotTop).attr("y2", plotBottom)
+        .attr("stroke", OCEAN).attr("stroke-width", 3).attr("stroke-linecap", "round").attr("opacity", 0)
       wallHandle.append("text").attr("class", "wall-drag-label")
-        .attr("y", wavePlotTop - 8).attr("text-anchor", "middle")
-        .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#f59e0b")
-        .text(ultraCompact ? "L" : "drag L")
+        .attr("y", plotTop - 6).attr("text-anchor", "middle")
+        .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.muted)
 
-      const wallXScale = scaleLinear().domain([0.5, 2.0]).range([
-        wavePlotLeft + (wavePlotRight - wavePlotLeft) * 0.25,
-        wavePlotLeft + (wavePlotRight - wavePlotLeft) * 1.0,
-      ])
-      const waveXScale = scaleLinear().range([wavePlotLeft, wavePlotRight])
-      const psiYScale = scaleLinear().range([wavePlotBottom, wavePlotTop])
-      const probYScale = scaleLinear().range([wavePlotBottom, wavePlotTop])
+      const waveXScale = scaleLinear().domain([0, L_MAX]).range([plotLeft, plotRight])
+      const psiYScale = scaleLinear().range([plotBottom, plotTop])
+      const probYScale = scaleLinear().range([plotBottom, plotTop])
       const psiPathGen = line<number>().x((point) => waveXScale(point))
-      const probAreaGen = d3area<number>().x((point) => waveXScale(point)).y0(wavePlotBottom)
+      const probAreaGen = d3area<number>().x((point) => waveXScale(point)).y0(plotBottom)
       const probLineGen = line<number>().x((point) => waveXScale(point))
       let waveXs = range(0, liveRef.current.L + 0.001, liveRef.current.L / 200)
 
-      // Draggable quantum number handle on energy diagram
       const nHandle = g.append("g").attr("class", "n-drag-handle").style("cursor", "ns-resize").style("touch-action", "none")
-      nHandle.append("rect")
-        .attr("x", -20).attr("y", -15).attr("width", 40).attr("height", 30)
-        .attr("fill", "transparent")
-      nHandle.append("circle").attr("r", 8)
-        .attr("fill", "#3b82f6").attr("stroke", "white").attr("stroke-width", 2)
-      nHandle.append("text").attr("class", "n-handle-label")
-        .attr("x", 16).attr("y", 4)
-        .attr("font-size", 12).attr("font-family", F).attr("font-weight", 700).attr("fill", "#3b82f6")
+      nHandle.append("rect").attr("x", -18).attr("y", -14).attr("width", 36).attr("height", 28).attr("fill", "transparent")
+      nHandle.append("circle").attr("r", 5).attr("fill", OCEAN).attr("stroke", "white").attr("stroke-width", 2)
 
-      // Wall labels
-      g.append("text").attr("x", wavePlotLeft).attr("y", wavePlotBottom + H * 0.047)
-        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("fill", "#64748b").attr("font-family", F).text(ultraCompact ? "0" : "x=0")
-      g.append("text").attr("class", "wall-right-label").attr("y", wavePlotBottom + H * 0.047)
-        .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("fill", "#64748b").attr("font-family", F).text(ultraCompact ? "L" : "x=L")
+      g.append("text").attr("x", plotLeft + 6).attr("y", plotBottom - 8)
+        .attr("text-anchor", "start").attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F)
+        .text("x = 0")
+      g.append("text").attr("class", "wall-right-label").attr("y", plotBottom - 8)
+        .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F)
 
-      // Midline
       g.append("line").attr("class", "midline")
-        .attr("x1", wavePlotLeft).attr("y1", wavePlotMidY).attr("x2", wavePlotRight).attr("y2", wavePlotMidY)
-        .attr("stroke", "#e2e8f0").attr("stroke-width", 1).attr("stroke-dasharray", "4 4")
+        .attr("x1", plotLeft).attr("y1", plotMidY).attr("x2", plotRight).attr("y2", plotMidY)
+        .attr("stroke", pal.hair).attr("stroke-width", 1).attr("stroke-dasharray", "4 4")
 
-      // Probability area
-      g.append("path").attr("class", "prob-area").attr("fill", "#10b981").attr("opacity", 0.15)
+      g.append("path").attr("class", "prob-area").attr("fill", PROB).attr("opacity", 0.15)
+      g.append("path").attr("class", "prob-line").attr("fill", "none").attr("stroke", PROB).attr("stroke-width", 2)
+      g.append("path").attr("class", "psi-path").attr("fill", "none").attr("stroke", OCEAN).attr("stroke-width", 2.5)
 
-      // Probability line
-      g.append("path").attr("class", "prob-line").attr("fill", "none").attr("stroke", "#10b981").attr("stroke-width", 2)
+      const legendY = plotTop + 16
+      g.append("line").attr("x1", plotLeft + 10).attr("y1", legendY).attr("x2", plotLeft + 28).attr("y2", legendY)
+        .attr("stroke", OCEAN).attr("stroke-width", 2.5)
+      g.append("text").attr("x", plotLeft + 32).attr("y", legendY + 4)
+        .attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F).text(compact ? "\u03C8" : "\u03C8(x, t)")
+      g.append("line").attr("x1", plotLeft + 96).attr("y1", legendY).attr("x2", plotLeft + 114).attr("y2", legendY)
+        .attr("stroke", PROB).attr("stroke-width", 2)
+      g.append("text").attr("x", plotLeft + 118).attr("y", legendY + 4)
+        .attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F).text(compact ? "|\u03C8|\u00B2" : "|\u03C8(x)|\u00B2")
 
-      // Wave function path
-      g.append("path").attr("class", "psi-path").attr("fill", "none").attr("stroke", "#3b82f6").attr("stroke-width", 3)
+      g.append("text").attr("x", energyLeft).attr("y", plotTop - 6)
+        .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.muted)
+        .attr("text-anchor", "start")
+        .text(ultraCompact ? "E" : "Energy")
 
-      // Legend
-      const legendOff1 = W * 0.012
-      const legendOff2 = W * 0.045
-      const legendOff3 = W * 0.05
-      const legendOff4 = W * 0.135
-      const legendOff5 = W * 0.17
-      const legendOff6 = W * 0.175
-      g.append("line").attr("x1", wavePlotLeft + legendOff1).attr("y1", wavePlotTop - 6).attr("x2", wavePlotLeft + legendOff2).attr("y2", wavePlotTop - 6)
-        .attr("stroke", "#3b82f6").attr("stroke-width", 3)
-      g.append("text").attr("x", wavePlotLeft + legendOff3).attr("y", wavePlotTop - 2)
-        .attr("font-size", fontSizeSm).attr("fill", "#3b82f6").attr("font-family", F).attr("font-weight", 600).text(compact ? "\u03C8" : "\u03C8(x,t)")
-      g.append("line").attr("x1", wavePlotLeft + legendOff4).attr("y1", wavePlotTop - 6).attr("x2", wavePlotLeft + legendOff5).attr("y2", wavePlotTop - 6)
-        .attr("stroke", "#10b981").attr("stroke-width", 2)
-      g.append("text").attr("x", wavePlotLeft + legendOff6).attr("y", wavePlotTop - 2)
-        .attr("font-size", fontSizeSm).attr("fill", "#10b981").attr("font-family", F).attr("font-weight", 600).text(ultraCompact ? "P" : compact ? "|\u03C8|\u00B2" : "|\u03C8(x)|\u00B2")
-
-      // Energy level diagram background
-      const ePad = W * 0.012
-      g.append("rect")
-        .attr("x", energyLeft - ePad).attr("y", energyTop - ePad * 1.6).attr("width", energyRight - energyLeft + ePad * 2).attr("height", energyBottom - energyTop + ePad * 3.2)
-        .attr("rx", 16).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-
-      g.append("text").attr("x", (energyLeft + energyRight) / 2).attr("y", energyTop - 2)
-        .attr("text-anchor", "middle").attr("font-size", fontSize).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
-        .text(ultraCompact ? "E" : compact ? "Levels" : "Energy Levels")
-
-      // Energy axis
-      const eAxisOff = W * 0.012
       g.append("line").attr("class", "energy-axis")
-        .attr("x1", energyLeft + eAxisOff).attr("y1", energyBottom).attr("x2", energyLeft + eAxisOff).attr("y2", energyTop + H * 0.023)
-        .attr("stroke", "#cbd5e1").attr("stroke-width", 1.5)
+        .attr("x1", energyLeft).attr("y1", plotBottom).attr("x2", energyLeft).attr("y2", plotTop)
+        .attr("stroke", pal.hair).attr("stroke-width", 1)
 
-      // Energy level lines + labels (5 levels)
       for (let n = 1; n <= 5; n++) {
         g.append("line").attr("class", `elevel-line-${n}`)
-          .attr("stroke", "#94a3b8").attr("stroke-width", 1.5)
+          .attr("stroke", pal.faint).attr("stroke-width", 1.5)
         g.append("text").attr("class", `elevel-n-${n}`)
-          .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 500).attr("fill", "#64748b")
+          .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 500).attr("fill", pal.muted)
         g.append("text").attr("class", `elevel-val-${n}`)
-          .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#94a3b8")
-        g.append("circle").attr("class", `elevel-dot-${n}`)
-          .attr("r", Math.max(3, W * 0.006)).attr("fill", "#ef4444").attr("opacity", 0)
+          .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", pal.faint)
       }
 
-      // Values panel
-      const vpX = W * 0.47
-      const vpY = H * 0.81
-      const vpW = W * 0.51
-      const vpH = H * 0.19
-      g.append("rect").attr("class", "values-bg")
-        .attr("x", vpX).attr("y", vpY).attr("width", vpW).attr("height", vpH).attr("rx", 14)
-        .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-      g.append("text").attr("class", "val-n-label")
-        .attr("x", vpX + vpW * 0.04).attr("y", vpY + vpH * 0.32).attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#1e293b")
-      g.append("text").attr("class", "val-L-label")
-        .attr("x", vpX + vpW * 0.39).attr("y", vpY + vpH * 0.32).attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#1e293b")
-      g.append("text").attr("class", "val-energy-label")
-        .attr("x", vpX + vpW * 0.04).attr("y", vpY + vpH * 0.75).attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#ef4444")
+      g.append("text").attr("class", "energy-current")
+        .attr("x", energyRight).attr("y", plotTop - 6)
+        .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.ink)
 
-      // D3 buttons inside SVG: quantum number selector + play/pause
-      const btnStep = ultraCompact ? 29 : compact ? 32 : 36
-      const btnWidth = ultraCompact ? 24 : compact ? 26 : 30
-      const playButtonWidth = ultraCompact ? 50 : compact ? 58 : 70
-      const btnBaseY = H - 38
+      const btnStep = ultraCompact ? 30 : 34
+      const btnSize = 28
+      const btnY = H - controlBand + 10
       for (let n = 1; n <= 5; n++) {
         const nbg = g.append("g").attr("class", `n-btn-${n}`).style("cursor", "pointer")
-          .attr("transform", `translate(${14 + (n - 1) * btnStep}, ${btnBaseY})`)
-        nbg.append("rect").attr("class", `n-btn-bg-${n}`).attr("width", btnWidth).attr("height", 26).attr("rx", 8)
-          .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-        nbg.append("text").attr("x", btnWidth / 2).attr("y", 17).attr("text-anchor", "middle")
-          .attr("font-size", 12).attr("font-family", F).attr("font-weight", 700).attr("fill", "#64748b")
+          .attr("transform", `translate(${plotLeft + (n - 1) * btnStep}, ${btnY})`)
+        nbg.append("rect").attr("class", `n-btn-bg-${n}`).attr("width", btnSize).attr("height", btnSize).attr("rx", 8)
+          .attr("fill", "transparent").attr("stroke", pal.hair).attr("stroke-width", 1.5)
+        nbg.append("text").attr("x", btnSize / 2).attr("y", 18).attr("text-anchor", "middle")
+          .attr("font-size", 12).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.muted)
           .text(String(n))
         nbg.on("click", () => {
           liveRef.current.n = n
           updateGeometry(n, liveRef.current.L)
-          onVarChangeRef.current('n', n)
+          onVarChangeRef.current("n", n)
         })
       }
+      g.append("text").attr("x", plotLeft).attr("y", btnY - 6)
+        .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.muted)
+        .text("n")
 
-      // n label
-      g.append("text").attr("x", 14).attr("y", btnBaseY - 6)
-        .attr("font-size", 11).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text(ultraCompact ? "n" : "n:")
-
-      // Play/pause button
+      const playW = ultraCompact ? 52 : 64
       const playBtnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
-        .attr("transform", `translate(${14 + 5 * btnStep + 10}, ${btnBaseY})`)
-      playBtnG.append("rect").attr("class", "play-btn-bg").attr("width", playButtonWidth).attr("height", 26).attr("rx", 13)
-        .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
-      playBtnG.append("text").attr("class", "play-btn-text").attr("x", playButtonWidth / 2).attr("y", 17).attr("text-anchor", "middle")
-        .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
-        .text(
-          ultraCompact
-            ? sceneCopy.ui.playButton.ultraCompactPaused
-            : compact
-              ? sceneCopy.ui.playButton.compactPlaying
-              : sceneCopy.ui.playButton.fullPlaying,
-        )
+        .attr("transform", `translate(${plotLeft + 5 * btnStep + 8}, ${btnY})`)
+      playBtnG.append("rect").attr("class", "play-btn-bg").attr("width", playW).attr("height", btnSize).attr("rx", 8)
+        .attr("fill", "transparent").attr("stroke", pal.hair).attr("stroke-width", 1.5)
+      playBtnG.append("text").attr("class", "play-btn-text").attr("x", playW / 2).attr("y", 18).attr("text-anchor", "middle")
+        .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.muted)
+        .text(sceneCopy.ui.playButton.fullPaused)
       playBtnG.on("click", () => {
         playingRef.current = !playingRef.current
         if (playingRef.current) {
-          // Cancel any previous loop before starting a new one
           cancelAnimationFrame(rafRef.current)
           lastTimeRef.current = 0
           rafRef.current = requestAnimationFrame(animateLoop)
@@ -390,11 +338,10 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         const L = liveRef.current.L
 
         const norm = Math.sqrt(2 / L)
-        const energy = (n * n * Math.PI * Math.PI) / (2 * L * L)
+        const energy = particleEnergy(n, L)
         const omega = energy * 2
 
         const psiMax = norm
-        waveXScale.domain([0, L])
         psiYScale.domain([-psiMax * 1.1, psiMax * 1.1])
         probYScale.domain([0, psiMax * psiMax * 1.1])
 
@@ -428,97 +375,76 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
 
       // ── updateGeometry: repositions all static elements from n, L WITHOUT React ──
       function updateGeometry(nVal: number, LVal: number) {
-        const dur = 160
         waveXs = range(0, LVal + 0.001, LVal / 200)
 
-        const energyLevels = range(1, 6).map(n => ({
+        const energyLevels = range(1, 6).map((n) => ({
           n,
-          energy: (n * n * Math.PI * Math.PI) / (2 * LVal * LVal),
+          energy: particleEnergy(n, LVal),
         }))
 
         const maxE = energyLevels[4].energy
-        const yScale = scaleLinear().domain([0, maxE * 1.1]).range([energyBottom, energyTop + H * 0.023])
+        const yScale = scaleLinear().domain([0, maxE * 1.1]).range([plotBottom - 22, plotTop + 10])
         yScaleInvertRef.current = (y: number) => yScale.invert(y)
 
-        const currentEnergy = (nVal * nVal * Math.PI * Math.PI) / (2 * LVal * LVal)
+        const currentEnergy = particleEnergy(nVal, LVal)
+        const rightX = wallX(LVal, plotLeft, plotRight)
 
-        // Update wall-right label position
-        g.select(".wall-right-label").attr("x", wavePlotRight)
+        g.select(".wall-right")
+          .attr("x1", rightX).attr("x2", rightX)
+        g.select(".forbidden")
+          .attr("x", rightX)
+          .attr("width", Math.max(0, plotRight - rightX))
+        g.select(".wall-right-label")
+          .attr("x", rightX - 6)
+          .text("x = L")
+        g.select(".midline").attr("x2", rightX)
 
-        // Energy levels
         for (const { n, energy } of energyLevels) {
           const y = yScale(energy)
           const isSelected = n === nVal
-
-          const eW = energyRight - energyLeft
           g.select(`.elevel-line-${n}`)
-            .transition().duration(dur)
-            .attr("x1", energyLeft + eW * 0.077).attr("y1", y)
-            .attr("x2", energyRight - eW * 0.077).attr("y2", y)
-            .attr("stroke", isSelected ? "#ef4444" : "#94a3b8")
-            .attr("stroke-width", isSelected ? 3 : 1.5)
-
+            .attr("x1", energyLeft + 8).attr("y1", y)
+            .attr("x2", energyRight).attr("y2", y)
+            .attr("stroke", isSelected ? OCEAN : pal.faint)
           g.select(`.elevel-n-${n}`)
-            .transition().duration(dur)
-            .attr("x", energyLeft + eW * 0.038).attr("y", y - 6)
-            .attr("fill", isSelected ? "#ef4444" : "#64748b")
+            .attr("x", energyLeft + 10).attr("y", y - 5)
+            .attr("fill", isSelected ? OCEAN : pal.muted)
             .attr("font-weight", isSelected ? 700 : 500)
-            .text(ultraCompact ? `n${n}` : `n=${n}`)
-
+            .text(`n=${n}`)
           g.select(`.elevel-val-${n}`)
-            .transition().duration(dur)
-            .attr("x", energyRight - eW * 0.038).attr("y", y - 6)
-            .attr("fill", isSelected ? "#ef4444" : "#94a3b8")
-            .attr("opacity", (compact || ultraCompact) && !isSelected ? 0 : 1)
+            .attr("x", energyRight).attr("y", y - 5)
+            .attr("fill", isSelected ? pal.ink : pal.faint)
+            .attr("opacity", compact && !isSelected ? 0 : 1)
             .text(energy.toFixed(1))
-
-          g.select(`.elevel-dot-${n}`)
-            .transition().duration(dur)
-            .attr("cx", energyLeft + eW * 0.062).attr("cy", y)
-            .attr("opacity", isSelected ? 1 : 0)
         }
 
-        // Position wall drag handle at the right wall
-        const wallX = wallXScale(LVal)
-        g.select(".wall-drag-handle").transition().duration(dur)
-          .attr("transform", `translate(${wallX},0)`)
-        g.select(".wall-drag-label").text(ultraCompact ? `L ${LVal.toFixed(1)}` : `L=${LVal.toFixed(1)}`)
+        g.select(".wall-drag-handle").attr("transform", `translate(${rightX},0)`)
+        g.select(".wall-drag-label").text(`L=${LVal.toFixed(1)}`)
 
-        // Position n drag handle at current energy level
         const currentY = yScale(currentEnergy)
-        g.select(".n-drag-handle").transition().duration(dur)
-          .attr("transform", `translate(${energyLeft + (energyRight - energyLeft) * 0.062},${currentY})`)
-        g.select(".n-handle-label").text(ultraCompact ? `n${nVal}` : `n=${nVal}`)
+        g.select(".n-drag-handle").attr("transform", `translate(${energyLeft},${currentY})`)
 
-        // Values panel
-        g.select(".val-n-label").text(ultraCompact ? `n ${nVal}` : `n = ${nVal}`)
-        g.select(".val-L-label").text(ultraCompact ? `L ${LVal.toFixed(1)}` : `L = ${LVal.toFixed(1)}`)
-        g.select(".val-energy-label").text(
-          ultraCompact || compact
-            ? interpolateSceneCopy(sceneCopy.ui.energyLabel.compact, { n: nVal, energy: currentEnergy.toFixed(2) })
-            : interpolateSceneCopy(sceneCopy.ui.energyLabel.full, { n: nVal, energy: currentEnergy.toFixed(2) }),
+        g.select(".energy-current").text(
+          interpolateSceneCopy(sceneCopy.ui.energyLabel.compact, { n: nVal, energy: currentEnergy.toFixed(2) }),
         )
 
-        // Update D3 quantum number button appearances
         for (let n = 1; n <= 5; n++) {
           g.select(`.n-btn-bg-${n}`)
-            .attr("fill", n === nVal ? "#4f73ff" : "white")
-            .attr("stroke", n === nVal ? "#4f73ff" : "#e2e8f0")
+            .attr("fill", n === nVal ? OCEAN : "transparent")
+            .attr("stroke", n === nVal ? OCEAN : pal.hair)
           g.select(`.n-btn-${n} text`)
-            .attr("fill", n === nVal ? "white" : "#64748b")
+            .attr("fill", n === nVal ? "white" : pal.muted)
         }
 
-        // Also update wave immediately (for static/paused state)
         updateWaveFunction(timeRef.current)
       }
 
-      // ── updatePlayBtn: toggles play/pause button visuals ──
       function updatePlayBtn(isPlaying: boolean) {
         g.select(".play-btn-bg")
-          .attr("fill", isPlaying ? "#059669" : "white")
-          .attr("stroke", isPlaying ? "#059669" : "#e2e8f0")
+          .attr("fill", isPlaying ? OCEAN : "transparent")
+          .attr("stroke", isPlaying ? OCEAN : pal.hair)
         g.select(".play-btn-text")
-          .attr("fill", isPlaying ? "white" : "#64748b")
+          .attr("fill", isPlaying ? "white" : pal.muted)
           .text(
             ultraCompact
               ? (isPlaying ? sceneCopy.ui.playButton.ultraCompactPlaying : sceneCopy.ui.playButton.ultraCompactPaused)
@@ -531,42 +457,37 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       // ── D3 drag — updates SVG directly, syncs React only on end ──
 
       const wallDragBehavior = drag<SVGGElement, unknown>()
-        .on("start", function () {
+        .on("start", () => {
           draggingRef.current = true
-          select(this).select("line").transition().duration(100).attr("opacity", 0.8).attr("stroke-width", 8)
         })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-          const newL = wallXScale.invert(event.x)
-          const clamped = Math.round(Math.max(0.5, Math.min(2.0, newL)) * 10) / 10
+          const newL = waveXScale.invert(event.x)
+          const clamped = Math.round(Math.max(0.5, Math.min(L_MAX, newL)) * 10) / 10
           liveRef.current.L = clamped
           updateGeometry(liveRef.current.n, clamped)
         })
-        .on("end", function () {
+        .on("end", () => {
           draggingRef.current = false
-          select(this).select("line").transition().duration(100).attr("opacity", 0.5).attr("stroke-width", 6)
-          onVarChangeRef.current('L', liveRef.current.L)
+          onVarChangeRef.current("L", liveRef.current.L)
         })
 
       wallHandle.call(wallDragBehavior)
 
       const nDragBehavior = drag<SVGGElement, unknown>()
-        .on("start", function () {
+        .on("start", () => {
           draggingRef.current = true
-          select(this).select("circle").transition().duration(100).attr("r", 10)
         })
         .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
-          // Map y position to energy via yScale.invert, then compute n = round(sqrt(E / E1))
-          const baseEnergy = (Math.PI * Math.PI) / (2 * liveRef.current.L * liveRef.current.L)
+          const baseEnergy = particleEnergy(1, liveRef.current.L)
           const energy = yScaleInvertRef.current ? yScaleInvertRef.current(event.y) : 0
           const rawN = Math.round(Math.sqrt(Math.max(0, energy) / baseEnergy))
           const clamped = Math.max(1, Math.min(5, rawN))
           liveRef.current.n = clamped
           updateGeometry(clamped, liveRef.current.L)
         })
-        .on("end", function () {
+        .on("end", () => {
           draggingRef.current = false
-          select(this).select("circle").transition().duration(100).attr("r", 8)
-          onVarChangeRef.current('n', liveRef.current.n)
+          onVarChangeRef.current("n", liveRef.current.n)
         })
 
       nHandle.call(nDragBehavior)
@@ -601,23 +522,28 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
     buildSVG()
 
     let rebuildScheduled = false
+    const scheduleRebuild = () => {
+      cancelAnimationFrame(rafRef.current)
+      if (rebuildScheduled) return
+      rebuildScheduled = true
+      requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
+    }
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
       const w = Math.round(entry.contentRect.width)
       const h = Math.round(entry.contentRect.height)
-      if (w !== currentW || h !== currentH) {
-        cancelAnimationFrame(rafRef.current)
-        if (!rebuildScheduled) {
-          rebuildScheduled = true
-          requestAnimationFrame(() => { rebuildScheduled = false; buildSVG() })
-        }
-      }
+      if (w !== currentW || h !== currentH) scheduleRebuild()
     })
     observer.observe(el)
 
+    const themeObserver = new MutationObserver(() => scheduleRebuild())
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+
     return () => {
       observer.disconnect()
+      themeObserver.disconnect()
       cancelAnimationFrame(rafRef.current)
       select(el).select("svg").remove()
       updateRef.current = null

@@ -263,6 +263,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-09-13 · Schrödinger scene: nested cards, fake L-wall, leftover control strip
+Symptom: Particle-in-a-box looked like four stacked dashboards; an orange L handle sat on the wave; n/Pause floated in empty space.
+Cause: Percentage D3 layout always stretched ψ to the full plot, then drew a second wall via a 0.5–2 scale; a values card duplicated n/L/E already on the energy diagram.
+Fix: domain is [0, 2] so L actually shrinks the well; one plot + energy column + n/play bar (`SchrodingerScene.tsx`).
+Lesson: if a parameter is a length, map it onto a fixed domain. Don't rescale the data to fill the card and then add a decorative handle.
+
 ### 2026-09-13 · Home cards were dark-on-dark; teaching column stacked two formula boxes
 Symptom: Subject tiles were always `bg-slate-900` (invisible on dark canvas) with decorative Lucide icons; the teaching column showed hook formula + live formula as two cards.
 Cause: leftover "featured dark tile" styling; hook and formula were separate blocks even when both were on.
