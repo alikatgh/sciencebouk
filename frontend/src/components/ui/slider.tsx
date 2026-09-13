@@ -22,7 +22,7 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
   (
     {
       className,
-      trackColor = "#3b82f6",
+      trackColor,
       value,
       defaultValue,
       min = 0,
@@ -56,14 +56,13 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
             onValueChange?.([Number(event.currentTarget.value)])
           }}
           className={cn(
-            "science-slider block w-full cursor-grab rounded-full",
+            "science-slider block w-full cursor-grab",
             disabled && "cursor-not-allowed opacity-50",
           )}
           style={{
             ...style,
-            ["--slider-color" as string]: trackColor,
-            color: trackColor,
-            background: `linear-gradient(90deg, ${trackColor} 0%, ${trackColor} ${progress}%, var(--slider-unfilled, rgb(226 232 240)) ${progress}%, var(--slider-unfilled, rgb(226 232 240)) 100%)`,
+            ...(trackColor ? { ["--slider-fill" as string]: trackColor } : {}),
+            ["--slider-progress" as string]: `${progress}%`,
           }}
         />
       </div>

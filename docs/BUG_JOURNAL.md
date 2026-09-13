@@ -239,6 +239,11 @@ Before reproducing, grep this list for the shape of your bug.
     `Cache-Control: no-cache` on `index.html`; overlap old hashed files for a
     deploy; reload-once on that error (`staleChunk.ts`).
 
+34. **Rainbow controls are not teaching.** Per-variable hues + gradient tracks +
+    thumb shadows read as a slider kit, not a lesson. One ink fill, hairline
+    thumb, no shadow; keep color for the formula if you must. (`TouchableFormula`,
+    `.science-slider`.)
+
 ---
 
 ## Reusable tools
@@ -268,6 +273,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-09-13 · Variables panel: rainbow sliders, glow thumbs, pill presets
+Symptom: Cobb-Douglas K/L/α looked like a template kit (per-var hues, gradient tracks, drop-shadow thumbs).
+Cause: `variable.color` painted the control; `.science-slider` used `--slider-glow` + `box-shadow`.
+Fix: one ink fill, hairline thumb, no shadow (`index.css`, `slider.tsx`, `TouchableFormula.tsx`); presets are hairline chips (`TeachableEquation.tsx`).
+Lesson: color on a variable is for the formula, not a rainbow of sliders. Hierarchy is weight + size.
 
 ### 2026-09-13 · Chaos Theory: Failed to fetch ChaosScene-D7CujcjI.js
 Symptom: `/equation/16` error boundary; missing hashed scene after deploy.

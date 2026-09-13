@@ -165,7 +165,7 @@ export default function SettingsPage(): ReactElement {
                 </p>
                 <SettingRow label="Formula size" description={`${settings.formulaSize}%`}>
                   <Slider className="w-full max-w-full sm:w-28" min={75} max={150} step={5}
-                    value={[settings.formulaSize]} onValueChange={([v]) => update("formulaSize", v)} trackColor="#3b82f6" />
+                    value={[settings.formulaSize]} onValueChange={([v]) => update("formulaSize", v)} />
                 </SettingRow>
                 <Separator />
                 <SettingRow label="Letter formula" description="a² + b² = c²">
@@ -209,7 +209,7 @@ export default function SettingsPage(): ReactElement {
                 <Separator />
                 <SettingRow label="Daily goal" description={`${settings.dailyGoalMinutes} min/day`}>
                   <Slider className="w-full max-w-full sm:w-28" min={5} max={60} step={5}
-                    value={[settings.dailyGoalMinutes]} onValueChange={([v]) => update("dailyGoalMinutes", v)} trackColor="#10b981" />
+                    value={[settings.dailyGoalMinutes]} onValueChange={([v]) => update("dailyGoalMinutes", v)} />
                 </SettingRow>
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function SettingsPage(): ReactElement {
                   <Separator />
                   <SettingRow label="Volume" description={`${settings.soundVolume}%`}>
                     <Slider className="w-full max-w-full sm:w-28" min={0} max={100} step={5}
-                      value={[settings.soundVolume]} onValueChange={([v]) => update("soundVolume", v)} trackColor="#3b82f6" />
+                      value={[settings.soundVolume]} onValueChange={([v]) => update("soundVolume", v)} />
                   </SettingRow>
                 </>
               )}

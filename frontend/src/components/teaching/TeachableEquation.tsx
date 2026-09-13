@@ -9,6 +9,7 @@ import { useEquation } from "../../api/hooks"
 import { useProgress } from "../../progress/useProgress"
 import { useEquationId } from "./EquationContext"
 import { useSettings } from "../../settings/SettingsContext"
+import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { ResizablePanel } from "../ui/resizable-panel"
@@ -50,6 +51,12 @@ function readStoredTeachingPanelWidth(): number {
 export interface Preset {
   label: string
   values: Record<string, number>
+}
+
+export function presetIsActive(preset: Preset, vars: Record<string, number>): boolean {
+  return Object.entries(preset.values).every(
+    ([name, value]) => Math.abs((vars[name] ?? Number.NaN) - value) < 1e-9,
+  )
 }
 
 interface TeachableEquationProps {
@@ -540,7 +547,7 @@ export function TeachableEquation({
   const variablesBlock = (
     <Card className={isMobile ? "rounded-xl" : undefined}>
       <CardHeader className={isMobile ? "p-3 pb-1.5" : "p-3 pb-1"}>
-        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Variables</CardTitle>
+        <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Variables</CardTitle>
       </CardHeader>
       <CardContent className={isMobile ? "px-1.5 pb-2.5" : "px-1 pb-2"}>
         <TouchableFormula
@@ -554,7 +561,19 @@ export function TeachableEquation({
   const presetsBlock = hasPresets ? (
     <div className={`flex ${isMobile ? "-mx-1 overflow-x-auto px-1 pb-1" : "flex-wrap"} gap-1.5`}>
       {localizedPresets?.map((p) => (
-        <Button key={p.label} variant="outline" size="xs" onClick={() => applyPreset(p)} className={`${isMobile ? "h-9 shrink-0 rounded-full px-3.5 text-[11px]" : "text-[10px]"}`}>
+        <Button
+          key={p.label}
+          variant="outline"
+          size="xs"
+          onClick={() => applyPreset(p)}
+          aria-pressed={presetIsActive(p, vars)}
+          className={cn(
+            "shadow-none",
+            isMobile ? "h-9 shrink-0 px-3 text-[11px]" : "text-[11px]",
+            presetIsActive(p, vars) &&
+              "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100",
+          )}
+        >
           {p.label}
         </Button>
       ))}

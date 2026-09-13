@@ -89,7 +89,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
           style={{ opacity: variable.locked ? 0.4 : 1 }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold" style={{ color: variable.color }}>
+            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
               {variable.symbol}
             </span>
             {editing ? (
@@ -107,17 +107,15 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
                     setEditing(false)
                   }
                 }}
-                className="h-6 w-20 text-right font-mono text-sm font-bold [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-24"
-                style={{ color: variable.color }}
+                className="h-6 w-20 text-right font-mono text-sm font-medium tabular-nums text-slate-800 dark:text-slate-100 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-24"
                 autoFocus
               />
             ) : (
               <button
                 onClick={handleValueClick}
-                className={`rounded px-1.5 py-0.5 font-mono text-sm font-bold tabular-nums transition [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5 ${
+                className={`rounded px-1.5 py-0.5 font-mono text-sm font-medium tabular-nums text-slate-800 transition dark:text-slate-100 [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5 ${
                   isDisabled ? "cursor-default" : "cursor-text hover:bg-slate-100 dark:hover:bg-slate-600"
                 }`}
-                style={{ color: variable.color }}
                 type="button"
               >
                 {formatValue(variable.value, variable.step)}
@@ -133,7 +131,6 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
               step={variable.step}
               value={[variable.value]}
               onValueChange={([v]) => onChange(variable.name, v)}
-              trackColor={variable.color}
               aria-label={`${variable.description ?? variable.symbol}: ${variable.value}`}
             />
           )}
