@@ -228,6 +228,11 @@ Before reproducing, grep this list for the shape of your bug.
     under the media dir, never the file just written, and skip external URLs
     (OAuth pictures). (Hit on avatar re-upload.)
 
+32. **SVG labels offset toward a shared interior point will collide.** An offset
+    like `max(20, s * 0.8)` toward the incenter grows with the figure and parks
+    every label in the same place. Offset from the *edge* in pixels, or put one
+    label on the opposite side of the stroke. (Pythagoras a/b/c, 2026-09-13.)
+
 ---
 
 ## Reusable tools
@@ -257,6 +262,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-09-13 · Pythagoras a/b/c labels stacked inside the triangle
+Symptom: On `/equation/1` the live 3-4-5 figure showed `a = 3`, `b = 4`, and `c = 5.0` piled on top of each other in the triangle interior.
+Cause: `updateGeometry` offset every side label toward the incenter by `max(20, s * 0.8)` — as the figure scaled, all three labels converged.
+Fix: `sideLabelLayout()` (`PythagorasScene.tsx`) sits a/b on the edges with a fixed pixel inset and puts c *outward* along the hypotenuse; unit-tested.
+Lesson: SVG labels placed as a fraction of scale toward a shared interior point will collide as soon as the figure is not huge. Offset from the edge in pixels, not toward the incenter.
 
 ### 2026-06-28 · Avatar served without Content-Disposition: attachment (residual security r5research-H3 / r1-M1 / r6-L4)
 Symptom: `SERVE_MEDIA_FROM_DJANGO` mode (dev/staging) used Django's raw `static()` helper which served avatar files with no `Content-Disposition` header — letting the browser render them inline, leaving a content-sniffing attack surface even after magic-byte validation.

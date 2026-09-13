@@ -156,7 +156,7 @@ function cSquareCorners(
   ]
 }
 
-function computeLayout(a: number, b: number, W: number, H: number) {
+export function computeLayout(a: number, b: number, W: number, H: number) {
   a = Math.max(0.01, a)
   b = Math.max(0.01, b)
   const c = Math.sqrt(a * a + b * b)
@@ -197,6 +197,71 @@ function computeLayout(a: number, b: number, W: number, H: number) {
   const oy = PAD + (availH - totalH * s) / 2 + (-minY) * s
 
   return { s, ox, oy, c, compact, ultraCompact }
+}
+
+export type SideLabelPoint = {
+  x: number
+  y: number
+  text: string
+  anchor: "start" | "middle" | "end"
+  baseline: "middle" | "auto"
+  visible: boolean
+}
+
+/**
+ * Place a/b/c on the triangle edges, not in the interior.
+ * The old offsets were `max(20, s * 0.8)` toward the incenter, so on a
+ * typical 3-4-5 canvas the three labels stacked on top of each other.
+ */
+export function sideLabelLayout(
+  aVal: number,
+  bVal: number,
+  cVal: number,
+  s: number,
+  ox: number,
+  oy: number,
+  compact: boolean,
+  ultraCompact: boolean,
+): { a: SideLabelPoint; b: SideLabelPoint; c: SideLabelPoint } {
+  const p0 = { x: ox, y: oy }
+  const p1 = { x: ox + bVal * s, y: oy }
+  const p2 = { x: ox, y: oy - aVal * s }
+  // Pixel offset from the edge — not a fraction of s, which grows with the
+  // figure and pulls every label into the same interior point.
+  const edge = ultraCompact ? 8 : compact ? 11 : 14
+  const cEdge = ultraCompact ? 10 : compact ? 12 : 22
+  const aText = ultraCompact ? `a${fmt(aVal)}` : compact ? `a ${fmt(aVal)}` : `a = ${fmt(aVal)}`
+  const bText = ultraCompact ? `b${fmt(bVal)}` : compact ? `b ${fmt(bVal)}` : `b = ${fmt(bVal)}`
+  // Outward unit normal from the hypotenuse toward the c² square (SVG coords).
+  const nX = aVal / cVal
+  const nY = -(bVal / cVal)
+
+  return {
+    a: {
+      x: p0.x + edge,
+      y: (p0.y + p2.y) / 2,
+      text: aText,
+      anchor: "start",
+      baseline: "middle",
+      visible: true,
+    },
+    b: {
+      x: (p0.x + p1.x) / 2,
+      y: p0.y - edge,
+      text: bText,
+      anchor: "middle",
+      baseline: "auto",
+      visible: true,
+    },
+    c: {
+      x: (p1.x + p2.x) / 2 + nX * cEdge,
+      y: (p1.y + p2.y) / 2 + nY * cEdge,
+      text: compact ? "" : `c = ${cVal.toFixed(1)}`,
+      anchor: "middle",
+      baseline: "middle",
+      visible: !compact,
+    },
+  }
 }
 
 function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHighlight }: Props): ReactElement {
@@ -397,32 +462,26 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         g.select(".right-angle")
           .attr("d", `M${p0.x + ra},${p0.y} L${p0.x + ra},${p0.y - ra} L${p0.x},${p0.y - ra}`)
 
-        // Side labels — positioned OUTSIDE the triangle, away from squares
-        // a label: right of the vertical side, inside the triangle
-        const aLabelOffset = ultraCompact ? Math.max(11, s * 0.35) : compact ? Math.max(14, s * 0.5) : Math.max(20, s * 0.8)
+        // Side labels sit on the edges. c is offset outward into the c² square
+        // so a/b/c never share the triangle interior.
+        const labels = sideLabelLayout(aVal, bVal, cVal, s, ox, oy, compact, ultraCompact)
         g.select(".label-a")
-          .attr("x", p0.x + aLabelOffset).attr("y", (p0.y + p2.y) / 2)
-          .attr("text-anchor", "start")
-          .attr("font-size", lfs).text(ultraCompact ? `a${fmt(aVal)}` : compact ? `a ${fmt(aVal)}` : `a = ${fmt(aVal)}`)
-
-        // b label: above the horizontal side, centered
+          .attr("x", labels.a.x).attr("y", labels.a.y)
+          .attr("text-anchor", labels.a.anchor)
+          .attr("dominant-baseline", labels.a.baseline)
+          .attr("font-size", lfs).text(labels.a.text)
         g.select(".label-b")
-          .attr("x", (p0.x + p1.x) / 2).attr("y", p0.y - (compact ? Math.max(10, s * 0.35) : Math.max(14, s * 0.5)))
-          .attr("text-anchor", "middle")
-          .attr("font-size", lfs).text(ultraCompact ? `b${fmt(bVal)}` : compact ? `b ${fmt(bVal)}` : `b = ${fmt(bVal)}`)
-
-        // c label: on the hypotenuse, offset INTO the triangle (away from c² square)
-        const cNormX = -(aVal / cVal)  // normal pointing into triangle
-        const cNormY = (bVal / cVal)
-        const cOffset = ultraCompact ? Math.max(10, s * 0.32) : compact ? Math.max(12, s * 0.45) : Math.max(20, s * 0.8)
-        const cMidX = (p1.x + p2.x) / 2 + cNormX * cOffset
-        const cMidY = (p1.y + p2.y) / 2 + cNormY * cOffset
+          .attr("x", labels.b.x).attr("y", labels.b.y)
+          .attr("text-anchor", labels.b.anchor)
+          .attr("dominant-baseline", labels.b.baseline)
+          .attr("font-size", lfs).text(labels.b.text)
         g.select(".label-c")
-          .attr("x", cMidX).attr("y", cMidY)
-          .attr("text-anchor", "middle")
+          .attr("x", labels.c.x).attr("y", labels.c.y)
+          .attr("text-anchor", labels.c.anchor)
+          .attr("dominant-baseline", labels.c.baseline)
           .attr("font-size", lfs)
-          .attr("opacity", compact ? 0 : 1)
-          .text(compact ? "" : `c = ${cVal.toFixed(1)}`)
+          .attr("opacity", labels.c.visible ? 1 : 0)
+          .text(labels.c.text)
 
         // Handle positions
         g.select(".handle-a-hit").attr("cx", p2.x).attr("cy", p2.y)
