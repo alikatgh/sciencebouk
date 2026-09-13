@@ -6,6 +6,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 // f(x) = 2 sin(0.8x) + 0.15x^2 - x + 3
 function f(x: number): number {
@@ -267,7 +269,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
   }), [frame.xScale, frame.yScale, secantData])
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className={SCENE_STAGE_CLASS}>
       <div className="flex h-full flex-col">
         {/* Info bar — clickable badges */}
         <div className={`flex flex-wrap items-center ${compact ? "gap-1.5 px-3 pt-2.5" : "gap-2 px-4 pt-3"}`}>
@@ -337,7 +339,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
             <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
             {showArea && areaPath && <path d={areaPath} fill={VAR_COLORS.primary} opacity={0.12} />}
-            <path d={curvePath} fill="none" stroke="#1e293b" strokeWidth={3} />
+            <path d={curvePath} fill="none" stroke="var(--scene-ink)" strokeWidth={3} />
 
             {showDeriv && (
               <path

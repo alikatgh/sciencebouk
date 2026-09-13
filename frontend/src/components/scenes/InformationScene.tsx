@@ -11,6 +11,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 function shannonEntropy(p: number): number {
   if (p <= 0 || p >= 1) return 0
@@ -159,7 +161,7 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
   }), [data, frame.xScale, frame.yScale])
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className={SCENE_STAGE_CLASS}>
       <div className="flex h-full flex-col">
         {/* Info bar -- clickable badges */}
         <div className="flex flex-wrap items-center gap-2 px-4 pt-3">

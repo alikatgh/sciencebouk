@@ -11,6 +11,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -189,8 +191,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .style("display", "block")
         .attr("role", "img")
         .attr("aria-label", "Logarithm product rule: bar chart and curve")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+      const pal = readScenePalette(el)
 
       const g = svg.append("g")
 
@@ -298,7 +299,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .curve(curveMonotoneX)
       g.append("path")
         .attr("d", curveGen(range(0.5, 101, 0.5)) ?? "")
-        .attr("fill", "none").attr("stroke", "#1e293b").attr("stroke-width", 3)
+        .attr("fill", "none").attr("stroke", pal.ink).attr("stroke-width", 3)
 
       // Dot on curve for x -- vertical line
       g.append("line").attr("class", "curve-vline")
@@ -322,7 +323,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
       const panelPad = W * 0.02
       g.append("text")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.2)
-        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.ink)
         .text(ultraCompact ? "Vals" : compact ? "Values" : "Current Values")
 
       g.append("text").attr("class", "val-logx")
@@ -488,7 +489,7 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

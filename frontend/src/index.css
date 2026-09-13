@@ -116,6 +116,22 @@ section .katex {
   }
 }
 
+.scene-stage {
+  --scene-ink: #1e293b;
+  --scene-muted: #64748b;
+  --scene-faint: #94a3b8;
+  --scene-hair: #e8edf2;
+  --scene-grid: #eef2f6;
+}
+
+.dark .scene-stage {
+  --scene-ink: #e2e8f0;
+  --scene-muted: #94a3b8;
+  --scene-faint: #64748b;
+  --scene-hair: #334155;
+  --scene-grid: #1e293b;
+}
+
 @layer components {
   .animate-fade-in {
     animation: formulas-fade-in calc(220ms * var(--animation-speed, 1)) ease-out both;

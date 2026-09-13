@@ -6,6 +6,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const variables: Variable[] = [
   { name: 'r', symbol: 'r', latex: 'r', value: 3.2, min: 2.5, max: 4.0, step: 0.001, color: VAR_COLORS.primary, description: 'Growth parameter' },
@@ -172,7 +174,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
           cx={bifurcationFrame.xScale(point.r)}
           cy={bifurcationFrame.yScale(point.x)}
           r={1}
-          fill="#1e293b"
+          fill="var(--scene-ink)"
           opacity={0.5}
         />
       )),
@@ -217,7 +219,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
   }), [timeFrame.xScale, timeFrame.yScale, timeSeriesData])
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className={SCENE_STAGE_CLASS}>
       <div className="flex h-full flex-col">
         {/* Header with clickable badges */}
         <div className={`flex flex-wrap items-center ${compact ? "gap-1.5 px-3 pt-2.5" : "gap-2 px-4 pt-3"}`}>

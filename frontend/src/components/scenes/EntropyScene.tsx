@@ -6,6 +6,7 @@ import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 import { useContainerSize } from "../../hooks/useContainerSize"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
 
 /* ── constants ── */
 const VIEWBOX_WIDTH = 1400
@@ -188,7 +189,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
   const hazeAccent = useMemo(() => mixHex("#8ea8ff", "#ffcb8a", temperature / 100), [temperature])
 
   return (
-    <div ref={containerRef} className="h-full w-full">
+    <div ref={containerRef} className={SCENE_STAGE_CLASS}>
       <svg
         viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
         className="h-full w-full"
@@ -215,7 +216,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
           </linearGradient>
         </defs>
 
-        <rect width={VIEWBOX_WIDTH} height={VIEWBOX_HEIGHT} fill="url(#entropy-bg)" />
+        <rect width={VIEWBOX_WIDTH} height={VIEWBOX_HEIGHT} fill="transparent" />
         <circle cx={VIEWBOX_WIDTH * 0.5} cy={VIEWBOX_HEIGHT * 0.48} r={VIEWBOX_WIDTH * 0.3} fill="url(#thermal-haze)" opacity={0.7} />
 
         <rect

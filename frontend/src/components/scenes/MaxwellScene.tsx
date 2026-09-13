@@ -12,6 +12,8 @@ import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -222,8 +224,6 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .style("display", "block")
       .attr("role", "img")
       .attr("aria-label", "Maxwell's equations -- electric field lines and EM waves")
-
-    svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
 
     const g = svg.append("g")
     gRef.current = g
@@ -577,7 +577,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

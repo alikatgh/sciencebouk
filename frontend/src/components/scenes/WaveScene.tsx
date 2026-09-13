@@ -10,6 +10,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -212,7 +214,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("role", "img")
         .attr("aria-label", "Wave visualization")
 
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#f8fbff")
+      const pal = readScenePalette(el)
 
       const g = svg.append("g")
 
@@ -273,7 +275,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Superposition section
       g.append("text").attr("x", mx).attr("y", H * 0.47)
-        .attr("font-size", 14).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .attr("font-size", 14).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(ultraCompact ? "Σ" : compact ? "Sum" : "Superposition")
 
       // Super axis
@@ -282,14 +284,14 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Super path
       g.append("path").attr("class", "super-path")
-        .attr("fill", "none").attr("stroke", "#1e293b").attr("stroke-width", 3.5)
+        .attr("fill", "none").attr("stroke", pal.ink).attr("stroke-width", 3.5)
 
       // Legend — compact bottom row
       const legY = H * 0.88
       const legItems = [
         { x: mx, color: "#5a79ff", label: compact ? "1" : "Wave 1" },
         { x: mx + W * (ultraCompact ? 0.13 : 0.2), color: "#57b59a", label: compact ? "2" : "Wave 2" },
-        { x: mx + W * (ultraCompact ? 0.26 : 0.4), color: "#1e293b", label: ultraCompact ? "Σ" : "Sum" },
+        { x: mx + W * (ultraCompact ? 0.26 : 0.4), color: pal.ink, label: ultraCompact ? "Σ" : "Sum" },
       ]
       legItems.forEach(({ x, color, label }) => {
         g.append("line")
@@ -510,7 +512,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

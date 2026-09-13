@@ -11,6 +11,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -240,15 +242,14 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         .style("display", "block")
         .attr("role", "img")
         .attr("aria-label", "Fourier decomposition showing harmonics and composite signal")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+      const pal = readScenePalette(el)
 
       const g = svg.append("g")
 
       // --- Composite section ---
       g.append("text")
         .attr("x", plotLeft).attr("y", compositeTop - 4)
-        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.ink)
         .text(compact ? "Composite" : "Composite Signal")
 
       // Zero line
@@ -259,12 +260,12 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
       // Composite path
       g.append("path").attr("class", "composite-path")
-        .attr("fill", "none").attr("stroke", "#1e293b").attr("stroke-width", 3)
+        .attr("fill", "none").attr("stroke", pal.ink).attr("stroke-width", 3)
 
       // --- Individual harmonics ---
       g.append("text")
         .attr("x", plotLeft).attr("y", harmonicTop - 6)
-        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.ink)
         .text(compact ? "Parts" : "Harmonics")
 
       for (let i = 0; i < 4; i++) {
@@ -309,7 +310,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       // --- Spectrum bars ---
       g.append("text")
         .attr("x", spectrumLeft).attr("y", spectrumTop - H * 0.048)
-        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
+        .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.ink)
         .text("Spectrum")
 
       // Baseline
@@ -556,7 +557,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

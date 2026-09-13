@@ -19,12 +19,12 @@ import { subjectResults } from "../../data/subjectResults"
  */
 
 const SAMPLES = 80
-const W = 360
-const H = 200
-const PAD_L = 46
-const PAD_R = 16
-const PAD_T = 16
-const PAD_B = 30
+const W = 880
+const H = 520
+const PAD_L = 64
+const PAD_R = 36
+const PAD_T = 36
+const PAD_B = 52
 
 const REDUCED_MOTION =
   typeof window !== "undefined" && typeof window.matchMedia === "function"
@@ -328,7 +328,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
   const labelY = model.dot ? Math.max(model.dot.y - 12, PAD_T + 10) : 0
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className="relative h-full min-h-0 w-full">
       {/* Screen-reader mirror of the live result — SVG text nodes are not announced. */}
       <div className="sr-only" role="status" aria-live="polite">
         {`${model.symbol} = ${model.dotValue !== null ? tick(model.dotValue) : "—"}${model.unit ? ` ${model.unit}` : ""}`}
@@ -355,7 +355,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         aria-label={`Response curve of ${model.symbol} versus ${model.sweepSymbol}`}
-        className="w-full text-slate-400 dark:text-slate-500"
+        className="h-full w-full text-[color:var(--scene-muted,#64748b)]"
         style={{ cursor: "crosshair" }}
         onPointerMove={handlePointerMove}
       onPointerLeave={clearHover}
@@ -384,7 +384,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
         d={model.linePath}
         fill="none"
         stroke={VAR_COLORS.result}
-        strokeWidth="2.5"
+        strokeWidth="3"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -431,10 +431,10 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
           <circle
             cx={model.dot.x}
             cy={model.dot.y}
-            r="5.5"
+            r="8"
             fill={VAR_COLORS.result}
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="3"
             style={REDUCED_MOTION ? undefined : { transition: "cx 120ms linear, cy 120ms linear" }}
           />
           {model.dotValue !== null && (

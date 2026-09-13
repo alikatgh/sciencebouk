@@ -292,8 +292,8 @@ function GenericMetersVisual({
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-8 dark:border-slate-700 dark:bg-slate-800">
-      <div className="rounded-2xl bg-slate-50 px-8 py-5 dark:bg-slate-900">
+    <div className="scene-stage flex h-full w-full min-h-0 flex-col">
+      <div className="shrink-0 px-6 pt-5 text-center text-slate-800 dark:text-slate-100">
         <BlockMath math={formula} />
       </div>
 
@@ -358,21 +358,16 @@ function GenericMetersVisual({
           aria-live="polite"
           aria-atomic="true"
           aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
-          className="flex flex-col items-center gap-0.5 rounded-2xl px-7 py-3"
-          style={{ backgroundColor: `${VAR_COLORS.result}1a`, border: `1px solid ${VAR_COLORS.result}55` }}
+          className="shrink-0 px-6 pb-1 text-center font-mono text-xl font-semibold tabular-nums"
+          style={{ color: VAR_COLORS.result }}
         >
-          <span aria-hidden="true" className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Result</span>
-          <span className="font-mono text-2xl font-bold tabular-nums" style={{ color: VAR_COLORS.result }}>
-            <span className="text-base font-semibold text-slate-500 dark:text-slate-400">{result.symbol} = </span>
-            {formatResultValue(resultValue)}
-            {result.unit ? <span className="ml-1 text-base font-semibold text-slate-500 dark:text-slate-400">{result.unit}</span> : null}
-          </span>
-          {result.note ? <span className="text-[0.65rem] text-slate-400 dark:text-slate-500">{result.note}</span> : null}
+          {result.symbol} = {formatResultValue(resultValue)}
+          {result.unit ? ` ${result.unit}` : ""}
         </div>
       )}
 
       {result ? (
-        <div className="flex w-full max-w-md flex-col items-center gap-2.5">
+        <div className="flex min-h-0 w-full flex-1 flex-col">
           <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
           {meters.length > 1 && (
             <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -404,7 +399,7 @@ function GenericMetersVisual({
           )}
         </div>
       ) : (
-        <div className="flex w-full max-w-md flex-col gap-3.5">
+        <div className="flex w-full flex-1 flex-col justify-center gap-3.5 px-8">
           {meters.map((variable) => {
             const value = vars[variable.name] ?? variable.value
             const span = variable.max - variable.min

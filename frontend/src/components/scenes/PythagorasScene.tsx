@@ -7,6 +7,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep, GlossaryTerm } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const FONT = "Manrope, sans-serif"
 const glossary: GlossaryTerm[] = [
@@ -343,8 +345,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+      const pal = readScenePalette(el)
 
       const g = svg.append("g")
 
@@ -352,19 +353,19 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
 
       // Squares (drawn behind triangle)
       g.append("rect").attr("class", "sq-a").attr("rx", 3)
-        .attr("fill", VAR_COLORS.primary + "15").attr("stroke", VAR_COLORS.primary).attr("stroke-width", 1.5)
+        .attr("fill", VAR_COLORS.primary).attr("fill-opacity", 0.18).attr("stroke", VAR_COLORS.primary).attr("stroke-width", 1.5)
       g.append("text").attr("class", "sq-a-text")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.primary)
 
       g.append("rect").attr("class", "sq-b").attr("rx", 3)
-        .attr("fill", VAR_COLORS.secondary + "15").attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 1.5)
+        .attr("fill", VAR_COLORS.secondary).attr("fill-opacity", 0.18).attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 1.5)
       g.append("text").attr("class", "sq-b-text")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.secondary)
 
       g.append("polygon").attr("class", "sq-c")
-        .attr("fill", VAR_COLORS.result + "10").attr("stroke", VAR_COLORS.result).attr("stroke-width", 1.5)
+        .attr("fill", VAR_COLORS.result).attr("fill-opacity", 0.16).attr("stroke", VAR_COLORS.result).attr("stroke-width", 1.5)
       g.append("text").attr("class", "sq-c-text")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.result)
@@ -372,7 +373,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
       // Triangle (on top of squares)
       g.append("polygon").attr("class", "tri")
         .attr("fill", "#f8fafc").attr("fill-opacity", 0.85)
-        .attr("stroke", "#1e293b").attr("stroke-width", 2.5).attr("stroke-linejoin", "round")
+        .attr("stroke", pal.ink).attr("stroke-width", 2.5).attr("stroke-linejoin", "round")
 
       // Right-angle marker
       g.append("path").attr("class", "right-angle")
@@ -571,7 +572,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
   }, []) // ← empty deps: SVG created once, rebuilt only on resize
 
   return (
-    <div ref={containerRef} className="h-full w-full" />
+    <div ref={containerRef} className={SCENE_STAGE_CLASS} />
   )
 }
 

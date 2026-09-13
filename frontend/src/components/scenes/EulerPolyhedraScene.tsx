@@ -8,6 +8,8 @@ import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -356,8 +358,6 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
       .attr("role", "img")
       .attr("aria-label", "Euler polyhedra formula -- interactive 3D wireframes")
 
-    svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
-
     svgSelRef.current = svg
 
     const g = svg.append("g")
@@ -440,7 +440,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
 
     // Shape name
     g.append("text").attr("class", "shape-name").attr("x", W * 0.6).attr("y", H - 36).attr("text-anchor", "middle")
-      .attr("font-size", ultraCompact ? 16 : compact ? 18 : 20).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
+      .attr("font-size", ultraCompact ? 16 : compact ? 18 : 20).attr("font-family", F).attr("font-weight", 700).attr("fill", "#1e293b")
 
     // Drag hint
     g.append("text").attr("x", W * 0.6).attr("y", H - 12).attr("text-anchor", "middle")
@@ -576,7 +576,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

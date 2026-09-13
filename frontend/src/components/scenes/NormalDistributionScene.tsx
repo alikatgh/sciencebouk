@@ -6,6 +6,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 function pdf(x: number, mu: number, sigma: number): number {
   return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
@@ -187,7 +189,7 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
   }), [data, frame.xScale, frame.yScale])
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className={SCENE_STAGE_CLASS}>
       <div className="flex h-full flex-col">
         {/* Info bar -- clickable badges */}
         <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
@@ -255,7 +257,7 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
             {shade3Path && <path d={shade3Path} fill="#dbeafe" opacity={0.3} />}
             {shade2Path && <path d={shade2Path} fill="#93c5fd" opacity={0.3} />}
             {shade1Path && <path d={shade1Path} fill={VAR_COLORS.primary} opacity={0.25} />}
-            <path d={curvePath} fill="none" stroke="#1e293b" strokeWidth={2.5} />
+            <path d={curvePath} fill="none" stroke="var(--scene-ink)" strokeWidth={2.5} />
 
             <line
               x1={frame.xScale(mu)}

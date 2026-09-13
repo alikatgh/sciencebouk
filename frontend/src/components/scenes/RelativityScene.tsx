@@ -11,6 +11,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -216,8 +218,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .style("display", "block")
         .attr("role", "img")
         .attr("aria-label", "Lorentz factor curve, clocks, and length contraction")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+      const pal = readScenePalette(el)
 
       const g = svg.append("g")
 
@@ -246,7 +247,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(ultraCompact ? "Gamma" : "Lorentz Factor")
 
       // Axes
@@ -344,7 +345,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(compact ? "Clocks" : "Time Dilation")
 
       // Clock 1 (stationary)
@@ -361,8 +362,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
           .attr("stroke", "#64748b").attr("stroke-width", 2)
       }
       g.append("line").attr("class", "clock1-hand").attr("x1", c1x).attr("y1", c1y)
-        .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("stroke-linecap", "round")
-      g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", "#1e293b")
+        .attr("stroke", pal.ink).attr("stroke-width", 3).attr("stroke-linecap", "round")
+      g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", pal.ink)
       g.append("text").attr("x", c1x).attr("y", c1y + cr + 20).attr("text-anchor", "middle")
         .attr("font-size", fs).attr("fill", "#475569").attr("font-family", F).attr("font-weight", 600)
         .text(compact ? "Rest" : "Stationary")
@@ -380,8 +381,8 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
           .attr("stroke", "#64748b").attr("stroke-width", 2)
       }
       g.append("line").attr("class", "clock2-hand").attr("x1", c2x).attr("y1", c2y)
-        .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("stroke-linecap", "round")
-      g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", 3).attr("fill", "#1e293b")
+        .attr("stroke", pal.ink).attr("stroke-width", 3).attr("stroke-linecap", "round")
+      g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", 3).attr("fill", pal.ink)
       g.append("text").attr("class", "clock2-label").attr("x", c2x).attr("y", c2y + cr + 20)
         .attr("text-anchor", "middle").attr("font-size", fs).attr("fill", "#475569")
         .attr("font-family", F).attr("font-weight", 600)
@@ -392,7 +393,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
-        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", "#1e293b").attr("font-family", F).attr("font-weight", 700)
+        .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(ultraCompact ? "Length" : compact ? "Length" : "Length Contraction")
 
       // Rest length bar
@@ -533,7 +534,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

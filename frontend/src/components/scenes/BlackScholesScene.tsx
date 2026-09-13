@@ -6,6 +6,7 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
 
 function normalCDF(x: number): number {
   const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741
@@ -277,7 +278,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
   }
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className={SCENE_STAGE_CLASS}>
       <div className="flex h-full flex-col">
         {/* Info bar -- clickable badges */}
         <div className="flex flex-wrap items-center gap-2 px-4 pt-3">

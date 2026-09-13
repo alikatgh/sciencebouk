@@ -8,6 +8,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -195,7 +197,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
         .attr("role", "img")
         .attr("aria-label", "Complex plane visualization showing i squared equals negative one")
 
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#f8fbff")
+      const pal = readScenePalette(el)
 
       const g = svg.append("g")
 
@@ -262,7 +264,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
 
       // Point label
       g.append("text").attr("class", "point-label")
-        .attr("font-size", ultraCompact ? 12 : compact ? 13 : 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+        .attr("font-size", ultraCompact ? 12 : compact ? 13 : 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
 
       // Info panel — hidden on narrow screens (redundant with live formula below)
       if (!isNarrow) {
@@ -271,23 +273,23 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
         g.append("rect").attr("x", infoX).attr("y", H * 0.07).attr("width", W * 0.24).attr("height", H * 0.41).attr("rx", 14)
           .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.13)
-          .attr("font-size", 17).attr("fill", "#1e293b").attr("font-weight", 700).attr("font-family", F)
+          .attr("font-size", 17).attr("fill", pal.ink).attr("font-weight", 700).attr("font-family", F)
           .text(sceneCopy.ui.infoPanel.title)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.19)
           .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.rectangular)
         g.append("text").attr("class", "info-rect").attr("x", infoTxtX).attr("y", H * 0.23)
-          .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+          .attr("font-size", 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.29)
           .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.polar)
         g.append("text").attr("class", "info-polar").attr("x", infoTxtX).attr("y", H * 0.33)
-          .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+          .attr("font-size", 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.39)
           .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.magnitude)
         g.append("text").attr("class", "info-mag").attr("x", infoTxtX).attr("y", H * 0.43)
-          .attr("font-size", 15).attr("fill", "#1e293b").attr("font-weight", 600).attr("font-family", F)
+          .attr("font-size", 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
       }
 
       // D3 action buttons inside SVG
@@ -483,7 +485,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

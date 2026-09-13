@@ -7,6 +7,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
+import { SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -179,9 +181,6 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         .style("display", "block")
         .attr("role", "img")
         .attr("aria-label", "Two masses with gravitational force — drag to explore")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
-
       const g = svg.append("g")
 
       const cy = H / 2
@@ -405,7 +404,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

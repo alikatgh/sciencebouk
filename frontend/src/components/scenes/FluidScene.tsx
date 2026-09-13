@@ -9,6 +9,8 @@ import { useLessonCopy } from "../teaching/lessonContent"
 import type { Variable, LessonStep } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useSceneCopy } from "../../data/sceneCopy"
+import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
+
 
 const F = "Manrope, sans-serif"
 
@@ -210,8 +212,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         .style("display", "block")
         .attr("role", "img")
         .attr("aria-label", "Navier-Stokes fluid flow around an obstacle")
-
-      svg.append("rect").attr("width", W).attr("height", H).attr("rx", 16).attr("fill", "#fafcff")
+      const pal = readScenePalette(el)
 
       // Gradient for velocity legend
       const defs = svg.append("defs")
@@ -224,13 +225,13 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       // Flow arrow marker
       defs.append("marker").attr("id", "flowArr")
         .attr("markerWidth", 8).attr("markerHeight", 8).attr("refX", 8).attr("refY", 4).attr("orient", "auto")
-        .append("polygon").attr("points", "0,0 8,4 0,8").attr("fill", "#1e293b")
+        .append("polygon").attr("points", "0,0 8,4 0,8").attr("fill", pal.ink)
 
       const g = svg.append("g")
 
       // Title
       g.append("text").attr("x", W / 2).attr("y", 28).attr("text-anchor", "middle")
-        .attr("font-size", ultraCompact ? 15 : compact ? 16 : 18).attr("font-family", "Newsreader, serif").attr("font-weight", 700).attr("fill", "#1e293b")
+        .attr("font-size", ultraCompact ? 15 : compact ? 16 : 18).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.ink)
         .text(ultraCompact ? "Flow" : compact ? "Flow Around Obstacle" : "Navier-Stokes: Flow Around an Obstacle")
 
       // Vector field group
@@ -243,7 +244,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab").style("touch-action", "none")
         .attr("transform", `translate(${liveRef.current.obstacleX},${liveRef.current.obstacleY})`)
       obstacleGroup.append("circle").attr("r", OBSTACLE_R)
-        .attr("fill", "#1e293b")
+        .attr("fill", pal.ink)
       obstacleGroup.append("circle").attr("r", OBSTACLE_R)
         .attr("fill", "none").attr("stroke", "#475569").attr("stroke-width", 2)
       // Invisible larger hit area
@@ -256,7 +257,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       // Flow direction indicator
       const flowIndicatorY = H * 0.45
       g.append("line").attr("x1", W * 0.03).attr("y1", flowIndicatorY).attr("x2", W * 0.09).attr("y2", flowIndicatorY)
-        .attr("stroke", "#1e293b").attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
+        .attr("stroke", pal.ink).attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
       g.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
         .attr("font-size", 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
         .text(ultraCompact ? "U" : compact ? "flow" : "Flow")
@@ -487,7 +488,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className={SCENE_STAGE_CLASS}
     />
   )
 }

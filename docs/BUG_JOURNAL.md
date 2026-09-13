@@ -263,6 +263,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-09-13 · Lesson stages looked like stacked D3 dashboards, not diagrams
+Symptom: Every equation viz sat on a pastel `#fafcff` card-in-a-card, often with a Newsreader title; subject lessons used a 360×200 curve.
+Cause: No shared scene surface. Each file painted its own canvas and chrome.
+Fix: `sceneTheme.ts` + `.scene-stage` CSS; strip inner fills; ResponseCurve 880×520 with a larger handle; configurable lessons fill the stage.
+Lesson: one CSS stage beats 17 unique backgrounds. A live handle should be the size of a finger, not a 5px dot.
+
 ### 2026-09-13 · Schrödinger scene: nested cards, fake L-wall, leftover control strip
 Symptom: Particle-in-a-box looked like four stacked dashboards; an orange L handle sat on the wave; n/Pause floated in empty space.
 Cause: Percentage D3 layout always stretched ψ to the full plot, then drew a second wall via a 0.5–2 scale; a values card duplicated n/L/E already on the energy diagram.
