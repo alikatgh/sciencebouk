@@ -233,6 +233,12 @@ Before reproducing, grep this list for the shape of your bug.
     every label in the same place. Offset from the *edge* in pixels, or put one
     label on the opposite side of the stroke. (Pythagoras a/b/c, 2026-09-13.)
 
+33. **SPA hashed chunk + `try_files` HTML fallback.** After `rsync --delete`, a
+    tab still importing `Scene-OLDHASH.js` gets `index.html` as 200 (`Failed to
+    fetch dynamically imported module`). Never SPA-fallback `/assets/*`; send
+    `Cache-Control: no-cache` on `index.html`; overlap old hashed files for a
+    deploy; reload-once on that error (`staleChunk.ts`).
+
 ---
 
 ## Reusable tools
@@ -262,6 +268,12 @@ script name → one-line "what bug it was built to catch".
 ## Chronological log
 
 Newest first. Five lines max per entry. File:line citations beat prose.
+
+### 2026-09-13 · Chaos Theory: Failed to fetch ChaosScene-D7CujcjI.js
+Symptom: `/equation/16` error boundary; missing hashed scene after deploy.
+Cause: `rsync --delete` dropped the previous chunk; Caddy `try_files` served `index.html` as 200 for `/assets/*.js`.
+Fix: Caddy `/assets/*` 404s + `Cache-Control: no-cache` on HTML; `staleChunk.ts` reloads once; `ErrorBoundary.tsx`.
+Lesson: hashed SPA deploys must not HTML-fallback missing JS, and `index.html` must revalidate.
 
 ### 2026-09-13 · Lesson stages looked like stacked D3 dashboards, not diagrams
 Symptom: Every equation viz sat on a pastel `#fafcff` card-in-a-card, often with a Newsreader title; subject lessons used a 360×200 curve.

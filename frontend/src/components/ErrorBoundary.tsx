@@ -1,5 +1,6 @@
 import { Component } from "react"
 import type { ReactNode, ErrorInfo } from "react"
+import { isStaleChunkError, reloadOnceForStaleChunk } from "../lib/staleChunk"
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -29,6 +30,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error("ErrorBoundary caught:", error, info)
+    reloadOnceForStaleChunk(error)
   }
 
   componentDidUpdate(prevProps: ErrorBoundaryProps): void {
@@ -55,11 +57,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             {this.state.error?.message ?? "Unknown error"}
           </p>
           <button
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => {
+              if (isStaleChunkError(this.state.error)) {
+                window.location.reload()
+                return
+              }
+              this.setState({ hasError: false, error: null })
+            }}
             className="mt-4 rounded-full bg-ocean px-5 py-2 text-sm font-semibold text-white transition hover:bg-ocean/90"
             type="button"
           >
-            Try Again
+            {isStaleChunkError(this.state.error) ? "Reload" : "Try Again"}
           </button>
         </div>
       )

@@ -3,6 +3,9 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ErrorBoundary } from "./ErrorBoundary"
 
+const STALE_CHUNK_MESSAGE =
+  "Failed to fetch dynamically imported module: https://sciencebo.uk/assets/ChaosScene-D7CujcjI.js"
+
 function ThrowingComponent(): never {
   throw new Error("Test error")
 }
@@ -81,5 +84,35 @@ describe("ErrorBoundary", () => {
     )
     expect(screen.getByText("Recovered")).toBeInTheDocument()
     vi.restoreAllMocks()
+  })
+
+  it("reloads once on a stale hashed-chunk import, then shows Reload", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    const reload = vi.fn()
+    vi.stubGlobal("location", { ...window.location, reload })
+    sessionStorage.clear()
+
+    function ThrowStaleChunk(): never {
+      throw new Error(STALE_CHUNK_MESSAGE)
+    }
+
+    render(
+      <ErrorBoundary>
+        <ThrowStaleChunk />
+      </ErrorBoundary>,
+    )
+    expect(reload).toHaveBeenCalledOnce()
+    expect(screen.getByText("Reload")).toBeInTheDocument()
+
+    reload.mockClear()
+    render(
+      <ErrorBoundary>
+        <ThrowStaleChunk />
+      </ErrorBoundary>,
+    )
+    expect(reload).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    sessionStorage.clear()
   })
 })
