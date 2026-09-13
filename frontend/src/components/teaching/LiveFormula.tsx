@@ -1,8 +1,17 @@
 import type { ReactElement } from "react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 import type { Variable } from "./types"
+
+export function fitScale(available: number, natural: number, minScale: number): number {
+  if (available <= 0 || natural <= 0 || natural <= available) return 1
+  return Math.max(minScale, Math.min(1, available / natural))
+}
+
+function roundScale(value: number): number {
+  return Math.round(value * 1000) / 1000
+}
 
 interface LiveFormulaProps {
   letterFormula: string
@@ -20,6 +29,9 @@ function clamp(v: number, min: number, max: number): number {
 
 export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote, variables, onVariableChange, compact = false }: LiveFormulaProps): ReactElement {
   const liveRef = useRef<HTMLDivElement>(null)
+  const liveBoxRef = useRef<HTMLDivElement>(null)
+  const liveMeasureRef = useRef<HTMLDivElement>(null)
+  const [liveScale, setLiveScale] = useState(1)
   const [editing, setEditing] = useState<{ varName: string; color: string; rect: DOMRect } | null>(null)
   const [inputValue, setInputValue] = useState("")
 
@@ -46,7 +58,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       const matchedVar = colorLookup.get(normalized)
       if (!matchedVar || matchedVar.constant || matchedVar.locked) return
 
-      const parentRect = container.getBoundingClientRect()
+      const parentRect = (liveBoxRef.current ?? container).getBoundingClientRect()
       const rect = colorEl.getBoundingClientRect()
       setEditing({
         varName: matchedVar.name,
@@ -88,12 +100,31 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
   }, [editing, inputValue, variables, onVariableChange])
 
   const hasInteractiveVars = (variables ?? []).some((v) => !v.constant && !v.locked)
+  const liveMinScale = compact ? 0.58 : 0.62
+
+  useLayoutEffect(() => {
+    if (!liveFormula) return
+    const box = liveBoxRef.current
+    const measure = liveMeasureRef.current
+    if (!box || !measure) return
+
+    const update = () => {
+      const next = roundScale(fitScale(box.clientWidth, measure.scrollWidth, liveMinScale))
+      setLiveScale((previous) => (previous === next ? previous : next))
+    }
+
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(box)
+    observer.observe(measure)
+    return () => observer.disconnect()
+  }, [liveFormula, liveMinScale])
 
   return (
     <div className={`relative ${compact ? "space-y-1.5" : "space-y-2"}`}>
       {/* Letter formula — secondary label when live exists, hero when alone */}
       {letterFormula && (
-        <div className={`overflow-x-auto ${
+        <div className={`overflow-x-auto whitespace-nowrap ${
           liveFormula
             ? `${compact ? "text-xs" : "text-sm"} text-slate-700 dark:text-slate-200`
             : `text-center ${compact ? "text-xl" : "text-2xl"} text-slate-900 dark:text-slate-50`
@@ -101,10 +132,46 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
           <InlineMath math={letterFormula} />
         </div>
       )}
-      {/* Live formula — always the hero: big, centered, display-math style */}
+      {/* Live formula — scale to the column instead of wrapping mid-equation */}
       {liveFormula && (
-        <div ref={liveRef} className={`overflow-x-auto text-center ${compact ? "text-[1.65rem]" : "text-2xl"} text-slate-900 dark:text-slate-50`}>
-          <InlineMath math={liveFormula} />
+        <div ref={liveBoxRef} className={`relative w-full text-center ${compact ? "text-[1.65rem]" : "text-2xl"} text-slate-900 dark:text-slate-50`}>
+          <div
+            ref={liveMeasureRef}
+            aria-hidden="true"
+            className="pointer-events-none invisible absolute left-0 top-0 w-max whitespace-nowrap"
+          >
+            <InlineMath math={liveFormula} />
+          </div>
+          <div className="overflow-x-auto">
+            <div
+              ref={liveRef}
+              className="mx-auto w-max max-w-full whitespace-nowrap"
+              style={{ fontSize: `${liveScale}em` }}
+            >
+              <InlineMath math={liveFormula} />
+            </div>
+          </div>
+          {editing && (
+            <div
+              className="absolute z-10"
+              style={{ left: editing.rect.left - 4, top: editing.rect.top - 2 }}
+            >
+              <input
+                type="number"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onBlur={handleSubmit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSubmit()
+                  if (e.key === "Escape") setEditing(null)
+                }}
+                className={`${compact ? "w-24 px-2 py-1 text-base" : "w-20 px-1.5 py-0.5 text-sm"} rounded border-2 bg-white font-mono font-bold shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:bg-slate-700`}
+                style={{ borderColor: editing.color, color: editing.color }}
+                aria-label="Edit variable value"
+                autoFocus
+              />
+            </div>
+          )}
         </div>
       )}
       {/* Interactive hint */}
@@ -112,28 +179,6 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
         <p className={`text-center ${compact ? "text-[10px]" : "text-[9px]"} text-slate-400 dark:text-slate-500`}>
           tap colored values to edit
         </p>
-      )}
-      {/* Inline edit overlay */}
-      {editing && (
-        <div
-          className="absolute z-10"
-          style={{ left: editing.rect.left - 4, top: editing.rect.top - 2 }}
-        >
-          <input
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onBlur={handleSubmit}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmit()
-              if (e.key === "Escape") setEditing(null)
-            }}
-            className={`${compact ? "w-24 px-2 py-1 text-base" : "w-20 px-1.5 py-0.5 text-sm"} rounded border-2 bg-white font-mono font-bold shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:bg-slate-700`}
-            style={{ borderColor: editing.color, color: editing.color }}
-            aria-label="Edit variable value"
-            autoFocus
-          />
-        </div>
       )}
       {/* Result */}
       {resultLine && (

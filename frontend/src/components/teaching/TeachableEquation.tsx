@@ -25,8 +25,8 @@ import { useEquationConfig } from "../../data/equationConfig"
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
 const TEACHING_PANEL_STORAGE_KEY = "sciencebouk-teaching-panel-width"
-const TEACHING_PANEL_DEFAULT_WIDTH = 272
-const TEACHING_PANEL_MIN_WIDTH = 200
+const TEACHING_PANEL_DEFAULT_WIDTH = 300
+const TEACHING_PANEL_MIN_WIDTH = 240
 const TEACHING_PANEL_MAX_WIDTH = 400
 const MOBILE_PANEL_DRAG_THRESHOLD = 36
 const MOBILE_PANEL_PEEK_HEIGHT = "min(38vh, 22rem)"

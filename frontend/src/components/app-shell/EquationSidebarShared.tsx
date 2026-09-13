@@ -181,7 +181,7 @@ const EquationListItem = memo(function EquationListItem({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            className={`group flex w-full items-center gap-2 rounded-md py-1 pl-2 pr-7 text-left transition-all ${
+            className={`group flex w-full items-start gap-2 rounded-md py-1 pl-2 pr-7 text-left transition-colors ${
               active ? "bg-slate-100 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
             }`}
             onClick={() => onSelectEquation(equation.id)}
@@ -191,7 +191,7 @@ const EquationListItem = memo(function EquationListItem({
             aria-current={active ? "page" : undefined}
           >
             <span
-              className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold ${
+              className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold ${
                 done
                   ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
                   : active
@@ -202,7 +202,7 @@ const EquationListItem = memo(function EquationListItem({
               {done ? <><CheckCircle2 className="h-3 w-3" aria-hidden="true" /><span className="sr-only">Completed</span></> : equation.id}
             </span>
             <span
-              className={`truncate text-xs ${
+              className={`min-w-0 flex-1 break-words text-xs leading-snug ${
                 active
                   ? "font-medium text-slate-900 dark:text-white"
                   : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-white"

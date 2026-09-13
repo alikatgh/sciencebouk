@@ -16,7 +16,7 @@ A short loop of the core interaction: move one variable, watch the visualization
 
 ## Why This Exists
 
-Most people do not actually hate math. They hate being asked to memorize symbols before they are allowed to see what the symbols do. Formulas exists to flip that order: make the idea move first, let curiosity kick in, and only then make the equation feel earned instead of imposed.
+Most people do not actually hate math. They hate being asked to memorize symbols before they are allowed to see what the symbols do. Sciencebouk exists to flip that order: make the idea move first, let curiosity kick in, and only then make the equation feel earned instead of imposed.
 
 ## Quick Start
 

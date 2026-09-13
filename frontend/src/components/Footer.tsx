@@ -3,7 +3,7 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 import { useFooterContent } from "../data/pageContent"
-import { GITHUB_URL, SITE_DOMAIN } from "../config/site"
+import { GITHUB_URL, SITE_DOMAIN, SITE_NAME } from "../config/site"
 
 export function Footer(): ReactElement {
   const footerContent = useFooterContent()
@@ -25,7 +25,7 @@ export function Footer(): ReactElement {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Formulas</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{SITE_NAME}</p>
                 <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
                   Open source
                 </span>
@@ -69,7 +69,7 @@ export function Footer(): ReactElement {
 
       <div className="mx-auto hidden max-w-5xl flex-col items-center gap-3 px-4 py-6 sm:flex sm:flex-row sm:justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <span className="font-semibold text-slate-700 dark:text-slate-300">Formulas</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-300">{SITE_NAME}</span>
           <span className="text-slate-300 dark:text-slate-600">/</span>
           <span
             className="relative cursor-default"

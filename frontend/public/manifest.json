@@ -1,6 +1,6 @@
 {
-  "name": "Formulas",
-  "short_name": "Formulas",
+  "name": "Sciencebouk",
+  "short_name": "Sciencebouk",
   "description": "Interactive equations you can drag, not just read.",
   "start_url": "/",
   "display": "standalone",

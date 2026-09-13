@@ -8,7 +8,7 @@ import { sanitizeNextPath } from "./navigation"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader } from "../components/ui/card"
-import { SUPPORT_EMAIL } from "../config/site"
+import { SITE_NAME, SUPPORT_EMAIL } from "../config/site"
 
 function getGoogleClientId(): string {
   return import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ""
@@ -183,7 +183,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
       <Card className="w-full max-w-sm rounded-[32px] border-slate-200/90 bg-white/96 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
         <CardHeader className="items-center pb-2 pt-7 sm:pt-8">
           <Link to="/" className="mb-1 font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
-            Sciencebouk
+            {SITE_NAME}
           </Link>
           <span className="text-sm text-slate-400 dark:text-slate-500" aria-hidden="true">
             <InlineMath math="E=mc^2" />

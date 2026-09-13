@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { User, ArrowLeft, Crown, ChevronDown } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { SITE_BASE } from "../config/api"
+import { SITE_NAME } from "../config/site"
 import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 
 import { ErrorBoundary } from "./ErrorBoundary"
@@ -130,7 +131,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                 className="truncate text-base font-bold text-slate-900 transition hover:text-ocean dark:text-white"
                 type="button"
               >
-                Formulas
+                {SITE_NAME}
               </button>
             )}
           </div>

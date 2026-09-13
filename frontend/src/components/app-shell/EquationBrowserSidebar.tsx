@@ -18,7 +18,12 @@ import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
 import { ResizablePanel } from "../ui/resizable-panel"
 import { prefetchEquationScene } from "../sceneRegistry"
+import { SITE_NAME } from "../../config/site"
 import { EquationList, GroupedEquationList, SidebarAccount } from "./EquationSidebarShared"
+
+const SIDEBAR_DEFAULT_WIDTH = 280
+const SIDEBAR_MIN_WIDTH = 240
+const SIDEBAR_MAX_WIDTH = 400
 
 const EquationBrowserDrawer = lazy(() =>
   import("./EquationBrowserDrawer").then((module) => ({ default: module.EquationBrowserDrawer })),
@@ -96,9 +101,9 @@ function EquationBrowserSidebarComponent({
       {sidebarOpen ? (
           <ResizablePanel
             edge="right"
-            defaultWidth={220}
-            minWidth={160}
-            maxWidth={360}
+            defaultWidth={SIDEBAR_DEFAULT_WIDTH}
+            minWidth={SIDEBAR_MIN_WIDTH}
+            maxWidth={SIDEBAR_MAX_WIDTH}
             open={sidebarOpen}
             onCollapse={onToggleSidebar}
             storageKey="sciencebouk-sidebar-width"
@@ -107,7 +112,7 @@ function EquationBrowserSidebarComponent({
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-800">
               <button onClick={onGoHome} className="text-sm font-semibold text-slate-900 transition hover:text-slate-600 dark:text-white" type="button">
-                Formulas
+                {SITE_NAME}
               </button>
               <div className="flex items-center">
                 <Button variant="ghost" size="icon-sm" onClick={onToggleTheme} className="h-6 w-6" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}>

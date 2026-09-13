@@ -112,14 +112,14 @@ export function HomePage(): ReactElement {
             {!activeSubject ? (
               <>
             {/* === HERO === */}
-            <section className="mb-6 overflow-hidden rounded-[32px] bg-slate-900 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
+            <section className="mb-6 overflow-hidden rounded-[32px] bg-slate-900 text-white">
               <div className="grid items-center gap-5 p-4 sm:p-6 md:grid-cols-[1fr_auto] md:p-8">
-                <div>
+                <div className="min-w-0">
                   <h1 className="font-display text-[1.55rem] font-bold tracking-tight leading-tight md:text-3xl">
                     {homePageContent.hero.titleLine1}<br />
                     <span className="text-ocean">{homePageContent.hero.titleLine2}</span>
                   </h1>
-                  <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-400">
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-pretty text-slate-400">
                     {interpolateContent(homePageContent.hero.descriptionTemplate, { total })}
                   </p>
                   <div className="mt-5 flex flex-col items-stretch gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
@@ -233,7 +233,7 @@ export function HomePage(): ReactElement {
                       <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-500 transition group-hover:text-white sm:h-5 sm:w-5" />
                     </div>
                     <div className="border-t border-slate-700 bg-slate-800/50 px-4 py-2 sm:px-5 sm:py-2.5 dark:bg-slate-900/50">
-                      <div className="native-scroll flex snap-x snap-mandatory gap-x-4 gap-y-1 overflow-x-auto pb-1 md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0">
+                      <div className="native-scroll flex snap-x snap-mandatory gap-x-4 gap-y-1 overflow-x-auto pb-1 [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] md:max-h-7 md:flex-wrap md:overflow-hidden md:pb-0 md:[mask-image:none]">
                         {subject.formulas.slice(0, 5).map((f, i) => (
                           <span key={i} className="shrink-0 snap-start text-[11px] text-slate-400 md:shrink md:text-xs">
                             <FormulaPreview formula={f.formula} />

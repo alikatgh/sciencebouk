@@ -263,6 +263,12 @@ script name → one-line "what bug it was built to catch".
 
 Newest first. Five lines max per entry. File:line citations beat prose.
 
+### 2026-09-13 · Equation chrome clipped titles, wrapped live formula, Formulas/Sciencebouk split
+Symptom: Sidebar titles hard-cut at 220px; live KaTeX wrapped mid-equation in the 272px teaching column; chrome said "Formulas" while auth + domain said Sciencebouk.
+Cause: Flex title had `truncate` without `min-w-0`; live formula used `text-2xl` without nowrap/fit; product name was hardcoded in five chrome surfaces.
+Fix: sidebar 280/240 + wrapping titles; `fitScale` in `LiveFormula.tsx`; teaching panel default 300; `SITE_NAME` in `config/site.ts`.
+Lesson: a flex child cannot truncate or wrap until it can shrink (`min-w-0`). Formula chrome needs nowrap + fit, not a bigger font in a skinny column.
+
 ### 2026-09-13 · Unused glass-panel / soft-ring CSS + leftover shadow-panel token
 Symptom: Working tree had comment-only "box-shadow removed per UI rules" edits on classes nothing imported.
 Cause: `.glass-panel` and `.soft-ring` lived only in `index.css`; `shadow-panel` existed only to feed `.glass-panel`.
