@@ -1,0 +1,6 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+const root=process.cwd();const dist=path.join(root,'dist');const sitemap=fs.readFileSync(path.join(dist,'sitemap.xml'),'utf8');const urls=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);const titles=new Set();
+assert(urls.length>1);assert.equal(new Set(urls).size,urls.length);
+for(const url of urls){const route=new URL(url).pathname;const html=fs.readFileSync(path.join(dist,route,'index.html'),'utf8');const head=html.split('</head>')[0];const canonical=[...head.matchAll(/<link[^>]*rel="canonical"[^>]*href="([^"]+)"/g)].map(m=>m[1]);assert.deepEqual(canonical,[url]);const title=head.match(/<title>(.*?)<\/title>/)?.[1];assert(title&&!titles.has(title),`Duplicate or missing title: ${route}`);titles.add(title);assert.match(head,/<meta name="description" content="[^"]+"/);assert.doesNotMatch(head,/noindex/);assert.match(html,/<h1>/);assert.match(head,/name="google-site-verification"/);assert.doesNotMatch(html,/<h2>title:|<p>slug:/);}
+if(fs.existsSync(path.join(dist,'404.html')))assert.match(fs.readFileSync(path.join(dist,'404.html'),'utf8'),/noindex/);
+console.log(`${urls.length} generated pages: content, metadata, canonical and sitemap checks passed`);

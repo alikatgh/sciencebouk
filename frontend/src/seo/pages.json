@@ -1,0 +1,30 @@
+{
+  "/": {
+    "title": "Interactive math and physics visualizations",
+    "description": "Explore equations through interactive visualizations, guided lessons and adjustable variables. Learn geometry, calculus, physics and more with Sciencebouk."
+  },
+  "/about": {
+    "title": "About Sciencebouk",
+    "description": "Learn about Sciencebouk and its approach to understanding mathematics through interactive equations and visual explanations."
+  },
+  "/help": {
+    "title": "Sciencebouk help",
+    "description": "Get help exploring equations, adjusting variables, using guided lessons and managing your Sciencebouk account."
+  },
+  "/privacy": {
+    "title": "Privacy policy",
+    "description": "Read how Sciencebouk handles account information, learning progress and privacy."
+  },
+  "/terms": {
+    "title": "Terms of service",
+    "description": "Read the terms for using Sciencebouk and its interactive learning tools."
+  },
+  "/changelog": {
+    "title": "Sciencebouk updates",
+    "description": "Read about updates and improvements to the Sciencebouk learning experience."
+  },
+  "/pro": {
+    "title": "Sciencebouk Pro",
+    "description": "Explore Sciencebouk Pro features and plans for guided learning and progress tracking."
+  }
+}

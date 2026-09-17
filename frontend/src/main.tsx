@@ -7,6 +7,7 @@ import { SettingsProvider } from "./settings/SettingsContext"
 import { ErrorBoundary } from "./components/ErrorBoundary"
 import { ToastHost } from "./components/ToastHost"
 import "./index.css"
+import { Seo } from "./seo/Seo"
 
 const App = lazy(() => import("./App"))
 const HomePage = lazy(() => import("./components/HomePage").then((module) => ({ default: module.HomePage })))
@@ -109,6 +110,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <SettingsProvider>
           <AuthProvider>
             <BrowserRouter>
+              <Seo />
               <Suspense fallback={<main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 text-sm text-slate-400 dark:bg-slate-950 dark:text-slate-500">Loading...</main>}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />

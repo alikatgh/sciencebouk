@@ -6,10 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b --force && vite build",
+    "build": "tsc -b --force && vite build && node scripts/build-seo.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seo:sync": "node scripts/sync-seo-equations.mjs",
+    "check:seo": "node scripts/check-seo.cjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

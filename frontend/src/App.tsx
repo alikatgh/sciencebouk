@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { Suspense, lazy, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "./auth/AuthContext"
+import { EquationUnavailable } from "./seo/EquationUnavailable"
 
 import { EquationBrowserSidebar } from "./components/app-shell/EquationBrowserSidebar"
 import { ErrorBoundary } from "./components/ErrorBoundary"
@@ -339,6 +340,10 @@ export default function App(): ReactElement {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-ocean border-t-transparent" />
       </div>
     )
+  }
+
+  if (manifestQuery.isError && routeInvalid) {
+    return <EquationUnavailable id={rawSelectedId} retry={() => { void manifestQuery.refetch() }} />
   }
 
   if (routeInvalid) {
