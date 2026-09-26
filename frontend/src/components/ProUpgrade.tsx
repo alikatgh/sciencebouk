@@ -7,8 +7,7 @@ import { BILLING_ENABLED, useBillingDisabledCopy } from "../config/billing"
 import { api } from "../api/client"
 import { interpolateContent, useProUpgradeContent } from "../data/pageContent"
 import { safeRedirect } from "../lib/safeRedirect"
-import { TopNav } from "./TopNav"
-import { Footer } from "./Footer"
+import { PageFrame } from "./PageFrame"
 
 export function ProPricingPage(): ReactElement {
   return <ProPricingPageContent mode="pricing" />
@@ -35,12 +34,8 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   const [verificationTimedOut, setVerificationTimedOut] = useState(false)
   const navigate = useNavigate()
 
-  if (!BILLING_ENABLED) {
-    return <FreeBetaPage isPro={isPro} />
-  }
-
   useEffect(() => {
-    if (mode !== "success") {
+    if (!BILLING_ENABLED || mode !== "success") {
       setVerificationTimedOut(false)
       return
     }
@@ -66,7 +61,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
   }, [mode, refreshUser, isPro, verificationAttempt])
 
   useEffect(() => {
-    if (mode !== "success") return
+    if (!BILLING_ENABLED || mode !== "success") return
     if (authLoading) return
     if (!isAuthenticated) navigate("/", { replace: true })
   }, [mode, authLoading, isAuthenticated, navigate])
@@ -88,11 +83,15 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
     }
   }
 
+  if (!BILLING_ENABLED) {
+    return <FreeBetaPage isPro={isPro} />
+  }
+
   if (mode === "success") {
     if (!isPro && !verificationTimedOut) {
       return (
-        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-          <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <PageFrame className="flex items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-800">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-ocean" />
             <p className="mt-4 text-slate-500">
               {authLoading
@@ -100,14 +99,14 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
                 : proUpgradeContent.states.verifying.checkingPayment}
             </p>
           </div>
-        </main>
+        </PageFrame>
       )
     }
 
     if (!isPro) {
       return (
-        <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-          <div className="max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <PageFrame className="flex items-center justify-center">
+          <div className="max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-800">
             <Loader2 className="mx-auto h-10 w-10 text-ocean" />
             <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">
               {proUpgradeContent.states.delayed.title}
@@ -118,27 +117,27 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <button
                 onClick={() => setVerificationAttempt((attempt) => attempt + 1)}
-                className="rounded-xl bg-ocean px-5 py-2 text-sm font-semibold text-white"
+                className="min-h-11 rounded-xl bg-ocean px-5 py-2.5 text-sm font-semibold text-white"
                 type="button"
               >
                 {proUpgradeContent.states.delayed.checkAgain}
               </button>
               <button
                 onClick={() => navigate("/")}
-                className="rounded-xl border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                className="min-h-11 rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
                 type="button"
               >
                 {proUpgradeContent.states.delayed.backToEquations}
               </button>
             </div>
           </div>
-        </main>
+        </PageFrame>
       )
     }
 
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-        <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <PageFrame className="flex items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-800">
           <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">
             {proUpgradeContent.states.success.title}
@@ -146,20 +145,20 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           <p className="mt-2 text-slate-500">{proUpgradeContent.states.success.body}</p>
           <button
             onClick={() => navigate("/dashboard")}
-            className="mt-6 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white"
+            className="mt-6 min-h-11 rounded-xl bg-ocean px-6 py-2.5 text-sm font-semibold text-white"
             type="button"
           >
             {proUpgradeContent.states.success.button}
           </button>
         </div>
-      </main>
+      </PageFrame>
     )
   }
 
   if (mode === "cancel") {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-        <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <PageFrame className="flex items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-800">
           <XCircle className="mx-auto h-12 w-12 text-slate-400" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">
             {proUpgradeContent.states.cancel.title}
@@ -167,20 +166,20 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           <p className="mt-2 text-slate-500">{proUpgradeContent.states.cancel.body}</p>
           <button
             onClick={() => navigate("/pro")}
-            className="mt-6 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white"
+            className="mt-6 min-h-11 rounded-xl bg-ocean px-6 py-2.5 text-sm font-semibold text-white"
             type="button"
           >
             {proUpgradeContent.states.cancel.button}
           </button>
         </div>
-      </main>
+      </PageFrame>
     )
   }
 
   if (isPro) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-        <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <PageFrame className="flex items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-800">
           <Sparkles className="mx-auto h-12 w-12 text-ocean" />
           <h1 className="mt-4 font-display text-3xl text-slate-900 dark:text-white">
             {proUpgradeContent.states.currentPro.title}
@@ -188,30 +187,23 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           <p className="mt-2 text-slate-500">{proUpgradeContent.states.currentPro.body}</p>
           <button
             onClick={() => navigate("/")}
-            className="mt-6 rounded-xl bg-ocean px-6 py-2 text-sm font-semibold text-white"
+            className="mt-6 min-h-11 rounded-xl bg-ocean px-6 py-2.5 text-sm font-semibold text-white"
             type="button"
           >
             {proUpgradeContent.states.currentPro.button}
           </button>
         </div>
-      </main>
+      </PageFrame>
     )
   }
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-900">
-      <TopNav showBack />
-      <div className="native-scroll flex flex-1 flex-col items-center px-4 py-5 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-8">
-        <h1 className="font-display text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
-          {proUpgradeContent.pricing.title}
-        </h1>
-        <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
-          {proUpgradeContent.pricing.subtitle}
-        </p>
-
+    <PageFrame title={proUpgradeContent.pricing.title} description={proUpgradeContent.pricing.subtitle}>
+      <div className="mx-auto flex max-w-4xl flex-col items-center">
         <div className="mt-6 flex w-full max-w-md items-center gap-2 rounded-full bg-white p-1 shadow-sm dark:bg-slate-800">
           <button
             onClick={() => setYearly(false)}
+            aria-pressed={!yearly}
             className={`min-h-[44px] flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition ${!yearly ? "bg-ocean text-white" : "text-slate-500"}`}
             type="button"
           >
@@ -219,6 +211,7 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           </button>
           <button
             onClick={() => setYearly(true)}
+            aria-pressed={yearly}
             className={`min-h-[44px] flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition ${yearly ? "bg-ocean text-white" : "text-slate-500"}`}
             type="button"
           >
@@ -226,12 +219,12 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
           </button>
         </div>
 
-        <div className="native-scroll mt-8 flex w-full max-w-3xl snap-x snap-mandatory gap-4 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
-          <div className="min-w-[18rem] snap-start rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6 md:min-w-0">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{proUpgradeContent.pricing.freeCard.title}</h3>
-            <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.pricing.freeCard.price}</p>
-            <p className="text-sm text-slate-400">{proUpgradeContent.pricing.freeCard.priceNote}</p>
-            <ul className="mt-4 space-y-2">
+        <div className="mt-8 grid w-full gap-6 md:grid-cols-2">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 sm:p-8">
+            <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.pricing.freeCard.title}</h3>
+            <p className="mt-4 font-display text-4xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.pricing.freeCard.price}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{proUpgradeContent.pricing.freeCard.priceNote}</p>
+            <ul className="mt-6 space-y-3">
               {FREE_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
@@ -248,24 +241,24 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
             </button>
           </div>
 
-          <div className="relative min-w-[18rem] snap-start rounded-[26px] border-2 border-ocean bg-white p-5 shadow-lg dark:bg-slate-800 sm:p-6 md:min-w-0">
+          <div className="relative min-w-0 rounded-2xl border-2 border-ocean bg-white p-6 dark:bg-slate-900 sm:p-8">
             <div className="absolute -top-3 left-4 rounded-full bg-ocean px-3 py-0.5 text-xs font-bold text-white">
               {proUpgradeContent.pricing.proCard.recommendedBadge}
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{proUpgradeContent.pricing.proCard.title}</h3>
-            <p className="mt-1 text-3xl font-bold text-ocean">
+            <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.pricing.proCard.title}</h3>
+            <p className="mt-4 font-display text-4xl font-bold text-ocean">
               $
               {yearly
                 ? proUpgradeContent.pricing.proCard.priceWholeYearly
                 : proUpgradeContent.pricing.proCard.priceWholeMonthly}
               <span className="text-lg">{proUpgradeContent.pricing.proCard.priceFraction}</span>
             </p>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {yearly
                 ? proUpgradeContent.pricing.proCard.priceNoteYearly
                 : proUpgradeContent.pricing.proCard.priceNoteMonthly}
             </p>
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-6 space-y-3">
               {PRO_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <Zap className="mt-0.5 h-4 w-4 flex-shrink-0 text-ocean" />
@@ -286,21 +279,20 @@ function ProPricingPageContent({ mode }: { mode: "pricing" | "success" | "cancel
                 : proUpgradeContent.pricing.proCard.ctaGuest}
             </button>
             {checkoutError && (
-              <p className="mt-2 text-center text-xs text-red-500">{checkoutError}</p>
+              <p role="alert" className="mt-3 text-center text-sm text-red-600">{checkoutError}</p>
             )}
           </div>
         </div>
 
         <button
           onClick={() => navigate("/")}
-          className="mt-8 rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          className="mt-8 rounded-full px-4 py-2 text-sm text-slate-500 dark:text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           type="button"
         >
           {proUpgradeContent.pricing.proCard.backToEquations}
         </button>
       </div>
-      <Footer />
-    </main>
+    </PageFrame>
   )
 }
 
@@ -317,25 +309,19 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
   const navigate = useNavigate()
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-900">
-      <TopNav showBack />
-      <div className="native-scroll flex flex-1 flex-col items-center px-4 py-5 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-8">
-        <span className="rounded-full bg-ocean/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-ocean">
-          {billingDisabledCopy.badge}
-        </span>
-        <h1 className="mt-4 font-display text-center text-3xl tracking-tight text-slate-900 dark:text-white md:text-4xl">
-          {isPro ? proUpgradeContent.states.beta.titleForPro : billingDisabledCopy.headline}
-        </h1>
-        <p className="mt-3 max-w-2xl text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          {isPro ? proUpgradeContent.states.beta.bodyForPro : billingDisabledCopy.body}
-        </p>
+    <PageFrame title={isPro ? proUpgradeContent.states.beta.titleForPro : billingDisabledCopy.headline} description={isPro ? proUpgradeContent.states.beta.bodyForPro : billingDisabledCopy.body}>
+      <div className="mx-auto flex max-w-4xl flex-col items-center">
+        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300"><CheckCircle className="h-4 w-4" />{billingDisabledCopy.badge}</span>
+          <p className="text-sm leading-6 text-emerald-800/80 dark:text-emerald-300/80">{billingDisabledCopy.detail}</p>
+        </div>
 
-        <div className="native-scroll mt-8 flex w-full max-w-3xl snap-x snap-mandatory gap-4 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
-          <div className="min-w-[18rem] snap-start rounded-[26px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 sm:p-6 md:min-w-0">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{proUpgradeContent.states.beta.freeCardTitle}</h3>
-            <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.states.beta.freeCardPrice}</p>
-            <p className="text-sm text-slate-400">{proUpgradeContent.states.beta.freeCardPriceNote}</p>
-            <ul className="mt-4 space-y-2">
+        <div className="mt-8 grid w-full gap-6 md:grid-cols-2">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 sm:p-8">
+            <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.states.beta.freeCardTitle}</h3>
+            <p className="mt-4 font-display text-4xl font-bold text-slate-900 dark:text-white">{proUpgradeContent.states.beta.freeCardPrice}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{proUpgradeContent.states.beta.freeCardPriceNote}</p>
+            <ul className="mt-6 space-y-3">
               {FREE_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
@@ -352,17 +338,17 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
             </button>
           </div>
 
-          <div className="min-w-[18rem] snap-start rounded-[26px] border border-slate-200 bg-slate-100/70 p-5 dark:border-slate-700 dark:bg-slate-800/70 sm:p-6 md:min-w-0">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-100/70 p-6 dark:border-slate-700 dark:bg-slate-900/70 sm:p-8">
             <div className="inline-flex rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
               {proUpgradeContent.states.beta.proPausedBadge}
             </div>
             <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{proUpgradeContent.states.beta.proCardTitle}</h3>
-            <p className="mt-1 text-3xl font-bold text-slate-400">
+            <p className="mt-4 font-display text-4xl font-bold text-slate-400">
               ${proUpgradeContent.states.beta.proCardPriceWhole}
               <span className="text-lg">{proUpgradeContent.states.beta.proCardPriceFraction}</span>
             </p>
-            <p className="text-sm text-slate-400">{proUpgradeContent.states.beta.proCardPriceNote}</p>
-            <ul className="mt-4 space-y-2">
+            <p className="text-sm text-slate-500 dark:text-slate-400">{proUpgradeContent.states.beta.proCardPriceNote}</p>
+            <ul className="mt-6 space-y-3">
               {PRO_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
                   <Zap className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
@@ -383,14 +369,13 @@ function FreeBetaPage({ isPro }: { isPro: boolean }): ReactElement {
 
         <button
           onClick={() => navigate("/")}
-          className="mt-8 rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          className="mt-8 rounded-full px-4 py-2 text-sm text-slate-500 dark:text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           type="button"
         >
           {proUpgradeContent.states.beta.backToEquations}
         </button>
       </div>
-      <Footer />
-    </main>
+    </PageFrame>
   )
 }
 

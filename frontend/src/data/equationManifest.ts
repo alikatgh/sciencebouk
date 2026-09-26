@@ -2,16 +2,24 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "../api/client"
 import type { EquationSummaryResponse } from "../api/client"
 import fallbackManifestJson from "./content/equation-manifest-fallback.json"
+import subjectManifestJson from "./content/subject-manifest-fallback.json"
 import { useSettings } from "../settings/SettingsContext"
 
 export type EquationSummary = EquationSummaryResponse
 
 export const coreEquationManifest: EquationSummary[] = fallbackManifestJson as EquationSummary[]
 
+// Generated from the same curated seed as the API teaching payloads. Keep the
+// core collection separate so the original 17-equation subject stays intact.
+export const fallbackEquationManifest: EquationSummary[] = [
+  ...coreEquationManifest,
+  ...subjectManifestJson as EquationSummary[],
+].sort((a, b) => a.id - b.id)
+
 export function resolveEquationManifest(
   manifest: EquationSummary[] | null | undefined,
 ): EquationSummary[] {
-  return manifest && manifest.length > 0 ? manifest : coreEquationManifest
+  return manifest && manifest.length > 0 ? manifest : fallbackEquationManifest
 }
 
 /** Lowercase + strip diacritics so "Schrodinger" matches "Schrödinger". */

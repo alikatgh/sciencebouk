@@ -56,6 +56,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
 
   const handleValueClick = useCallback(() => {
     if (isDisabled) return
+    cancelEditRef.current = false
     setInputValue(formatValue(variable.value, variable.step))
     setEditing(true)
     if (focusTimerRef.current) {
@@ -75,7 +76,9 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
       return
     }
     const val = Number(inputValue)
-    if (!isNaN(val)) onChange(variable.name, clamp(val, variable.min, variable.max))
+    if (inputValue.trim() !== "" && Number.isFinite(val)) {
+      onChange(variable.name, clamp(val, variable.min, variable.max))
+    }
     setEditing(false)
   }, [inputValue, variable, onChange])
 
@@ -86,18 +89,21 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
           className={`rounded-lg px-2.5 py-2 transition-colors [@media(pointer:coarse)]:rounded-xl [@media(pointer:coarse)]:px-3 [@media(pointer:coarse)]:py-3 ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           onPointerEnter={() => onHover(variable.name)}
           onPointerLeave={() => onHover(null)}
-          style={{ opacity: variable.locked ? 0.4 : 1 }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
-              {variable.symbol}
-            </span>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{variable.symbol}</span>
+              {variable.description && (
+                <p className="text-xs leading-snug text-slate-500 dark:text-slate-400">{variable.description}</p>
+              )}
+            </div>
             {editing ? (
               <Input
                 ref={inputRef}
                 type="number"
                 value={inputValue}
                 min={variable.min} max={variable.max} step={variable.step}
+                aria-label={`Edit ${variable.description || variable.symbol}`}
                 onChange={(e) => setInputValue(e.target.value)}
                 onBlur={handleValueSubmit}
                 onKeyDown={(e) => {
@@ -113,7 +119,9 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
             ) : (
               <button
                 onClick={handleValueClick}
-                className={`rounded px-1.5 py-0.5 font-mono text-sm font-medium tabular-nums text-slate-800 transition dark:text-slate-100 [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5 ${
+                disabled={isDisabled}
+                aria-label={`${variable.description || variable.symbol}: ${formatValue(variable.value, variable.step)}${variable.unit ? ` ${variable.unit}` : ""}${isDisabled ? ". Locked in this lesson step" : ". Edit value"}`}
+                className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-sm font-medium tabular-nums text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-100 [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5 ${
                   isDisabled ? "cursor-default" : "cursor-text hover:bg-slate-100 dark:hover:bg-slate-600"
                 }`}
                 type="button"
@@ -133,6 +141,9 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
               onValueChange={([v]) => onChange(variable.name, v)}
               aria-label={`${variable.description ?? variable.symbol}: ${variable.value}`}
             />
+          )}
+          {variable.locked && (
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Locked for this lesson step</p>
           )}
         </div>
       </TooltipTrigger>
@@ -156,7 +167,7 @@ export function TouchableFormula({
 
   return (
     <TooltipProvider delayDuration={400}>
-      <div className="space-y-0.5" role="group" aria-label="Variable controls">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800" role="group" aria-label="Variable controls">
         {interactiveVars.map((v) => (
           <SliderRow
             key={v.name}

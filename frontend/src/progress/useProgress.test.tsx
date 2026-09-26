@@ -1,7 +1,8 @@
 import type { ReactElement } from "react"
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { clearStoredProgress, useAllProgress, useProgress } from "./useProgress"
+import { clearStoredProgress, registerEquationIds, useAllProgress, useProgress } from "./useProgress"
+import { fallbackEquationManifest } from "../data/equationManifest"
 
 const { authState, progressApi } = vi.hoisted(() => ({
   authState: {
@@ -68,8 +69,26 @@ describe("useProgress hooks", () => {
   })
 
   afterEach(() => {
-    clearStoredProgress()
+    act(() => {
+      clearStoredProgress()
+      registerEquationIds(fallbackEquationManifest.map((equation) => equation.id))
+    })
     vi.unstubAllGlobals()
+  })
+
+  it("counts the complete library initially and preserves progress when the API registers IDs", () => {
+    localStorage.setItem("eq-progress-34", JSON.stringify({ completed: true, lessonStep: "grow" }))
+    const { result } = renderHook(() => useAllProgress())
+
+    expect(result.current.total).toBe(81)
+    expect(result.current.completedCount).toBe(1)
+    expect(result.current.progressByEquation.has(81)).toBe(true)
+
+    act(() => registerEquationIds([1, 34]))
+    expect(result.current.total).toBe(2)
+    expect(result.current.completedCount).toBe(1)
+    expect(result.current.progressByEquation.get(34)).toMatchObject({ completed: true, lessonStep: "grow" })
+    expect(JSON.parse(localStorage.getItem("eq-progress-34") ?? "{}")).toMatchObject({ completed: true })
   })
 
   it("persists local progress updates", () => {

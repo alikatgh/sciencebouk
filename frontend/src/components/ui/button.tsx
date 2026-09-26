@@ -8,20 +8,20 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-ocean text-white shadow-sm hover:bg-ocean/90",
-        secondary: "bg-slate-100 text-slate-900 shadow-sm hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
-        outline: "border border-slate-200 bg-white shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700",
+        default: "bg-ocean text-white hover:bg-ocean/90",
+        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+        outline: "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
         ghost: "hover:bg-slate-100 dark:hover:bg-slate-800",
         link: "text-ocean underline-offset-4 hover:underline",
         destructive: "bg-red-500 text-white shadow-sm hover:bg-red-600",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
+        default: "h-11 px-4 py-2",
+        sm: "h-9 rounded-lg px-3 text-sm [@media(pointer:coarse)]:min-h-[44px]",
         xs: "h-7 rounded-md px-2 text-xs [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:px-3",
-        lg: "h-10 rounded-lg px-6",
-        icon: "h-9 w-9",
-        "icon-sm": "h-7 w-7 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11",
+        lg: "h-12 rounded-xl px-6 text-base",
+        icon: "h-11 w-11",
+        "icon-sm": "h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

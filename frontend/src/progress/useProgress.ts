@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"
 import type { BulkSyncItem, ProgressItem } from "../api/client"
+import { fallbackEquationManifest } from "../data/equationManifest"
 
 // Equation IDs registered at runtime from the API manifest.
-// Defaults to IDs 1–17 so progress works before the first API response.
-let _equationIds: number[] = Array.from({ length: 17 }, (_, i) => i + 1)
+// Match the full bundled library before the first equation page/API response.
+let _equationIds: number[] = fallbackEquationManifest.map((equation) => equation.id)
 
 /** Called by App once the equation manifest loads from the API. */
 export function registerEquationIds(ids: number[]): void {

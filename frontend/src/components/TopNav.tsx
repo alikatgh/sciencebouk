@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { User, ArrowLeft, Crown, ChevronDown } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { SITE_BASE } from "../config/api"
@@ -45,6 +45,7 @@ function getUserInitials(user: { email: string; profile: { display_name: string 
 export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
   const billingDisabledCopy = useBillingDisabledCopy()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, isAuthenticated, isPro, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -109,36 +110,24 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
   return (
     <header className="sticky top-0 z-50 flex-shrink-0 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
       <div
-        className="mx-auto flex max-w-7xl flex-wrap items-start justify-between gap-x-3 gap-y-2 px-4 pb-2.5 pt-2 sm:flex-nowrap sm:items-center sm:py-2.5"
+        className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 pt-2 sm:px-6 sm:py-3 lg:px-8"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
       >
-        {/* Left */}
-        <div className="flex min-w-0 flex-1 basis-0 items-start gap-2 sm:items-center">
-          {showBack && (
-            <button
-              onClick={onBack ?? (() => navigate("/"))}
-              className="mt-0.5 flex-shrink-0 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 sm:mt-0"
-              type="button"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          )}
-          <div className="min-w-0 flex-1">
-            {left ?? (
-              <button
-                onClick={() => navigate("/")}
-                className="truncate text-base font-bold text-slate-900 transition hover:text-ocean dark:text-white"
-                type="button"
-              >
-                {SITE_NAME}
-              </button>
-            )}
-          </div>
-        </div>
+        <Link to="/" className="flex min-h-11 shrink-0 items-center gap-2.5 font-display text-lg font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-xl" aria-label={`${SITE_NAME} home`}>
+          <svg viewBox="0 0 32 32" className="h-8 w-8 text-ocean" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="30" height="30" rx="9" fill="currentColor" />
+            <path d="M9 23V9l15 14H9Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
+            <path d="M9 19h4v4" stroke="white" strokeOpacity=".6" strokeWidth="1.3" />
+          </svg>
+          {SITE_NAME}
+        </Link>
+        <nav aria-label="Main navigation" className="order-3 flex w-full items-center gap-1 border-t border-slate-100 pt-1 text-sm font-medium dark:border-slate-800 sm:order-none sm:ml-5 sm:w-auto sm:border-0 sm:pt-0">
+          <Link to="/#subjects-section" aria-current={location.pathname === "/" ? "page" : undefined} className={`flex min-h-10 items-center rounded-lg px-3 transition-colors ${location.pathname === "/" ? "bg-ocean/10 text-ocean" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"}`}>Library</Link>
+          <Link to="/help" aria-current={location.pathname === "/help" ? "page" : undefined} className={`flex min-h-10 items-center rounded-lg px-3 transition-colors ${location.pathname === "/help" ? "bg-ocean/10 text-ocean" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"}`}>Help</Link>
+        </nav>
 
         {/* Right */}
-        <div className="ml-auto flex flex-shrink-0 items-center gap-1 pl-2 sm:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {isAuthenticated && user ? (
             <div className="relative flex items-center gap-1 sm:gap-2" ref={menuRef} onBlur={handleBlur}>
               {!isPro && (
@@ -169,7 +158,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                 onFocus={() => {
                   void loadTopNavAccountMenu()
                 }}
-                className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full py-1 pl-1 pr-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-800 [@media(pointer:coarse)]:min-h-[44px] sm:h-8 sm:min-h-0 sm:justify-start sm:pr-2"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl py-1 pl-1.5 pr-2 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                 type="button"
                 aria-label="Open profile menu"
                 aria-haspopup="menu"
@@ -183,7 +172,7 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
                     {initials}
                   </span>
                 )}
-                <span className="hidden text-sm font-medium text-slate-700 dark:text-slate-300 sm:inline">
+                <span className="hidden max-w-32 truncate text-sm font-medium text-slate-700 dark:text-slate-300 sm:inline">
                   {displayName}
                 </span>
                 <ChevronDown className={`hidden h-3 w-3 text-slate-400 transition sm:block ${menuOpen ? "rotate-180" : ""}`} />
@@ -212,18 +201,11 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => navigate("/help")}
-                className="min-h-[40px] rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300 sm:min-h-0 sm:border-0 sm:px-0 sm:py-0 sm:font-normal sm:text-xs"
-                type="button"
-              >
-                Help
-              </button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/login")}
-                className="min-h-[40px] rounded-full px-3 text-xs sm:h-7 sm:min-h-0 sm:rounded-md"
+                className="min-h-11 rounded-xl border-slate-200 px-4 text-sm dark:border-slate-700"
               >
                 <User className="h-3 w-3" /> Sign in
               </Button>
@@ -231,6 +213,14 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
           )}
         </div>
       </div>
+      {(left || showBack) && (
+        <div className="border-t border-slate-100 dark:border-slate-800">
+          <div className="mx-auto flex min-h-12 max-w-7xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-8">
+            {showBack && <button type="button" onClick={onBack ?? (() => navigate("/"))} aria-label="Go back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"><ArrowLeft className="h-4 w-4" /></button>}
+            {left && <div className="min-w-0 flex-1">{left}</div>}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

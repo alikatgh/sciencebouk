@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, MoveHorizontal } from "lucide-react"
 import { InlineMath } from "react-katex"
 import "katex/dist/katex.min.css"
 import { useAuth } from "./AuthContext"
 import { sanitizeNextPath } from "./navigation"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Card, CardContent, CardHeader } from "../components/ui/card"
+import { Card, CardContent } from "../components/ui/card"
 import { SITE_NAME, SUPPORT_EMAIL } from "../config/site"
 
 function getGoogleClientId(): string {
@@ -177,29 +177,46 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   return (
     <main
-      className="flex min-h-[100dvh] items-start justify-center bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.08),_transparent_42%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 pt-4 dark:bg-slate-950 sm:items-center sm:bg-slate-50 sm:pt-0 dark:sm:bg-slate-950"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+      className="min-h-[100dvh] bg-[#f3f6fb] px-4 text-ink dark:bg-slate-950 sm:px-8"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
     >
-      <Card className="w-full max-w-sm rounded-[32px] border-slate-200/90 bg-white/96 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
-        <CardHeader className="items-center pb-2 pt-7 sm:pt-8">
-          <Link to="/" className="mb-1 font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
-            {SITE_NAME}
-          </Link>
-          <span className="text-sm text-slate-400 dark:text-slate-500" aria-hidden="true">
-            <InlineMath math="E=mc^2" />
-          </span>
-          <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11px]">
-            <span className="rounded-full bg-ocean/10 px-3 py-1 font-semibold text-ocean">Free beta</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">Core access stays free</span>
-          </div>
-        </CardHeader>
+      <div className="mx-auto max-w-6xl">
+        <Link to="/" className="inline-flex min-h-11 items-center gap-3 rounded-lg font-display text-xl font-bold tracking-tight text-ink dark:text-white">
+          <ArrowLeft className="h-4 w-4 text-slate-500" /> {SITE_NAME}
+        </Link>
+        <div className="grid items-center gap-10 py-6 sm:py-10 lg:grid-cols-[1.1fr_1fr] lg:gap-20 lg:py-14">
+          <section className="hidden min-w-0 lg:block" aria-label="Explore science with ScienceBouk">
+            <h2 className="max-w-lg font-display text-5xl font-bold leading-[1.12] tracking-tight dark:text-white">A little curiosity.<br />A whole new understanding.</h2>
+            <p className="mt-5 max-w-md text-lg leading-8 text-slate-600 dark:text-slate-400">Move a variable. Watch what happens. Build an intuition for the equations that explain our world.</p>
+            <div className="mt-9 overflow-hidden rounded-3xl border border-slate-200 bg-white p-7 dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">One relationship. Endless discoveries.</p>
+                <MoveHorizontal className="h-5 w-5 shrink-0 text-ocean" aria-hidden="true" />
+              </div>
+              <svg viewBox="0 0 360 155" className="mt-6 w-full" aria-hidden="true">
+                <path d="M35 125H320 M35 125V20" stroke="#d8e1ef" strokeWidth="1.5" />
+                <path d="M35 125 L300 25" fill="none" stroke="#315cdd" strokeWidth="3" />
+                <path d="M225 125V53" stroke="#a7badf" strokeDasharray="4 5" />
+                <circle cx="225" cy="53" r="7" fill="#315cdd" stroke="white" strokeWidth="3" />
+                <text x="214" y="149" fontSize="13" fill="#64748b">mass</text>
+                <text x="45" y="29" fontSize="13" fill="#64748b">energy</text>
+              </svg>
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-5 dark:border-slate-800">
+                <span className="text-xl text-ocean" aria-hidden="true"><InlineMath math="E = mc^2" /></span>
+                <span className="text-sm text-slate-500">Discover through doing</span>
+              </div>
+            </div>
+            <Link to="/equation/1" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ocean hover:underline">Try an equation first <ArrowRight className="h-4 w-4" /></Link>
+          </section>
+          <Card className="mx-auto w-full max-w-lg rounded-3xl border-slate-200 bg-white shadow-[0_16px_50px_-25px_rgba(23,33,58,0.2)] dark:border-slate-800 dark:bg-slate-900">
+            <CardContent className="p-6 sm:p-9">
+              <div className="mb-7">
+                <span className="inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">Free beta</span>
+                <h1 className="mt-4 font-display text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-3xl">{isLogin ? "Welcome back" : "Create your account"}</h1>
+                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{isLogin ? "Sign in to pick up where your curiosity left off." : "Join with your invite code. Core access stays free."}</p>
+              </div>
 
-        <CardContent className="px-5 pb-6 pt-4 sm:px-6 sm:pb-8">
-          <h1 className="mb-6 text-center font-body text-lg font-semibold text-ink dark:text-white">
-            {isLogin ? "Sign in to your account" : "Create your account"}
-          </h1>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email
@@ -213,6 +230,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
+                className="min-h-12"
               />
             </div>
 
@@ -229,19 +247,19 @@ export default function AuthPage({ mode }: AuthPageProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={isLogin ? "Enter your password" : "At least 8 characters"}
-                  className="pr-10"
+                  className="min-h-12 pr-14"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
+                  className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {!isLogin && (
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Must be at least 8 characters</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Must be at least 8 characters</p>
               )}
             </div>
 
@@ -258,8 +276,9 @@ export default function AuthPage({ mode }: AuthPageProps) {
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
                   placeholder="SCB-XXXX-XXXX-XXXX"
+                  className="min-h-12"
                 />
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                   We are opening accounts through invites first.
                 </p>
               </div>
@@ -282,25 +301,25 @@ export default function AuthPage({ mode }: AuthPageProps) {
                       if (confirmError) setConfirmError("")
                     }}
                     placeholder="Re-enter your password"
-                    className="pr-10"
+                    className="min-h-12 pr-14"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
+                    className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                     aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
                   >
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {confirmError && (
-                  <p className="mt-1.5 text-xs font-medium text-ember">{confirmError}</p>
+                  <p role="alert" className="mt-1.5 text-sm font-medium text-ember">{confirmError}</p>
                 )}
               </div>
             )}
 
             {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-ember dark:bg-red-950/30">{error}</p>
+              <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-ember dark:bg-red-950/30">{error}</p>
             )}
 
             <Button type="submit" disabled={submitting} className="min-h-[48px] w-full rounded-2xl" size="lg">
@@ -324,17 +343,14 @@ export default function AuthPage({ mode }: AuthPageProps) {
               </div>
               <div ref={googleBtnRef} className="flex min-h-[44px] justify-center overflow-hidden rounded-2xl" />
               {googleError && (
-                <p className="mt-2 text-center text-xs font-medium text-ember">{googleError}</p>
+                <p role="alert" className="mt-2 text-center text-sm font-medium text-ember">{googleError}</p>
               )}
             </>
           )}
 
           {isLogin && (
-            <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs text-slate-400 dark:bg-slate-800/70 dark:text-slate-500">
-              Forgot password?{" "}
-              <span className="text-slate-500 dark:text-slate-400">
-                Contact support at {SUPPORT_EMAIL}
-              </span>
+            <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+              Forgot your password? <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-ocean hover:underline">Contact support</a>
             </p>
           )}
 
@@ -361,8 +377,15 @@ export default function AuthPage({ mode }: AuthPageProps) {
               </>
             )}
           </p>
-        </CardContent>
-      </Card>
+            <p className="mt-6 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-500 dark:border-slate-800 dark:text-slate-400">
+              <Link to="/privacy" className="hover:text-ocean hover:underline">Privacy policy</Link>
+              <span aria-hidden="true" className="mx-3">/</span>
+              <Link to="/terms" className="hover:text-ocean hover:underline">Terms of service</Link>
+            </p>
+          </CardContent>
+        </Card>
+        </div>
+      </div>
     </main>
   )
 }

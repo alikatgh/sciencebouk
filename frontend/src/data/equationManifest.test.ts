@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
   coreEquationManifest,
+  fallbackEquationManifest,
   getRandomEquationId,
   resolveEquationManifest,
   searchEquationManifest,
 } from "./equationManifest"
+import { activeSubjects } from "./subjects"
 
 describe("equation manifest helpers", () => {
   it("provides a stable canonical fallback manifest", () => {
@@ -17,8 +19,24 @@ describe("equation manifest helpers", () => {
   })
 
   it("falls back to the canonical manifest when API data is unavailable", () => {
-    expect(resolveEquationManifest(undefined)).toEqual(coreEquationManifest)
-    expect(resolveEquationManifest([])).toEqual(coreEquationManifest)
+    expect(resolveEquationManifest(undefined)).toBe(fallbackEquationManifest)
+    expect(resolveEquationManifest([])).toBe(fallbackEquationManifest)
+    expect(resolveEquationManifest(null)).toBe(fallbackEquationManifest)
+  })
+
+  it("resolves every equation advertised by the subject library without the API", () => {
+    const fallback = resolveEquationManifest(undefined)
+    const ids = new Set(fallback.map((equation) => equation.id))
+    const libraryIds = new Set(activeSubjects.flatMap((subject) => subject.formulas.map((formula) => formula.id)))
+    expect(ids).toEqual(libraryIds)
+    expect(ids.size).toBe(fallback.length)
+    expect(fallback.find((equation) => equation.id === 34)).toMatchObject({ title: "Newton's Second Law", formula: "F=ma" })
+    expect(fallback.find((equation) => equation.id === 51)?.title).toBe("Compound Interest")
+  })
+
+  it("keeps API metadata and translations authoritative when available", () => {
+    const apiManifest = [{ ...coreEquationManifest[0], title: "Localized title" }]
+    expect(resolveEquationManifest(apiManifest)).toBe(apiManifest)
   })
 
   it("searches manifest entries by title, author, and category", () => {

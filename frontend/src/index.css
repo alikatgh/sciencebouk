@@ -5,15 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --font-body: "STIX Two Text", serif;
-  --slider-fill: #1e293b;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --studio-canvas: #f3f6fb;
+  --studio-panel: #ffffff;
+  --studio-line: #dde4ef;
+  --studio-ink: #17213a;
+  --slider-fill: #315cdd;
   --slider-unfilled: #e2e8f0;
   --slider-thumb-border: #cbd5e1;
-  color: #112236;
-  background:
-    radial-gradient(circle at top left, rgba(115, 219, 200, 0.12), transparent 24%),
-    radial-gradient(circle at top right, rgba(255, 213, 106, 0.12), transparent 22%),
-    linear-gradient(180deg, #fbf8f1 0%, #f7f4ec 50%, #f3efe5 100%);
+  color: var(--studio-ink);
+  background: var(--studio-canvas);
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
@@ -23,22 +24,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (min-width: 768px) {
-  :root {
-    font-size: 17px;
-  }
-}
-
-@media (min-width: 1280px) {
-  :root {
-    font-size: 18px;
-  }
-}
-
 .dark {
+  --studio-canvas: #0c1424;
+  --studio-panel: #121e32;
+  --studio-line: #29384f;
+  --studio-ink: #e5edf8;
   color: #e2e8f0;
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  --slider-fill: #e2e8f0;
+  background: var(--studio-canvas);
+  --slider-fill: #8ca8ff;
   --slider-unfilled: #334155;
   --slider-thumb-border: #64748b;
 }
@@ -136,6 +129,27 @@ section .katex {
 }
 
 @layer components {
+  .studio-shell {
+    background: var(--studio-canvas);
+    color: var(--studio-ink);
+  }
+
+  .studio-surface {
+    background: var(--studio-panel);
+    border-color: var(--studio-line);
+  }
+
+  .studio-inspector {
+    background: var(--studio-panel);
+    border: 1px solid var(--studio-line);
+    border-radius: 16px;
+  }
+
+  .studio-grid {
+    background-image: radial-gradient(var(--studio-line) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
   .animate-fade-in {
     animation: formulas-fade-in calc(220ms * var(--animation-speed, 1)) ease-out both;
   }
@@ -239,7 +253,7 @@ section .katex {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 1rem;
+  height: 1.75rem;
   background: transparent;
   outline: none;
   touch-action: pan-y;

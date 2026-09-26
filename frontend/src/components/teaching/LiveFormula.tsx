@@ -93,7 +93,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
     const v = variables.find((vr) => vr.name === editing.varName)
     if (!v) return
     const num = Number(inputValue)
-    if (!isNaN(num)) {
+    if (inputValue.trim() !== "" && Number.isFinite(num)) {
       onVariableChange(v.name, clamp(num, v.min, v.max))
     }
     setEditing(null)
@@ -176,8 +176,8 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       )}
       {/* Interactive hint */}
       {hasInteractiveVars && liveFormula && (
-        <p className={`text-center ${compact ? "text-[10px]" : "text-[9px]"} text-slate-400 dark:text-slate-500`}>
-          tap colored values to edit
+        <p className={`text-center text-xs text-slate-500 dark:text-slate-400`}>
+          Select an underlined value to edit
         </p>
       )}
       {/* Result */}
@@ -188,7 +188,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       )}
       {/* Note */}
       {resultNote && (
-        <p className={`text-center ${compact ? "text-[11px]" : "text-xs"} leading-tight text-slate-400 dark:text-slate-500`}>
+        <p className={`text-center text-sm leading-relaxed text-slate-600 dark:text-slate-300`}>
           {resultNote}
         </p>
       )}

@@ -43,7 +43,7 @@ describe("SettingsContext helpers", () => {
 
     expect(invalid.theme).toBe("system")
     expect(invalid.fontSize).toBe("medium")
-    expect(invalid.fontFamily).toBe("STIX Two Text")
+    expect(invalid.fontFamily).toBe("IBM Plex Sans")
     expect(invalid.soundVolume).toBe(50)
   })
 

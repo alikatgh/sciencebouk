@@ -6,17 +6,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#112236",
-        mist: "#f4f8ff",
-        ocean: "#4f73ff",
-        aqua: "#25a67f",
+        ink: "#17213a",
+        mist: "#f3f6fb",
+        ocean: "#315cdd",
+        aqua: "#167c66",
         sunrise: "#ffd56a",
         ember: "#ff9f6b",
       },
       fontFamily: {
-        display: ['"STIX Two Text"', "serif"],
-        body: ['"STIX Two Text"', "serif"],
-        ui: ['"Manrope"', "sans-serif"],
+        display: ['"Manrope"', "sans-serif"],
+        body: ['"IBM Plex Sans"', "sans-serif"],
+        ui: ['"IBM Plex Sans"', "sans-serif"],
       },
     },
   },

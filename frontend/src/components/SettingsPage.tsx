@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useCallback, useState } from "react"
+import { cloneElement, useCallback, useId, useState } from "react"
 import { Palette, Gauge, RotateCcw, Trash2, GraduationCap } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
 import { api } from "../api/client"
@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Separator } from "./ui/separator"
 import { Slider } from "./ui/slider"
 import { Switch } from "./ui/switch"
-import { TopNav } from "./TopNav"
-import { Footer } from "./Footer"
+import { PageFrame } from "./PageFrame"
 import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 import { clearStoredProgress } from "../progress/useProgress"
@@ -37,6 +36,7 @@ function FontCard({ font, selected, onSelect }: { font: typeof FONTS[0]; selecte
     <button
       type="button"
       onClick={onSelect}
+      aria-pressed={selected}
       className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
         selected
           ? "border-ocean bg-ocean/5 dark:border-ocean/70 dark:bg-ocean/10"
@@ -46,35 +46,41 @@ function FontCard({ font, selected, onSelect }: { font: typeof FONTS[0]; selecte
       <p className="text-sm font-medium text-slate-800 dark:text-slate-200" style={{ fontFamily: font.stack }}>
         {font.label}
       </p>
-      <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">{font.desc}</p>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{font.desc}</p>
     </button>
   )
 }
 
-function SettingRow({ label, description, children }: { label: string; description?: string; children: ReactElement }): ReactElement {
+function SettingRow({ label, description, children }: { label: string; description?: string; children: ReactElement<{ "aria-labelledby"?: string; "aria-describedby"?: string }> }): ReactElement {
+  const id = useId()
   return (
-    <div className="flex flex-col items-stretch justify-between gap-2.5 py-2.5 sm:flex-row sm:items-center sm:gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-slate-900 dark:text-white">{label}</p>
-        {description && <p className="text-xs text-slate-400 dark:text-slate-500">{description}</p>}
+    <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 py-4">
+      <div className="min-w-0 flex-1 basis-40">
+        <p id={`${id}-label`} className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
+        {description && <p id={`${id}-description`} className="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">{description}</p>}
       </div>
-      <div className="sm:flex-shrink-0">{children}</div>
+      <div className="max-w-full">{cloneElement(children, {
+        "aria-labelledby": `${id}-label`,
+        "aria-describedby": description ? `${id}-description` : undefined,
+      })}</div>
     </div>
   )
 }
 
-function SegmentedControl({ value, onChange, options, label }: {
+function SegmentedControl({ value, onChange, options, label, ...aria }: {
   value: string; onChange: (v: string) => void
   options: Array<{ value: string; label: string }>
   label?: string
+  "aria-labelledby"?: string
+  "aria-describedby"?: string
 }): ReactElement {
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap rounded-2xl bg-slate-100 p-1 dark:bg-slate-800 sm:flex-nowrap sm:rounded-lg sm:p-0.5">
+    <div role="group" aria-label={label} {...aria} className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`min-h-[40px] rounded-xl px-3 py-2 text-xs font-medium transition-all sm:min-h-0 sm:rounded-md sm:px-2.5 sm:py-1 ${
+          className={`min-h-10 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             value === opt.value
               ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
@@ -94,10 +100,10 @@ function FormulaPreview({ settings }: { settings: Settings }): ReactElement {
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 px-5 py-4 dark:from-slate-800/60 dark:via-blue-950/20 dark:to-indigo-950/10"
+      className="relative overflow-x-auto rounded-xl border border-ocean/15 bg-ocean/[0.04] px-5 py-5 dark:bg-ocean/10"
       style={{ fontSize: `${scale}em` }}
     >
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500" style={{ fontSize: '10px' }}>
+      <p className="mb-3 text-xs font-semibold text-ocean" style={{ fontSize: '10px' }}>
         Live preview
       </p>
       <div className="flex flex-col gap-2">
@@ -143,28 +149,29 @@ export default function SettingsPage(): ReactElement {
   }, [isAuthenticated, isPro])
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
-      <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">Settings</span>} />
-
-      <div className="flex-1">
-        <div className="mx-auto max-w-4xl space-y-4 px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-6">
-
+    <PageFrame title="Settings" description="Make the studio feel right for you. Changes save as you go.">
+      <nav aria-label="Settings sections" className="mb-7 flex flex-wrap gap-2">
+        {[['learning', 'Learning'], ['interaction', 'Interaction'], ['appearance', 'Appearance'], ['data', 'Your data']].map(([id, label]) => (
+          <a key={id} href={`#${id}`} className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-ocean/40 hover:text-ocean dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{label}</a>
+        ))}
+      </nav>
+      <div className="space-y-6">
         {/* ── Learning Experience — full-width hero ── */}
-        <Card className="border-blue-100 dark:border-blue-900/30">
-          <CardHeader className="pb-0">
-            <CardTitle className="flex items-center gap-2 text-sm">
+        <Card id="learning" className="scroll-mt-24">
+          <CardHeader className="p-6 pb-0">
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
               <GraduationCap className="h-4 w-4 text-blue-500" /> Learning Experience
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-3">
-            <div className="grid gap-4 lg:grid-cols-2">
+          <CardContent className="p-6 pt-4">
+            <div className="grid gap-8 lg:grid-cols-2">
               {/* Left: Formula Display controls + preview */}
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <p className="mb-2 text-sm font-semibold text-ocean">
                   Formula Display
                 </p>
                 <SettingRow label="Formula size" description={`${settings.formulaSize}%`}>
-                  <Slider className="w-full max-w-full sm:w-28" min={75} max={150} step={5}
+                  <Slider className="w-full max-w-full sm:w-36" min={75} max={150} step={5}
                     value={[settings.formulaSize]} onValueChange={([v]) => update("formulaSize", v)} />
                 </SettingRow>
                 <Separator />
@@ -187,12 +194,12 @@ export default function SettingsPage(): ReactElement {
 
               {/* Right: Learning behavior */}
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <p className="mb-2 text-sm font-semibold text-ocean">
                   Guidance
                 </p>
                 <SettingRow label="Difficulty">
                   <SegmentedControl value={settings.difficulty} onChange={(v) => update("difficulty", v as Settings["difficulty"])}
-                    options={[{ value: "beginner", label: "Beginner" }, { value: "intermediate", label: "Mid" }, { value: "advanced", label: "Advanced" }]} />
+                    options={[{ value: "beginner", label: "Beginner" }, { value: "intermediate", label: "Intermediate" }, { value: "advanced", label: "Advanced" }]} />
                 </SettingRow>
                 <Separator />
                 <SettingRow label="Auto-start lessons" description="Begin guided lesson on open">
@@ -208,7 +215,7 @@ export default function SettingsPage(): ReactElement {
                 </SettingRow>
                 <Separator />
                 <SettingRow label="Daily goal" description={`${settings.dailyGoalMinutes} min/day`}>
-                  <Slider className="w-full max-w-full sm:w-28" min={5} max={60} step={5}
+                  <Slider className="w-full max-w-full sm:w-36" min={5} max={60} step={5}
                     value={[settings.dailyGoalMinutes]} onValueChange={([v]) => update("dailyGoalMinutes", v)} />
                 </SettingRow>
               </div>
@@ -217,16 +224,16 @@ export default function SettingsPage(): ReactElement {
         </Card>
 
         {/* ── Two-column middle row ── */}
-        <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
 
           {/* Interaction & Motion */}
-          <Card>
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm">
+          <Card id="interaction" className="scroll-mt-24">
+            <CardHeader className="p-6 pb-0">
+              <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <Gauge className="h-4 w-4 text-slate-400" /> Interaction & Motion
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="p-6 pt-3">
               <SettingRow label="Reduced motion" description="Disable animations">
                 <Switch checked={settings.reducedMotion} onCheckedChange={(v) => update("reducedMotion", v)} />
               </SettingRow>
@@ -243,7 +250,7 @@ export default function SettingsPage(): ReactElement {
                 <>
                   <Separator />
                   <SettingRow label="Volume" description={`${settings.soundVolume}%`}>
-                    <Slider className="w-full max-w-full sm:w-28" min={0} max={100} step={5}
+                    <Slider className="w-full max-w-full sm:w-36" min={0} max={100} step={5}
                       value={[settings.soundVolume]} onValueChange={([v]) => update("soundVolume", v)} />
                   </SettingRow>
                 </>
@@ -261,13 +268,13 @@ export default function SettingsPage(): ReactElement {
           </Card>
 
           {/* App Preferences */}
-          <Card>
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-sm">
+          <Card id="appearance" className="scroll-mt-24">
+            <CardHeader className="p-6 pb-0">
+              <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <Palette className="h-4 w-4 text-slate-400" /> App Preferences
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="p-6 pt-3">
               <SettingRow label="Theme" description="Light, dark, or follow system">
                 <SegmentedControl value={settings.theme} onChange={(v) => update("theme", v as Settings["theme"])}
                   options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }, { value: "system", label: "System" }]} />
@@ -290,16 +297,16 @@ export default function SettingsPage(): ReactElement {
                 <p className="mb-1 text-sm font-medium text-slate-900 dark:text-white">Reading font</p>
                 <p className="mb-2.5 text-xs text-slate-400 dark:text-slate-500">Used for lessons, text, and all prose</p>
                 <div className="mb-3">
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Serif</p>
-                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  <p className="mb-2 text-xs font-semibold text-slate-500">Serif</p>
+                  <div className="grid grid-cols-2 gap-2">
                     {FONTS.filter(f => f.category === "serif").map(f => (
                       <FontCard key={f.id} font={f} selected={settings.fontFamily === f.id} onSelect={() => update("fontFamily", f.id)} />
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sans-serif</p>
-                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  <p className="mb-2 text-xs font-semibold text-slate-500">Sans-serif</p>
+                  <div className="grid grid-cols-2 gap-2">
                     {FONTS.filter(f => f.category === "sans").map(f => (
                       <FontCard key={f.id} font={f} selected={settings.fontFamily === f.id} onSelect={() => update("fontFamily", f.id)} />
                     ))}
@@ -315,14 +322,15 @@ export default function SettingsPage(): ReactElement {
 
         </div>
 
-        {/* ── Data — quiet, no drama ── */}
-        <Card>
-          <CardHeader className="pb-0">
+        {/* Data actions */}
+        <Card id="data" className="scroll-mt-24">
+          <CardHeader className="p-6 pb-0">
             <CardTitle className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <RotateCcw className="h-4 w-4" /> Data
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
+          <CardContent className="p-6 pt-3">
+            <p className="mb-4 text-sm leading-6 text-slate-500 dark:text-slate-400">Reset your preferences to their defaults, or remove your learning history. Clearing progress cannot be undone.</p>
             <div className="flex flex-wrap items-center gap-3">
               <Button variant="outline" size="sm" onClick={reset}>
                 <RotateCcw className="h-3 w-3" /> Reset settings
@@ -334,9 +342,7 @@ export default function SettingsPage(): ReactElement {
           </CardContent>
         </Card>
 
-        </div>
       </div>
-      <Footer />
-    </main>
+    </PageFrame>
   )
 }

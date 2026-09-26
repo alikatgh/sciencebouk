@@ -164,7 +164,10 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       const rect = el.getBoundingClientRect()
       const viewportW = Math.round(rect.width) || 800
       const W = Math.max(380, viewportW)
-      const H = Math.round(rect.height) || 500
+      const viewportH = Math.round(rect.height) || 500
+      // Keep labels and the force readout inside a complete diagram when the
+      // mobile workspace is expanded. SVG scales this logical canvas to fit.
+      const H = Math.max(260, viewportH)
       const compact = viewportW < 480 || H < 420
       const ultraCompact = viewportW < 390 || H < 360
       currentW = viewportW
@@ -175,7 +178,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
       const svg = select(el)
         .append("svg")
         .attr("width", "100%")
-        .attr("height", H)
+        .attr("height", viewportH)
         .attr("viewBox", `0 0 ${W} ${H}`)
         .attr("preserveAspectRatio", "xMidYMid meet")
         .style("display", "block")

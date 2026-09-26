@@ -12,7 +12,7 @@ import { useSettings } from "../../settings/SettingsContext"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { ResizablePanel } from "../ui/resizable-panel"
+import { readStoredPanelWidth, ResizablePanel } from "../ui/resizable-panel"
 import { LearnMorePanel } from "../scenes/LearnMorePanel"
 import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
@@ -25,27 +25,20 @@ import { useEquationConfig } from "../../data/equationConfig"
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
 const TEACHING_PANEL_STORAGE_KEY = "sciencebouk-teaching-panel-width"
-const TEACHING_PANEL_DEFAULT_WIDTH = 300
-const TEACHING_PANEL_MIN_WIDTH = 240
-const TEACHING_PANEL_MAX_WIDTH = 400
+const TEACHING_PANEL_DEFAULT_WIDTH = 360
+const TEACHING_PANEL_MIN_WIDTH = 320
+const TEACHING_PANEL_MAX_WIDTH = 520
 const MOBILE_PANEL_DRAG_THRESHOLD = 36
-const MOBILE_PANEL_PEEK_HEIGHT = "min(38vh, 22rem)"
-const MOBILE_PANEL_EXPANDED_HEIGHT = "min(72vh, 40rem)"
+const MOBILE_PANEL_PEEK_HEIGHT = "min(45%, 22rem)"
+const MOBILE_PANEL_EXPANDED_HEIGHT = "min(64%, 40rem)"
 
 function readStoredTeachingPanelWidth(): number {
-  if (typeof window === "undefined") return TEACHING_PANEL_DEFAULT_WIDTH
-
-  try {
-    const stored = localStorage.getItem(TEACHING_PANEL_STORAGE_KEY)
-    const parsed = Number(stored)
-    if (Number.isFinite(parsed)) {
-      return Math.max(TEACHING_PANEL_MIN_WIDTH, Math.min(TEACHING_PANEL_MAX_WIDTH, parsed))
-    }
-  } catch {
-    // Fall back to the default width if storage is unavailable.
-  }
-
-  return TEACHING_PANEL_DEFAULT_WIDTH
+  return readStoredPanelWidth(
+    TEACHING_PANEL_STORAGE_KEY,
+    TEACHING_PANEL_DEFAULT_WIDTH,
+    TEACHING_PANEL_MIN_WIDTH,
+    TEACHING_PANEL_MAX_WIDTH,
+  )
 }
 
 export interface Preset {
@@ -305,6 +298,7 @@ export function TeachableEquation({
   const progressRef = useRef(progress)
   const resumeAppliedRef = useRef<number | null>(null)
   const lessonModeWasToggledRef = useRef(false)
+  const lessonCompletionRecordedRef = useRef(false)
 
   useEffect(() => {
     if (!lessonModeWasToggledRef.current) {
@@ -414,6 +408,11 @@ export function TeachableEquation({
   const advanceLesson = useCallback(() => {
     const completedStepIndex = lessonStep
     const isLastStep = lessonStep >= lessonSteps.length - 1
+    // The lesson view can remount when switching tabs; record its final step once per run.
+    if (isLastStep) {
+      if (lessonCompletionRecordedRef.current) return
+      lessonCompletionRecordedRef.current = true
+    }
     const nextStepId = isLastStep ? "" : lessonSteps[completedStepIndex + 1]?.id ?? ""
 
     if (!isLastStep) {
@@ -436,6 +435,7 @@ export function TeachableEquation({
   }, [lessonStep, lessonSteps, isPro, isAuthenticated, resolvedId, progressEnabled, updateProgress])
 
   const resetLesson = useCallback(() => {
+    lessonCompletionRecordedRef.current = false
     setLessonStep(0); setStepCompleted(false)
     const r: Record<string, number> = {}
     for (const v of initialVariables) r[v.name] = v.value
@@ -446,6 +446,7 @@ export function TeachableEquation({
   const disableLessonMode = useCallback(() => {
     lessonModeWasToggledRef.current = true
     setLessonMode(false)
+    setMobileTeachingTab("controls")
   }, [])
 
   const restartLessonMode = useCallback(() => {
@@ -465,15 +466,14 @@ export function TeachableEquation({
   const [mobilePanelState, setMobilePanelState] = useState<MobilePanelState>("peek")
   const [teachingPanelWidth, setTeachingPanelWidth] = useState(readStoredTeachingPanelWidth)
   const dragStartYRef = useRef<number | null>(null)
+  const suppressPanelClickRef = useRef(false)
   const isNarrow = shouldUseStackedTeachingLayout({
     containerWidth,
     containerHeight,
     teachingPanelOpen,
     teachingPanelWidth,
   })
-  const stackedVisualizationWrapperClass = isMobile
-    ? "aspect-square min-h-[18rem] max-h-[24rem]"
-    : "aspect-[4/3] max-h-[56vh]"
+  const stackedVisualizationWrapperClass = "h-full min-h-0"
   const formulaCardVisible = appSettings.showFormulaLetters || appSettings.showFormulaNumbers
   const hasPresets = Boolean(localizedPresets && localizedPresets.length > 0)
   const hasLearnSurface = appSettings.showHookText || formulaCardVisible
@@ -488,13 +488,14 @@ export function TeachableEquation({
     [appSettings.showResultNote, describeResult, vars],
   )
   const mobileTabOrder = useMemo<MobileTeachingTab[]>(() => {
-    const tabs: MobileTeachingTab[] = []
-    if (hasLearnSurface) tabs.push("learn")
-    tabs.push("controls")
+    const tabs: MobileTeachingTab[] = ["controls"]
+    if (hasLearnSurface || resolvedId > 0) tabs.push("learn")
     if (hasLessons) tabs.push("lesson")
     return tabs
-  }, [hasLearnSurface, hasLessons])
-  const [mobileTeachingTab, setMobileTeachingTab] = useState<MobileTeachingTab>(mobileTabOrder[0] ?? "controls")
+  }, [hasLearnSurface, hasLessons, resolvedId])
+  const [mobileTeachingTab, setMobileTeachingTab] = useState<MobileTeachingTab>(
+    appSettings.autoStartLesson && hasLessons ? "lesson" : "controls",
+  )
 
   useEffect(() => {
     if (mobileTabOrder.includes(mobileTeachingTab)) return
@@ -507,11 +508,11 @@ export function TeachableEquation({
   }, [isMobile, isNarrow, teachingPanelOpen, resolvedId])
 
   const learnBlock = hasLearnSurface ? (
-    <div className={`rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${isMobile ? "px-3 py-2.5" : "px-3 py-3"}`}>
+    <div className="border-b border-slate-200 pb-5 dark:border-slate-800">
       {appSettings.showHookText && (
         <>
-          <p className={`font-semibold leading-snug text-slate-800 dark:text-slate-100 ${isMobile ? "text-xs" : "text-sm"}`}>{hookCopy}</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hookActionCopy}</p>
+          <p className="text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100">{hookCopy}</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{hookActionCopy}</p>
         </>
       )}
       {formulaCardVisible && (
@@ -545,31 +546,40 @@ export function TeachableEquation({
   ) : null
 
   const variablesBlock = (
-    <Card className={isMobile ? "rounded-xl" : undefined}>
-      <CardHeader className={isMobile ? "p-3 pb-1.5" : "p-3 pb-1"}>
-        <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400">Variables</CardTitle>
-      </CardHeader>
-      <CardContent className={isMobile ? "px-1.5 pb-2.5" : "px-1 pb-2"}>
+    <section className="space-y-3" aria-label="Adjust variables">
+      <div>
+        <h3 className="font-display text-sm font-bold text-slate-700 dark:text-slate-200">Variables</h3>
+        {lockedVarsMemo.size > 0 && mobileTeachingTab !== "lesson" && (
+          <div className="space-y-2 pt-1">
+            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">Some variables stay fixed during this lesson step.</p>
+            <Button variant="outline" size="sm" className="min-h-9" onClick={disableLessonMode}>Explore freely</Button>
+          </div>
+        )}
+      </div>
         <TouchableFormula
           variables={formulaVariables} onVariableChange={setVar}
           highlightedVariable={highlightedVar} onVariableHover={setHighlightedVar} formula={formula}
         />
-      </CardContent>
-    </Card>
+    </section>
   )
 
   const presetsBlock = hasPresets ? (
-    <div className={`flex ${isMobile ? "-mx-1 overflow-x-auto px-1 pb-1" : "flex-wrap"} gap-1.5`}>
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Try a preset</p>
+      <div className="flex flex-wrap gap-2">
       {localizedPresets?.map((p) => (
         <Button
           key={p.label}
           variant="outline"
           size="xs"
           onClick={() => applyPreset(p)}
+          disabled={Object.entries(p.values).some(([name, value]) => lockedVarsMemo.has(name) && vars[name] !== value)}
+          title={Object.entries(p.values).some(([name, value]) => lockedVarsMemo.has(name) && vars[name] !== value)
+            ? "Choose Explore freely to use this preset" : undefined}
           aria-pressed={presetIsActive(p, vars)}
           className={cn(
             "shadow-none",
-            isMobile ? "h-9 shrink-0 px-3 text-[11px]" : "text-[11px]",
+            "min-h-9 shrink-0 px-3 text-sm",
             presetIsActive(p, vars) &&
               "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100",
           )}
@@ -577,17 +587,18 @@ export function TeachableEquation({
           {p.label}
         </Button>
       ))}
+      </div>
     </div>
   ) : null
 
   const lessonBlock = hasLessons && lessonMode ? (
-    <Card className={`${isMobile ? "rounded-xl" : ""} border-slate-200 dark:border-slate-700`}>
+    <Card className="rounded-xl border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
       <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3 pb-2" : "p-3 pb-2"}`}>
-        <CardTitle className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+        <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           Guided lesson
         </CardTitle>
         <Button variant="ghost" size="xs" onClick={disableLessonMode} className={`${isMobile ? "min-h-[36px] rounded-full px-3 text-[11px]" : ""} text-slate-500 hover:text-slate-800 dark:hover:text-slate-200`}>
-          Skip
+          Explore freely
         </Button>
       </CardHeader>
       <CardContent className={isMobile ? "px-3.5 pb-3.5" : "px-3 pb-3"}>
@@ -618,69 +629,50 @@ export function TeachableEquation({
     <LearnMorePanel equationId={resolvedId} />
   ) : null
 
-  const teachingContent = isMobile && isNarrow ? (
-    <div className="native-scroll flex h-full flex-col overflow-y-auto">
-      <div className="flex flex-1 flex-col gap-2 px-3 py-2.5 pb-24">
-        {mobileTeachingTab === "learn" && (
-          <>
-            {learnBlock}
-            {learnMoreBlock}
-          </>
-        )}
-        {mobileTeachingTab === "controls" && (
-          <>
-            {variablesBlock}
-            {presetsBlock}
-          </>
-        )}
-        {mobileTeachingTab === "lesson" && (
-          <>
-            {lessonBlock}
-            {restartLessonBlock}
-          </>
-        )}
-      </div>
-      <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-950/92">
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${mobileTabOrder.length}, minmax(0, 1fr))` }}
-        >
-          {mobileTabOrder.map((tab) => {
-            const label = tab === "learn" ? "Learn" : tab === "controls" ? "Controls" : "Lesson"
-
-            return (
-              <Button
-                key={tab}
-                type="button"
-                variant={mobileTeachingTab === tab ? "secondary" : "ghost"}
-                size="sm"
-                className={mobileTeachingTab === tab
-                  ? "min-h-[44px] rounded-xl bg-slate-900 text-white hover:bg-slate-900/95 dark:bg-white dark:text-slate-950 dark:hover:bg-white"
-                  : "min-h-[44px] rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}
-                onClick={() => setMobileTeachingTab(tab)}
-              >
-                {label}
-              </Button>
-            )
-          })}
+  const teachingContent = (
+    <section aria-label="Equation workspace" className={cn("flex h-full min-h-0 flex-col", !isNarrow && "studio-inspector")}>
+      {!isNarrow && (
+        <div className="flex shrink-0 items-center justify-between px-5 pb-1 pt-4">
+          <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">Your experiment</h3>
+          <Button variant="ghost" size="icon-sm" onClick={() => setTeachingPanelOpen(false)} aria-label="Hide teaching panel">
+            <PanelRightOpen className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      <div className="shrink-0 border-b border-slate-200 px-3 py-3 dark:border-slate-800" role="group" aria-label="Workspace sections">
+        <div className="grid gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950" style={{ gridTemplateColumns: "repeat(" + mobileTabOrder.length + ", minmax(0, 1fr))" }}>
+          {mobileTabOrder.map((tab) => (
+            <Button
+              key={tab}
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={mobileTeachingTab === tab}
+              className={cn("min-h-10 rounded-lg px-2 text-sm", mobileTeachingTab === tab
+                ? "bg-white font-semibold text-ocean shadow-sm hover:bg-white dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-800"
+                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white")}
+              onClick={() => setMobileTeachingTab(tab)}
+            >
+              {tab === "controls" ? "Explore" : tab === "learn" ? "Learn" : "Lesson"}
+            </Button>
+          ))}
         </div>
       </div>
-    </div>
-  ) : (
-    <div className={`native-scroll flex flex-col overflow-y-auto ${isNarrow ? "gap-2 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" : "h-full gap-2 pl-2 pr-1"}`}>
-      {learnBlock}
-      {variablesBlock}
-      {presetsBlock}
-      {lessonBlock}
-      {restartLessonBlock}
-      {learnMoreBlock}
-    </div>
+      <div key={mobileTeachingTab} className="native-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="space-y-5 p-4 sm:p-5">
+          {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{presetsBlock}</>}
+          {mobileTeachingTab === "learn" && <>{learnBlock}{learnMoreBlock}</>}
+          {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}</>}
+        </div>
+      </div>
+    </section>
   )
 
   const visualizationContent = children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })
 
   const handleMobilePanelGestureStart = useCallback((clientY: number) => {
     dragStartYRef.current = clientY
+    suppressPanelClickRef.current = false
   }, [])
 
   const handleMobilePanelGestureEnd = useCallback((clientY: number) => {
@@ -689,10 +681,8 @@ export function TeachableEquation({
     if (startY === null) return
 
     const deltaY = clientY - startY
-    if (Math.abs(deltaY) < MOBILE_PANEL_DRAG_THRESHOLD) {
-      setMobilePanelState((current) => current === "peek" ? "expanded" : "peek")
-      return
-    }
+    if (Math.abs(deltaY) < MOBILE_PANEL_DRAG_THRESHOLD) return
+    suppressPanelClickRef.current = true
 
     if (deltaY < 0) {
       setMobilePanelState("expanded")
@@ -709,9 +699,7 @@ export function TeachableEquation({
 
   if (isNarrow) {
     // Vertical stack: visualization on top, teaching panel below
-    const panelMaxHeight = isMobile
-      ? (mobilePanelState === "expanded" ? MOBILE_PANEL_EXPANDED_HEIGHT : MOBILE_PANEL_PEEK_HEIGHT)
-      : "45vh"
+    const panelHeight = mobilePanelState === "expanded" ? MOBILE_PANEL_EXPANDED_HEIGHT : MOBILE_PANEL_PEEK_HEIGHT
 
     return (
       <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
@@ -719,7 +707,9 @@ export function TeachableEquation({
           <div className="flex h-full items-start justify-center overflow-hidden px-0 pt-0.5 sm:px-0 sm:pt-0">
             <div className={`w-full max-w-full ${stackedVisualizationWrapperClass}`}>
               <VisualizationViewport mobileOptimized={isMobile}>
-                {visualizationContent}
+                <div className={containerWidth < 640 ? "h-full pt-14" : "h-full"}>
+                  {visualizationContent}
+                </div>
               </VisualizationViewport>
             </div>
           </div>
@@ -737,18 +727,18 @@ export function TeachableEquation({
           >
             <span className="flex items-center gap-1.5">
               <PanelBottomOpen className="h-3.5 w-3.5" />
-              {isMobile ? "Open controls" : "Show panel"}
+              Show panel
             </span>
           </button>
         ) : (
           <div
-            className="flex-shrink-0 rounded-t-xl border border-b-0 border-slate-200 bg-white transition-[max-height] duration-300 ease-out dark:border-slate-700 dark:bg-slate-900"
-            style={{ maxHeight: panelMaxHeight, overflowY: "auto" }}
+            className="studio-inspector mt-2 flex min-h-0 flex-shrink-0 flex-col overflow-hidden transition-[height] duration-200 motion-reduce:transition-none"
+            style={{ height: panelHeight, overflow: "hidden" }}
           >
             <div
-              className="sticky top-0 z-10 rounded-t-[28px] border-b border-slate-100 bg-white/92 backdrop-blur dark:border-slate-800 dark:bg-slate-900/92"
+              className="z-10 shrink-0 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
             >
-              <div className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
+              <div className="flex min-h-11 items-center justify-between gap-3 px-3">
                 <button
                   onPointerDown={(event) => {
                     handleMobilePanelGestureStart(event.clientY)
@@ -760,20 +750,27 @@ export function TeachableEquation({
                   }}
                   onPointerUp={(event) => handleMobilePanelGestureEnd(event.clientY)}
                   onPointerCancel={() => { dragStartYRef.current = null }}
+                  onClick={(event) => {
+                    const suppressClick = suppressPanelClickRef.current
+                    suppressPanelClickRef.current = false
+                    if (suppressClick && event.detail > 0) return
+                    setMobilePanelState((current) => current === "peek" ? "expanded" : "peek")
+                  }}
                   style={{ touchAction: "none" }}
-                  className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full py-1 text-[10px] font-medium text-slate-400"
+                  className="flex min-h-11 min-w-0 flex-1 items-center justify-start gap-3 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300"
                   type="button"
                   aria-label="Resize teaching panel"
+                  aria-expanded={mobilePanelState === "expanded"}
                 >
                   <span className="h-1 w-8 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true" />
-                  <span className="text-[10px] tracking-wide text-slate-400">
-                    {mobilePanelState === "expanded" ? "Swipe down to tuck away" : "Swipe up for more"}
+                  <span>
+                    {mobilePanelState === "expanded" ? "Show more diagram" : "Expand workspace"}
                   </span>
                 </button>
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="min-h-[36px] shrink-0 rounded-full px-3 text-[11px] text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  className="min-h-11 shrink-0 rounded-lg px-3 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                   onClick={() => setTeachingPanelOpen(false)}
                 >
                   Hide
@@ -789,7 +786,7 @@ export function TeachableEquation({
 
   // Desktop: side-by-side with resizable panel
   return (
-    <div ref={containerRef} className="flex h-full gap-0">
+    <div ref={containerRef} className="flex h-full gap-2">
       <div className="min-h-0 min-w-0 flex-1">
         <VisualizationViewport mobileOptimized={isMobile}>
           {visualizationContent}

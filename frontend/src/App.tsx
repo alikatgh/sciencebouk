@@ -143,12 +143,14 @@ export default function App(): ReactElement {
   const [searchQuery, setSearchQuery] = useState("")
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [focusDrawerSearch, setFocusDrawerSearch] = useState(false)
 
   const [showShortcuts, setShowShortcuts] = useState(false)
   const { settings, resolvedTheme, update: updateSettings } = useSettings()
   const [sidebarOpen, setSidebarOpen] = useState(() => !settings.sidebarCollapsed)
   const [showSync, setShowSync] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const drawerSearchInputRef = useRef<HTMLInputElement>(null)
   const searchFocusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { user, isAuthenticated, isPro, logout } = useAuth()
   const { completedCount, totalTimeMinutes, total, progressByEquation, localSyncSignature } = useAllProgress()
@@ -191,7 +193,10 @@ export default function App(): ReactElement {
     setDrawerOpen(false)
   }, [logout])
 
-  const handleOpenDrawer = useCallback(() => setDrawerOpen(true), [])
+  const handleOpenDrawer = useCallback(() => {
+    setFocusDrawerSearch(false)
+    setDrawerOpen(true)
+  }, [])
   const handleOpenProfileHeader = useCallback(() => navigate("/profile"), [navigate])
   const handleOpenAuthHeader = useCallback(() => navigate("/login"), [navigate])
   const handleDismissSync = useCallback(() => {
@@ -258,9 +263,54 @@ export default function App(): ReactElement {
     if (randomId != null) selectEquation(randomId)
   }, [equationManifest, selectedId, selectEquation])
 
+  const focusSearch = useCallback(() => {
+    if (searchFocusTimerRef.current) {
+      clearTimeout(searchFocusTimerRef.current)
+      searchFocusTimerRef.current = null
+    }
+    if (!window.matchMedia("(min-width: 1024px)").matches) {
+      setFocusDrawerSearch(true)
+      setDrawerOpen(true)
+      drawerSearchInputRef.current?.focus()
+      return
+    }
+    if (!sidebarOpen) setSidebarOpenAndPersist(true)
+    searchFocusTimerRef.current = setTimeout(() => {
+      searchInputRef.current?.focus()
+      searchFocusTimerRef.current = null
+    }, 50)
+  }, [sidebarOpen, setSidebarOpenAndPersist])
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return
+      if (event.defaultPrevented || event.isComposing || isEditableTarget(event.target)) return
+
+      const commandKey = event.metaKey || event.ctrlKey
+      const activeDialog = document.querySelector('[role="dialog"], [role="alertdialog"]')
+      const isLibraryDialog = activeDialog?.contains(drawerSearchInputRef.current ?? null)
+      const isSearchShortcut = (!commandKey && !event.altKey && event.key === "/")
+        || (commandKey && !event.altKey && event.key.toLowerCase() === "k")
+      if (activeDialog) {
+        if (isLibraryDialog && isSearchShortcut) {
+          event.preventDefault()
+          focusSearch()
+        } else if (event.key === "Escape" && !commandKey && !event.altKey) {
+          setShowShortcuts(false)
+        }
+        return
+      }
+      if (commandKey && !event.altKey && event.key.toLowerCase() === "k") {
+        event.preventDefault()
+        focusSearch()
+        return
+      }
+      if (commandKey && !event.altKey && event.key === "[") {
+        event.preventDefault()
+        setSidebarOpenAndPersist((current) => !current)
+        return
+      }
+      // Leave browser and OS shortcuts alone unless explicitly handled above.
+      if (commandKey || event.altKey) return
 
       if (event.key === "ArrowDown" || event.key === "j") {
         event.preventDefault()
@@ -270,23 +320,13 @@ export default function App(): ReactElement {
         event.preventDefault()
         const index = equationIndexById.get(selectedId) ?? -1
         if (index > 0) selectEquation(equationManifest[index - 1].id)
-      } else if (event.key === "/" || (event.key === "k" && (event.metaKey || event.ctrlKey))) {
+      } else if (event.key === "/") {
         event.preventDefault()
-        if (!sidebarOpen) setSidebarOpenAndPersist(true)
-        if (searchFocusTimerRef.current) {
-          clearTimeout(searchFocusTimerRef.current)
-        }
-        searchFocusTimerRef.current = setTimeout(() => {
-          searchInputRef.current?.focus()
-          searchFocusTimerRef.current = null
-        }, 50)
+        focusSearch()
       } else if (event.key === "Escape") {
         setSearchQuery("")
         setDrawerOpen(false)
         setShowShortcuts(false)
-      } else if (event.key === "[" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        setSidebarOpenAndPersist((current) => !current)
       } else if (event.key === "?") {
         event.preventDefault()
         setShowShortcuts((current) => !current)
@@ -309,7 +349,7 @@ export default function App(): ReactElement {
 
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, sidebarOpen, setSidebarOpenAndPersist, equationManifest])
+  }, [navigate, selectEquation, selectEquationFromShortcut, selectRandomEquation, selectedId, focusSearch, setSidebarOpenAndPersist, equationManifest, equationIndexById])
 
   const currentIndex = equationIndexById.get(selectedId) ?? -1
   const prevEquation = currentIndex > 0 ? equationManifest[currentIndex - 1] : null
@@ -356,7 +396,7 @@ export default function App(): ReactElement {
 
   return (
       <main
-        className="flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+        className="studio-shell flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex flex-1 gap-0 overflow-hidden">
@@ -379,6 +419,8 @@ export default function App(): ReactElement {
             userEmail={user?.email}
             userInitial={userInitial}
             searchInputRef={searchInputRef}
+            drawerSearchInputRef={drawerSearchInputRef}
+            focusDrawerSearch={focusDrawerSearch}
             onSelectEquation={selectEquation}
             onSearchChange={setSearchQuery}
             onClearSearch={handleClearSearch}
@@ -406,7 +448,7 @@ export default function App(): ReactElement {
               onSelectEquation={selectEquation}
             />
 
-            <div className="equation-content min-h-0 flex-1 overflow-hidden px-0 pt-0 sm:p-2">
+            <div className="equation-content min-h-0 flex-1 overflow-hidden p-2 sm:p-4">
               <FormulaProvider value={selectedEquation.formula}>
                 <ErrorBoundary fallback={<VisualizationFallback />}>
                   <Suspense fallback={<VisualizationFallback />}>

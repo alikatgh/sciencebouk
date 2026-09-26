@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "./auth/AuthContext"
 import { SettingsProvider } from "./settings/SettingsContext"
 import { ErrorBoundary } from "./components/ErrorBoundary"
 import { ToastHost } from "./components/ToastHost"
+import "katex/dist/katex.min.css"
 import "./index.css"
 import { Seo } from "./seo/Seo"
 

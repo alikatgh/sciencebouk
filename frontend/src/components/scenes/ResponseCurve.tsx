@@ -355,7 +355,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         aria-label={`Response curve of ${model.symbol} versus ${model.sweepSymbol}`}
-        className="h-full w-full text-[color:var(--scene-muted,#64748b)]"
+        className="h-full w-full pb-7 text-[color:var(--scene-muted,#64748b)] sm:pb-0"
         style={{ cursor: "crosshair" }}
         onPointerMove={handlePointerMove}
       onPointerLeave={clearHover}
@@ -455,6 +455,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       )}
 
       {/* axis labels */}
+      <g className="hidden sm:inline">
       <text x={W - PAD_R} y={H - 8} textAnchor="end" fontSize="11" className="fill-current font-medium">
         {model.sweepSymbol} →
       </text>
@@ -475,7 +476,12 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       <text x={PAD_L - 5} y={H - PAD_B} textAnchor="end" fontSize="9.5" className="fill-current tabular-nums">
         {model.yMinLabel}
       </text>
+      </g>
       </svg>
+      <div className="absolute inset-x-3 bottom-1 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs tabular-nums text-slate-500 dark:text-slate-400 sm:hidden">
+        <span>{model.sweepSymbol}: {model.xMinLabel}–{model.xMaxLabel}</span>
+        <span>{model.symbol}: {model.yMinLabel}–{model.yMaxLabel}{model.unit ? ` ${model.unit}` : ""}</span>
+      </div>
     </div>
   )
 }

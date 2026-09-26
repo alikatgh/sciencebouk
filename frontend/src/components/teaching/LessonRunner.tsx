@@ -149,9 +149,9 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
       {/* Progress */}
       <div className={compact ? "mb-2.5 flex items-center gap-2" : "mb-2 flex items-center gap-2"}>
         <Progress value={((currentStepIndex + (stepCompleted ? 1 : 0)) / steps.length) * 100} className="h-1 flex-1" />
-        <span className={`${compact ? "text-[11px]" : "text-[10px]"} font-medium text-slate-400`}>{currentStepIndex + 1}/{steps.length}</span>
+        <span className={`text-xs font-medium text-slate-400`}>{currentStepIndex + 1}/{steps.length}</span>
         {currentStepIndex > 0 && (
-          <Button variant="ghost" size="icon-sm" onClick={onReset} className={`${compact ? "h-9 w-9" : "h-5 w-5"} text-slate-400`}>
+          <Button variant="ghost" size="icon-sm" aria-label="Restart lesson" onClick={onReset} className={`h-9 w-9 text-slate-400`}>
             <RotateCcw className="h-2.5 w-2.5" />
           </Button>
         )}
@@ -166,7 +166,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
       >
         <LessonMarkdown
           content={step.instruction}
-          className={`${compact ? "text-[13px]" : "text-xs"} text-slate-700 dark:text-slate-300`}
+          className={`text-sm leading-relaxed text-slate-700 dark:text-slate-300`}
           variables={variables}
           glossary={glossary}
           onHighlight={highlight}
@@ -199,7 +199,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
               <div className="flex-1">
                 <LessonMarkdown
                   content={step.insight}
-                  className={`${compact ? "text-[13px]" : "text-xs"} text-slate-600 dark:text-slate-300`}
+                  className={`text-sm leading-relaxed text-slate-600 dark:text-slate-300`}
                   variables={variables}
                   glossary={glossary}
                   onHighlight={highlight}
@@ -238,7 +238,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
               </p>
 
               <div
-                className={`animate-fade-in mt-1.5 ${compact ? "text-[13px]" : "text-xs"} leading-relaxed text-slate-600 dark:text-slate-300`}
+                className={`animate-fade-in mt-1.5 text-sm leading-relaxed leading-relaxed text-slate-600 dark:text-slate-300`}
                 style={{ animationDelay: "400ms" }}
               >
                 <LessonMarkdown
@@ -254,7 +254,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
                 className={`animate-fade-in-up mt-3 flex ${compact ? "flex-wrap justify-center" : ""} gap-2`}
                 style={{ animationDelay: "550ms" }}
               >
-                <Button variant="outline" size="xs" onClick={onReset} className={`${compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 text-slate-500`}>
+                <Button variant="outline" size="xs" aria-label="Restart lesson" onClick={onReset} className={`${compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 text-slate-500`}>
                   <RotateCcw className="h-3 w-3" /> Replay
                 </Button>
                 <Button size="xs" className={`${compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 bg-emerald-600 hover:bg-emerald-700`} onClick={() => setShowCelebration(false)}>

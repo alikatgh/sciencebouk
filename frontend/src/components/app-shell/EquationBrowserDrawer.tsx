@@ -1,13 +1,12 @@
-import type { ReactElement } from "react"
-import { ArrowLeft, ArrowRight, Search, X } from "lucide-react"
+import type { ReactElement, RefObject } from "react"
+import { ArrowLeft, ArrowRight, Moon, Search, Sun, X } from "lucide-react"
 import { Button } from "../ui/button"
 import { Progress } from "../ui/progress"
 import { ScrollArea } from "../ui/scroll-area"
-import { Separator } from "../ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet"
 import type { EquationSummary } from "../../data/equationManifest"
 import type { EquationProgress } from "../../progress/useProgress"
-import { EquationList, SidebarAccount } from "./EquationSidebarShared"
+import { EquationList, GroupedEquationList, SidebarAccount } from "./EquationSidebarShared"
 
 interface EquationBrowserDrawerProps {
   open: boolean
@@ -21,6 +20,9 @@ interface EquationBrowserDrawerProps {
   prevEquation: EquationSummary | null
   nextEquation: EquationSummary | null
   searchQuery: string
+  dark: boolean
+  searchInputRef: RefObject<HTMLInputElement | null>
+  focusSearchOnOpen: boolean
   isAuthenticated: boolean
   isPro: boolean
   userEmail?: string
@@ -29,6 +31,8 @@ interface EquationBrowserDrawerProps {
   onSelectEquation: (id: number) => void
   onSearchChange: (value: string) => void
   onClearSearch: () => void
+  onGoHome: () => void
+  onToggleTheme: () => void
   onOpenProfile: () => void
   onOpenAuth: () => void
   onOpenPro: () => void
@@ -47,6 +51,9 @@ export function EquationBrowserDrawer({
   prevEquation,
   nextEquation,
   searchQuery,
+  dark,
+  searchInputRef,
+  focusSearchOnOpen,
   isAuthenticated,
   isPro,
   userEmail,
@@ -55,6 +62,8 @@ export function EquationBrowserDrawer({
   onSelectEquation,
   onSearchChange,
   onClearSearch,
+  onGoHome,
+  onToggleTheme,
   onOpenProfile,
   onOpenAuth,
   onOpenPro,
@@ -63,118 +72,88 @@ export function EquationBrowserDrawer({
   const completionPercent = total > 0 ? (completedCount / total) * 100 : 0
   const completionLabel = `${completedCount} of ${total} equations completed`
   const visibleEquations = filteredEquations ?? equations
-  const selectedEquation = equations.find((equation) => equation.id === selectedId) ?? null
-  const selectedDone = progressByEquation.get(selectedId)?.completed ?? false
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="w-screen rounded-none border-r-0 bg-slate-50 lg:hidden sm:w-[min(92vw,23rem)] sm:rounded-r-[32px] sm:border-r sm:bg-white dark:bg-slate-950 sm:dark:bg-slate-900"
+        onOpenAutoFocus={(event) => {
+          if (!focusSearchOnOpen) return
+          event.preventDefault()
+          searchInputRef.current?.focus()
+        }}
+        className="w-screen rounded-none border-r-0 bg-white sm:w-[min(92vw,25rem)] sm:rounded-r-2xl sm:border-r dark:bg-slate-950 lg:hidden"
       >
-        <SheetHeader className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/92 px-4 pb-3 pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-950/92">
-          <div className="w-full pr-10">
-            <div className="mb-3 flex justify-center">
-              <span className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
-            </div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Equation atlas
-            </p>
-            <div className="mt-1 flex items-center gap-2">
-              <SheetTitle className="text-lg">{equations.length} equations</SheetTitle>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                {completedCount}/{total}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">Browse, jump, and stay in flow.</p>
+        <SheetHeader className="shrink-0 border-b border-slate-200 px-5 pb-4 pt-4 dark:border-slate-800">
+          <div className="min-w-0 pr-10">
+            <button onClick={onGoHome} type="button" className="mb-2 flex min-h-9 items-center gap-2 rounded-lg text-sm font-medium text-ocean outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ocean">
+              <ArrowLeft className="h-4 w-4" />
+              Back to subjects
+            </button>
+            <SheetTitle className="text-xl">Equation library</SheetTitle>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{equations.length} interactive equations to explore</p>
           </div>
         </SheetHeader>
-        <div className="border-b border-slate-200/70 bg-white/88 px-4 pb-3 pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/88">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-3.5 py-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{completedCount}/{total} complete</span>
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] text-slate-400 shadow-sm dark:bg-slate-950">{totalTimeMinutes}m explored</span>
-            </div>
-            <Progress
-              value={completionPercent}
-              className="mt-2 h-1.5"
-              aria-label="Equation completion"
-              aria-valuetext={completionLabel}
-            />
-            <span className="sr-only">{completionLabel}</span>
-          </div>
-        </div>
-        <div className="bg-white px-4 pb-3 pt-3 dark:bg-slate-950">
+        <div className="shrink-0 px-5 pb-3 pt-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              ref={searchInputRef}
+              aria-label="Search equations"
               type="text"
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search equations"
-              className="h-12 w-full rounded-[22px] border border-slate-200 bg-slate-50 py-2 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              placeholder="Search equations or scientists"
+              className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-11 text-base text-slate-900 placeholder:text-sm placeholder:text-slate-500 outline-none transition focus:border-ocean focus:bg-white focus:ring-2 focus:ring-ocean/15 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
             {searchQuery && (
               <button
                 onClick={onClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-300 transition hover:bg-slate-200/80 hover:text-slate-500 dark:hover:bg-slate-700"
+                className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:hover:text-white"
                 type="button"
                 aria-label="Clear search"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
+          <nav aria-label="Browse nearby equations" className="mt-3 flex gap-2 [@media(max-height:600px)]:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 flex-1 rounded-xl text-sm"
+              onClick={() => prevEquation && onSelectEquation(prevEquation.id)}
+              disabled={!prevEquation}
+              aria-label={prevEquation ? `Previous equation: ${prevEquation.title}` : "Previous equation"}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 flex-1 rounded-xl text-sm"
+              onClick={() => nextEquation && onSelectEquation(nextEquation.id)}
+              disabled={!nextEquation}
+              aria-label={nextEquation ? `Next equation: ${nextEquation.title}` : "Next equation"}
+            >
+              Next
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </nav>
+          {filteredEquations && (
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" role="status">{visibleEquations.length} {visibleEquations.length === 1 ? "equation" : "equations"} found</p>
+          )}
         </div>
-        {selectedEquation && (
-          <div className="bg-white px-4 pb-3 dark:bg-slate-950">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-3.5 py-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Currently viewing</p>
-                  <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{selectedEquation.title}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-slate-400">{selectedEquation.author}, {selectedEquation.year}</p>
-                </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                  selectedDone
-                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
-                    : "bg-ocean/10 text-ocean"
-                }`}>
-                  {selectedDone ? "Done" : "Current"}
-                </span>
+        <ScrollArea className="min-h-0 flex-1 px-2">
+          <div className="pb-4">
+            {visibleEquations.length === 0 ? (
+              <div className="mx-3 rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center dark:border-slate-700">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">No matching equations</p>
+                <p className="mt-2 text-sm text-slate-500">Try an equation or scientist’s name.</p>
+                <Button variant="outline" size="sm" onClick={onClearSearch} className="mt-4 min-h-11 rounded-xl">Clear search</Button>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-[42px] rounded-2xl justify-center"
-                  onClick={() => prevEquation && onSelectEquation(prevEquation.id)}
-                  disabled={!prevEquation}
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Prev
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-[42px] rounded-2xl justify-center"
-                  onClick={() => nextEquation && onSelectEquation(nextEquation.id)}
-                  disabled={!nextEquation}
-                >
-                  Next
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        <ScrollArea className="native-scroll flex-1 bg-white px-4 dark:bg-slate-950">
-          {visibleEquations.length === 0 ? (
-            <div className="rounded-[22px] border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-700">
-              No equations match that search yet.
-            </div>
-          ) : (
-            <div className="space-y-2 pb-4">
+            ) : filteredEquations ? (
               <EquationList
                 equations={visibleEquations}
                 selectedId={selectedId}
@@ -182,22 +161,43 @@ export function EquationBrowserDrawer({
                 onSelectEquation={onSelectEquation}
                 variant="mobile"
               />
-            </div>
-          )}
+            ) : (
+              <GroupedEquationList
+                equations={visibleEquations}
+                selectedId={selectedId}
+                progressByEquation={progressByEquation}
+                onSelectEquation={onSelectEquation}
+                variant="mobile"
+              />
+            )}
+          </div>
         </ScrollArea>
-        <Separator />
-        <div className="bg-white/92 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-3 backdrop-blur dark:bg-slate-950/92">
-          <SidebarAccount
-            compact
-            isAuthenticated={isAuthenticated}
-            isPro={isPro}
-            userEmail={userEmail}
-            userInitial={userInitial}
-            onOpenProfile={onOpenProfile}
-            onOpenAuth={onOpenAuth}
-            onOpenPro={onOpenPro}
-            onLogout={onLogout}
-          />
+        <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-4 pb-2 pt-3 dark:border-slate-800 dark:bg-slate-900/70">
+          <div className="mb-3 px-1 [@media(max-height:600px)]:hidden">
+            <div className="mb-2 flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <span><span className="font-semibold text-slate-700 dark:text-slate-200">{completedCount}/{total}</span> completed</span>
+              <span>{totalTimeMinutes} min explored</span>
+            </div>
+            <Progress value={completionPercent} className="h-1.5" aria-label="Equation completion" aria-valuetext={completionLabel} />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              <SidebarAccount
+                compact
+                isAuthenticated={isAuthenticated}
+                isPro={isPro}
+                userEmail={userEmail}
+                userInitial={userInitial}
+                onOpenProfile={onOpenProfile}
+                onOpenAuth={onOpenAuth}
+                onOpenPro={onOpenPro}
+                onLogout={onLogout}
+              />
+            </div>
+            <Button variant="ghost" size="icon-sm" onClick={onToggleTheme} className="h-11 w-11 shrink-0 rounded-xl text-slate-500" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}>
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

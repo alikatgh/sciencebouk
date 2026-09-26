@@ -292,31 +292,32 @@ function GenericMetersVisual({
   }
 
   return (
-    <div className="scene-stage flex h-full w-full min-h-0 flex-col">
-      <div className="shrink-0 px-6 pt-5 text-center text-slate-800 dark:text-slate-100">
-        <BlockMath math={formula} />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
+    <div className="scene-stage studio-surface flex h-full w-full min-h-0 flex-col rounded-2xl border">
+      <div className="relative flex shrink-0 flex-wrap items-center gap-1 px-3 py-2 sm:pr-44">
         <button
           type="button"
           onClick={resetInputs}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset
         </button>
         <button
           type="button"
           onClick={randomizeInputs}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
           <Shuffle className="h-3.5 w-3.5" aria-hidden="true" /> Randomize
         </button>
+        <details className="group relative ml-auto sm:ml-0">
+          <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-lg px-3 text-xs font-semibold text-slate-600 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-300 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
+            Copy &amp; share
+          </summary>
+          <div className="absolute right-0 top-full z-30 grid w-48 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900 sm:left-0 sm:right-auto">
         <button
           type="button"
           onClick={shareConfiguration}
           aria-label="Copy a shareable link to this exact configuration"
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
           {copied === "share" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Link2 className="h-3.5 w-3.5" aria-hidden="true" />}
           {copied === "share" ? "Link copied" : "Share"}
@@ -325,7 +326,7 @@ function GenericMetersVisual({
           type="button"
           onClick={() => copy("latex", formula)}
           aria-label="Copy formula as LaTeX"
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
           {copied === "latex" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
           {copied === "latex" ? "Copied" : "LaTeX"}
@@ -334,7 +335,7 @@ function GenericMetersVisual({
           type="button"
           onClick={() => copy("cite", citation)}
           aria-label="Copy a citation for this equation"
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
           {copied === "cite" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
           {copied === "cite" ? "Copied" : "Cite"}
@@ -344,12 +345,14 @@ function GenericMetersVisual({
             type="button"
             onClick={() => copy("result", `${result.symbol} = ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`)}
             aria-label="Copy the computed result"
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+            className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
           >
             {copied === "result" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
             {copied === "result" ? "Copied" : "Result"}
           </button>
         )}
+          </div>
+        </details>
       </div>
 
       {result && resultValue !== null && Number.isFinite(resultValue) && (
@@ -358,7 +361,7 @@ function GenericMetersVisual({
           aria-live="polite"
           aria-atomic="true"
           aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
-          className="shrink-0 px-6 pb-1 text-center font-mono text-xl font-semibold tabular-nums"
+          className="shrink-0 px-4 py-1 text-center font-mono text-xl font-semibold tabular-nums"
           style={{ color: VAR_COLORS.result }}
         >
           {result.symbol} = {formatResultValue(resultValue)}
@@ -370,8 +373,8 @@ function GenericMetersVisual({
         <div className="flex min-h-0 w-full flex-1 flex-col">
           <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
           {meters.length > 1 && (
-            <div className="flex flex-wrap items-center justify-center gap-1.5">
-              <span className="mr-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+            <div className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-3 pb-2">
+              <span className="mr-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                 x-axis
               </span>
               {meters.map((variable) => {
@@ -382,7 +385,7 @@ function GenericMetersVisual({
                     type="button"
                     onClick={() => setSweepName(variable.name)}
                     aria-pressed={isActive}
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${
+                    className={`min-h-9 min-w-9 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
                       isActive ? "" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
                     }`}
                     style={
@@ -428,7 +431,7 @@ function GenericMetersVisual({
         </div>
       )}
 
-      <p className="max-w-sm text-center text-xs text-slate-400 dark:text-slate-500">
+      <p className="hidden shrink-0 px-4 pb-3 text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:block">
         {result
           ? `Drag a slider — the curve traces ${result.symbol} across its range, and reshapes as you change the other inputs.`
           : "Drag the sliders — each bar tracks a variable across its range."}

@@ -12,8 +12,7 @@ import { interpolateContent, useDashboardPageContent } from "../data/pageContent
 import { prefetchEquationExperience } from "../lib/prefetchEquationExperience"
 import { safeRedirect } from "../lib/safeRedirect"
 import { Button } from "./ui/button"
-import { TopNav } from "./TopNav"
-import { Footer } from "./Footer"
+import { PageFrame } from "./PageFrame"
 
 export default function Dashboard(): ReactElement {
   const billingDisabledCopy = useBillingDisabledCopy()
@@ -130,14 +129,13 @@ export default function Dashboard(): ReactElement {
   // analyticsError is shown as a brief notice when the analytics fetch fails
   if (!isPro) {
     return (
-      <main className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950">
-        <TopNav showBack />
-        <div className="flex flex-1 flex-col items-center justify-center px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
-          <div className="w-full max-w-sm rounded-[30px] border border-slate-200 bg-white px-5 py-7 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <PageFrame title={dashboardPageContent.title}>
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-ocean/10 text-ocean">
               <Trophy className="h-7 w-7" />
             </div>
-            <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">{dashboardPageContent.upgrade.title}</h1>
+            <h2 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">{dashboardPageContent.upgrade.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               {BILLING_ENABLED
                 ? dashboardPageContent.upgrade.enabledBody
@@ -159,21 +157,19 @@ export default function Dashboard(): ReactElement {
             </div>
           </div>
         </div>
-      </main>
+      </PageFrame>
     )
   }
 
   return (
-    <main className="flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <TopNav showBack left={<span className="text-base font-bold text-slate-900 dark:text-white">{dashboardPageContent.title}</span>} />
+    <PageFrame title={dashboardPageContent.title} description="See what you have explored, celebrate your progress, and find your next experiment.">
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-ocean" />
         </div>
       ) : (
-        <div className="native-scroll flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:py-5">
+        <div>
 
             {/* Analytics error notice */}
             {analyticsError && (
@@ -183,7 +179,7 @@ export default function Dashboard(): ReactElement {
             )}
 
             {/* Hero row: continue learning + stats */}
-            <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+            <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
               {/* Left: continue learning — the main CTA */}
               {continueEq ? (
                 <button
@@ -194,18 +190,18 @@ export default function Dashboard(): ReactElement {
                   onFocus={() => {
                     void prefetchEquationExperience(continueEq.id)
                   }}
-                  className="flex flex-col items-start gap-3 rounded-[28px] border-2 border-ocean bg-gradient-to-r from-ocean/[0.06] to-ocean/[0.02] p-4 text-left transition hover:shadow-lg active:scale-[0.995] dark:from-ocean/[0.12] dark:to-ocean/[0.04] sm:flex-row sm:items-center sm:gap-4 sm:rounded-2xl sm:p-5"
+                  className="flex flex-col items-start justify-between gap-6 rounded-2xl border border-ocean/20 bg-white p-6 text-left transition-colors hover:border-ocean dark:bg-slate-900 sm:p-8"
                   type="button"
                 >
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ocean text-white shadow-lg shadow-ocean/25 sm:h-14 sm:w-14">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-ocean text-white  sm:h-14 sm:w-14">
                     <ArrowRight className="h-6 w-6" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-ocean">
+                    <p className="text-sm font-semibold text-ocean">
                       {inProgress.length > 0 ? dashboardPageContent.cta.continueStarted : dashboardPageContent.cta.startJourney}
                     </p>
-                    <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{continueEq.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-2 font-display text-2xl font-bold text-slate-900 dark:text-white">{continueEq.title}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">
                       {continueEq.timeSpent > 0
                         ? `${Math.round(continueEq.timeSpent / 60)}m studied · ${continueEq.varsExplored} variables explored`
                         : `${continueEq.category} · ${continueEq.author}`
@@ -225,11 +221,11 @@ export default function Dashboard(): ReactElement {
               )}
 
               {/* Right: stats grid */}
-              <div className="native-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+              <div className="grid grid-cols-2 gap-3">
                 {mobileStatCards.map((card) => (
                   <div
                     key={card.key}
-                    className="flex min-w-[10.25rem] snap-start items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4 lg:min-w-0 lg:shadow-none"
+                    className="flex min-w-0 flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 sm:flex-row sm:items-center sm:p-5"
                   >
                     <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}>
                       {card.icon}
@@ -239,7 +235,7 @@ export default function Dashboard(): ReactElement {
                         {card.value}
                         {card.suffix && <span className="text-sm font-normal text-slate-400">{card.suffix}</span>}
                       </p>
-                      <p className="text-[10px] text-slate-400">{card.label}</p>
+                      <p className="text-xs text-slate-500">{card.label}</p>
                     </div>
                   </div>
                 ))}
@@ -248,16 +244,16 @@ export default function Dashboard(): ReactElement {
 
             {/* In Progress — most important section after CTA */}
             {inProgress.length > 0 && (
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <div className="mt-9">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 font-display text-lg font-bold text-slate-800 dark:text-slate-200">
                     <Sparkles className="h-3.5 w-3.5 text-ocean" /> {dashboardPageContent.sections.keepGoing}
                   </h3>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
                     {interpolateContent(dashboardPageContent.sections.keepGoingCountTemplate, { count: inProgress.length })}
                   </span>
                 </div>
-                <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {inProgress.map((eq) => {
                     const mins = Math.round(eq.timeSpent / 60)
                     return (
@@ -270,15 +266,15 @@ export default function Dashboard(): ReactElement {
                         onFocus={() => {
                           void prefetchEquationExperience(eq.id)
                         }}
-                        className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-ocean/20 bg-ocean/[0.03] p-3.5 text-left transition hover:bg-ocean/[0.06] hover:shadow-sm sm:min-w-0 sm:rounded-xl sm:p-3"
+                        className="flex min-w-0 items-center gap-3 rounded-xl border border-ocean/20 bg-ocean/[0.03] p-3.5 text-left transition hover:bg-ocean/[0.06] hover:shadow-sm sm:min-w-0 sm:rounded-xl sm:p-4"
                         type="button"
                       >
                         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-ocean/10 text-xs font-bold text-ocean">
                           {eq.id}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">{eq.title}</p>
-                          <p className="text-[10px] text-slate-400">{mins}m · {eq.varsExplored} vars explored</p>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-white">{eq.title}</p>
+                          <p className="text-xs text-slate-500">{mins}m · {eq.varsExplored} vars explored</p>
                         </div>
                       </button>
                     )
@@ -289,16 +285,16 @@ export default function Dashboard(): ReactElement {
 
             {/* Not Started — discovery section */}
             {notStarted.length > 0 && (
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <div className="mt-9">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="font-display text-lg font-bold text-slate-800 dark:text-slate-200">
                     {dashboardPageContent.sections.discover}
                   </h3>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
                     {interpolateContent(dashboardPageContent.sections.discoverCountTemplate, { count: notStarted.length })}
                   </span>
                 </div>
-                <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {notStarted.map((eq) => (
                     <button
                       key={eq.id}
@@ -309,15 +305,15 @@ export default function Dashboard(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(eq.id)
                       }}
-                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-slate-200 bg-white p-3.5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0 sm:rounded-xl sm:p-3 sm:shadow-none"
+                      className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:min-w-0 sm:rounded-xl sm:p-4 sm:shadow-none"
                       type="button"
                     >
                       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400 dark:bg-slate-700">
                         {eq.id}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{eq.title}</p>
-                        <p className="text-[10px] text-slate-400">{eq.category}</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{eq.title}</p>
+                        <p className="text-xs text-slate-500">{eq.category}</p>
                       </div>
                     </button>
                   ))}
@@ -327,16 +323,16 @@ export default function Dashboard(): ReactElement {
 
             {/* Completed — celebration section */}
             {completed.length > 0 && (
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <div className="mt-9">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="font-display text-lg font-bold text-emerald-700 dark:text-emerald-400">
                     ✓ {dashboardPageContent.sections.completed}
                   </h3>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm dark:bg-slate-800">
                     {interpolateContent(dashboardPageContent.sections.completedCountTemplate, { count: completed.length })}
                   </span>
                 </div>
-                <div className="native-scroll flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {completed.map((eq) => (
                     <button
                       key={eq.id}
@@ -347,14 +343,14 @@ export default function Dashboard(): ReactElement {
                       onFocus={() => {
                         void prefetchEquationExperience(eq.id)
                       }}
-                      className="flex min-w-[15rem] snap-start items-center gap-3 rounded-[22px] border border-emerald-200 bg-emerald-50/50 p-3.5 text-left shadow-sm transition hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20 sm:min-w-0 sm:rounded-xl sm:p-3 sm:shadow-none"
+                      className="flex min-w-0 items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 text-left shadow-sm transition hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20 sm:min-w-0 sm:rounded-xl sm:p-4 sm:shadow-none"
                       type="button"
                     >
                       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-xs font-bold text-white">
                         ✓
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-emerald-700 dark:text-emerald-400">{eq.title}</p>
+                        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{eq.title}</p>
                         <p className="text-[10px] text-emerald-500/60">{Math.round(eq.timeSpent / 60)}m total</p>
                       </div>
                     </button>
@@ -363,22 +359,16 @@ export default function Dashboard(): ReactElement {
               </div>
             )}
 
-            {/* Footer: manage subscription */}
-            <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:rounded-xl sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                <p className="text-xs leading-relaxed text-slate-400 sm:hidden">
-                  Account and billing stay tucked away here while the learning surface stays clean.
-                </p>
-                <Button variant="outline" size="sm" onClick={handleManageSubscription} disabled={portalLoading} className="min-h-[46px] rounded-2xl text-slate-400 sm:min-h-0 sm:rounded-md">
-                  <Settings className="mr-1.5 h-3.5 w-3.5" />
+            {BILLING_ENABLED && (
+              <div className="mt-9 flex justify-end border-t border-slate-200 pt-6 dark:border-slate-800">
+                <Button variant="outline" onClick={handleManageSubscription} disabled={portalLoading}>
+                  <Settings className="h-4 w-4" />
                   {portalLoading ? "Loading..." : "Manage subscription"}
                 </Button>
               </div>
-            </div>
-          </div>
+            )}
         </div>
       )}
-      <Footer />
-    </main>
+    </PageFrame>
   )
 }

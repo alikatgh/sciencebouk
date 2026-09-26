@@ -16,7 +16,7 @@ interface ResizablePanelProps {
   onCollapse?: () => void
   /** Called when panel is expanded */
   onExpand?: () => void
-  /** Called with new width during drag */
+  /** Called with the initial restored width and whenever the width changes */
   onWidthChange?: (width: number) => void
   /** localStorage key to persist width */
   storageKey?: string
@@ -26,6 +26,29 @@ interface ResizablePanelProps {
   className?: string
   /** Extra classes on the outer width-constrained wrapper */
   wrapperClassName?: string
+}
+
+export function readStoredPanelWidth(
+  storageKey: string | undefined,
+  defaultWidth: number,
+  minWidth = 180,
+  maxWidth = 500,
+): number {
+  const clamp = (value: number) => Math.max(minWidth, Math.min(maxWidth, value))
+
+  if (typeof window !== "undefined" && storageKey) {
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored !== null && stored.trim() !== "") {
+        const parsed = Number(stored)
+        if (Number.isFinite(parsed) && parsed > 0) return clamp(parsed)
+      }
+    } catch {
+      // Storage can be unavailable, including in private browsing.
+    }
+  }
+
+  return clamp(defaultWidth)
 }
 
 export function ResizablePanel({
@@ -42,22 +65,21 @@ export function ResizablePanel({
   className = "",
   wrapperClassName = "",
 }: ResizablePanelProps): ReactElement {
-  const [width, setWidth] = useState(() => {
-    if (typeof window !== "undefined" && storageKey) {
-      try {
-        const stored = localStorage.getItem(storageKey)
-        const parsed = Number(stored)
-        if (Number.isFinite(parsed)) return Math.max(minWidth, Math.min(maxWidth, parsed))
-      } catch {
-        // Ignore storage access failures such as iOS private browsing.
-      }
-    }
-    return defaultWidth
-  })
+  const [width, setWidth] = useState(() =>
+    readStoredPanelWidth(storageKey, defaultWidth, minWidth, maxWidth),
+  )
   const [isDragging, setIsDragging] = useState(false)
   const startX = useRef(0)
   const startWidth = useRef(0)
   const prevOpenRef = useRef(open)
+  const reportedWidth = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (onWidthChange && reportedWidth.current !== width) {
+      reportedWidth.current = width
+      onWidthChange(width)
+    }
+  }, [width, onWidthChange])
 
   useEffect(() => {
     if (!prevOpenRef.current && open) {
@@ -103,8 +125,7 @@ export function ResizablePanel({
 
     const clamped = Math.max(minWidth, Math.min(maxWidth, newWidth))
     setWidth(clamped)
-    onWidthChange?.(clamped)
-  }, [edge, maxWidth, minWidth, onCollapse, onWidthChange, stopDragging])
+  }, [edge, maxWidth, minWidth, onCollapse, stopDragging])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -148,27 +169,26 @@ export function ResizablePanel({
       const newWidth = edge === "right" ? width - step : width + step
       const clamped = Math.max(minWidth, Math.min(maxWidth, newWidth))
       setWidth(clamped)
-      onWidthChange?.(clamped)
     } else if (e.key === "ArrowRight") {
       e.preventDefault()
       const newWidth = edge === "right" ? width + step : width - step
       const clamped = Math.max(minWidth, Math.min(maxWidth, newWidth))
       setWidth(clamped)
-      onWidthChange?.(clamped)
     }
-  }, [edge, width, minWidth, maxWidth, onWidthChange])
+  }, [edge, width, minWidth, maxWidth])
 
   if (!open) return <></>
 
   const handle = (
     <div
-      className={`group relative z-10 flex-shrink-0 ${edge === "right" ? "-mr-1" : "-ml-1"}`}
+      className={`group relative z-10 flex-shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ocean focus-visible:-outline-offset-2 ${edge === "right" ? "-mr-1" : "-ml-1"}`}
       style={{ width: 8 }}
       data-resize-handle
       role="separator"
       aria-label="Resize panel"
       aria-orientation="vertical"
       aria-valuenow={width}
+      aria-valuetext={`${width} pixels`}
       aria-valuemin={minWidth}
       aria-valuemax={maxWidth}
       tabIndex={0}
@@ -180,7 +200,7 @@ export function ResizablePanel({
         <div className={`h-8 w-1 rounded-full transition-colors ${
           isDragging
             ? "bg-ocean"
-            : "bg-transparent group-hover:bg-slate-300 dark:group-hover:bg-slate-600"
+            : "bg-transparent group-hover:bg-slate-300 group-focus-visible:bg-ocean dark:group-hover:bg-slate-600"
         }`} />
       </div>
     </div>

@@ -46,7 +46,7 @@ const DEFAULTS: Settings = {
   showFormulaLetters: true,
   showFormulaNumbers: true,
   showResultNote: true,
-  fontFamily: "STIX Two Text",
+  fontFamily: "IBM Plex Sans",
 }
 
 export const SETTINGS_STORAGE_KEY = "sciencebouk-settings"
