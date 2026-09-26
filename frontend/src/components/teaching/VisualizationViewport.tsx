@@ -1,6 +1,6 @@
 import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode, WheelEvent } from "react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from "lucide-react"
+import { Maximize2, Minimize2, Minus, Plus, RotateCcw, SlidersHorizontal } from "lucide-react"
 import { Button } from "../ui/button"
 import { cn } from "../../lib/utils"
 
@@ -19,15 +19,18 @@ interface VisualizationViewportProps {
   children: ReactNode
   className?: string
   mobileOptimized?: boolean
+  flowingPage?: boolean
 }
 
 export function VisualizationViewport({
   children,
   className,
   mobileOptimized = false,
+  flowingPage = false,
 }: VisualizationViewportProps): ReactElement {
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [viewControlsOpen, setViewControlsOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pendingAnchorRef = useRef<{ x: number; y: number } | null>(null)
   const activePointersRef = useRef(new Map<number, { x: number; y: number }>())
@@ -231,8 +234,14 @@ export function VisualizationViewport({
       )}
     >
       <div className={cn("relative h-full min-h-0", isFullscreen && "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950 shadow-2xl")}>
-      <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center px-3 sm:inset-x-auto sm:right-3 sm:top-3 sm:px-0">
-        <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1 py-0.5 sm:gap-1 dark:border-slate-700 dark:bg-slate-900/90">
+      <div className={cn("pointer-events-none absolute z-10 flex", flowingPage ? "right-1 top-1" : "inset-x-0 top-2 justify-center px-3 sm:inset-x-auto sm:right-3 sm:top-3 sm:px-0")}>
+        <div role="group" aria-label="Diagram view controls" className={cn("pointer-events-auto flex items-center gap-0.5 bg-white/90 dark:bg-slate-900/90", flowingPage ? "rounded-lg" : "rounded-full border border-slate-200 px-1 py-0.5 sm:gap-1 dark:border-slate-700")}>
+          {flowingPage && !isFullscreen && (
+            <Button type="button" variant="ghost" size="icon-sm" className="h-11 w-11 rounded-lg text-slate-500 dark:text-slate-300" aria-label="Adjust visualization view" aria-expanded={viewControlsOpen} onClick={() => setViewControlsOpen((open) => !open)}>
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+          )}
+          {(!flowingPage || isFullscreen || viewControlsOpen) && <>
           <Button
             type="button"
             variant="ghost"
@@ -272,12 +281,13 @@ export function VisualizationViewport({
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
+          </>}
           {mobileOptimized && (
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="h-10 w-10 rounded-full text-slate-500 hover:bg-slate-100 sm:hidden dark:text-slate-300 dark:hover:bg-slate-800"
+              className={cn("h-11 w-11 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800", !flowingPage && "sm:hidden")}
               aria-label={isFullscreen ? "Exit focused visualization mode" : "Enter focused visualization mode"}
               onClick={() => setIsFullscreen((previous) => !previous)}
             >
@@ -290,7 +300,8 @@ export function VisualizationViewport({
       <div
         ref={scrollRef}
         className={cn(
-          "native-scroll h-full overflow-auto overscroll-contain",
+          "h-full overflow-auto",
+          (!flowingPage || isFullscreen || zoom > DEFAULT_ZOOM) && "native-scroll overscroll-contain",
           isFullscreen && "rounded-[28px]",
         )}
         style={mobileOptimized ? { touchAction: "pan-x pan-y" } : undefined}

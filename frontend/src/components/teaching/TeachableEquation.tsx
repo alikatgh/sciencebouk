@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { PanelBottomOpen, PanelRightOpen } from "lucide-react"
+import { usePhoneLayout } from "../../hooks/usePhoneLayout"
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { useAuth } from "../../auth/AuthContext"
@@ -241,6 +242,7 @@ export function TeachableEquation({
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: containerWidth, height: containerHeight } = useContainerSize(containerRef)
   const isMobile = containerWidth > 0 && containerWidth < 480
+  const isPhone = usePhoneLayout()
 
   const { isAuthenticated, isPro } = useAuth()
   const contextFormula = useLatexFormula()
@@ -508,7 +510,7 @@ export function TeachableEquation({
   }, [isMobile, isNarrow, teachingPanelOpen, resolvedId])
 
   const learnBlock = hasLearnSurface ? (
-    <div className="border-b border-slate-200 pb-5 dark:border-slate-800">
+    <div className={cn("border-b border-slate-200 dark:border-slate-800", isPhone ? "pb-3" : "pb-5")}>
       {appSettings.showHookText && (
         <>
           <p className="text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100">{hookCopy}</p>
@@ -546,19 +548,20 @@ export function TeachableEquation({
   ) : null
 
   const variablesBlock = (
-    <section className="space-y-3" aria-label="Adjust variables">
+    <section className={isPhone ? "space-y-1" : "space-y-3"} aria-label="Adjust variables">
       <div>
         <h3 className="font-display text-sm font-bold text-slate-700 dark:text-slate-200">Variables</h3>
         {lockedVarsMemo.size > 0 && mobileTeachingTab !== "lesson" && (
           <div className="space-y-2 pt-1">
             <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">Some variables stay fixed during this lesson step.</p>
-            <Button variant="outline" size="sm" className="min-h-9" onClick={disableLessonMode}>Explore freely</Button>
+            <Button variant="outline" size="sm" className={isPhone ? "min-h-11" : "min-h-9"} onClick={disableLessonMode}>Explore freely</Button>
           </div>
         )}
       </div>
         <TouchableFormula
           variables={formulaVariables} onVariableChange={setVar}
           highlightedVariable={highlightedVar} onVariableHover={setHighlightedVar} formula={formula}
+          phoneLayout={isPhone}
         />
     </section>
   )
@@ -579,7 +582,7 @@ export function TeachableEquation({
           aria-pressed={presetIsActive(p, vars)}
           className={cn(
             "shadow-none",
-            "min-h-9 shrink-0 px-3 text-sm",
+            "shrink-0 px-3 text-sm", isPhone ? "min-h-11" : "min-h-9",
             presetIsActive(p, vars) &&
               "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100",
           )}
@@ -591,7 +594,22 @@ export function TeachableEquation({
     </div>
   ) : null
 
-  const lessonBlock = hasLessons && lessonMode ? (
+  const lessonRunner = (
+    <ErrorBoundary fallback={<LessonFallback />}>
+      <Suspense fallback={<LessonFallback />}>
+        <LessonRunner
+          steps={lessonSteps} currentStepIndex={lessonStep}
+          onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
+          variables={formulaVariables} onHighlight={setHighlightedVar}
+          glossary={localizedGlossary} onTermHighlight={setHighlightedTerm}
+          compact={isMobile} phoneLayout={isPhone}
+          onExploreFreely={isPhone ? disableLessonMode : undefined}
+        />
+      </Suspense>
+    </ErrorBoundary>
+  )
+
+  const lessonBlock = hasLessons && lessonMode ? (isPhone ? lessonRunner : (
     <Card className="rounded-xl border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
       <CardHeader className={`flex-row items-center justify-between space-y-0 ${isMobile ? "p-3 pb-2" : "p-3 pb-2"}`}>
         <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -602,20 +620,10 @@ export function TeachableEquation({
         </Button>
       </CardHeader>
       <CardContent className={isMobile ? "px-3.5 pb-3.5" : "px-3 pb-3"}>
-        <ErrorBoundary fallback={<LessonFallback />}>
-          <Suspense fallback={<LessonFallback />}>
-            <LessonRunner
-              steps={lessonSteps} currentStepIndex={lessonStep}
-              onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
-              variables={formulaVariables} onHighlight={setHighlightedVar}
-              glossary={localizedGlossary} onTermHighlight={setHighlightedTerm}
-              compact={isMobile}
-            />
-          </Suspense>
-        </ErrorBoundary>
+        {lessonRunner}
       </CardContent>
     </Card>
-  ) : null
+  )) : null
 
   const restartLessonBlock = hasLessons && !lessonMode ? (
     <Button variant="outline" className={`${isMobile ? "min-h-[44px] rounded-xl" : ""} w-full justify-start border-dashed text-slate-600 dark:text-slate-300`} onClick={restartLessonMode}>
@@ -630,8 +638,8 @@ export function TeachableEquation({
   ) : null
 
   const teachingContent = (
-    <section aria-label="Equation workspace" className={cn("flex h-full min-h-0 flex-col", !isNarrow && "studio-inspector")}>
-      {!isNarrow && (
+    <section aria-label="Equation workspace" className={cn("flex min-w-0 flex-col", !isPhone && "h-full min-h-0", !isPhone && !isNarrow && "studio-inspector")}>
+      {!isPhone && !isNarrow && (
         <div className="flex shrink-0 items-center justify-between px-5 pb-1 pt-4">
           <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">Your experiment</h3>
           <Button variant="ghost" size="icon-sm" onClick={() => setTeachingPanelOpen(false)} aria-label="Hide teaching panel">
@@ -639,8 +647,8 @@ export function TeachableEquation({
           </Button>
         </div>
       )}
-      <div className="shrink-0 border-b border-slate-200 px-3 py-3 dark:border-slate-800" role="group" aria-label="Workspace sections">
-        <div className="grid gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950" style={{ gridTemplateColumns: "repeat(" + mobileTabOrder.length + ", minmax(0, 1fr))" }}>
+      <div className={cn("shrink-0 border-b border-slate-200 dark:border-slate-800", !isPhone && "px-3 py-3")} role="group" aria-label="Workspace sections">
+        <div className={isPhone ? "grid" : "grid gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950"} style={{ gridTemplateColumns: "repeat(" + mobileTabOrder.length + ", minmax(0, 1fr))" }}>
           {mobileTabOrder.map((tab) => (
             <Button
               key={tab}
@@ -648,7 +656,9 @@ export function TeachableEquation({
               variant="ghost"
               size="sm"
               aria-pressed={mobileTeachingTab === tab}
-              className={cn("min-h-10 rounded-lg px-2 text-sm", mobileTeachingTab === tab
+              className={isPhone ? cn("min-h-11 rounded-none border-b-2 px-2 text-base hover:bg-transparent", mobileTeachingTab === tab
+                ? "border-ocean font-semibold text-ocean dark:border-blue-300 dark:text-blue-300"
+                : "border-transparent text-slate-500 dark:text-slate-400") : cn("min-h-10 rounded-lg px-2 text-sm", mobileTeachingTab === tab
                 ? "bg-white font-semibold text-ocean shadow-sm hover:bg-white dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-800"
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white")}
               onClick={() => setMobileTeachingTab(tab)}
@@ -658,8 +668,8 @@ export function TeachableEquation({
           ))}
         </div>
       </div>
-      <div key={mobileTeachingTab} className="native-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="space-y-5 p-4 sm:p-5">
+      <div key={mobileTeachingTab} className={isPhone ? "min-w-0" : "native-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain"}>
+        <div className={isPhone ? "space-y-3 px-1 pb-3 pt-1" : "space-y-5 p-4 sm:p-5"}>
           {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{presetsBlock}</>}
           {mobileTeachingTab === "learn" && <>{learnBlock}{learnMoreBlock}</>}
           {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}</>}
@@ -696,6 +706,19 @@ export function TeachableEquation({
 
     setTeachingPanelOpen(false)
   }, [mobilePanelState])
+
+  if (isPhone) {
+    return (
+      <div ref={containerRef} className="flex min-w-0 flex-col gap-3">
+        <div className="min-w-0" style={{ height: "clamp(240px, 38dvh, 340px)" }}>
+          <VisualizationViewport mobileOptimized flowingPage>
+            {visualizationContent}
+          </VisualizationViewport>
+        </div>
+        {teachingContent}
+      </div>
+    )
+  }
 
   if (isNarrow) {
     // Vertical stack: visualization on top, teaching panel below

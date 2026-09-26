@@ -113,26 +113,22 @@ function EquationBrowserSidebarComponent({
             wrapperClassName="hidden lg:flex"
             className="flex flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
           >
-            <div className="flex min-h-[76px] items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-              <button onClick={onGoHome} className="flex min-w-0 items-center gap-2.5 rounded-lg font-display text-base font-bold tracking-tight text-slate-900 outline-none transition hover:text-ocean focus-visible:ring-2 focus-visible:ring-ocean dark:text-white" type="button" aria-label={`${SITE_NAME} home`}>
+            <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 dark:border-slate-800">
+              <button onClick={onGoHome} className="flex min-h-11 min-w-0 items-center gap-2 rounded-lg font-display text-base font-bold tracking-tight text-slate-900 outline-none transition hover:text-ocean focus-visible:ring-2 focus-visible:ring-ocean dark:text-white" type="button" aria-label={`${SITE_NAME} home`}>
                 <BookOpen className="h-5 w-5 shrink-0 text-ocean" />
                 {SITE_NAME}
               </button>
               <div className="flex shrink-0 items-center">
-                <Button variant="ghost" size="icon-sm" onClick={onToggleTheme} className="h-9 w-9 rounded-lg text-slate-500" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}>
+                <Button variant="ghost" size="icon-sm" onClick={onToggleTheme} className="h-11 w-11 rounded-lg text-slate-500" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}>
                   {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon-sm" onClick={onToggleSidebar} className="h-9 w-9 rounded-lg text-slate-500" aria-label="Collapse sidebar">
+                <Button variant="ghost" size="icon-sm" onClick={onToggleSidebar} className="h-11 w-11 rounded-lg text-slate-500" aria-label="Collapse sidebar">
                   <PanelLeftClose className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="px-5 pb-4 pt-5">
-              <div className="mb-3 flex items-baseline justify-between gap-2">
-                <h2 className="font-display text-base font-bold text-slate-900 dark:text-white">Equation library</h2>
-                <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{equations.length} to explore</span>
-              </div>
+            <div className="shrink-0 px-3 py-2">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input

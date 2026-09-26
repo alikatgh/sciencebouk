@@ -45,6 +45,19 @@ describe("VisualizationViewport", () => {
     expect(frame).toHaveAttribute("data-zoom-scale", "100")
   })
 
+  it("keeps phone zoom controls out of the way until requested", () => {
+    render(<VisualizationViewport mobileOptimized flowingPage><div>Scene</div></VisualizationViewport>)
+    const toggle = screen.getByRole("button", { name: "Adjust visualization view" })
+    expect(screen.queryByRole("button", { name: "Zoom in visualization" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Enter focused visualization mode" })).toBeVisible()
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in visualization" }))
+    expect(screen.getByTestId("visualization-zoom-frame")).toHaveAttribute("data-zoom-scale", "105")
+    fireEvent.click(toggle)
+    expect(screen.queryByRole("button", { name: "Zoom in visualization" })).not.toBeInTheDocument()
+  })
+
   it("supports smooth modifier-wheel zooming", () => {
     render(
       <div style={{ width: 420, height: 320 }}>

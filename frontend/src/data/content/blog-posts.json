@@ -26,7 +26,7 @@
       {
         "title": "Keep the same thread on a smaller screen",
         "paragraphs": [
-          "On a desktop, the experiment panel sits beside the visualization and can be resized or hidden. On a phone, it sits below the diagram with the same Explore, Learn, and Lesson sections. The panel can expand for reading, tuck away for more diagram space, and reopen without losing the section you selected.",
+          "On a desktop, the experiment panel sits beside the visualization and can be resized or hidden. On a phone, the diagram sits above the same Explore, Learn, and Lesson sections. Explanations and controls scroll with the page, so a longer lesson stays readable without a second scroll area or an expand button.",
           "This release also repairs clipped mobile panels, makes navigation available across screen sizes, and improves keyboard focus and shortcuts. A lighter canvas, stronger text hierarchy, and larger controls carry through the library, settings, account pages, and help. The aim is to make the next action easier to see, whether you are reading or experimenting."
         ]
       },

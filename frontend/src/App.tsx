@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { Suspense, lazy, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { PHONE_LAYOUT_QUERY, usePhoneLayout } from "./hooks/usePhoneLayout"
 import { useAuth } from "./auth/AuthContext"
 import { EquationUnavailable } from "./seo/EquationUnavailable"
 
@@ -139,7 +140,13 @@ export default function App(): ReactElement {
   )
 
   const firstEquationId = equationManifest[0]?.id ?? 1
+  const isPhone = usePhoneLayout()
   const rawSelectedId = id ? Number(id) : firstEquationId
+  useEffect(() => {
+    if (window.matchMedia(PHONE_LAYOUT_QUERY).matches) {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+    }
+  }, [rawSelectedId])
   const [searchQuery, setSearchQuery] = useState("")
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -396,10 +403,10 @@ export default function App(): ReactElement {
 
   return (
       <main
-        className="studio-shell flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden"
+        className={`studio-shell flex min-h-[100dvh] flex-col ${isPhone ? "" : "h-[100dvh] overflow-hidden"}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex flex-1 gap-0 overflow-hidden">
+        <div className={`flex min-w-0 flex-1 gap-0 ${isPhone ? "" : "overflow-hidden"}`}>
           <EquationBrowserSidebar
             equations={equationManifest}
             filteredEquations={filteredEquations}
@@ -434,8 +441,9 @@ export default function App(): ReactElement {
             onLogout={handleLogout}
           />
 
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className={`flex min-w-0 flex-1 flex-col ${isPhone ? "" : "overflow-hidden"}`}>
             <EquationHeader
+              phoneLayout={isPhone}
               equation={selectedEquation}
               sidebarOpen={sidebarOpen}
               prevEquation={prevEquation}
@@ -448,7 +456,7 @@ export default function App(): ReactElement {
               onSelectEquation={selectEquation}
             />
 
-            <div className="equation-content min-h-0 flex-1 overflow-hidden p-2 sm:p-4">
+            <div className={`equation-content min-h-0 min-w-0 flex-1 ${isPhone ? "p-2" : "overflow-hidden p-4"}`}>
               <FormulaProvider value={selectedEquation.formula}>
                 <ErrorBoundary fallback={<VisualizationFallback />}>
                   <Suspense fallback={<VisualizationFallback />}>

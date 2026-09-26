@@ -415,6 +415,37 @@
     },
     "releases": [
       {
+        "version": "0.9.1",
+        "date": "26 Sep 2026",
+        "label": "minor",
+        "auditTrail": [],
+        "summary": "A more compact phone workspace with lessons that scroll naturally.",
+        "general": [
+          {
+            "type": "fix",
+            "text": "Phone lessons and controls now scroll with the page instead of being clipped inside a short panel."
+          },
+          {
+            "type": "improved",
+            "text": "Compact equation navigation, on-demand diagram controls, and simpler lesson styling give more space to the experiment and its explanation."
+          },
+          {
+            "type": "improved",
+            "text": "A shorter library header brings more equations into view, with search and account controls still available."
+          }
+        ],
+        "engineering": [
+          {
+            "type": "frontend",
+            "text": "Separated phone document scrolling from the resizable tablet and desktop workspace; preserved lesson state and removed nested phone scroll containment."
+          },
+          {
+            "type": "frontend",
+            "text": "Reduced mobile layout chrome and verified lesson progression, navigation, diagram controls, and library access at narrow viewport sizes."
+          }
+        ]
+      },
+      {
         "version": "0.9.0",
         "date": "26 Sep 2026",
         "label": "major",

@@ -18,6 +18,8 @@ interface LessonRunnerProps {
   glossary?: GlossaryTerm[]
   onTermHighlight?: (highlightClass: string | null) => void
   compact?: boolean
+  phoneLayout?: boolean
+  onExploreFreely?: () => void
 }
 
 const PARTICLE_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
@@ -57,7 +59,7 @@ function CelebrationParticles(): ReactElement {
   )
 }
 
-export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, stepCompleted, variables = [], onHighlight, glossary = [], onTermHighlight, compact = false }: LessonRunnerProps): ReactElement {
+export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, stepCompleted, variables = [], onHighlight, glossary = [], onTermHighlight, compact = false, phoneLayout = false, onExploreFreely }: LessonRunnerProps): ReactElement {
   const { settings: appSettings } = useSettings()
   const [showHint, setShowHint] = useState(false)
   const [showInsight, setShowInsight] = useState(false)
@@ -147,12 +149,17 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
   return (
     <div>
       {/* Progress */}
-      <div className={compact ? "mb-2.5 flex items-center gap-2" : "mb-2 flex items-center gap-2"}>
+      <div className={phoneLayout ? "flex min-h-11 items-center gap-2" : compact ? "mb-2.5 flex items-center gap-2" : "mb-2 flex items-center gap-2"}>
         <Progress value={((currentStepIndex + (stepCompleted ? 1 : 0)) / steps.length) * 100} className="h-1 flex-1" />
         <span className={`text-xs font-medium text-slate-400`}>{currentStepIndex + 1}/{steps.length}</span>
         {currentStepIndex > 0 && (
-          <Button variant="ghost" size="icon-sm" aria-label="Restart lesson" onClick={onReset} className={`h-9 w-9 text-slate-400`}>
+          <Button variant="ghost" size="icon-sm" aria-label="Restart lesson" onClick={onReset} className={`${phoneLayout ? "h-11 w-11" : "h-9 w-9"} shrink-0 text-slate-400`}>
             <RotateCcw className="h-2.5 w-2.5" />
+          </Button>
+        )}
+        {onExploreFreely && (
+          <Button variant="ghost" size="sm" onClick={onExploreFreely} className="min-h-11 shrink-0 px-2 text-sm text-slate-600 dark:text-slate-300">
+            Explore freely
           </Button>
         )}
       </div>
@@ -160,13 +167,13 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
       {/* Instruction */}
       <div
         key={step.id}
-        className={compact
+        className={phoneLayout ? "animate-slide-in-right py-1" : compact
           ? "animate-slide-in-right rounded-[18px] border border-ocean/15 bg-ocean/5 px-3.5 py-3 dark:border-ocean/20 dark:bg-ocean/10"
           : "animate-slide-in-right rounded-lg border border-ocean/15 bg-ocean/5 px-3 py-2 dark:border-ocean/20 dark:bg-ocean/10"}
       >
         <LessonMarkdown
           content={step.instruction}
-          className={`text-sm leading-relaxed text-slate-700 dark:text-slate-300`}
+          className={`${phoneLayout ? "text-base leading-6 [&_p]:leading-6" : "text-sm leading-relaxed"} text-slate-700 dark:text-slate-300`}
           variables={variables}
           glossary={glossary}
           onHighlight={highlight}
@@ -176,7 +183,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
       {/* Hint */}
       {showHint && step.hint && !stepCompleted && appSettings.showHints && (
-        <div className={compact
+        <div className={phoneLayout ? "animate-fade-in mt-2 border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400" : compact
           ? "animate-fade-in mt-1.5 rounded-[16px] bg-slate-100 px-3.5 py-2 text-xs text-slate-400 dark:bg-slate-700"
           : "animate-fade-in mt-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] text-slate-400 dark:bg-slate-700"}>
           <LessonMarkdown
@@ -191,7 +198,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
       {/* Insight (mid-lesson steps) */}
       {showInsight && stepCompleted && !isAllDone && (
-        <div className={compact
+        <div className={phoneLayout ? "animate-fade-in-up mt-2 border-l-2 border-sky-300 pl-3 dark:border-sky-700" : compact
           ? "animate-fade-in-up mt-1.5 rounded-[18px] border border-sky-200 bg-sky-50 px-3.5 py-3 dark:border-sky-700/40 dark:bg-sky-950/30"
           : "animate-fade-in-up mt-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-700/40 dark:bg-sky-950/30"}>
             <div className="flex items-start gap-2">
@@ -199,13 +206,13 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
               <div className="flex-1">
                 <LessonMarkdown
                   content={step.insight}
-                  className={`text-sm leading-relaxed text-slate-600 dark:text-slate-300`}
+                  className={`${phoneLayout ? "text-base leading-6 [&_p]:leading-6" : "text-sm leading-relaxed"} text-slate-600 dark:text-slate-300`}
                   variables={variables}
                   glossary={glossary}
                   onHighlight={highlight}
                   onTermHighlight={termHighlight}
                 />
-                <Button size="xs" className={`${compact ? "mt-2.5 min-h-[42px] rounded-full px-4" : "mt-2"}`} onClick={handleAdvance}>
+                <Button size="xs" className={`${phoneLayout ? "mt-2 min-h-11 px-4" : compact ? "mt-2.5 min-h-[42px] rounded-full px-4" : "mt-2"}`} onClick={handleAdvance}>
                   Next step <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>
@@ -215,7 +222,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
       {/* Lesson complete celebration */}
       {showCelebration && isAllDone && (
-        <div className={compact
+        <div className={phoneLayout ? "animate-scale-in relative mt-2 overflow-hidden rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 dark:border-emerald-600 dark:bg-emerald-950/30" : compact
           ? "animate-scale-in relative mt-2 overflow-hidden rounded-[22px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-[18px] dark:border-emerald-600/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-sky-950/30"
           : "animate-scale-in relative mt-2 overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-4 dark:border-emerald-600/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-sky-950/30"}>
             <CelebrationParticles />
@@ -254,10 +261,10 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
                 className={`animate-fade-in-up mt-3 flex ${compact ? "flex-wrap justify-center" : ""} gap-2`}
                 style={{ animationDelay: "550ms" }}
               >
-                <Button variant="outline" size="xs" aria-label="Restart lesson" onClick={onReset} className={`${compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 text-slate-500`}>
+                <Button variant="outline" size="xs" aria-label="Restart lesson" onClick={onReset} className={`${phoneLayout ? "min-h-11 px-4" : compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 text-slate-500`}>
                   <RotateCcw className="h-3 w-3" /> Replay
                 </Button>
-                <Button size="xs" className={`${compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 bg-emerald-600 hover:bg-emerald-700`} onClick={() => setShowCelebration(false)}>
+                <Button size="xs" className={`${phoneLayout ? "min-h-11 px-4" : compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 bg-emerald-600 hover:bg-emerald-700`} onClick={() => setShowCelebration(false)}>
                   <Sparkles className="h-3 w-3" /> Keep exploring
                 </Button>
               </div>

@@ -11,6 +11,7 @@ interface TouchableFormulaProps {
   highlightedVariable?: string | null
   onVariableHover?: (name: string | null) => void
   formula: string
+  phoneLayout?: boolean
 }
 
 function clamp(v: number, min: number, max: number): number {
@@ -29,9 +30,10 @@ interface SliderRowProps {
   isHighlighted: boolean
   onChange: (name: string, value: number) => void
   onHover: (name: string | null) => void
+  phoneLayout: boolean
 }
 
-function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProps): ReactElement {
+function SliderRow({ variable, isHighlighted, onChange, onHover, phoneLayout }: SliderRowProps): ReactElement {
   const isDisabled = variable.constant || variable.locked
   const [editing, setEditing] = useState(false)
   const [inputValue, setInputValue] = useState(() => formatValue(variable.value, variable.step))
@@ -86,15 +88,15 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`rounded-lg px-2.5 py-2 transition-colors [@media(pointer:coarse)]:rounded-xl [@media(pointer:coarse)]:px-3 [@media(pointer:coarse)]:py-3 ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+          className={`${phoneLayout ? "py-1" : "rounded-lg px-2.5 py-2 [@media(pointer:coarse)]:rounded-xl [@media(pointer:coarse)]:px-3 [@media(pointer:coarse)]:py-3"} transition-colors ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           onPointerEnter={() => onHover(variable.name)}
           onPointerLeave={() => onHover(null)}
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className={`flex ${phoneLayout ? "items-center" : "items-start"} justify-between gap-3`}>
+            <div className={phoneLayout ? "flex min-w-0 flex-wrap items-baseline gap-x-2" : "min-w-0"}>
               <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{variable.symbol}</span>
               {variable.description && (
-                <p className="text-xs leading-snug text-slate-500 dark:text-slate-400">{variable.description}</p>
+                <p className={`${phoneLayout ? "text-sm" : "text-xs"} leading-snug text-slate-500 dark:text-slate-400`}>{variable.description}</p>
               )}
             </div>
             {editing ? (
@@ -113,7 +115,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
                     setEditing(false)
                   }
                 }}
-                className="h-6 w-20 text-right font-mono text-sm font-medium tabular-nums text-slate-800 dark:text-slate-100 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-24"
+                className={`${phoneLayout ? "h-11 w-20 text-base" : "h-6 w-20 text-sm [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-24"} shrink-0 text-right font-mono font-medium tabular-nums text-slate-800 dark:text-slate-100`}
                 autoFocus
               />
             ) : (
@@ -121,7 +123,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
                 onClick={handleValueClick}
                 disabled={isDisabled}
                 aria-label={`${variable.description || variable.symbol}: ${formatValue(variable.value, variable.step)}${variable.unit ? ` ${variable.unit}` : ""}${isDisabled ? ". Locked in this lesson step" : ". Edit value"}`}
-                className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-sm font-medium tabular-nums text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-100 [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5 ${
+                className={`shrink-0 rounded ${phoneLayout ? "min-h-11 min-w-11 px-2 text-base" : "px-1.5 py-0.5 text-sm [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5"} font-mono font-medium tabular-nums text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-100 ${
                   isDisabled ? "cursor-default" : "cursor-text hover:bg-slate-100 dark:hover:bg-slate-600"
                 }`}
                 type="button"
@@ -133,7 +135,8 @@ function SliderRow({ variable, isHighlighted, onChange, onHover }: SliderRowProp
           </div>
           {!isDisabled && (
             <Slider
-              className="mt-1.5 [@media(pointer:coarse)]:mt-2"
+              className={phoneLayout ? undefined : "mt-1.5 [@media(pointer:coarse)]:mt-2"}
+              style={phoneLayout ? { minHeight: 44 } : undefined}
               min={variable.min}
               max={variable.max}
               step={variable.step}
@@ -161,6 +164,7 @@ export function TouchableFormula({
   onVariableChange,
   highlightedVariable,
   onVariableHover,
+  phoneLayout = false,
 }: TouchableFormulaProps): ReactElement {
   const interactiveVars = variables.filter((v) => !v.constant)
   if (interactiveVars.length === 0) return <div />
@@ -175,6 +179,7 @@ export function TouchableFormula({
             isHighlighted={highlightedVariable === v.name}
             onChange={onVariableChange}
             onHover={onVariableHover ?? (() => {})}
+            phoneLayout={phoneLayout}
           />
         ))}
       </div>

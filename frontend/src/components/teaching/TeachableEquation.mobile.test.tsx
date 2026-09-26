@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { SettingsProvider } from "../../settings/SettingsContext"
 import { TeachableEquation } from "./TeachableEquation"
 import type { LessonStep, Variable } from "./types"
@@ -26,7 +26,10 @@ const lessonSteps: LessonStep[] = [{
   celebration: "subtle", insight: "The triangle changes shape.",
 }]
 
-function renderMobileEquation() {
+afterEach(() => vi.unstubAllGlobals())
+
+function renderMobileEquation(viewportWidth = 390) {
+  vi.stubGlobal("innerWidth", viewportWidth)
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <SettingsProvider>
@@ -42,9 +45,29 @@ function renderMobileEquation() {
   )
 }
 
-describe("mobile teaching panel", () => {
-  it("expands and collapses with Enter and Space", async () => {
+describe("mobile teaching workspace", () => {
+  it("keeps phone lessons visible without an expandable or hidden sheet", async () => {
     renderMobileEquation()
+    expect(screen.getByRole("region", { name: "Equation workspace" })).toBeInTheDocument()
+    expect(await screen.findByText("Change the side length")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Resize teaching panel" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Hide" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Open teaching panel" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Enter focused visualization mode" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Guided lesson" })).not.toBeInTheDocument()
+  })
+
+  it("lets phone learners leave the lesson from its progress row", async () => {
+    renderMobileEquation()
+    await screen.findByText("Change the side length")
+    await userEvent.click(screen.getByRole("button", { name: "Explore freely" }))
+    expect(screen.getByRole("button", { name: "Explore" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByLabelText("Horizontal side: 4")).toBeEnabled()
+    expect(screen.getByRole("button", { name: "5-12-13" })).toBeEnabled()
+  })
+
+  it("preserves tablet expansion with Enter and Space", async () => {
+    renderMobileEquation(800)
     const resize = screen.getByRole("button", { name: "Resize teaching panel" })
     resize.focus()
 
@@ -54,8 +77,8 @@ describe("mobile teaching panel", () => {
     expect(screen.getByText("Expand workspace")).toBeInTheDocument()
   })
 
-  it("toggles once per tap and does not toggle back after a swipe", async () => {
-    renderMobileEquation()
+  it("preserves tablet taps and does not toggle back after a swipe", async () => {
+    renderMobileEquation(800)
     const resize = screen.getByRole("button", { name: "Resize teaching panel" })
     await userEvent.click(resize)
     expect(screen.getByText("Show more diagram")).toBeInTheDocument()
@@ -86,8 +109,8 @@ describe("mobile teaching panel", () => {
     expect(await screen.findByText("Change the side length")).toBeInTheDocument()
   })
 
-  it("reopens the selected section in its compact state", async () => {
-    renderMobileEquation()
+  it("reopens the selected tablet section in its compact state", async () => {
+    renderMobileEquation(800)
     await userEvent.click(screen.getByRole("button", { name: "Lesson" }))
     await screen.findByText("Change the side length")
     await userEvent.click(screen.getByRole("button", { name: "Resize teaching panel" }))

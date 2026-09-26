@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import App from "./App"
+import { PHONE_LAYOUT_QUERY } from "./hooks/usePhoneLayout"
 import { toggleFavorite } from "./lib/useFavorites"
 import { SETTINGS_STORAGE_KEY, SettingsProvider } from "./settings/SettingsContext"
 
@@ -40,7 +41,7 @@ function RouteLocation() {
 
 function renderEquation(desktop = true) {
   vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
-    matches: query === "(min-width: 1024px)" && desktop,
+    matches: (query === "(min-width: 1024px)" && desktop) || (query === PHONE_LAYOUT_QUERY && !desktop),
     media: query, addEventListener: vi.fn(), removeEventListener: vi.fn(),
   })))
   return render(
@@ -57,6 +58,7 @@ function renderEquation(desktop = true) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.stubGlobal("scrollTo", vi.fn())
   const storage = new Map<string, string>()
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => storage.get(key) ?? null,
@@ -71,6 +73,15 @@ beforeEach(() => {
 })
 
 afterEach(() => vi.unstubAllGlobals())
+
+it("starts the next mobile equation at the diagram after reading a long lesson", async () => {
+  renderEquation(false)
+  await screen.findByRole("slider", { name: "Scene variable" })
+  vi.mocked(window.scrollTo).mockClear()
+  fireEvent.keyDown(window, { key: "ArrowDown" })
+  await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/equation/3"))
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "instant" })
+})
 
 it("constrains the desktop library to a scrolling flex column", async () => {
   const { container } = renderEquation()

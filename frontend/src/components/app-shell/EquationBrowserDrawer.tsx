@@ -84,17 +84,16 @@ export function EquationBrowserDrawer({
         }}
         className="w-screen rounded-none border-r-0 bg-white sm:w-[min(92vw,25rem)] sm:rounded-r-2xl sm:border-r dark:bg-slate-950 lg:hidden"
       >
-        <SheetHeader className="shrink-0 border-b border-slate-200 px-5 pb-4 pt-4 dark:border-slate-800">
+        <SheetHeader className="h-14 shrink-0 border-b border-slate-200 px-3 py-0 sm:pt-0 dark:border-slate-800">
           <div className="min-w-0 pr-10">
-            <button onClick={onGoHome} type="button" className="mb-2 flex min-h-9 items-center gap-2 rounded-lg text-sm font-medium text-ocean outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ocean">
+            <button onClick={onGoHome} type="button" className="flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-ocean outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ocean">
               <ArrowLeft className="h-4 w-4" />
               Back to subjects
             </button>
-            <SheetTitle className="text-xl">Equation library</SheetTitle>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{equations.length} interactive equations to explore</p>
+            <SheetTitle className="sr-only">Equation library</SheetTitle>
           </div>
         </SheetHeader>
-        <div className="shrink-0 px-5 pb-3 pt-4">
+        <div className="shrink-0 px-3 py-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -104,12 +103,12 @@ export function EquationBrowserDrawer({
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search equations or scientists"
-              className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-11 text-base text-slate-900 placeholder:text-sm placeholder:text-slate-500 outline-none transition focus:border-ocean focus:bg-white focus:ring-2 focus:ring-ocean/15 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-11 text-base text-slate-900 placeholder:text-sm placeholder:text-slate-500 outline-none transition focus:border-ocean focus:bg-white focus:ring-2 focus:ring-ocean/15 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
             {searchQuery && (
               <button
                 onClick={onClearSearch}
-                className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:hover:text-white"
+                className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:hover:text-white"
                 type="button"
                 aria-label="Clear search"
               >
@@ -117,7 +116,7 @@ export function EquationBrowserDrawer({
               </button>
             )}
           </div>
-          <nav aria-label="Browse nearby equations" className="mt-3 flex gap-2 [@media(max-height:600px)]:hidden">
+          <nav aria-label="Browse nearby equations" className="mt-2 flex gap-2 [@media(max-height:600px)]:hidden">
             <Button
               variant="outline"
               size="sm"

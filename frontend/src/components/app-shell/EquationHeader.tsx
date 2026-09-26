@@ -47,6 +47,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
 
 interface EquationHeaderProps {
   equation: EquationSummary
+  phoneLayout?: boolean
   sidebarOpen: boolean
   prevEquation: EquationSummary | null
   nextEquation: EquationSummary | null
@@ -60,6 +61,7 @@ interface EquationHeaderProps {
 
 function EquationHeaderComponent({
   equation,
+  phoneLayout = false,
   prevEquation,
   nextEquation,
   isAuthenticated,
@@ -71,24 +73,24 @@ function EquationHeaderComponent({
 }: EquationHeaderProps): ReactElement {
   return (
     <header
-      className="sticky top-0 z-20 flex flex-shrink-0 flex-wrap items-center gap-x-3 gap-y-3 border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-800 dark:bg-slate-950 sm:px-6 lg:flex-nowrap lg:gap-5 lg:pb-4"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.65rem)" }}
+      className={`sticky top-0 z-20 flex flex-shrink-0 items-center border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 ${phoneLayout ? "flex-nowrap gap-x-1 px-2 pb-1.5" : "flex-wrap gap-3 px-6 pb-3 lg:flex-nowrap lg:gap-5 lg:pb-4"}`}
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.4rem)" }}
     >
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={onOpenDrawer}
-        className="order-1 h-11 w-11 shrink-0 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 lg:hidden"
+        className={`order-1 h-11 w-11 shrink-0 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-200 lg:hidden ${phoneLayout ? "" : "border border-slate-200 dark:border-slate-700"}`}
         aria-label="Open equation browser"
       >
         <Menu className="h-5 w-5" />
       </Button>
       <div className="order-2 min-w-0 flex-1">
-        <h2 className="font-display text-base font-bold leading-snug tracking-tight text-slate-900 dark:text-white sm:text-xl" title={equation.title}>
+        <h2 className={`line-clamp-2 font-display font-bold leading-snug tracking-tight text-slate-900 dark:text-white ${phoneLayout ? "text-sm" : "text-xl"}`} title={equation.title}>
           {equation.title}
         </h2>
         <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="hidden text-xs capitalize text-slate-500 dark:text-slate-400 sm:inline">
+          <span className={`${phoneLayout ? "hidden" : "inline"} text-xs capitalize text-slate-500 dark:text-slate-400`}>
             {equation.category.replaceAll("_", " ")}
           </span>
           <ScientistButton key={equation.id} equationId={equation.id} author={equation.author} year={equation.year} />
@@ -98,7 +100,7 @@ function EquationHeaderComponent({
         variant="ghost"
         size="icon-sm"
         onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
-        className="order-3 h-11 w-11 shrink-0 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 lg:hidden"
+        className={`${phoneLayout ? "hidden" : "inline-flex"} order-3 h-11 w-11 shrink-0 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 lg:hidden`}
         aria-label={isAuthenticated ? "Open profile" : "Sign in"}
       >
         {isAuthenticated ? (
@@ -109,7 +111,7 @@ function EquationHeaderComponent({
           <User className="h-5 w-5" />
         )}
       </Button>
-      <nav aria-label="Equation navigation" className="order-4 flex basis-full items-center gap-2 lg:shrink-0 lg:basis-auto">
+      <nav aria-label="Equation navigation" className={`order-4 flex shrink-0 items-center ${phoneLayout ? "gap-0.5" : "basis-full gap-2 lg:basis-auto"}`}>
         <Button
           variant="outline"
           size="sm"
@@ -118,12 +120,12 @@ function EquationHeaderComponent({
           onTouchStart={() => { if (prevEquation) void prefetchEquationScene(prevEquation.id) }}
           onMouseEnter={() => { if (prevEquation) void prefetchEquationScene(prevEquation.id) }}
           onFocus={() => { if (prevEquation) void prefetchEquationScene(prevEquation.id) }}
-          className="min-h-11 min-w-0 flex-1 rounded-xl px-4 text-sm text-slate-600 dark:text-slate-300 lg:flex-none"
+          className={`h-11 min-w-0 shrink-0 rounded-xl text-sm text-slate-600 dark:text-slate-300 ${phoneLayout ? "w-11 border-transparent px-0" : "flex-1 border-slate-200 px-4 dark:border-slate-700 lg:flex-none"}`}
           aria-label={prevEquation ? `Previous equation: ${prevEquation.title}` : "Previous equation"}
           title={prevEquation?.title}
         >
           <ChevronLeft className="h-4 w-4 shrink-0" />
-          Previous
+          <span className={phoneLayout ? "hidden" : "inline"}>Previous</span>
         </Button>
         <Button
           variant="outline"
@@ -133,11 +135,11 @@ function EquationHeaderComponent({
           onTouchStart={() => { if (nextEquation) void prefetchEquationScene(nextEquation.id) }}
           onMouseEnter={() => { if (nextEquation) void prefetchEquationScene(nextEquation.id) }}
           onFocus={() => { if (nextEquation) void prefetchEquationScene(nextEquation.id) }}
-          className="min-h-11 min-w-0 flex-1 rounded-xl px-4 text-sm text-slate-600 dark:text-slate-300 lg:flex-none"
+          className={`h-11 min-w-0 shrink-0 rounded-xl text-sm text-slate-600 dark:text-slate-300 ${phoneLayout ? "w-11 border-transparent px-0" : "flex-1 border-slate-200 px-4 dark:border-slate-700 lg:flex-none"}`}
           aria-label={nextEquation ? `Next equation: ${nextEquation.title}` : "Next equation"}
           title={nextEquation?.title}
         >
-          Next
+          <span className={phoneLayout ? "hidden" : "inline"}>Next</span>
           <ChevronRight className="h-4 w-4 shrink-0" />
         </Button>
       </nav>
