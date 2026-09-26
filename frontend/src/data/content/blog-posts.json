@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "a-clearer-way-to-explore-science",
+    "title": "A clearer way to explore science",
+    "description": "Inside the Sciencebouk redesign: find an equation, experiment with its variables, and follow the idea from a diagram to a guided lesson.",
+    "date": "2026-09-26",
+    "displayDate": "26 September 2026",
+    "release": "0.9.0",
+    "readingMinutes": 3,
+    "introduction": "An equation becomes easier to understand when you can ask it a question. What happens if this side gets longer? Why does this curve change? The new Sciencebouk interface is built around that moment of curiosity, with a clearer path from finding an idea to trying it for yourself.",
+    "sections": [
+      {
+        "title": "Start with something you can change",
+        "paragraphs": [
+          "The homepage now opens with a working Pythagorean theorem demonstration. Move a value and watch the triangle respond. It gives you a small experiment before asking you to choose a subject or understand the whole library. Three starting points offer another way in when you want a suggestion.",
+          "When you have a question in mind, search the library or browse by subject. Equation names and their context have more room to breathe. You can return to your last viewed equation, keep favorites close, and move to the previous or next equation from the workspace. Finding your next idea should feel like part of learning."
+        ]
+      },
+      {
+        "title": "Give the experiment room",
+        "paragraphs": [
+          "Inside an equation, the diagram and the controls now have distinct, consistent places. The workspace has three sections: Explore for changing variables and trying presets, Learn for the explanation, and Lesson for guided steps when they are available. You can follow your curiosity without searching through a stack of unrelated panels.",
+          "Variables have visible descriptions, and exact values can be edited directly. Clearing an input no longer silently changes it to zero. During a lesson, a locked variable explains why it is fixed; presets respect those limits. Choose Explore freely when you want to leave the guided path and test your own idea."
+        ]
+      },
+      {
+        "title": "Keep the same thread on a smaller screen",
+        "paragraphs": [
+          "On a desktop, the experiment panel sits beside the visualization and can be resized or hidden. On a phone, it sits below the diagram with the same Explore, Learn, and Lesson sections. The panel can expand for reading, tuck away for more diagram space, and reopen without losing the section you selected.",
+          "This release also repairs clipped mobile panels, makes navigation available across screen sizes, and improves keyboard focus and shortcuts. A lighter canvas, stronger text hierarchy, and larger controls carry through the library, settings, account pages, and help. The aim is to make the next action easier to see, whether you are reading or experimenting."
+        ]
+      },
+      {
+        "title": "A more dependable starting point",
+        "paragraphs": [
+          "The app now includes a bundled snapshot of its equation catalog and teaching content. If a content request fails or is unavailable, that snapshot gives the learning interface a useful fallback. Live content can still come from the API; this is resilience for content loading, rather than a promise that every feature works offline.",
+          "We checked the redesign with automated tests and desktop and mobile browser checks, including navigation, value editing, and teaching-panel behavior. Sciencebouk remains in beta, and billing is still paused. Open an equation you know, change one thing, and see whether the new workspace helps you notice something you had missed."
+        ]
+      }
+    ]
+  }
+]

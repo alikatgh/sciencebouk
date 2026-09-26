@@ -388,15 +388,15 @@
     },
     "hero": {
       "badge": "Changelog",
-      "title": "Product history, in two languages.",
-      "description": "This changelog is curated from audited git history on the main branch, covering {start} to {end}. Use General mode for user-facing updates, or Engineering mode for the technical trail behind the release.",
+      "title": "What changed in Sciencebouk",
+      "description": "New features, practical improvements, and the fixes behind them. Read General for the learning experience, or Engineering for implementation details.",
       "generalModeLabel": "General",
       "engineeringModeLabel": "Engineering",
       "helpButton": "Open Help Center",
       "chips": [
-        "{releases} curated releases",
-        "{securityCount} security-facing changes",
-        "Mobile-native polish tracked across multiple passes"
+        "{releases} releases",
+        "General and engineering notes",
+        "Built for curious learners"
       ]
     },
     "modeDescriptions": {
@@ -410,10 +410,70 @@
       },
       "engineering": {
         "title": "How to read the engineering log",
-        "body": "Engineering mode is intentionally closer to the build trail. It groups implementation changes into frontend, backend, content, infra, and security so the release story stays readable."
+        "body": "Engineering notes group changes by frontend, backend, content, infrastructure, and security. The historical April entries were compiled from 67 commits between 5 and 10 April 2026; audit hashes are shown where recorded."
       }
     },
     "releases": [
+      {
+        "version": "0.9.0",
+        "date": "26 Sep 2026",
+        "label": "major",
+        "auditTrail": [],
+        "blogPath": "/blog/a-clearer-way-to-explore-science",
+        "summary": "A redesigned science workspace, from discovering an equation to exploring its variables and following a guided lesson.",
+        "general": [
+          {
+            "type": "improved",
+            "text": "A new homepage pairs a live experiment with starting points, subject browsing, search, and a route back to your last viewed equation."
+          },
+          {
+            "type": "improved",
+            "text": "The equation workspace now uses the same Explore, Learn, and Lesson sections on desktop and mobile, with more room for diagrams and readable explanations."
+          },
+          {
+            "type": "fix",
+            "text": "Mobile teaching panels fit the screen, selected sections survive hiding and reopening, and previous/next navigation remains available on smaller screens."
+          },
+          {
+            "type": "fix",
+            "text": "The equation sidebar now scrolls through the full library so every equation stays reachable."
+          },
+          {
+            "type": "fix",
+            "text": "Exact-value editing handles empty inputs safely. Lesson locks explain their purpose, and presets no longer partially change locked experiments."
+          },
+          {
+            "type": "improved",
+            "text": "Library, settings, account, and help pages share clearer typography, spacing, and controls. Bundled equation and teaching content provides a fallback when content requests are unavailable."
+          },
+          {
+            "type": "new",
+            "text": "The Sciencebouk blog now explains the changes behind each release. The beta remains free, with billing paused."
+          }
+        ],
+        "engineering": [
+          {
+            "type": "frontend",
+            "text": "Unified the responsive teaching inspector, bounded mobile panel heights, and kept scrolling inside the content area while workspace controls remain reachable."
+          },
+          {
+            "type": "frontend",
+            "text": "Introduced shared reading-page layout and studio styling, with consistent navigation, typography, form controls, and dark-mode surfaces."
+          },
+          {
+            "type": "frontend",
+            "text": "Repaired persisted panel widths, first-open scientist dialogs, editing cancellation, and shortcut handling around inputs and dialogs."
+          },
+          {
+            "type": "content",
+            "text": "Bundled the existing equation catalog and teaching content as API fallback data; added public blog routes, release notes, and generated search metadata."
+          },
+          {
+            "type": "frontend",
+            "text": "Verified the redesign with focused interaction regressions, the frontend test suite, a production build, and desktop/mobile browser checks. Live authentication and payment flows were not exercised."
+          }
+        ]
+      },
       {
         "version": "0.8.0",
         "date": "10 Apr 2026",

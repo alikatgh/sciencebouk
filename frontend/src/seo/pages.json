@@ -26,5 +26,13 @@
   "/pro": {
     "title": "Sciencebouk Pro",
     "description": "Explore Sciencebouk Pro features and plans for guided learning and progress tracking."
+  },
+  "/blog": {
+    "title": "Sciencebouk blog",
+    "description": "Stories behind Sciencebouk: product updates, interactive learning, and better ways to explore mathematical ideas."
+  },
+  "/blog/a-clearer-way-to-explore-science": {
+    "title": "A clearer way to explore science",
+    "description": "Inside the Sciencebouk redesign: find an equation, experiment with its variables, and follow the idea from a diagram to a guided lesson."
   }
 }

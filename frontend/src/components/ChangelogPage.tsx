@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { ArrowRight, FileText, GitBranch, ShieldCheck, Sparkles } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { ArrowRight, FileText, ShieldCheck, Sparkles } from "lucide-react"
 import { PageFrame } from "./PageFrame"
 import { Button } from "./ui/button"
 import {
@@ -70,10 +70,6 @@ export default function ChangelogPage(): ReactElement {
                 <FileText className="h-3.5 w-3.5" />
                 {changelogContent.hero.badge}
               </span>
-              {mode === "engineering" && <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                <GitBranch className="h-3.5 w-3.5" />
-                {audit.commits} commits audited
-              </span>}
             </div>
 
             <h1 className="mt-4 font-display text-4xl font-bold text-slate-900 dark:text-white sm:text-5xl">
@@ -159,7 +155,13 @@ export default function ChangelogPage(): ReactElement {
                     {release.summary}
                   </p>
 
-                  {mode === "engineering" && (
+                  {"blogPath" in release && typeof release.blogPath === "string" && (
+                    <Link to={release.blogPath} className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ocean hover:underline dark:text-blue-300">
+                      Read the story behind this release <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+
+                  {mode === "engineering" && release.auditTrail.length > 0 && (
                     <div className="mb-4 flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
                       <span className="font-semibold uppercase tracking-[0.16em]">Audit trail</span>
                       {release.auditTrail.map((hash) => (

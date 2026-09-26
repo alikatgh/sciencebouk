@@ -111,7 +111,7 @@ function EquationBrowserSidebarComponent({
             onCollapse={onToggleSidebar}
             storageKey="sciencebouk-sidebar-width"
             wrapperClassName="hidden lg:flex"
-            className="flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+            className="flex flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="flex min-h-[76px] items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
               <button onClick={onGoHome} className="flex min-w-0 items-center gap-2.5 rounded-lg font-display text-base font-bold tracking-tight text-slate-900 outline-none transition hover:text-ocean focus-visible:ring-2 focus-visible:ring-ocean dark:text-white" type="button" aria-label={`${SITE_NAME} home`}>

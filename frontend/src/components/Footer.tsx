@@ -24,6 +24,7 @@ export function Footer(): ReactElement {
             <Link to="/about" className={linkClass}>About</Link>
             <Link to="/pro" className={linkClass}>{BILLING_ENABLED ? "Pro" : billingDisabledCopy.badge}</Link>
             <Link to="/changelog" className={linkClass}>Changelog</Link>
+            <Link to="/blog" className={linkClass}>Blog</Link>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>GitHub</a>
             <Link to="/privacy" className={linkClass}>Privacy</Link>
             <Link to="/terms" className={linkClass}>Terms</Link>

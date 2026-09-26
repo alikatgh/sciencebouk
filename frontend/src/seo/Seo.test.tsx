@@ -29,3 +29,11 @@ it('excludes genuinely unknown routes after a successful catalog response', () =
   render(<MemoryRouter initialEntries={['/equation/999']}><Seo /></MemoryRouter>)
   expect(document.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
 })
+it('indexes the published blog story and excludes unknown articles', () => {
+  render(<MemoryRouter initialEntries={['/blog/a-clearer-way-to-explore-science']}><Seo /><Link to="/blog/missing-story">Missing story</Link></MemoryRouter>)
+  expect(document.title).toBe('A clearer way to explore science · Sciencebouk')
+  expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://sciencebo.uk/blog/a-clearer-way-to-explore-science')
+  expect(document.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'index, follow, max-image-preview:large')
+  fireEvent.click(screen.getByText('Missing story'))
+  expect(document.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
+})

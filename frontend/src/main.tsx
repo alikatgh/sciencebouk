@@ -23,6 +23,7 @@ const HelpCenterPage = lazy(() => import("./components/HelpCenterPage"))
 const PrivacyPage = lazy(() => import("./components/PrivacyPage"))
 const TermsPage = lazy(() => import("./components/TermsPage"))
 const ChangelogPage = lazy(() => import("./components/ChangelogPage"))
+const BlogPage = lazy(() => import("./components/BlogPage"))
 const AuthPage = lazy(() => import("./auth/AuthPage"))
 
 function NotFoundPage(): React.ReactElement {
@@ -127,6 +128,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/changelog" element={<ChangelogPage />} />
+                  <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/blog/:slug" element={<BlogPage />} />
                   <Route path="/login" element={<AuthPage mode="login" />} />
                   <Route path="/signup" element={<AuthPage mode="signup" />} />
                   <Route path="*" element={<NotFoundPage />} />

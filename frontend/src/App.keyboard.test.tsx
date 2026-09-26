@@ -72,6 +72,18 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals())
 
+it("constrains the desktop library to a scrolling flex column", async () => {
+  const { container } = renderEquation()
+  await screen.findByRole("slider", { name: "Scene variable" })
+  const viewport = container.querySelector("[data-radix-scroll-area-viewport]")
+  const scrollArea = viewport?.parentElement
+  const sidebar = scrollArea?.parentElement
+
+  expect(sidebar).toHaveClass("flex", "flex-col", "overflow-hidden")
+  expect(scrollArea).toHaveClass("min-h-0", "flex-1")
+  expect(scrollArea).not.toContainElement(screen.getByRole("progressbar", { name: "Equation completion" }))
+})
+
 describe("equation keyboard navigation", () => {
   it.each(["metaKey", "ctrlKey", "altKey"])("preserves browser shortcuts using %s", async (modifier) => {
     renderEquation()

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react"
+import { useLayoutEffect, type ReactNode } from "react"
+import { useLocation } from "react-router-dom"
 import { TopNav } from "./TopNav"
 import { Footer } from "./Footer"
 
@@ -12,6 +13,13 @@ interface PageFrameProps {
 
 /** Shared reading and account surface; the equation workspace has its own shell. */
 export function PageFrame({ children, title, description, actions, className = "" }: PageFrameProps) {
+  const { pathname, hash } = useLocation()
+
+  useLayoutEffect(() => {
+    // Reading pages start at their heading; leave anchor navigation to its target.
+    if (!hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+  }, [pathname, hash])
+
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#f3f6fb] text-ink dark:bg-slate-950 dark:text-slate-100">
       <TopNav showBack />
