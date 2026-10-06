@@ -1,0 +1,36 @@
+# Host blocks for the shared Hetzner Caddyfile; preserve other applications.
+sciencebo.uk {
+    encode zstd gzip
+    @backend path /api/* /admin/* /static/*
+    handle @backend {
+        reverse_proxy 127.0.0.1:8015
+    }
+    # Hashed Vite chunks must 404 when missing. SPA-fallback to index.html
+    # makes the browser try to import HTML as a module after a deploy.
+    @hashed path /assets/*
+    handle @hashed {
+        root * /var/www/sciencebouk
+        file_server
+    }
+    handle {
+        root * /var/www/sciencebouk
+        try_files {path}/index.html {path} /index.html
+        file_server
+        header Cache-Control "no-cache"
+        header Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.sciencebo.uk https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    }
+    header Strict-Transport-Security "max-age=31536000"
+    header X-Content-Type-Options "nosniff"
+    header X-Frame-Options "DENY"
+    header Referrer-Policy "strict-origin-when-cross-origin"
+}
+
+www.sciencebo.uk {
+    redir https://sciencebo.uk{uri} permanent
+}
+
+api.sciencebo.uk {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8015
+    header Strict-Transport-Security "max-age=31536000"
+}
