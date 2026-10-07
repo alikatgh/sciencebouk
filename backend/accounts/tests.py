@@ -316,6 +316,24 @@ class GoogleAuthTests(TestCase):
         self.assertFalse(User.objects.filter(email='new-google@example.com').exists())
 
     @patch('accounts.views.verify_google_credential')
+    def test_google_auth_rejects_inactive_account(self, mock_verify):
+        user = make_user(email='inactive-google@example.com')
+        user.is_active = False
+        user.save(update_fields=['is_active'])
+        mock_verify.return_value = {
+            'email': user.email,
+            'email_verified': True,
+        }
+        with self.settings(GOOGLE_OAUTH_CLIENT_ID='google-client-id'):
+            response = self.client.post('/api/auth/google/', {
+                'credential': 'fake-token',
+            }, format='json')
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn('tokens', response.json())
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+
+    @patch('accounts.views.verify_google_credential')
     def test_google_auth_requires_invite_for_new_user_when_gate_enabled(self, mock_verify):
         mock_verify.return_value = {
             'email': 'new-google@example.com',
