@@ -77,6 +77,12 @@ def google_auth(request):
                 defaults={'username': email},
             )
 
+            if not user.is_active:
+                return Response(
+                    {"error": "Account is inactive"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
             if is_new_signup and getattr(settings, 'INVITES_REQUIRED', False):
                 if not InviteRedemption.objects.filter(user=user).exists():
                     redeem_invite_code(invite_code, user, get_request_meta(request))
