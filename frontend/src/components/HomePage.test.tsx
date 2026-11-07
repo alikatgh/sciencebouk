@@ -113,7 +113,7 @@ describe("equation discovery", () => {
 
   it("offers the latest unfinished experiment even before a lesson is completed", async () => {
     const progress = (lastViewed: string, completed = false): EquationProgress => ({
-      completed, lastViewed, lessonStep: "intro", timeSpentSeconds: 15, variablesExplored: [], notes: "", bookmarked: false,
+      completed, lastViewed, lessonStep: "intro", lessonStepUpdatedAt: lastViewed, timeSpentSeconds: 15, variablesExplored: [], notes: "", bookmarked: false,
     })
     state.progress = new Map([
       [1, progress("2026-09-25T12:00:00Z")],
@@ -131,7 +131,7 @@ describe("equation discovery", () => {
 
   it("identifies the three recent unfinished cards and keeps completed and untouched cards distinct", async () => {
     const progress = (lastViewed: string, completed = false): EquationProgress => ({
-      completed, lastViewed, lessonStep: "intro", timeSpentSeconds: 15, variablesExplored: [], notes: "", bookmarked: false,
+      completed, lastViewed, lessonStep: "intro", lessonStepUpdatedAt: lastViewed, timeSpentSeconds: 15, variablesExplored: [], notes: "", bookmarked: false,
     })
     state.progress = new Map([
       [1, progress("2026-11-01T12:00:00Z")],

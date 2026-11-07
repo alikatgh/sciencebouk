@@ -309,19 +309,20 @@ export function EulerPolyhedraScene(): ReactElement {
         { label: "Icosahedron", values: { V: 12, E: 30, F: 20 } },
       ]}
     >
-      {({ setVar, onAction }) => (
-        <D3EulerVisual onUpdateVars={setVar} onAction={onAction} />
+      {({ vars, setVar, onAction }) => (
+        <D3EulerVisual counts={{ V: vars.V, E: vars.E, F: vars.F }} onUpdateVars={setVar} onAction={onAction} />
       )}
     </TeachableEquation>
   )
 }
 
 interface EulerVisualProps {
+  counts: { V: number; E: number; F: number }
   onUpdateVars: SetEquationVariable
   onAction: (name: string) => void
 }
 
-function D3EulerVisual({ onUpdateVars, onAction }: EulerVisualProps): ReactElement {
+function D3EulerVisual({ counts, onUpdateVars, onAction }: EulerVisualProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
   const svgSelRef = useRef<Selection<SVGSVGElement, unknown, null, undefined> | null>(null)
@@ -331,8 +332,9 @@ function D3EulerVisual({ onUpdateVars, onAction }: EulerVisualProps): ReactEleme
   const onActionRef = useRef(onAction)
   onActionRef.current = onAction
 
-  const selectedIdxRef = useRef(1) // start with cube
-  const [selectedIdx, setSelectedIdx] = useState(1)
+  const matchingIdx = solids.findIndex((solid) => solid.V === counts.V && solid.E === counts.E && solid.F === counts.F)
+  const selectedIdxRef = useRef(matchingIdx >= 0 ? matchingIdx : 1)
+  const [selectedIdx, setSelectedIdx] = useState(selectedIdxRef.current)
   const angleRef = useRef(0)
   const angleXRef = useRef(0.3)
   const autoRotateRef = useRef(true)
@@ -342,6 +344,14 @@ function D3EulerVisual({ onUpdateVars, onAction }: EulerVisualProps): ReactEleme
   // Shared running flag in a ref so cleanup can stop a stale animation frame
   // even if it fires after the effect has already returned its cleanup function.
   const runningRef = useRef(false)
+
+  // Retry, Replay and presets restore the parent counts. Reflect a complete
+  // matching solid locally without reporting a new learner action or writing back.
+  useEffect(() => {
+    if (matchingIdx < 0 || matchingIdx === selectedIdxRef.current) return
+    selectedIdxRef.current = matchingIdx
+    setSelectedIdx(matchingIdx)
+  }, [matchingIdx])
 
   // Setup -- rebuilds on resize
   useEffect(() => {
