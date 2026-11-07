@@ -1,5 +1,5 @@
-import { render } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { ResponseCurve } from "./ResponseCurve"
 import type { Variable } from "../teaching/types"
 
@@ -21,6 +21,12 @@ const CASES: Array<{ id: number; vars: Record<string, number>; variables: Variab
   { id: 38, vars: { theta1: 80, n1: 2, n2: 1 }, variables: [v("theta1", 0, 89, 80), v("n1", 1, 2.5, 2), v("n2", 1, 2.5, 1)] }, // total internal reflection → NaN region
 ]
 
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
+
 describe("ResponseCurve render smoke", () => {
   it("mounts an SVG for representative equations without throwing", () => {
     for (const c of CASES) {
@@ -37,5 +43,55 @@ describe("ResponseCurve render smoke", () => {
   it("returns null (no crash) for an equation without a computed result", () => {
     const { container } = render(<ResponseCurve equationId={18} variables={[v("n", 1, 100, 8)]} vars={{ n: 8 }} />)
     expect(container.querySelector("svg")).toBeNull()
+  })
+
+  it("describes both phone axes with ranges and units and updates the selected axis", () => {
+    vi.stubGlobal("innerWidth", 390)
+    vi.stubGlobal("innerHeight", 844)
+    const variables = [{ ...v("I", 0, 10, 2), unit: "A" }, { ...v("R", 1, 100, 10), unit: "Ω" }]
+    const props = { equationId: 37, variables, vars: { I: 2, R: 10 } }
+    const { rerender } = render(<ResponseCurve {...props} sweepOverride="I" />)
+
+    expect(screen.getByRole("img", { name: "Response curve of V versus I" })).toHaveAccessibleDescription(/Horizontal · I.*0 to 10 A.*Vertical · V.* V/)
+    expect(screen.getByText("0 to 10 A")).toBeInTheDocument()
+
+    rerender(<ResponseCurve {...props} sweepOverride="R" />)
+
+    expect(screen.getByRole("img", { name: "Response curve of V versus R" })).toHaveAccessibleDescription(/Horizontal · R.*1 to 100 Ω/)
+    expect(screen.getByText("1 to 100 Ω")).toBeInTheDocument()
+  })
+
+  it("keeps logarithmic scaling operable and describes it without changing the current result", () => {
+    vi.stubGlobal("innerWidth", 390)
+    vi.stubGlobal("innerHeight", 844)
+    const example = CASES[3]
+    const { container } = render(<ResponseCurve equationId={example.id} variables={example.variables} vars={example.vars} />)
+    const initialPath = container.querySelector('path[fill="none"]')?.getAttribute("d")
+    const result = screen.getByRole("status").textContent
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle logarithmic y-axis (currently off)" }))
+
+    expect(screen.getByRole("button", { name: "Toggle logarithmic y-axis (currently on)" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("img")).toHaveAccessibleDescription(/log scale/)
+    expect(container.querySelector('path[fill="none"]')?.getAttribute("d")).not.toBe(initialPath)
+    expect(screen.getByRole("status").textContent).toBe(result)
+  })
+
+  it("preserves pointer scrubbing and removes the scrub readout on pointer leave", () => {
+    vi.stubGlobal("innerWidth", 390)
+    vi.stubGlobal("innerHeight", 844)
+    vi.stubGlobal("PointerEvent", MouseEvent)
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 1 })
+    vi.stubGlobal("cancelAnimationFrame", vi.fn())
+    render(<ResponseCurve equationId={37} variables={[v("I", 0, 10, 2), v("R", 1, 100, 10)]} vars={{ I: 2, R: 10 }} sweepOverride="I" />)
+    const svg = screen.getByRole("img")
+    vi.spyOn(svg, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, width: 880, height: 520, right: 880, bottom: 520, toJSON: () => ({}) })
+
+    fireEvent.pointerMove(svg, { clientX: 454, clientY: 220 })
+    const readout = screen.getByText("I = 5 · V = 50 V")
+    expect(readout.closest("svg")).toBeNull()
+
+    fireEvent.pointerLeave(svg)
+    expect(screen.queryByText("I = 5 · V = 50 V")).not.toBeInTheDocument()
   })
 })

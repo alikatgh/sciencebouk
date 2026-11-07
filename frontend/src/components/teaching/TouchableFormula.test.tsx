@@ -17,6 +17,22 @@ const capital: Variable = {
 }
 
 describe("TouchableFormula", () => {
+  it("links keyboard focus to the diagram and keeps the highlight within a control row", () => {
+    const hover = vi.fn()
+    render(<><TouchableFormula variables={[capital]} onVariableChange={vi.fn()} onVariableHover={hover} formula="Y" /><button>Outside controls</button></>)
+    const value = screen.getByRole("button", { name: /Capital: 50.*Edit value/ })
+    const slider = screen.getByRole("slider", { name: "Capital: 50" })
+    fireEvent.focus(value)
+    expect(hover).toHaveBeenLastCalledWith("K")
+    hover.mockClear()
+    fireEvent.blur(value, { relatedTarget: slider })
+    expect(hover).not.toHaveBeenCalled()
+    fireEvent.focus(slider)
+    expect(hover).toHaveBeenLastCalledWith("K")
+    fireEvent.blur(slider, { relatedTarget: screen.getByRole("button", { name: "Outside controls" }) })
+    expect(hover).toHaveBeenLastCalledWith(null)
+  })
+
   it("does not paint the control with the variable's rainbow color", () => {
     render(
       <TouchableFormula

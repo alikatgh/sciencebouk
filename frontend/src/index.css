@@ -6,10 +6,13 @@
 
 :root {
   --font-body: "IBM Plex Sans", sans-serif;
-  --studio-canvas: #f3f6fb;
+  --studio-canvas: #f4f7fb;
   --studio-panel: #ffffff;
   --studio-line: #dde4ef;
   --studio-ink: #17213a;
+  --studio-muted: #596a82;
+  --studio-accent: #315cdd;
+  --studio-tint: #edf2ff;
   --slider-fill: #315cdd;
   --slider-unfilled: #e2e8f0;
   --slider-thumb-border: #cbd5e1;
@@ -29,6 +32,9 @@
   --studio-panel: #121e32;
   --studio-line: #29384f;
   --studio-ink: #e5edf8;
+  --studio-muted: #a2b2c9;
+  --studio-accent: #a1baff;
+  --studio-tint: #1b2c4c;
   color: #e2e8f0;
   background: var(--studio-canvas);
   --slider-fill: #8ca8ff;
@@ -142,7 +148,15 @@ section .katex {
   .studio-inspector {
     background: var(--studio-panel);
     border: 1px solid var(--studio-line);
-    border-radius: 16px;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgb(23 33 58 / 3%);
+  }
+
+  .studio-formula {
+    border: 1px solid var(--studio-line);
+    border-radius: 12px;
+    background: var(--studio-canvas);
+    padding: 1rem 0.75rem;
   }
 
   .studio-grid {
@@ -354,6 +368,9 @@ section .katex {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -366,6 +383,10 @@ section .katex {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+}
+
+html.reduce-motion {
+  scroll-behavior: auto;
 }
 
 /* Settings: high contrast */

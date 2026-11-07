@@ -6,6 +6,7 @@ interface AutoFitDeferredInlineMathProps {
   math: string
   className?: string
   minScale?: number
+  overflow?: "auto" | "hidden"
 }
 
 function roundScale(value: number): number {
@@ -16,6 +17,7 @@ export function AutoFitDeferredInlineMath({
   math,
   className,
   minScale = 0.72,
+  overflow = "auto",
 }: AutoFitDeferredInlineMathProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
@@ -77,7 +79,7 @@ export function AutoFitDeferredInlineMath({
         <DeferredInlineMath math={math} className={className} />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className={overflow === "hidden" ? "overflow-hidden" : "overflow-x-auto"}>
         <div className="flex justify-center">
           <div
             className="w-max max-w-full"

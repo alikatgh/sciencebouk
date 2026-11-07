@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { BlockMath } from "react-katex"
-import { Check, Copy, Link2, RotateCcw, Shuffle } from "lucide-react"
+import { Check, Copy, Link2, RotateCcw, Share2, Shuffle } from "lucide-react"
 import { copyText } from "../../lib/clipboard"
 import { decodeVarsFromParam, encodeVarsToParam } from "../../lib/equationShareUrl"
 import { pushToast } from "../../lib/toast"
@@ -209,6 +209,7 @@ export function ConfigurableEquationScene(): ReactElement {
       lessonSteps={lessonSteps}
       presets={presets}
       glossary={glossary}
+      phoneVisualizationHeight={subjectResults[equationId] ? "clamp(380px, 52dvh, 460px)" : undefined}
     >
       {({ vars, setVar }) => (
         <GenericMetersVisual key={equationId} equationId={equationId} variables={variables} vars={vars} setVar={setVar} formula={equation.formula} citation={buildCitation(equation)} />
@@ -293,24 +294,28 @@ function GenericMetersVisual({
 
   return (
     <div className="scene-stage studio-surface flex h-full w-full min-h-0 flex-col rounded-2xl border">
-      <div className="relative flex shrink-0 flex-wrap items-center gap-1 px-3 py-2 sm:pr-44">
+      <div className="relative flex shrink-0 flex-wrap items-center gap-1 py-2 pl-3 pr-24 sm:pr-44">
         <button
           type="button"
           onClick={resetInputs}
-          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          aria-label="Reset variables"
+          title="Reset variables"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
-          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /><span className="hidden sm:inline">Reset</span>
         </button>
         <button
           type="button"
           onClick={randomizeInputs}
-          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          aria-label="Randomize variables"
+          title="Randomize variables"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
-          <Shuffle className="h-3.5 w-3.5" aria-hidden="true" /> Randomize
+          <Shuffle className="h-3.5 w-3.5" aria-hidden="true" /><span className="hidden sm:inline">Randomize</span>
         </button>
         <details className="group relative ml-auto sm:ml-0">
-          <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-lg px-3 text-xs font-semibold text-slate-600 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-300 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
-            Copy &amp; share
+          <summary aria-label="Copy and share" title="Copy and share" className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-lg px-3 text-xs font-semibold text-slate-600 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-300 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
+            <Share2 className="h-3.5 w-3.5 sm:hidden" aria-hidden="true" /><span className="hidden sm:inline">Copy &amp; share</span>
           </summary>
           <div className="absolute right-0 top-full z-30 grid w-48 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900 sm:left-0 sm:right-auto">
         <button
@@ -371,11 +376,13 @@ function GenericMetersVisual({
 
       {result ? (
         <div className="flex min-h-0 w-full flex-1 flex-col">
-          <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
+          <div className="min-h-0 flex-1">
+            <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
+          </div>
           {meters.length > 1 && (
-            <div className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-3 pb-2">
-              <span className="mr-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                x-axis
+            <div role="group" aria-label="Choose x-axis variable" className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 border-t border-slate-200/70 px-3 pb-2 pt-2 dark:border-slate-700/70">
+              <span className="w-full text-center text-xs font-medium text-slate-500 dark:text-slate-400 sm:mr-1 sm:w-auto">
+                x-axis · plot against
               </span>
               {meters.map((variable) => {
                 const isActive = activeSweep === variable.name
@@ -385,7 +392,9 @@ function GenericMetersVisual({
                     type="button"
                     onClick={() => setSweepName(variable.name)}
                     aria-pressed={isActive}
-                    className={`min-h-9 min-w-9 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                    aria-label={`Set x-axis to ${variable.description || variable.name} (${variable.symbol})`}
+                    title={variable.description || variable.name}
+                    className={`min-h-11 min-w-11 shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean focus-visible:ring-offset-2 ${
                       isActive ? "" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
                     }`}
                     style={

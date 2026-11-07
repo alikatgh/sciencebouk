@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { PanelBottomOpen, PanelRightOpen } from "lucide-react"
+import { BookOpen, FlaskConical, ListChecks, PanelBottomOpen, PanelRightOpen } from "lucide-react"
 import { usePhoneLayout } from "../../hooks/usePhoneLayout"
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -26,8 +26,8 @@ import { useEquationConfig } from "../../data/equationConfig"
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
 const TEACHING_PANEL_STORAGE_KEY = "sciencebouk-teaching-panel-width"
-const TEACHING_PANEL_DEFAULT_WIDTH = 360
-const TEACHING_PANEL_MIN_WIDTH = 320
+const TEACHING_PANEL_DEFAULT_WIDTH = 316
+const TEACHING_PANEL_MIN_WIDTH = 296
 const TEACHING_PANEL_MAX_WIDTH = 520
 const MOBILE_PANEL_DRAG_THRESHOLD = 36
 const MOBILE_PANEL_PEEK_HEIGHT = "min(45%, 22rem)"
@@ -65,6 +65,7 @@ interface TeachableEquationProps {
   buildResultLine?: (vars: Record<string, number>) => string
   describeResult?: (vars: Record<string, number>) => string
   presets?: Preset[]
+  phoneVisualizationHeight?: string
   glossary?: GlossaryTerm[]
   children: (props: {
     vars: Record<string, number>
@@ -238,6 +239,7 @@ export function TeachableEquation({
   equationId, hook, hookAction, formula, latexFormula,
   variables: initialVariables, lessonSteps,
   buildLiveFormula, buildResultLine, describeResult, presets, glossary, children,
+  phoneVisualizationHeight = "clamp(240px, 38dvh, 340px)",
 }: TeachableEquationProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: containerWidth, height: containerHeight } = useContainerSize(containerRef)
@@ -518,7 +520,7 @@ export function TeachableEquation({
         </>
       )}
       {formulaCardVisible && (
-        <div className={appSettings.showHookText ? "mt-3" : undefined}>
+        <div className={cn("studio-formula", appSettings.showHookText && "mt-4")}>
           <ErrorBoundary fallback={<FormulaFallback />}>
             <Suspense fallback={<FormulaFallback />}>
               {buildLiveFormula ? (
@@ -551,6 +553,7 @@ export function TeachableEquation({
     <section className={isPhone ? "space-y-1" : "space-y-3"} aria-label="Adjust variables">
       <div>
         <h3 className="font-display text-sm font-bold text-slate-700 dark:text-slate-200">Variables</h3>
+        {formulaVariables.some((variable) => !variable.constant && !variable.locked) && <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Drag a slider or select a value to type.</p>}
         {lockedVarsMemo.size > 0 && mobileTeachingTab !== "lesson" && (
           <div className="space-y-2 pt-1">
             <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">Some variables stay fixed during this lesson step.</p>
@@ -641,7 +644,7 @@ export function TeachableEquation({
     <section aria-label="Equation workspace" className={cn("flex min-w-0 flex-col", !isPhone && "h-full min-h-0", !isPhone && !isNarrow && "studio-inspector")}>
       {!isPhone && !isNarrow && (
         <div className="flex shrink-0 items-center justify-between px-5 pb-1 pt-4">
-          <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">Your experiment</h3>
+          <h3 className="flex items-center gap-2 font-display text-sm font-bold text-slate-900 dark:text-white"><FlaskConical className="h-4 w-4 text-ocean dark:text-blue-300" aria-hidden="true" />Your experiment</h3>
           <Button variant="ghost" size="icon-sm" onClick={() => setTeachingPanelOpen(false)} aria-label="Hide teaching panel">
             <PanelRightOpen className="h-4 w-4" />
           </Button>
@@ -663,13 +666,14 @@ export function TeachableEquation({
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white")}
               onClick={() => setMobileTeachingTab(tab)}
             >
+              {tab === "controls" ? <FlaskConical className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : tab === "learn" ? <BookOpen className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <ListChecks className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
               {tab === "controls" ? "Explore" : tab === "learn" ? "Learn" : "Lesson"}
             </Button>
           ))}
         </div>
       </div>
       <div key={mobileTeachingTab} className={isPhone ? "min-w-0" : "native-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain"}>
-        <div className={isPhone ? "space-y-3 px-1 pb-3 pt-1" : "space-y-5 p-4 sm:p-5"}>
+        <div className={isPhone ? "space-y-4 px-1 pb-4 pt-4" : "space-y-5 p-4"}>
           {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{presetsBlock}</>}
           {mobileTeachingTab === "learn" && <>{learnBlock}{learnMoreBlock}</>}
           {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}</>}
@@ -710,7 +714,7 @@ export function TeachableEquation({
   if (isPhone) {
     return (
       <div ref={containerRef} className="flex min-w-0 flex-col gap-3">
-        <div className="min-w-0" style={{ height: "clamp(240px, 38dvh, 340px)" }}>
+        <div className="min-w-0" style={{ height: phoneVisualizationHeight }}>
           <VisualizationViewport mobileOptimized flowingPage>
             {visualizationContent}
           </VisualizationViewport>
@@ -809,7 +813,7 @@ export function TeachableEquation({
 
   // Desktop: side-by-side with resizable panel
   return (
-    <div ref={containerRef} className="flex h-full gap-2">
+    <div ref={containerRef} className="flex h-full gap-3">
       <div className="min-h-0 min-w-0 flex-1">
         <VisualizationViewport mobileOptimized={isMobile}>
           {visualizationContent}

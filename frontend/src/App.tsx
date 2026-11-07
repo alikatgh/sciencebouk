@@ -456,7 +456,7 @@ export default function App(): ReactElement {
               onSelectEquation={selectEquation}
             />
 
-            <div className={`equation-content min-h-0 min-w-0 flex-1 ${isPhone ? "p-2" : "overflow-hidden p-4"}`}>
+            <div className={`equation-content min-h-0 min-w-0 flex-1 ${isPhone ? "px-3 pb-5 pt-3" : "overflow-hidden p-3"}`}>
               <FormulaProvider value={selectedEquation.formula}>
                 <ErrorBoundary fallback={<VisualizationFallback />}>
                   <Suspense fallback={<VisualizationFallback />}>
