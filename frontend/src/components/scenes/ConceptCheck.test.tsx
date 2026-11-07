@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect } from "vitest"
+import { afterEach, describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ConceptCheck } from "./ConceptCheck"
@@ -40,5 +40,66 @@ describe("ConceptCheck", () => {
       event: "concept_check_answered",
       props: { equationId: 37, correct: true },
     })
+  })
+
+  it("keeps the correct lesson answer and explanation hidden after a wrong selection", async () => {
+    const onAnswer = vi.fn()
+    render(<ConceptCheck equationId={37} variant="lesson" onAnswer={onAnswer} />)
+    await userEvent.click(screen.getByRole("button", { name: "increases" }))
+
+    expect(onAnswer).toHaveBeenLastCalledWith(0)
+    expect(screen.getByRole("status")).toHaveTextContent(/Not quite/)
+    expect(screen.getByRole("status")).toHaveTextContent(/try another answer/)
+    expect(screen.getByRole("status")).not.toHaveTextContent(/I = V\/R/)
+    const rightAnswer = screen.getByRole("button", { name: "decreases" })
+    expect(rightAnswer).toBeDisabled()
+    expect(rightAnswer).not.toHaveTextContent("✓")
+    expect(rightAnswer.className).not.toMatch(/emerald/)
+  })
+
+  it("clears a wrong answer on retry and reports the cleared answer before a new selection", async () => {
+    const onAnswer = vi.fn()
+    render(<ConceptCheck equationId={37} variant="lesson" onAnswer={onAnswer} />)
+    await userEvent.click(screen.getByRole("button", { name: "increases" }))
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }))
+    expect(onAnswer).toHaveBeenLastCalledWith(null)
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "increases" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "decreases" })).toBeEnabled()
+
+    await userEvent.click(screen.getByRole("button", { name: "decreases" }))
+    expect(onAnswer).toHaveBeenLastCalledWith(1)
+    expect(screen.getByRole("status")).toHaveTextContent(/Correct.*I = V\/R/)
+  })
+
+  it("resets an answered question when the attempt key changes", async () => {
+    const { rerender } = render(<ConceptCheck equationId={37} variant="lesson" resetKey="first" />)
+    await userEvent.click(screen.getByRole("button", { name: "decreases" }))
+    expect(screen.getByRole("status")).toHaveTextContent(/Correct/)
+    rerender(<ConceptCheck equationId={37} variant="lesson" resetKey="second" />)
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "decreases" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("resets answer exposure when navigating to a different equation without remounting the parent", async () => {
+    const { rerender } = render(<ConceptCheck equationId={37} />)
+    await userEvent.click(screen.getByRole("button", { name: "decreases" }))
+    rerender(<ConceptCheck equationId={35} />)
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "quadruples" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("supports a keyboard answer and retry in a lesson", async () => {
+    const user = userEvent.setup()
+    render(<ConceptCheck equationId={37} variant="lesson" />)
+    await user.tab()
+    expect(screen.getByRole("button", { name: "increases" })).toHaveFocus()
+    await user.keyboard("{Enter}")
+    expect(screen.getByRole("status")).toHaveTextContent(/Not quite/)
+    await user.tab()
+    expect(screen.getByRole("button", { name: "Try again" })).toHaveFocus()
+    await user.keyboard("{Enter}")
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "increases" })).toHaveFocus()
   })
 })

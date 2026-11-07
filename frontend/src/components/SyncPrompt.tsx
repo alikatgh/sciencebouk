@@ -2,8 +2,7 @@ import type { ReactElement } from "react"
 import { useEffect, useRef, useState } from "react"
 import { Cloud, Check } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
-import { api } from "../api/client"
-import { getLocalProgressSyncItems } from "../progress/useProgress"
+import { getLocalProgressSyncItems, syncLocalProgressToServer } from "../progress/useProgress"
 
 interface SyncPromptProps {
   onDismiss: () => void
@@ -16,7 +15,7 @@ interface SyncPromptProps {
  * Only triggers once per session when there's unsynced data.
  */
 export function SyncPrompt({ onDismiss, onSynced }: SyncPromptProps): ReactElement | null {
-  const { isPro } = useAuth()
+  const { isPro, user } = useAuth()
   const [status, setStatus] = useState<"idle" | "syncing" | "done">("idle")
   const attempted = useRef(false)
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -37,14 +36,14 @@ export function SyncPrompt({ onDismiss, onSynced }: SyncPromptProps): ReactEleme
 
   // Auto-sync on mount — no user interaction needed
   useEffect(() => {
-    if (!isPro || localItems.length === 0 || attempted.current) {
+    if (!isPro || !user || localItems.length === 0 || attempted.current) {
       onDismissRef.current()
       return
     }
     attempted.current = true
     setStatus("syncing")
 
-    api.progress.bulkSync(localItems)
+    syncLocalProgressToServer(user.id)
       .then(() => {
         setStatus("done")
         // Auto-dismiss after showing success briefly

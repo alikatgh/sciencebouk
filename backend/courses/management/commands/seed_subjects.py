@@ -29,7 +29,7 @@ def var(name, symbol, description, *, min, max, step, default, color, unit=None,
 
 
 def lesson(id, instruction, insight, *, hint="", unlocked=None, success_type="variable_changed",
-           target=None, value=None, tolerance=None, celebration="subtle"):
+           target=None, value=None, tolerance=None, celebration="subtle", additional_targets=None):
     step = {
         "id": id,
         "instruction": instruction,
@@ -45,6 +45,8 @@ def lesson(id, instruction, insight, *, hint="", unlocked=None, success_type="va
         step["successValue"] = value
     if tolerance is not None:
         step["successTolerance"] = tolerance
+    if additional_targets:
+        step["successAdditionalTargets"] = additional_targets
     return step
 
 
@@ -251,12 +253,14 @@ COMPUTER_SCIENCE = [
             lesson("touch-z1", "Drag z₁, the score for the first class.",
                    "Softmax exponentiates each score, so even a small lead in z₁ grabs a big share of the probability.",
                    hint="Drag z₁ upward.", unlocked=["z1", "z2", "z3"], target="z1"),
-            lesson("equal", "Set all three logits equal (try the Uniform preset).",
+            lesson("equal", "Set all three logits z₁, z₂ and z₃ to 0.",
                    "Equal scores give equal probabilities — here, 33% each. With no information, softmax spreads belief evenly.",
-                   hint="Use the Uniform preset, or set z₁=z₂=z₃.", unlocked=["z1", "z2", "z3"], success_type="value_reached", target="z1", value=0, tolerance=0.3, celebration="medium"),
-            lesson("dominate", "Push z₁ up to 5 while the others stay low.",
+                   hint="Set each score to 0. If they already match, move one away and return.", unlocked=["z1", "z2", "z3"], success_type="value_reached", target="z1", value=0, tolerance=0, celebration="medium",
+                   additional_targets=[{"target": "z2", "value": 0, "tolerance": 0}, {"target": "z3", "value": 0, "tolerance": 0}]),
+            lesson("dominate", "Push z₁ to 5 and keep z₂ and z₃ at 0.",
                    "A large gap makes softmax nearly one-hot: class 1 takes almost all the probability. Temperature scaling tunes exactly how sharp this gets.",
-                   hint="Drag z₁ to 5.", unlocked=["z1", "z2", "z3"], success_type="value_reached", target="z1", value=5, tolerance=0.5, celebration="big"),
+                   hint="Set z₁ to 5, z₂ to 0 and z₃ to 0.", unlocked=["z1", "z2", "z3"], success_type="value_reached", target="z1", value=5, tolerance=0, celebration="big",
+                   additional_targets=[{"target": "z2", "value": 0, "tolerance": 0}, {"target": "z3", "value": 0, "tolerance": 0}]),
         ],
         "glossary": [
             {"words": ["logits", "logit", "scores"], "highlightClass": "g23-0", "color": "#3b82f6", "tooltip": "Raw, unnormalised class scores"},
@@ -1920,10 +1924,12 @@ ENGINEERING = [
                    hint="Drag N.", unlocked=["P", "N"], target="N"),
             lesson("stable", "Set both N and P to 0.",
                    "No encirclements and no unstable open-loop poles means Z = 0 — the closed loop is stable. This is the configuration every controller aims for.",
-                   hint="Drag N and P to 0.", unlocked=["P", "N"], success_type="value_reached", target="N", value=0, tolerance=0.5, celebration="medium"),
+                   hint="Drag N and P to 0.", unlocked=["P", "N"], success_type="value_reached", target="N", value=0, tolerance=0.5, celebration="medium",
+                   additional_targets=[{"target": "P", "value": 0, "tolerance": 0}]),
             lesson("unstable", "Now drive N up to 2 with P at 0.",
                    "Encircling −1 with no unstable poles to cancel means Z is positive — the loop will oscillate and blow up. That's the mathematical signature of the feedback howl.",
-                   hint="Drag N to 2.", unlocked=["P", "N"], success_type="value_reached", target="N", value=2, tolerance=0.5, celebration="big"),
+                   hint="Set P to 0, then drag N to 2.", unlocked=["P", "N"], success_type="value_reached", target="N", value=2, tolerance=0.5, celebration="big",
+                   additional_targets=[{"target": "P", "value": 0, "tolerance": 0}]),
         ],
         "glossary": [
             {"words": ["poles"], "highlightClass": "g68-0", "color": "#3b82f6", "tooltip": "P — unstable open-loop poles"},
@@ -2179,9 +2185,10 @@ ASTRONOMY = [
             lesson("touch-rho", "Drag the energy density ρ upward.",
                    "More density means stronger gravity pulling against the expansion. Density and curvature together decide whether expansion wins or loses.",
                    hint="Drag ρ to the right.", unlocked=["rho", "k"], target="rho"),
-            lesson("closed", "Set high density with positive curvature (Closed preset).",
-                   "Enough density curves space closed — gravity eventually halts and reverses the expansion into a Big Crunch. The universe's geometry is its destiny.",
-                   hint="Drag ρ high and k to +1.", unlocked=["rho", "k"], success_type="value_reached", target="k", value=1, tolerance=0.5, celebration="big"),
+            lesson("closed", "Set density ρ to 5 and curvature k to +1.",
+                   "In this matter-only model with no dark energy, a closed, expanding universe eventually recollapses. Dark energy can change that fate; geometry alone does not determine it.",
+                   hint="Set ρ to 5 and k to +1. If they already match, change one and return.", unlocked=["rho", "k"], success_type="value_reached", target="k", value=1, tolerance=0, celebration="big",
+                   additional_targets=[{"target": "rho", "value": 5, "tolerance": 0.05}]),
             lesson("flat", "Now set curvature k to 0.",
                    "A perfectly flat universe sits on the knife-edge between expanding forever and collapsing. Measurements say ours is astonishingly close to exactly flat.",
                    hint="Drag k to 0.", unlocked=["rho", "k"], success_type="value_reached", target="k", value=0, tolerance=0.5, celebration="medium"),

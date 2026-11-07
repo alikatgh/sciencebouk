@@ -98,7 +98,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     hint: lessonCopy["field-lines"].hint,
     highlightElements: [],
     unlockedVariables: ['wavelength'],
-    successCondition: { type: 'time_elapsed', duration: 10000 },
+    successCondition: { type: 'clicked', target: 'move-charge' },
     celebration: 'subtle',
     insight: lessonCopy["field-lines"].insight,
   },
@@ -108,7 +108,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     hint: lessonCopy["em-wave"].hint,
     highlightElements: ['wavelength'],
     unlockedVariables: ['wavelength'],
-    successCondition: { type: 'time_elapsed', duration: 12000 },
+    successCondition: { type: 'clicked', target: 'show-em-wave' },
     celebration: 'subtle',
     insight: lessonCopy["em-wave"].insight,
   },
@@ -154,10 +154,11 @@ export function MaxwellScene(): ReactElement {
         { label: "Long (radio)", values: { wavelength: 220 } },
       ]}
     >
-      {({ vars, setVar }) => (
+      {({ vars, setVar, onAction }) => (
         <D3MaxwellVisual
           wavelength={vars.wavelength}
           onVarChange={setVar}
+          onAction={onAction}
         />
       )}
     </TeachableEquation>
@@ -167,14 +168,17 @@ export function MaxwellScene(): ReactElement {
 interface Props {
   wavelength: number
   onVarChange: (name: string, value: number) => void
+  onAction: (name: string) => void
 }
 
-function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
+function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
   const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onVarChangeRef = useRef(onVarChange)
   onVarChangeRef.current = onVarChange
+  const onActionRef = useRef(onAction)
+  onActionRef.current = onAction
 
   const [mode, setMode] = useState<1 | 2>(1)
   const modeRef = useRef<1 | 2>(1)
@@ -222,7 +226,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
       .attr("width", W)
       .attr("height", H)
       .style("display", "block")
-      .attr("role", "img")
+      .attr("role", "group")
       .attr("aria-label", "Maxwell's equations -- electric field lines and EM waves")
 
     const g = svg.append("g")
@@ -242,18 +246,36 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     const btn2X = btn1X + btn1W + btnGap
 
     const btn1 = g.append("g").attr("class", "btn-field").style("cursor", "pointer")
+      .attr("role", "button").attr("tabindex", 0).attr("aria-label", "Show electric field lines")
     btn1.append("rect").attr("class", "btn1-bg").attr("x", btn1X).attr("y", btnY).attr("width", btn1W).attr("height", btnH).attr("rx", 8)
     btn1.append("text").attr("class", "btn1-txt").attr("x", btn1X + btn1W / 2).attr("y", btnY + btnH * 0.67).attr("text-anchor", "middle")
       .attr("font-size", fs).attr("font-family", F)
       .text(btn1Label)
-    btn1.on("click", () => setMode(1))
+    const showField = () => setMode(1)
+    btn1.on("click", showField).on("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault()
+        showField()
+      }
+    })
 
     const btn2 = g.append("g").attr("class", "btn-wave").style("cursor", "pointer")
+      .attr("role", "button").attr("tabindex", 0).attr("aria-label", "Show electromagnetic wave")
     btn2.append("rect").attr("class", "btn2-bg").attr("x", btn2X).attr("y", btnY).attr("width", btn2W).attr("height", btnH).attr("rx", 8)
     btn2.append("text").attr("class", "btn2-txt").attr("x", btn2X + btn2W / 2).attr("y", btnY + btnH * 0.67).attr("text-anchor", "middle")
       .attr("font-size", fs).attr("font-family", F)
       .text(btn2Label)
-    btn2.on("click", () => setMode(2))
+    const showWave = () => {
+      if (modeRef.current === 2) return
+      setMode(2)
+      onActionRef.current('show-em-wave')
+    }
+    btn2.on("click", showWave).on("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault()
+        showWave()
+      }
+    })
 
     // Field mode group
     g.append("g").attr("class", "field-mode")
@@ -273,6 +295,8 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     if (!g) return
 
     // Update button styling
+    g.select(".btn-field").attr("aria-pressed", String(mode === 1))
+    g.select(".btn-wave").attr("aria-pressed", String(mode === 2))
     g.select(".btn1-bg")
       .attr("fill", mode === 1 ? "#1e40af" : "#f1f5f9")
       .attr("stroke", mode === 1 ? "#1e40af" : "#cbd5e1").attr("stroke-width", 1.5)
@@ -374,7 +398,25 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
     cGroup.selectAll("*").remove()
 
     for (const c of charges) {
-      const cg = cGroup.append("g").style("cursor", "grab").style("touch-action", "none")
+      const cg = cGroup.append("g").attr("class", `charge-${c.id}`).style("cursor", "grab").style("touch-action", "none")
+        .attr("role", "button").attr("tabindex", 0)
+        .attr("aria-label", `Move ${c.sign === 1 ? "positive" : "negative"} charge with arrow keys or drag`)
+        .on("keydown", (event: KeyboardEvent) => {
+          const delta: Record<string, Vec2> = {
+            ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20],
+          }
+          const offset = delta[event.key]
+          if (!offset) return
+          event.preventDefault()
+          const nx = Math.max(60, Math.min(W - 60, c.x + offset[0]))
+          const ny = Math.max(60, Math.min(H - 60, c.y + offset[1]))
+          if (nx === c.x && ny === c.y) return
+          c.x = nx
+          c.y = ny
+          drawFieldScene(g)
+          fm.select<SVGGElement>(`.charge-${c.id}`).node()?.focus()
+          onActionRef.current('move-charge')
+        })
 
       // Glow ring (hidden by default)
       cg.append("circle").attr("class", `glow-${c.id}`)
@@ -402,8 +444,10 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
         .text(c.sign === 1 ? "+" : "-")
 
       // D3 drag
+      let dragStart: Vec2 = [c.x, c.y]
       const chargeDrag = drag<SVGGElement, unknown>()
         .on("start", function() {
+          dragStart = [c.x, c.y]
           select(this).style("cursor", "grabbing")
           fm.select(`.glow-${c.id}`).attr("opacity", 0.5)
         })
@@ -417,6 +461,7 @@ function D3MaxwellVisual({ wavelength, onVarChange }: Props): ReactElement {
         .on("end", function() {
           select(this).style("cursor", "grab")
           fm.select(`.glow-${c.id}`).attr("opacity", 0)
+          if (c.x !== dragStart[0] || c.y !== dragStart[1]) onActionRef.current('move-charge')
         })
       cg.call(chargeDrag)
     }

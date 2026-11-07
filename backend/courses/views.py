@@ -37,9 +37,10 @@ def merge_progress_payload(target: dict, incoming: dict) -> dict:
     elif "completed" in incoming and not merged.get("completed"):
         merged["completed"] = False
 
-    if incoming.get("lesson_step"):
-        if not merged.get("lesson_step") or len(incoming["lesson_step"]) >= len(merged["lesson_step"]):
-            merged["lesson_step"] = incoming["lesson_step"]
+    # Stable step ids carry identity, not ordering. The last supplied cursor in
+    # this sync payload wins; an explicit blank clears it, while omission keeps it.
+    if "lesson_step" in incoming:
+        merged["lesson_step"] = incoming["lesson_step"]
 
     if "time_spent_seconds" in incoming:
         merged["time_spent_seconds"] = max(
@@ -71,9 +72,8 @@ def apply_progress_merge(progress, vd):
         elif not progress.completed:
             progress.completed = False
 
-    if "lesson_step" in vd and vd["lesson_step"]:
-        if not progress.lesson_step or len(vd["lesson_step"]) >= len(progress.lesson_step):
-            progress.lesson_step = vd["lesson_step"]
+    if "lesson_step" in vd:
+        progress.lesson_step = vd["lesson_step"]
 
     if "time_spent_seconds" in vd:
         progress.time_spent_seconds = max(progress.time_spent_seconds, vd["time_spent_seconds"])

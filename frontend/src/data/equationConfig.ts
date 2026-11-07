@@ -84,6 +84,7 @@ function mapLesson(l: EquationLesson): LessonStep {
       target: l.successTarget,
       value: l.successValue,
       tolerance: l.successTolerance,
+      additionalTargets: l.successAdditionalTargets,
       duration: l.successDuration,
     },
     celebration: l.celebration as LessonStep["celebration"],

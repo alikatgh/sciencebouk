@@ -1,8 +1,8 @@
 /**
- * One-question concept checks for the data-driven subject equations (ids 18-81).
+ * One-question practice checks for every equation (ids 1-81).
  * Each is a short multiple-choice question that tests *understanding* of the
  * relationship the sliders demonstrate, with an explanation revealed after the
- * learner answers. Equations without a curated check simply don't show the card.
+ * learner answers. These checks support practice; they do not establish mastery.
  *
  * Pure data + a typed accessor — the interactive component (`ConceptCheck.tsx`)
  * owns the answer state. Easy to unit-test for integrity.
@@ -17,11 +17,113 @@ export interface ConceptCheck {
 }
 
 export const conceptChecks: Record<number, ConceptCheck> = {
+  1: {
+    question: "Both legs of a right triangle are doubled. Its hypotenuse becomes…",
+    options: ["twice as long", "four times as long", "unchanged"],
+    correctIndex: 0,
+    explanation: "Doubling a and b multiplies a² + b² by four. Since c² = a² + b², c doubles too.",
+  },
+  2: {
+    question: "For base-10 logarithms, multiplying a positive number by 10 changes its logarithm by…",
+    options: ["multiplying it by 10", "adding 1", "adding 10"],
+    correctIndex: 1,
+    explanation: "log₁₀(10x) = log₁₀(10) + log₁₀(x) = 1 + log₁₀(x). Multiplication becomes addition.",
+  },
+  3: {
+    question: "At a point where a smooth curve has a horizontal tangent, its derivative is…",
+    options: ["zero", "the height of the curve", "always positive"],
+    correctIndex: 0,
+    explanation: "The derivative measures the tangent's slope. A horizontal tangent has zero slope, even if the curve is high above the axis.",
+  },
+  4: {
+    question: "Two masses stay the same, but their separation doubles. Their gravitational force becomes…",
+    options: ["twice as strong", "half as strong", "one quarter as strong"],
+    correctIndex: 2,
+    explanation: "F = Gm₁m₂/r². Doubling r makes the denominator four times larger, so the force falls to one quarter.",
+  },
+  5: {
+    question: "A wave's frequency increases while its amplitude stays fixed. What increases?",
+    options: ["Its height", "Its number of oscillations per second", "Its amplitude"],
+    correctIndex: 1,
+    explanation: "Frequency counts oscillations per second; amplitude controls their height. Increasing frequency changes how often the wave oscillates.",
+  },
+  6: {
+    question: "Multiplying a nonzero complex number by i moves its point by…",
+    options: ["a 90° counterclockwise rotation", "doubling its distance from zero", "moving it onto the real axis"],
+    correctIndex: 0,
+    explanation: "i(a + bi) = −b + ai. The coordinates (a, b) become (−b, a), a quarter-turn that preserves distance from zero.",
+  },
+  7: {
+    question: "You switch from a cube to another convex polyhedron. Which relationship stays the same?",
+    options: ["V + E + F = 2", "V − E + F = 2", "V = E = F"],
+    correctIndex: 1,
+    explanation: "Vertices, edges, and faces can all change, but their alternating sum remains 2 for every convex polyhedron.",
+  },
+  8: {
+    question: "A normal distribution's standard deviation σ increases while its mean μ stays fixed. The curve…",
+    options: ["moves right", "becomes narrower", "spreads out around the same center"],
+    correctIndex: 2,
+    explanation: "μ sets the center and σ sets the spread. A larger σ gives a wider, lower curve while its total probability remains 1.",
+  },
+  9: {
+    question: "You add a second harmonic to a pure sine wave. What happens to the combined signal?",
+    options: ["Its shape changes as the waves add", "The original wave disappears", "It must become a square wave"],
+    correctIndex: 0,
+    explanation: "Fourier synthesis adds the waves' values at each point. Changing the harmonic recipe changes the waveform and, for sound, its timbre.",
+  },
+  10: {
+    question: "At the same flow speed and obstacle size, increasing a fluid's kinematic viscosity makes its Reynolds number…",
+    options: ["increase", "decrease", "stay fixed"],
+    correctIndex: 1,
+    explanation: "Re = UL/ν compares inertia with viscosity. Increasing ν lowers Re, making viscous effects more important relative to inertia.",
+  },
+  11: {
+    question: "An electromagnetic wave in vacuum doubles its wavelength. Its frequency…",
+    options: ["doubles", "stays the same", "halves"],
+    correctIndex: 2,
+    explanation: "All electromagnetic waves in vacuum travel at c, and c = λf. A wavelength twice as long requires half the frequency.",
+  },
+  12: {
+    question: "If more microscopic arrangements are available to a system, its entropy S = kᵦ ln Ω…",
+    options: ["increases", "decreases", "must stay zero"],
+    correctIndex: 0,
+    explanation: "Ω counts the available microstates. Its logarithm grows as Ω grows, so more possible arrangements mean greater entropy.",
+  },
+  13: {
+    question: "As a massive object's speed approaches light speed from below, the Lorentz factor γ…",
+    options: ["approaches zero", "grows without bound", "stays at 1"],
+    correctIndex: 1,
+    explanation: "γ = 1/√(1 − v²/c²). As v approaches c, the denominator approaches zero and γ grows without bound.",
+  },
+  14: {
+    question: "For the same particle in the same box, changing quantum number n from 1 to 2 makes its energy…",
+    options: ["twice as large", "unchanged", "four times as large"],
+    correctIndex: 2,
+    explanation: "The allowed energies scale as n²/L². With L fixed, changing n from 1 to 2 multiplies the energy by 2² = 4.",
+  },
+  15: {
+    question: "Which binary outcome has the greatest Shannon entropy?",
+    options: ["Two equally likely outcomes", "One outcome with probability 0.99", "One outcome that is certain"],
+    correctIndex: 0,
+    explanation: "A fair binary outcome is hardest to predict and has entropy 1 bit. Bias toward either outcome reduces the average uncertainty.",
+  },
+  16: {
+    question: "In a chaotic regime, two nearby initial values following the same deterministic rule can…",
+    options: ["be forced to stay close forever", "produce very different later trajectories", "stop obeying the rule"],
+    correctIndex: 1,
+    explanation: "Chaos is sensitive dependence on initial conditions. The rule stays deterministic, but small starting differences can grow into large later differences.",
+  },
+  17: {
+    question: "In the Black–Scholes model, increasing volatility while other inputs stay fixed makes a European call option…",
+    options: ["less valuable", "unchanged", "more valuable"],
+    correctIndex: 2,
+    explanation: "The call buyer can benefit from a large price rise while choosing not to exercise after a fall. Greater volatility therefore increases the model's call value.",
+  },
   21: {
-    question: "A test is 99% accurate for a disease 1 in 1000 people have. You test positive. Is it likely you're sick?",
+    question: "A test detects 99% of cases and correctly rejects 99% of non-cases. The disease affects 1 in 1000 people. After a positive result, which is true?",
     options: ["Yes — about 99% likely", "No — most positives are false alarms", "Exactly 50/50"],
     correctIndex: 1,
-    explanation: "With such a low base rate, false positives vastly outnumber true positives — the prior dominates. This is the base-rate fallacy.",
+    explanation: "Among 100,000 people, about 99 true cases and 999 people without the disease test positive. Only about 9% of positives are true cases: the low base rate matters.",
   },
   26: {
     question: "You double the absolute temperature of gas in a sealed, rigid container. The pressure…",
@@ -120,7 +222,7 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     explanation: "A negative Gibbs free-energy change means the reaction is thermodynamically favourable.",
   },
   38: {
-    question: "Light passes from air into glass, a slower medium. It bends…",
+    question: "A light ray enters glass from air at a nonzero angle to the normal. In the slower medium it bends…",
     options: ["toward the normal", "away from the normal", "not at all"],
     correctIndex: 0,
     explanation: "Entering a slower (higher-index) medium, light bends toward the surface normal.",
@@ -132,7 +234,7 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     explanation: "An approaching source compresses the sound waves, raising the perceived frequency.",
   },
   55: {
-    question: "An asset with beta 2 (twice as volatile as the market) should offer…",
+    question: "In CAPM, if the market risk premium is positive, an asset with higher beta should offer…",
     options: ["a lower expected return", "a higher expected return", "the same return"],
     correctIndex: 1,
     explanation: "Higher beta means more market risk, so investors demand a higher expected return (CAPM).",
@@ -150,10 +252,10 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     explanation: "The standard error shrinks as 1/√n, so the mean's distribution narrows as n grows.",
   },
   69: {
-    question: "A high Reynolds number indicates flow that is…",
-    options: ["smooth and laminar", "turbulent", "completely still"],
+    question: "A high Reynolds number means which effects dominate the flow?",
+    options: ["Viscous effects", "Inertial effects", "Neither; the fluid is still"],
     correctIndex: 1,
-    explanation: "A high Reynolds number means inertia dominates viscosity — the flow becomes turbulent.",
+    explanation: "Re compares inertia with viscosity. A high value means inertia dominates and turbulence is more likely; its onset also depends on the flow geometry.",
   },
   71: {
     question: "A galaxy twice as far away recedes from us…",
@@ -204,7 +306,7 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     explanation: "σ = E·ε, so a higher modulus produces more stress for the same strain.",
   },
   66: {
-    question: "Where a fluid speeds up, its pressure…",
+    question: "Along a streamline in steady, ideal flow at the same height, where a fluid speeds up its pressure…",
     options: ["rises", "drops", "is unchanged"],
     correctIndex: 1,
     explanation: "Bernoulli's principle: faster flow comes with lower pressure.",
@@ -354,7 +456,7 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     explanation: "The Markov property: the future depends only on the present, not the path taken.",
   },
   67: {
-    question: "A linear system is stable when its poles lie in the…",
+    question: "A continuous-time linear system is asymptotically stable when all its poles lie in the…",
     options: ["right half-plane", "left half-plane", "upper half-plane"],
     correctIndex: 1,
     explanation: "Left-half-plane poles decay over time; right-half-plane poles grow without bound.",
@@ -366,13 +468,13 @@ export const conceptChecks: Record<number, ConceptCheck> = {
     explanation: "It counts how many times the open-loop response encircles −1 in the complex plane.",
   },
   74: {
-    question: "The Drake equation's largest uncertainty is usually…",
-    options: ["the star-formation rate", "the lifetime L of civilisations", "the number of planets"],
+    question: "In the Drake equation, doubling the communicating lifetime L while holding other factors fixed makes the estimate N…",
+    options: ["halve", "double", "stay unchanged"],
     correctIndex: 1,
-    explanation: "L spans many orders of magnitude and dominates the spread in the estimate.",
+    explanation: "N is a product of the Drake factors, including L. Holding every other factor fixed, doubling L doubles the estimated number of communicating civilisations.",
   },
   75: {
-    question: "A higher matter density makes the universe's expansion…",
+    question: "With other terms fixed, a higher matter density contributes more gravitational pull that makes the universe's expansion…",
     options: ["accelerate forever", "slow down more", "stay unaffected"],
     correctIndex: 1,
     explanation: "More density means more gravity pulling back, decelerating the expansion.",
@@ -385,9 +487,9 @@ export const conceptChecks: Record<number, ConceptCheck> = {
   },
   77: {
     question: "An eigenvector of a matrix is a direction that gets…",
-    options: ["rotated", "only scaled", "sent to zero"],
+    options: ["rotated to a different line", "scaled along the same line", "always sent to zero"],
     correctIndex: 1,
-    explanation: "Av = λv: an eigenvector is merely stretched or shrunk, never rotated.",
+    explanation: "Av = λv: the output stays on the eigenvector's line. A negative λ reverses its direction, and λ = 0 sends it to zero.",
   },
   79: {
     question: "Keeping only the largest singular values lets you…",

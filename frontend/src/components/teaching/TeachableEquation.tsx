@@ -17,11 +17,13 @@ import { readStoredPanelWidth, ResizablePanel } from "../ui/resizable-panel"
 import { LearnMorePanel } from "../scenes/LearnMorePanel"
 import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
-import type { Variable, LessonStep, GlossaryTerm } from "./types"
+import type { Variable, LessonStep, GlossaryTerm, SetEquationVariable } from "./types"
 import { ErrorBoundary } from "../ErrorBoundary"
 import { VisualizationViewport } from "./VisualizationViewport"
 import { shouldUseStackedTeachingLayout } from "./layoutMode"
 import { useEquationConfig } from "../../data/equationConfig"
+import { getConceptCheck } from "../../data/conceptChecks"
+import { applyLessonAction, applyLessonVariableInteraction, createLessonAttempt, type LessonAttempt } from "./lessonInteraction"
 
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
@@ -69,7 +71,8 @@ interface TeachableEquationProps {
   glossary?: GlossaryTerm[]
   children: (props: {
     vars: Record<string, number>
-    setVar: (name: string, value: number) => void
+    setVar: SetEquationVariable
+    onAction: (name: string) => void
     highlightedVar: string | null
     setHighlightedVar: (name: string | null) => void
     highlightedTerm: string | null
@@ -291,18 +294,29 @@ export function TeachableEquation({
     return r
   })
 
+  const varsRef = useRef(vars)
   const [highlightedVar, setHighlightedVar] = useState<string | null>(null)
   const [highlightedTerm, setHighlightedTerm] = useState<string | null>(null)
   const { settings: appSettings } = useSettings()
   const isDocumentVisible = useDocumentVisibility()
   const [lessonMode, setLessonMode] = useState(appSettings.autoStartLesson)
-  const [lessonStep, setLessonStep] = useState(0)
-  const [stepCompleted, setStepCompleted] = useState(false)
-  const prevVarsRef = useRef(vars)
+  const [lessonAttempt, setLessonAttempt] = useState(() => createLessonAttempt(0, vars))
+  const lessonAttemptRef = useRef(lessonAttempt)
+  const lessonStep = lessonAttempt.stepIndex
+  const stepCompleted = lessonAttempt.stepCompleted
   const progressRef = useRef(progress)
   const resumeAppliedRef = useRef<number | null>(null)
   const lessonModeWasToggledRef = useRef(false)
   const lessonCompletionRecordedRef = useRef(false)
+  const equationIdentityRef = useRef(resolvedId)
+  const interactionContextRef = useRef({ lessonMode, lessonSteps, resolvedId, progressEnabled, markVariableExplored })
+  interactionContextRef.current = { lessonMode, lessonSteps, resolvedId, progressEnabled, markVariableExplored }
+
+  const commitLessonAttempt = useCallback((next: LessonAttempt) => {
+    if (next === lessonAttemptRef.current) return
+    lessonAttemptRef.current = next
+    setLessonAttempt(next)
+  }, [])
 
   useEffect(() => {
     if (!lessonModeWasToggledRef.current) {
@@ -310,7 +324,32 @@ export function TeachableEquation({
     }
   }, [appSettings.autoStartLesson])
 
-  const setVar = useCallback((name: string, value: number) => { setVars((p) => ({ ...p, [name]: value })) }, [])
+  const setVar = useCallback<SetEquationVariable>((name, value, options) => {
+    if (!Number.isFinite(value)) return
+    const source = options?.source ?? "learner"
+    const previous = varsRef.current[name]
+    const next = { ...varsRef.current, [name]: value }
+    const context = interactionContextRef.current
+    if (source === "learner" && !Object.is(previous, value)) resumeAppliedRef.current = context.resolvedId
+    if (context.lessonMode) {
+      const attempt = lessonAttemptRef.current
+      commitLessonAttempt(applyLessonVariableInteraction(
+        attempt, context.lessonSteps[attempt.stepIndex], name, varsRef.current, next, source,
+      ))
+    }
+    if (Object.is(previous, value)) return
+    varsRef.current = next
+    setVars(next)
+    if (source === "learner" && context.progressEnabled) context.markVariableExplored(name)
+  }, [commitLessonAttempt])
+
+  const onAction = useCallback((name: string) => {
+    const context = interactionContextRef.current
+    if (!context.lessonMode) return
+    resumeAppliedRef.current = context.resolvedId
+    const attempt = lessonAttemptRef.current
+    commitLessonAttempt(applyLessonAction(attempt, context.lessonSteps[attempt.stepIndex], name))
+  }, [commitLessonAttempt])
 
   // Compute lockedVars early (as a stable Set) so applyPreset can reference it.
   // This mirrors the same logic used later for formulaVariables — kept in sync via useMemo.
@@ -326,23 +365,29 @@ export function TeachableEquation({
   }, [lessonMode, lessonStep, lessonSteps, initialVariables])
 
   const applyPreset = useCallback((preset: Preset) => {
-    setVars((p) => {
-      const filtered = Object.fromEntries(
-        Object.entries(preset.values).filter(([k]) => !lockedVarsMemo.has(k))
-      )
-      return { ...p, ...filtered }
-    })
-  }, [lockedVarsMemo])
+    for (const [name, value] of Object.entries(preset.values)) {
+      if (!lockedVarsMemo.has(name)) setVar(name, value, { source: "preset" })
+    }
+  }, [lockedVarsMemo, setVar])
 
   const currentVariables = useMemo(
     () => localizedVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value })),
     [localizedVariables, vars],
   )
-  const currentStep = lessonSteps[lessonStep]
-
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
+
+  useEffect(() => {
+    if (equationIdentityRef.current === resolvedId) return
+    equationIdentityRef.current = resolvedId
+    resumeAppliedRef.current = null
+    lessonCompletionRecordedRef.current = false
+    const defaults = Object.fromEntries(initialVariables.map((variable) => [variable.name, variable.value]))
+    varsRef.current = defaults
+    setVars(defaults)
+    commitLessonAttempt(createLessonAttempt(0, defaults, lessonAttemptRef.current.revision + 1))
+  }, [resolvedId, initialVariables, commitLessonAttempt])
 
   useEffect(() => {
     if (!progressEnabled || !lessonMode || lessonSteps.length === 0) return
@@ -353,52 +398,10 @@ export function TeachableEquation({
 
     const resumeIndex = lessonSteps.findIndex((step) => step.id === savedStepId)
     if (resumeIndex >= 0) {
-      setLessonStep(resumeIndex)
-      setStepCompleted(false)
+      commitLessonAttempt(createLessonAttempt(resumeIndex, varsRef.current, lessonAttemptRef.current.revision + 1))
     }
     resumeAppliedRef.current = resolvedId
-  }, [progress.lessonStep, progressEnabled, lessonMode, lessonSteps, resolvedId])
-
-  // Single effect owns prevVarsRef so reads and writes are always in the same
-  // commit — eliminates the race condition where two sibling effects with
-  // different dep arrays could read/write prevVarsRef in different renders.
-  useEffect(() => {
-    const previousVars = prevVarsRef.current
-    prevVarsRef.current = vars  // update immediately so next run sees fresh prev
-
-    // Track variable exploration
-    if (progressEnabled) {
-      for (const key of Object.keys(vars)) {
-        if (previousVars[key] !== vars[key]) {
-          markVariableExplored(key)
-        }
-      }
-    }
-
-    // Check success condition
-    if (!lessonMode || stepCompleted || !currentStep) return
-    const c = currentStep.successCondition
-    if (c.type === "time_elapsed") return
-    switch (c.type) {
-      case 'variable_changed': {
-        if (c.target) { const prev = previousVars[c.target]; const curr = vars[c.target]; if (prev !== undefined && curr !== undefined && prev !== curr) setStepCompleted(true) }
-        break
-      }
-      case 'value_reached': {
-        if (c.target && c.value !== undefined) { const curr = vars[c.target]; if (curr !== undefined && Math.abs(curr - c.value) <= (c.tolerance ?? 0.5)) setStepCompleted(true) }
-        break
-      }
-    }
-  }, [vars, lessonMode, currentStep, stepCompleted, progressEnabled, markVariableExplored])
-
-  useEffect(() => {
-    if (!lessonMode || stepCompleted || !currentStep) return
-    const c = currentStep.successCondition
-    if (c.type !== "time_elapsed") return
-
-    const timer = setTimeout(() => setStepCompleted(true), c.duration ?? 15000)
-    return () => clearTimeout(timer)
-  }, [lessonMode, currentStep, stepCompleted])
+  }, [progress.lessonStep, progressEnabled, lessonMode, lessonSteps, resolvedId, commitLessonAttempt])
 
   // Track time spent — tick every 5 seconds
   useEffect(() => {
@@ -410,18 +413,24 @@ export function TeachableEquation({
   }, [isDocumentVisible, progressEnabled, updateProgress])
 
   const advanceLesson = useCallback(() => {
-    const completedStepIndex = lessonStep
-    const isLastStep = lessonStep >= lessonSteps.length - 1
+    const attempt = lessonAttemptRef.current
+    const context = interactionContextRef.current
+    if (!context.lessonMode || !attempt.stepCompleted || attempt.lessonFinished) return
+    const completedStepIndex = attempt.stepIndex
+    if (!lessonSteps[completedStepIndex]) return
+    const isLastStep = completedStepIndex >= lessonSteps.length - 1
+    resumeAppliedRef.current = resolvedId
     // The lesson view can remount when switching tabs; record its final step once per run.
     if (isLastStep) {
+      if (!getConceptCheck(resolvedId) || !attempt.checkPassed) return
       if (lessonCompletionRecordedRef.current) return
       lessonCompletionRecordedRef.current = true
+      commitLessonAttempt({ ...attempt, lessonFinished: true })
     }
     const nextStepId = isLastStep ? "" : lessonSteps[completedStepIndex + 1]?.id ?? ""
 
     if (!isLastStep) {
-      setLessonStep((p) => p + 1)
-      setStepCompleted(false)
+      commitLessonAttempt(createLessonAttempt(completedStepIndex + 1, varsRef.current, attempt.revision + 1))
     }
 
     // Persist the next step to resume from, not the one just completed.
@@ -436,16 +445,42 @@ export function TeachableEquation({
     if (isPro && isAuthenticated && resolvedId > 0) {
       api.analytics.logEvent(resolvedId, isLastStep ? 'lesson_completed' : 'lesson_step_completed', { step: completedStepIndex }).catch(() => {})
     }
-  }, [lessonStep, lessonSteps, isPro, isAuthenticated, resolvedId, progressEnabled, updateProgress])
+  }, [lessonSteps, isPro, isAuthenticated, resolvedId, progressEnabled, updateProgress, commitLessonAttempt])
+
+  const checkAnswer = useCallback((answerIndex: number | null) => {
+    const attempt = lessonAttemptRef.current
+    if (attempt.lessonFinished) return
+    const check = getConceptCheck(resolvedId)
+    const checkPassed = answerIndex !== null
+      && interactionContextRef.current.lessonMode
+      && attempt.stepCompleted
+      && attempt.stepIndex === lessonSteps.length - 1
+      && check != null
+      && Number.isInteger(answerIndex)
+      && answerIndex >= 0
+      && answerIndex < check.options.length
+      && answerIndex === check.correctIndex
+    if (attempt.checkPassed !== checkPassed) commitLessonAttempt({ ...attempt, checkPassed })
+  }, [resolvedId, lessonSteps.length, commitLessonAttempt])
+
+  const retryStep = useCallback(() => {
+    const attempt = lessonAttemptRef.current
+    if (attempt.lessonFinished) return
+    const restored = { ...attempt.stepStartValues }
+    varsRef.current = restored
+    setVars(restored)
+    commitLessonAttempt(createLessonAttempt(attempt.stepIndex, restored, attempt.revision + 1))
+  }, [commitLessonAttempt])
 
   const resetLesson = useCallback(() => {
     lessonCompletionRecordedRef.current = false
-    setLessonStep(0); setStepCompleted(false)
     const r: Record<string, number> = {}
     for (const v of initialVariables) r[v.name] = v.value
-    prevVarsRef.current = r
+    varsRef.current = r
     setVars(r)
-  }, [initialVariables])
+    commitLessonAttempt(createLessonAttempt(0, r, lessonAttemptRef.current.revision + 1))
+    resumeAppliedRef.current = resolvedId
+  }, [initialVariables, resolvedId, commitLessonAttempt])
 
   const disableLessonMode = useCallback(() => {
     lessonModeWasToggledRef.current = true
@@ -601,8 +636,14 @@ export function TeachableEquation({
     <ErrorBoundary fallback={<LessonFallback />}>
       <Suspense fallback={<LessonFallback />}>
         <LessonRunner
+          equationId={resolvedId}
           steps={lessonSteps} currentStepIndex={lessonStep}
           onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
+          stepStartValues={lessonAttempt.stepStartValues}
+          attemptKey={`${resolvedId}:${lessonAttempt.revision}`}
+          onRetryStep={retryStep}
+          checkPassed={lessonAttempt.checkPassed} onCheckAnswer={checkAnswer}
+          lessonFinished={lessonAttempt.lessonFinished}
           variables={formulaVariables} onHighlight={setHighlightedVar}
           glossary={localizedGlossary} onTermHighlight={setHighlightedTerm}
           compact={isMobile} phoneLayout={isPhone}
@@ -682,7 +723,7 @@ export function TeachableEquation({
     </section>
   )
 
-  const visualizationContent = children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })
+  const visualizationContent = children({ vars, setVar, onAction, highlightedVar, setHighlightedVar, highlightedTerm })
 
   const handleMobilePanelGestureStart = useCallback((clientY: number) => {
     dragStartYRef.current = clientY

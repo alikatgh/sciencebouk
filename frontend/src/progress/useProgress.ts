@@ -24,6 +24,8 @@ export interface EquationProgress {
   notes: string
   bookmarked: boolean
   lastViewed: string
+  /** Local metadata: activity alone must not make an unchanged cursor newer. */
+  lessonStepUpdatedAt: string
 }
 
 const EMPTY: EquationProgress = {
@@ -34,10 +36,26 @@ const EMPTY: EquationProgress = {
   notes: "",
   bookmarked: false,
   lastViewed: "",
+  lessonStepUpdatedAt: "",
 }
 
 const STORAGE_KEY_PREFIX = "eq-progress-"
 const syncTimers = new Map<number, ReturnType<typeof setTimeout>>()
+interface PendingProgressSync {
+  progress: EquationProgress
+  includeCursor: boolean
+  revision: number
+  epoch: number
+  ready: boolean
+  settled?: Promise<void>
+}
+const pendingSyncs = new Map<number, PendingProgressSync>()
+const inFlightSyncs = new Map<number, PendingProgressSync>()
+const syncRevisions = new Map<number, number>()
+const unconfirmedLessonCursors = new Set<number>()
+const serverCacheRevisions = new Map<number, number>()
+const bulkBlockedEquations = new Set<number>()
+let bulkSyncPromise: Promise<ProgressItem[]> | null = null
 const progressListeners = new Set<() => void>()
 const localProgressCache = new Map<number, EquationProgress>()
 const progressSnapshotCache = new Map<string, { version: number; snapshot: ProgressSnapshot }>()
@@ -48,6 +66,7 @@ let serverProgressPromise: Promise<Map<number, ProgressItem>> | null = null
 let hasFetchedServerProgress = false
 let serverProgressBackoffUntil = 0
 let activeServerUserId: number | null = null
+let serverStateEpoch = 0
 let serverSyncErrorState = false
 let progressVersion = 0
 
@@ -66,6 +85,10 @@ function normalizeProgress(progress?: Partial<EquationProgress>): EquationProgre
   return {
     ...EMPTY,
     ...progress,
+    // Legacy blank cursors may come from activity alone, so only a nonempty
+    // legacy cursor can inherit lastViewed. New explicit clears have a clock.
+    lessonStepUpdatedAt: progress?.lessonStepUpdatedAt
+      ?? (progress?.lessonStep ? progress.lastViewed ?? "" : ""),
     variablesExplored: [...new Set(progress?.variablesExplored ?? EMPTY.variablesExplored)],
   }
 }
@@ -183,6 +206,14 @@ function setLocalProgress(equationId: number, progress: EquationProgress) {
 export function clearStoredProgress() {
   for (const timer of syncTimers.values()) clearTimeout(timer)
   syncTimers.clear()
+  pendingSyncs.clear()
+  inFlightSyncs.clear()
+  syncRevisions.clear()
+  unconfirmedLessonCursors.clear()
+  serverCacheRevisions.clear()
+  bulkBlockedEquations.clear()
+  bulkSyncPromise = null
+  serverStateEpoch += 1
 
   if (typeof localStorage !== "undefined") {
     try {
@@ -201,6 +232,7 @@ export function clearStoredProgress() {
   serverProgressCache = new Map()
   serverProgressPromise = null
   hasFetchedServerProgress = false
+  serverProgressBackoffUntil = 0
   activeServerUserId = null
   serverSyncErrorState = false
   progressSnapshotCache.clear()
@@ -210,6 +242,14 @@ export function clearStoredProgress() {
 function resetServerProgressState() {
   for (const timer of syncTimers.values()) clearTimeout(timer)
   syncTimers.clear()
+  pendingSyncs.clear()
+  inFlightSyncs.clear()
+  syncRevisions.clear()
+  unconfirmedLessonCursors.clear()
+  serverCacheRevisions.clear()
+  bulkBlockedEquations.clear()
+  bulkSyncPromise = null
+  serverStateEpoch += 1
   serverProgressCache = new Map()
   serverProgressPromise = null
   hasFetchedServerProgress = false
@@ -225,45 +265,41 @@ function ensureServerProgressUser(userId: number | null) {
   notifyProgressListeners()
 }
 
+function progressTimestamp(value: string | null): number {
+  const timestamp = value ? Date.parse(value) : 0
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
 function mergeProgress(local: EquationProgress, server: ProgressItem): EquationProgress {
+  const localTimestamp = progressTimestamp(local.lastViewed)
+  const localCursorTimestamp = progressTimestamp(local.lessonStepUpdatedAt)
+  const serverTimestamp = progressTimestamp(server.last_viewed)
+  // A blank cursor is meaningful. Preserve a newer local cursor (including a
+  // clear), and do not let an in-flight server read overwrite unconfirmed work.
+  const useLocalCursor = unconfirmedLessonCursors.has(server.equation_id)
+    || (localCursorTimestamp > 0 && localCursorTimestamp >= serverTimestamp)
   return {
     completed: local.completed || server.completed,
-    lessonStep: server.lesson_step || local.lessonStep,
+    lessonStep: useLocalCursor ? local.lessonStep : server.lesson_step,
+    lessonStepUpdatedAt: useLocalCursor ? local.lessonStepUpdatedAt : server.last_viewed ?? "",
     timeSpentSeconds: Math.max(local.timeSpentSeconds, server.time_spent_seconds),
     variablesExplored: [...new Set([...local.variablesExplored, ...server.variables_explored])],
     notes: server.notes || local.notes,
     bookmarked: local.bookmarked || server.bookmarked,
-    lastViewed: new Date(
-      Math.max(new Date(local.lastViewed || 0).getTime(), new Date(server.last_viewed || 0).getTime()),
-    ).toISOString(),
+    lastViewed: new Date(Math.max(localTimestamp, serverTimestamp)).toISOString(),
   }
 }
 
-function toProgressPayload(progress: EquationProgress): Partial<ProgressItem> {
+function toProgressPayload(progress: EquationProgress, includeCursor: boolean): Partial<ProgressItem> {
   return {
     completed: progress.completed,
-    lesson_step: progress.lessonStep,
+    ...(includeCursor ? { lesson_step: progress.lessonStep } : {}),
     time_spent_seconds: progress.timeSpentSeconds,
     variables_explored: progress.variablesExplored,
     notes: progress.notes,
     bookmarked: progress.bookmarked,
     last_viewed: progress.lastViewed,
   }
-}
-
-function updateServerCache(eqId: number, progress: EquationProgress) {
-  const previous = serverProgressCache.get(eqId)
-  serverProgressCache.set(eqId, {
-    equation_id: eqId,
-    completed: progress.completed,
-    completed_at: previous?.completed_at ?? null,
-    lesson_step: progress.lessonStep,
-    time_spent_seconds: progress.timeSpentSeconds,
-    variables_explored: progress.variablesExplored,
-    notes: progress.notes,
-    bookmarked: progress.bookmarked,
-    last_viewed: progress.lastViewed,
-  })
 }
 
 async function getServerProgressMap(): Promise<Map<number, ProgressItem>> {
@@ -273,50 +309,75 @@ async function getServerProgressMap(): Promise<Map<number, ProgressItem>> {
   if (Date.now() < serverProgressBackoffUntil) return serverProgressCache
 
   if (!serverProgressPromise) {
-    serverProgressPromise = api.progress.getAll()
+    const epoch = serverStateEpoch
+    const revisionsAtStart = new Map(serverCacheRevisions)
+    const request = api.progress.getAll()
       .then((items) => {
-        serverProgressCache = new Map(items.map((item) => [item.equation_id, item]))
+        if (epoch !== serverStateEpoch) return new Map<number, ProgressItem>()
+        const fetched = new Map(items.map((item) => [item.equation_id, item]))
+        // A PATCH acknowledged after this read began is newer cache evidence.
+        for (const [equationId, item] of serverProgressCache) {
+          if (serverCacheRevisions.get(equationId) !== revisionsAtStart.get(equationId)) {
+            fetched.set(equationId, item)
+          }
+        }
+        serverProgressCache = fetched
         hasFetchedServerProgress = true
         serverProgressBackoffUntil = 0
         return serverProgressCache
       })
       .catch((err) => {
         // Back off for 30 seconds on failure so we don't fire a request on every render.
-        serverProgressBackoffUntil = Date.now() + 30_000
+        if (epoch === serverStateEpoch) serverProgressBackoffUntil = Date.now() + 30_000
         throw err
       })
       .finally(() => {
-        serverProgressPromise = null
+        if (serverProgressPromise === request) serverProgressPromise = null
       })
+    serverProgressPromise = request
   }
 
   return serverProgressPromise
 }
 
-// rollbackEntry must be captured BEFORE calling updateServerCache so it
-// represents the pre-optimistic server state, not the already-updated one.
-function debouncedSync(eqId: number, progress: EquationProgress, rollbackEntry: ProgressItem | undefined) {
+function flushProgressSync(eqId: number) {
+  const request = pendingSyncs.get(eqId)
+  if (!request?.ready || inFlightSyncs.has(eqId) || bulkBlockedEquations.has(eqId) || request.epoch !== serverStateEpoch) return
+  pendingSyncs.delete(eqId)
+  inFlightSyncs.set(eqId, request)
+
+  request.settled = api.progress.update(eqId, toProgressPayload(request.progress, request.includeCursor))
+    .then((serverItem) => {
+      if (request.epoch !== serverStateEpoch || syncRevisions.get(eqId) !== request.revision) return
+      serverProgressCache.set(eqId, serverItem)
+      serverCacheRevisions.set(eqId, (serverCacheRevisions.get(eqId) ?? 0) + 1)
+      if (request.includeCursor) unconfirmedLessonCursors.delete(eqId)
+      notifyProgressListeners()
+    })
+    .catch(() => {
+      // Keep confirmed cache evidence and the unsynced local cursor. A failure
+      // must not roll a newer edit back to an earlier optimistic request.
+    })
+    .finally(() => {
+      if (request.epoch !== serverStateEpoch || inFlightSyncs.get(eqId) !== request) return
+      inFlightSyncs.delete(eqId)
+      flushProgressSync(eqId)
+    })
+}
+
+function debouncedSync(eqId: number, progress: EquationProgress, includeCursor: boolean) {
   const existingTimer = syncTimers.get(eqId)
   if (existingTimer) clearTimeout(existingTimer)
-
+  const revision = (syncRevisions.get(eqId) ?? 0) + 1
+  syncRevisions.set(eqId, revision)
+  if (includeCursor) unconfirmedLessonCursors.add(eqId)
+  const request = { progress, includeCursor: unconfirmedLessonCursors.has(eqId), revision, epoch: serverStateEpoch, ready: false }
+  pendingSyncs.set(eqId, request)
   const timer = setTimeout(() => {
-    api.progress.update(eqId, toProgressPayload(progress))
-      .then((serverItem) => {
-        serverProgressCache.set(eqId, serverItem)
-        notifyProgressListeners()
-      })
-      .catch(() => {
-        // Roll back the optimistic cache write so the stale entry does not
-        // override real server progress on the next mergeProgress call.
-        if (rollbackEntry !== undefined) {
-          serverProgressCache.set(eqId, rollbackEntry)
-        } else {
-          serverProgressCache.delete(eqId)
-        }
-      })
-      .finally(() => {
-        if (syncTimers.get(eqId) === timer) syncTimers.delete(eqId)
-      })
+    if (syncTimers.get(eqId) !== timer || request.epoch !== serverStateEpoch) return
+    syncTimers.delete(eqId)
+    request.ready = true
+    flushProgressSync(eqId)
   }, 2000)
 
   syncTimers.set(eqId, timer)
@@ -337,6 +398,7 @@ function shouldSyncProgress(progress: EquationProgress): boolean {
     progress.completed ||
     progress.timeSpentSeconds > 0 ||
     progress.lessonStep !== "" ||
+    progressTimestamp(progress.lessonStepUpdatedAt) > 0 ||
     progress.variablesExplored.length > 0 ||
     progress.notes !== "" ||
     progress.bookmarked
@@ -369,7 +431,8 @@ function getProgressSnapshot(includeServer: boolean): ProgressSnapshot {
       localSyncItems.push({
         equation_id: equationId,
         completed: localProgress.completed,
-        lesson_step: localProgress.lessonStep,
+        ...(localProgress.lessonStep !== "" || progressTimestamp(localProgress.lessonStepUpdatedAt) > 0
+          ? { lesson_step: localProgress.lessonStep } : {}),
         time_spent_seconds: localProgress.timeSpentSeconds,
         variables_explored: localProgress.variablesExplored,
         notes: localProgress.notes,
@@ -399,13 +462,57 @@ export function getLocalProgressSyncItems(): BulkSyncItem[] {
   }))
 }
 
+/** One tab orders bulk import and live cursor PATCHes through the same barrier. */
+export function syncLocalProgressToServer(userId: number): Promise<ProgressItem[]> {
+  ensureServerProgressUser(userId)
+  if (bulkSyncPromise) return bulkSyncPromise
+  const equationIds = new Set(getLocalProgressSyncItems().map((item) => item.equation_id))
+  if (equationIds.size === 0) return Promise.resolve([])
+  const epoch = serverStateEpoch
+  const priorWrites: Promise<void>[] = []
+  for (const equationId of equationIds) {
+    bulkBlockedEquations.add(equationId)
+    const settled = inFlightSyncs.get(equationId)?.settled
+    if (settled) priorWrites.push(settled)
+  }
+
+  const request = Promise.all(priorWrites)
+    .then(async () => {
+      if (epoch !== serverStateEpoch) throw new Error("Progress account changed")
+      // Waiting for an older PATCH may have allowed a learner to advance. Read
+      // the current snapshot here instead of uploading the original stale one.
+      const items = getLocalProgressSyncItems().filter((item) => equationIds.has(item.equation_id))
+      const revisionsAtStart = new Map(syncRevisions)
+      const results = await api.progress.bulkSync(items)
+      if (epoch !== serverStateEpoch) throw new Error("Progress account changed")
+      for (const item of results) {
+        if (syncRevisions.get(item.equation_id) !== revisionsAtStart.get(item.equation_id)) continue
+        serverProgressCache.set(item.equation_id, item)
+        serverCacheRevisions.set(item.equation_id, (serverCacheRevisions.get(item.equation_id) ?? 0) + 1)
+      }
+      notifyProgressListeners()
+      return results
+    })
+    .finally(() => {
+      if (epoch === serverStateEpoch) {
+        for (const equationId of equationIds) {
+          bulkBlockedEquations.delete(equationId)
+          flushProgressSync(equationId)
+        }
+      }
+      if (bulkSyncPromise === request) bulkSyncPromise = null
+    })
+  bulkSyncPromise = request
+  return request
+}
+
 export function getLocalProgressSyncSignature(): string {
   return getProgressSnapshot(false).localSyncSignature
 }
 
 export function useProgress(equationId: number) {
   const { user, isAuthenticated, isPro } = useAuth()
-  const [progress, setProgress] = useState<EquationProgress>(() => getLocalProgress(equationId))
+  const [progress, setProgress] = useState<EquationProgress>(() => readMergedProgress(equationId, false))
   const progressRef = useRef(progress)
 
   useEffect(() => {
@@ -438,33 +545,36 @@ export function useProgress(equationId: number) {
     }
   }, [equationId, isAuthenticated, isPro, user?.id])
 
-  const persistProgress = useCallback((next: EquationProgress) => {
+  const persistProgress = useCallback((next: EquationProgress, includeCursor: boolean) => {
     if (equationId <= 0) return
 
-    setLocalProgress(equationId, next)
-    if (isPro && isAuthenticated) {
-      // Capture rollback BEFORE the optimistic write so failure restores real state.
-      const rollback = serverProgressCache.get(equationId)
-      updateServerCache(equationId, next)
-      debouncedSync(equationId, next, rollback)
+    if (isPro && isAuthenticated && activeServerUserId === user?.id) {
+      debouncedSync(equationId, next, includeCursor)
     }
-  }, [equationId, isAuthenticated, isPro])
+    setLocalProgress(equationId, next)
+  }, [equationId, isAuthenticated, isPro, user?.id])
 
-  const commitProgress = useCallback((updater: (previous: EquationProgress) => EquationProgress | null) => {
+  const commitProgress = useCallback((updater: (previous: EquationProgress) => EquationProgress | null, includeCursor = false) => {
     const next = updater(progressRef.current)
     if (!next) return
 
     progressRef.current = next
     setProgress(next)
-    persistProgress(next)
+    persistProgress(next, includeCursor)
   }, [persistProgress])
 
   const updateProgress = useCallback((update: Partial<EquationProgress>) => {
+    const includeCursor = Object.prototype.hasOwnProperty.call(update, "lessonStep")
+    const updatedAt = new Date().toISOString()
     commitProgress((previous) => normalizeProgress({
       ...previous,
       ...update,
-      lastViewed: new Date().toISOString(),
-    }))
+      completed: previous.completed || update.completed === true,
+      timeSpentSeconds: Math.max(previous.timeSpentSeconds, update.timeSpentSeconds ?? 0),
+      variablesExplored: [...new Set([...previous.variablesExplored, ...(update.variablesExplored ?? [])])],
+      lastViewed: updatedAt,
+      lessonStepUpdatedAt: includeCursor ? updatedAt : previous.lessonStepUpdatedAt,
+    }), includeCursor)
   }, [commitProgress])
 
   const markVariableExplored = useCallback((variableName: string) => {
@@ -491,12 +601,13 @@ export function useAllProgress() {
   }, [user?.id])
 
   const getSnapshot = useCallback(
-    () => getProgressSnapshot(includeServer),
-    [includeServer],
+    () => getProgressSnapshot(includeServer && activeServerUserId === user?.id),
+    [includeServer, user?.id],
   )
   const snapshot = useSyncExternalStore(subscribeToProgress, getSnapshot, getSnapshot)
 
   useEffect(() => {
+    const epoch = serverStateEpoch
     if (!includeServer) {
       setServerSyncErrorState(false)
       return
@@ -508,13 +619,15 @@ export function useAllProgress() {
 
     getServerProgressMap()
       .then(() => {
+        if (epoch !== serverStateEpoch) return
         setServerSyncErrorState(false)
         notifyProgressListeners()
       })
       .catch(() => {
+        if (epoch !== serverStateEpoch) return
         setServerSyncErrorState(true)
       })
-  }, [includeServer])
+  }, [includeServer, user?.id])
 
   return snapshot
 }

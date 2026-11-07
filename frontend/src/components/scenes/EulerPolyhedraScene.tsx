@@ -4,7 +4,7 @@ import { drag, type D3DragEvent } from "d3-drag"
 import { select, type Selection } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
-import type { Variable, LessonStep } from "../teaching/types"
+import type { Variable, LessonStep, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useContainerSize } from "../../hooks/useContainerSize"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
@@ -253,8 +253,8 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy.cube.instruction,
     hint: lessonCopy.cube.hint,
     highlightElements: ['V', 'E', 'F'],
-    unlockedVariables: [],
-    successCondition: { type: 'time_elapsed', duration: 8000 },
+    unlockedVariables: ['V', 'E', 'F'],
+    successCondition: { type: 'clicked', target: 'select-cube' },
     celebration: 'subtle',
     insight: lessonCopy.cube.insight,
   },
@@ -263,7 +263,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy["try-others"].instruction,
     hint: lessonCopy["try-others"].hint,
     highlightElements: ['V', 'E', 'F'],
-    unlockedVariables: [],
+    unlockedVariables: ['V', 'E', 'F'],
     successCondition: { type: 'variable_changed', target: 'V' },
     celebration: 'subtle',
     insight: lessonCopy["try-others"].insight,
@@ -273,7 +273,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy.icosahedron.instruction,
     hint: lessonCopy.icosahedron.hint,
     highlightElements: ['V', 'E', 'F'],
-    unlockedVariables: [],
+    unlockedVariables: ['V', 'E', 'F'],
     successCondition: { type: 'value_reached', target: 'V', value: 12, tolerance: 0.5 },
     celebration: 'big',
     insight: lessonCopy.icosahedron.insight,
@@ -309,24 +309,27 @@ export function EulerPolyhedraScene(): ReactElement {
         { label: "Icosahedron", values: { V: 12, E: 30, F: 20 } },
       ]}
     >
-      {({ setVar }) => (
-        <D3EulerVisual onUpdateVars={setVar} />
+      {({ setVar, onAction }) => (
+        <D3EulerVisual onUpdateVars={setVar} onAction={onAction} />
       )}
     </TeachableEquation>
   )
 }
 
 interface EulerVisualProps {
-  onUpdateVars: (name: string, value: number) => void
+  onUpdateVars: SetEquationVariable
+  onAction: (name: string) => void
 }
 
-function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
+function D3EulerVisual({ onUpdateVars, onAction }: EulerVisualProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: W, height: H } = useContainerSize(containerRef)
   const svgSelRef = useRef<Selection<SVGSVGElement, unknown, null, undefined> | null>(null)
   const gRef = useRef<Selection<SVGGElement, unknown, null, undefined> | null>(null)
   const onUpdateVarsRef = useRef(onUpdateVars)
   onUpdateVarsRef.current = onUpdateVars
+  const onActionRef = useRef(onAction)
+  onActionRef.current = onAction
 
   const selectedIdxRef = useRef(1) // start with cube
   const [selectedIdx, setSelectedIdx] = useState(1)
@@ -355,7 +358,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
       .attr("width", W)
       .attr("height", H)
       .style("display", "block")
-      .attr("role", "img")
+      .attr("role", "group")
       .attr("aria-label", "Euler polyhedra formula -- interactive 3D wireframes")
 
     svgSelRef.current = svg
@@ -369,7 +372,8 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     for (let i = 0; i < solids.length; i++) {
       const bx = W * 0.04
       const by = H * 0.07 + i * (compact ? H * 0.085 : H * 0.1)
-      const btnG = svg.append("g").style("cursor", "pointer")
+      const btnG = svg.append("g").attr("class", `solid-choice-${i}`).style("cursor", "pointer")
+        .attr("role", "button").attr("tabindex", 0).attr("aria-label", `Select ${solids[i].name}`)
       btnG.append("rect")
         .attr("class", `btn-bg-${i}`)
         .attr("x", bx).attr("y", by).attr("width", btnW).attr("height", btnH)
@@ -379,10 +383,23 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
         .attr("x", bx + btnW / 2).attr("y", by + (compact ? 21 : 24)).attr("text-anchor", "middle")
         .attr("font-size", ultraCompact ? 11 : compact ? 13 : 15).attr("font-family", F)
         .text(ultraCompact ? tinySolidName(solids[i].name) : compact ? shortSolidName(solids[i].name) : solids[i].name)
-      btnG.on("click", () => {
+      const selectSolid = () => {
+        if (selectedIdxRef.current === i) return
         selectedIdxRef.current = i
         setSelectedIdx(i)
-      })
+        const solid = solids[i]
+        onUpdateVarsRef.current('V', solid.V)
+        onUpdateVarsRef.current('E', solid.E)
+        onUpdateVarsRef.current('F', solid.F)
+        if (solid.name === "Cube") onActionRef.current('select-cube')
+      }
+      btnG.on("click", selectSolid)
+        .on("keydown", (event: KeyboardEvent) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            selectSolid()
+          }
+        })
     }
 
     // Wireframe group for faces, edges, vertices
@@ -473,18 +490,22 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
     }
   }, [W, H])
 
-  // Update button highlights + V/E/F when selectedIdx changes
+  // Initial readout synchronization is not a learner attempt.
+  useEffect(() => {
+    const solid = solids[selectedIdxRef.current]
+    onUpdateVarsRef.current('V', solid.V, { source: 'system' })
+    onUpdateVarsRef.current('E', solid.E, { source: 'system' })
+    onUpdateVarsRef.current('F', solid.F, { source: 'system' })
+  }, [])
+
+  // Shape changes write readouts in the learner handler above; this effect only paints selection.
   useEffect(() => {
     const svg = svgSelRef.current
     if (!svg) return
 
-    const solid = solids[selectedIdx]
-    onUpdateVarsRef.current('V', solid.V)
-    onUpdateVarsRef.current('E', solid.E)
-    onUpdateVarsRef.current('F', solid.F)
-
     for (let i = 0; i < solids.length; i++) {
       const isSelected = i === selectedIdx
+      svg.select(`.solid-choice-${i}`).attr("aria-pressed", String(isSelected))
       svg.select(`.btn-bg-${i}`)
         .attr("fill", isSelected ? "#1e40af" : "#f1f5f9")
         .attr("stroke", isSelected ? "#1e40af" : "#cbd5e1")
@@ -493,7 +514,7 @@ function D3EulerVisual({ onUpdateVars }: EulerVisualProps): ReactElement {
         .attr("font-weight", isSelected ? 700 : 500)
         .attr("fill", isSelected ? "#ffffff" : "#475569")
     }
-  }, [selectedIdx])
+  }, [selectedIdx, W, H])
 
   function renderWireframe() {
     const g = gRef.current

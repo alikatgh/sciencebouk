@@ -76,7 +76,10 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy.classic.instruction,
     highlightElements: ['a', 'b'],
     unlockedVariables: ['a', 'b'],
-    successCondition: { type: 'value_reached', target: 'a', value: 3, tolerance: 0.5 },
+    successCondition: {
+      type: 'value_reached', target: 'a', value: 3, tolerance: 0,
+      additionalTargets: [{ target: 'b', value: 4, tolerance: 0 }],
+    },
     celebration: 'big',
     insight: lessonCopy.classic.insight,
   },

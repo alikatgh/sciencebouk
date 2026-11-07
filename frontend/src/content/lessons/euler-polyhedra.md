@@ -4,10 +4,10 @@
 
 ## cube
 ### instruction
-Start with the cube. Count its corners (V), edges (E), and faces (F). Does V - E + F = 2?
+Choose a different solid, then select the cube again. Count its corners (V), edges (E), and faces (F). Does V - E + F = 2?
 
 ### hint
-A cube has 8 corners, 12 edges, and 6 faces. Check: 8 - 12 + 6 = ?
+Select Tetrahedron, then Cube in the visualization. You can click the shape buttons or focus them and press Enter. A cube has 8 corners, 12 edges, and 6 faces: 8 - 12 + 6 = ?
 
 ### insight
 8 - 12 + 6 = 2. It works! But does it always work? Let's try other shapes.
@@ -27,7 +27,7 @@ No matter which Platonic solid you pick, V - E + F = 2. This works for ANY conve
 Try the icosahedron -- the most complex Platonic solid with 20 faces. Verify the formula still holds.
 
 ### hint
-Click "Icosahedron": 12 - 30 + 20 = 2.
+Select "Icosahedron": 12 - 30 + 20 = 2. If it is already selected, choose another solid and return to it.
 
 ### insight
 Even with 12 vertices, 30 edges, and 20 faces, V - E + F = 2. Euler discovered this invariant in 1758. It's one of the first results in topology -- the study of properties that don't change when you stretch or deform shapes.

@@ -4,28 +4,31 @@
 
 ## order
 ### instruction
-Start with low temperature. Notice the ordered particles.
+Lower temperature T to 0. Compare the particle arrangements and entropy readout with the starting temperature.
 
 ### insight
-At low temperature, particles sit in a neat lattice. Only one microstate — entropy is zero.
+At T = 0 this simplified model shows one ordered arrangement, so S = kᵦ ln 1 = 0. The model illustrates microstate counting rather than the full behavior of a real material.
 
 ## heat
 ### instruction
-Drag T up to about 50. Watch particles scatter.
+Increase temperature T to 50. Compare the possible particle arrangements and entropy readout with the ordered model at T = 0.
+
+### hint
+Move the T slider or drag T in the formula until it reads 50. A small change near 0 is not enough to complete this step.
 
 ### insight
 More thermal energy means more possible arrangements. Entropy climbs as disorder grows.
 
 ## arrow
 ### instruction
-Push T to 100. Maximum entropy — total disorder.
+Push T to 100. Compare the number of possible arrangements with the cold model.
 
 ### insight
-At maximum temperature the particles explore every possible arrangement. Entropy is at its peak.
+At the maximum setting, this model assigns its largest microstate count and entropy. The displayed arrangements are examples, not every possible microstate.
 
 ## irreversible
 ### instruction
-Now try to bring T back to 0. Can you unscramble the egg?
+Bring T back to 0 and compare the entropy readout with the hot model. What is this illustration leaving out?
 
 ### insight
-You can cool the system, but in nature the total entropy of the universe never decreases. That's the Second Law.
+The model returns to its ordered arrangement when cooled. A real system can also lose entropy by transferring heat to its surroundings; the Second Law concerns the total entropy of an isolated system, including those surroundings.

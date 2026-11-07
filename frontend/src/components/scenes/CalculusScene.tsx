@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
-import type { Variable, LessonStep } from "../teaching/types"
+import type { Variable, LessonStep, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 import { SCENE_STAGE_CLASS } from "./sceneTheme"
@@ -111,12 +111,12 @@ export function CalculusScene(): ReactElement {
   )
 }
 
-function CalculusBridge({ vars, setVar }: { vars: Record<string, number>; setVar: (name: string, value: number) => void }): ReactElement {
+function CalculusBridge({ vars, setVar }: { vars: Record<string, number>; setVar: SetEquationVariable }): ReactElement {
   const slope = fPrime(vars.t)
 
   useEffect(() => {
     if (Math.abs((vars.slope ?? 0) - slope) > 0.005) {
-      setVar('slope', Math.round(slope * 100) / 100)
+      setVar('slope', Math.round(slope * 100) / 100, { source: 'system' })
     }
   }, [vars.t, vars.slope, slope, setVar])
 
@@ -126,7 +126,7 @@ function CalculusBridge({ vars, setVar }: { vars: Record<string, number>; setVar
 interface CalculusChartProps {
   t: number
   h: number
-  onVarChange?: (name: string, value: number) => void
+  onVarChange?: SetEquationVariable
 }
 
 function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement {

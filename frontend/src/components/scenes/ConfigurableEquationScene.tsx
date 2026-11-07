@@ -8,7 +8,7 @@ import { pushToast } from "../../lib/toast"
 import { buildCitation } from "../../lib/citation"
 import { TeachableEquation, type Preset } from "../teaching/TeachableEquation"
 import { useEquationId } from "../teaching/EquationContext"
-import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
+import type { GlossaryTerm, LessonStep, Variable, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
@@ -65,6 +65,7 @@ interface RawLesson {
   successTarget?: string
   successValue?: number
   successTolerance?: number
+  successAdditionalTargets?: unknown
   successDuration?: number
   celebration?: string
   insight?: string
@@ -120,12 +121,23 @@ function mapLessons(raw: unknown[]): LessonStep[] {
         target: lesson.successTarget,
         value: lesson.successValue,
         tolerance: lesson.successTolerance,
+        additionalTargets: mapAdditionalTargets(lesson.successAdditionalTargets),
         duration: lesson.successDuration,
       },
       celebration: (lesson.celebration as LessonStep["celebration"]) ?? "subtle",
       insight: lesson.insight ?? "",
     }
   })
+}
+
+function mapAdditionalTargets(raw: unknown): LessonStep["successCondition"]["additionalTargets"] {
+  if (!Array.isArray(raw)) return undefined
+  return raw.filter(isRecord).filter((target) => typeof target.target === "string"
+    && target.target.length > 0 && typeof target.value === "number" && Number.isFinite(target.value)
+    && (target.tolerance === undefined
+      || (typeof target.tolerance === "number" && Number.isFinite(target.tolerance) && target.tolerance >= 0)))
+    .map((target) => ({ target: target.target as string, value: target.value as number,
+      ...(target.tolerance !== undefined ? { tolerance: target.tolerance as number } : {}) }))
 }
 
 function mapPresets(raw: unknown[]): Preset[] {
@@ -229,7 +241,7 @@ function GenericMetersVisual({
   equationId: number
   variables: Variable[]
   vars: Record<string, number>
-  setVar: (name: string, value: number) => void
+  setVar: SetEquationVariable
   formula: string
   citation: string
 }): ReactElement {
@@ -270,7 +282,7 @@ function GenericMetersVisual({
     for (const variable of variables) {
       if (variable.constant) continue
       const value = restored[variable.name]
-      if (value !== undefined) setVar(variable.name, Math.min(variable.max, Math.max(variable.min, value)))
+      if (value !== undefined) setVar(variable.name, Math.min(variable.max, Math.max(variable.min, value)), { source: "restore" })
     }
   }, [variables, setVar])
 
@@ -281,14 +293,14 @@ function GenericMetersVisual({
   }
 
   const resetInputs = () => {
-    for (const variable of meters) setVar(variable.name, variable.value)
+    for (const variable of meters) setVar(variable.name, variable.value, { source: "reset" })
   }
   const randomizeInputs = () => {
     for (const variable of meters) {
       const step = variable.step || (variable.max - variable.min) / 100 || 1
       const steps = Math.max(1, Math.round((variable.max - variable.min) / step))
       const raw = variable.min + Math.round(Math.random() * steps) * step
-      setVar(variable.name, Math.min(variable.max, Math.max(variable.min, Number(raw.toFixed(6)))))
+      setVar(variable.name, Math.min(variable.max, Math.max(variable.min, Number(raw.toFixed(6)))), { source: "preset" })
     }
   }
 

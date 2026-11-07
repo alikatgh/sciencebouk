@@ -8,7 +8,7 @@ import { select } from "d3-selection"
 import { line } from "d3-shape"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
-import type { Variable, LessonStep } from "../teaching/types"
+import type { Variable, LessonStep, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
@@ -107,12 +107,12 @@ interface Props {
   gamma: number
   highlightedVar: string | null
   onHighlight: (name: string | null) => void
-  onVarChange: (name: string, value: number) => void
+  onVarChange: SetEquationVariable
 }
 
 function RelativityBridge({ vars, setVar, highlightedVar, setHighlightedVar }: {
   vars: Record<string, number>
-  setVar: (name: string, value: number) => void
+  setVar: SetEquationVariable
   highlightedVar: string | null
   setHighlightedVar: (name: string | null) => void
 }): ReactElement {
@@ -121,7 +121,7 @@ function RelativityBridge({ vars, setVar, highlightedVar, setHighlightedVar }: {
 
   useEffect(() => {
     if (Math.abs(vars.gamma - gamma) > 0.01) {
-      setVar('gamma', gamma)
+      setVar('gamma', gamma, { source: 'system' })
     }
   }, [vars.v, vars.gamma, gamma, setVar])
 

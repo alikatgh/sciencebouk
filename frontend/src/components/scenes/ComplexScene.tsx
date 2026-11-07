@@ -5,7 +5,7 @@ import { scaleLinear } from "d3-scale"
 import { select } from "d3-selection"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
-import type { Variable, LessonStep } from "../teaching/types"
+import type { Variable, LessonStep, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { interpolateSceneCopy, useSceneCopy } from "../../data/sceneCopy"
 import { readScenePalette, SCENE_STAGE_CLASS } from "./sceneTheme"
@@ -105,7 +105,7 @@ export function ComplexScene(): ReactElement {
 interface D3ComplexVisualProps {
   a: number
   b: number
-  onVarChange: (name: string, value: number) => void
+  onVarChange: SetEquationVariable
   highlightedVar: string | null
   onHighlight: (name: string | null) => void
 }
@@ -453,8 +453,8 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       g.select(".btn-reset").on("click", () => {
         liveRef.current = { a: 1, b: 0.5 }
         updateGeometry(1, 0.5)
-        onVarChangeRef.current('a', 1)
-        onVarChangeRef.current('b', 0.5)
+        onVarChangeRef.current('a', 1, { source: 'reset' })
+        onVarChangeRef.current('b', 0.5, { source: 'reset' })
       })
     }
 

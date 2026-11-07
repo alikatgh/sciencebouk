@@ -1141,6 +1141,34 @@ class MyProgressListTests(AuthProgressBase):
 # ---------------------------------------------------------------------------
 
 class UpdateMyProgressTests(AuthProgressBase):
+    def test_patch_progress_accepts_shorter_stable_step_id(self):
+        UserProgress.objects.create(
+            user=self.pro_user, equation=self.eq1, lesson_step='a-long-step-identifier',
+            completed=True, time_spent_seconds=120, variables_explored=['a'],
+        )
+        self._auth_as(self.pro_user)
+        response = self.client.patch('/api/progress/1/', {
+            'lesson_step': 'try', 'completed': False,
+            'time_spent_seconds': 10, 'variables_explored': ['b'],
+        }, format='json')
+        self.assertEqual(response.status_code, 200)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
+        self.assertEqual(progress.lesson_step, 'try')
+        self.assertTrue(progress.completed)
+        self.assertEqual(progress.time_spent_seconds, 120)
+        self.assertEqual(progress.variables_explored, ['a', 'b'])
+
+    def test_patch_progress_explicit_blank_clears_cursor_and_omission_preserves_it(self):
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, lesson_step='observe')
+        self._auth_as(self.pro_user)
+        omitted = self.client.patch('/api/progress/1/', {'time_spent_seconds': 10}, format='json')
+        self.assertEqual(omitted.json()['lesson_step'], 'observe')
+        cleared = self.client.patch('/api/progress/1/', {'lesson_step': ''}, format='json')
+        self.assertEqual(cleared.status_code, 200)
+        self.assertEqual(cleared.json()['lesson_step'], '')
+        later = self.client.patch('/api/progress/1/', {'time_spent_seconds': 20}, format='json')
+        self.assertEqual(later.json()['lesson_step'], '')
+
     def test_patch_progress_authenticated_returns_200(self):
         self._auth_as(self.pro_user)
         response = self.client.patch('/api/progress/1/', {'completed': True}, format='json')
@@ -1231,6 +1259,34 @@ class UpdateMyProgressTests(AuthProgressBase):
 # ---------------------------------------------------------------------------
 
 class BulkSyncProgressTests(AuthProgressBase):
+    def test_bulk_sync_duplicate_cursor_uses_last_supplied_id_and_ignores_omission(self):
+        self._auth_as(self.pro_user)
+        response = self.client.post('/api/progress/sync/', {'items': [
+            {'equation_id': 1, 'lesson_step': 'a-long-step-identifier', 'completed': True,
+             'time_spent_seconds': 120, 'variables_explored': ['a']},
+            {'equation_id': 1, 'lesson_step': 'try', 'completed': False,
+             'time_spent_seconds': 10, 'variables_explored': ['b']},
+            {'equation_id': 1, 'notes': 'Keep the cursor'},
+        ]}, format='json')
+        self.assertEqual(response.status_code, 200)
+        progress = UserProgress.objects.get(user=self.pro_user, equation=self.eq1)
+        self.assertEqual(progress.lesson_step, 'try')
+        self.assertTrue(progress.completed)
+        self.assertEqual(progress.time_spent_seconds, 120)
+        self.assertEqual(progress.variables_explored, ['a', 'b'])
+
+    def test_bulk_sync_duplicate_blank_clears_existing_cursor(self):
+        UserProgress.objects.create(user=self.pro_user, equation=self.eq1, lesson_step='previous')
+        self._auth_as(self.pro_user)
+        response = self.client.post('/api/progress/sync/', {'items': [
+            {'equation_id': 1, 'lesson_step': 'a-long-step-identifier'},
+            {'equation_id': 1, 'lesson_step': ''},
+            {'equation_id': 1, 'time_spent_seconds': 10},
+        ]}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]['lesson_step'], '')
+        self.assertEqual(UserProgress.objects.get(user=self.pro_user, equation=self.eq1).lesson_step, '')
+
     def test_bulk_sync_authenticated_returns_200(self):
         self._auth_as(self.pro_user)
         payload = {'items': [{'equation_id': 1, 'completed': True}]}

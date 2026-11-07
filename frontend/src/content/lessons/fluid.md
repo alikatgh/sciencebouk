@@ -4,10 +4,10 @@
 
 ## watch-flow
 ### instruction
-Watch the particles flowing around the obstacle. Notice how they speed up as they pass around the sides.
+Increase flow speed U to 3.0. Compare the faster flow with the starting setting, and notice how particles pass around the obstacle's sides.
 
 ### hint
-Look at the color of particles near the top and bottom of the obstacle (red = fast).
+Drag U in the formula or use its slider until it reads 3.0. Particle color indicates speed (red = fast).
 
 ### insight
 Fluid speeds up when squeezed through a narrow space. This is the same principle that makes wind howl between buildings and why a garden hose sprays faster when you pinch it.
@@ -24,10 +24,10 @@ Higher viscosity means the fluid "sticks" more to surfaces. Honey (high viscosit
 
 ## turbulence
 ### instruction
-Set viscosity low (near 0) and flow speed high (near 4). This is where the Navier-Stokes equation becomes nearly impossible to solve.
+Raise flow speed U to 4.0. Read the Reynolds number: how does faster flow change the balance between inertia and viscosity?
 
 ### hint
-Minimize viscosity and maximize flow speed.
+Set U to its maximum, 4.0. With viscosity held at your chosen setting, a larger U gives a larger Reynolds number.
 
 ### insight
-At high speed and low viscosity, flow becomes chaotic -- turbulent. Proving whether smooth solutions always exist for the Navier-Stokes equation is one of the seven Millennium Prize Problems, worth one million dollars. Nobody has solved it yet.
+Increasing speed raises the Reynolds number; lowering viscosity raises it too. High Reynolds number flows are more prone to turbulence, depending on the geometry. This simplified illustration helps compare those effects; it is not a full turbulence simulation.
