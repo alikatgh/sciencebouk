@@ -183,7 +183,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
       {/* Hint */}
       {showHint && step.hint && !stepCompleted && appSettings.showHints && (
-        <div className={phoneLayout ? "mt-2 border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400" : compact
+        <div className={phoneLayout ? "mt-2 text-sm text-slate-500 dark:text-slate-400" : compact
           ? "mt-1.5 rounded-[16px] bg-slate-100 px-3.5 py-2 text-xs text-slate-400 dark:bg-slate-700"
           : "mt-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] text-slate-400 dark:bg-slate-700"}>
           <LessonMarkdown
@@ -198,7 +198,7 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
 
       {/* Insight (mid-lesson steps) */}
       {showInsight && stepCompleted && !isAllDone && (
-        <div className={phoneLayout ? "mt-2 border-l-2 border-sky-300 pl-3 dark:border-sky-700" : compact
+        <div className={phoneLayout ? "mt-2" : compact
           ? "mt-1.5 rounded-[18px] border border-sky-200 bg-sky-50 px-3.5 py-3 dark:border-sky-700/40 dark:bg-sky-950/30"
           : "mt-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-700/40 dark:bg-sky-950/30"}>
             <div className="flex items-start gap-2">

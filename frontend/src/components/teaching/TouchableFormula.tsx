@@ -89,8 +89,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover, phoneLayout }: 
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`${phoneLayout ? "py-2 pl-2" : "rounded-xl px-3 py-3"} border-l-2 border-transparent transition-colors ${isHighlighted ? "bg-ocean/5 dark:bg-blue-400/10" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-          style={isHighlighted ? { borderLeftColor: variable.color } : undefined}
+          className={`${phoneLayout ? "px-2 py-2" : "rounded-xl px-3 py-3"} transition-colors ${isHighlighted ? "bg-ocean/5 dark:bg-blue-400/10" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           onPointerEnter={() => onHover(variable.name)}
           onPointerLeave={() => onHover(null)}
           onFocusCapture={() => onHover(variable.name)}
