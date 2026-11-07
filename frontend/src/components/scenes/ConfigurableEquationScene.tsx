@@ -221,6 +221,7 @@ export function ConfigurableEquationScene(): ReactElement {
       lessonSteps={lessonSteps}
       presets={presets}
       glossary={glossary}
+      experimentMeasurement={subjectResults[equationId]}
       phoneVisualizationHeight={subjectResults[equationId] ? "clamp(380px, 52dvh, 460px)" : undefined}
     >
       {({ vars, setVar }) => (

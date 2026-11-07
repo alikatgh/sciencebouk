@@ -22,6 +22,28 @@ export type SetEquationVariable = (
   options?: { source: EquationVariableSource },
 ) => void
 
+/** A bounded in-memory observation, scoped to one equation. */
+export interface ExperimentSnapshot {
+  equationId: number
+  values: Record<string, number>
+  resultLine?: string
+  resultNote?: string
+}
+
+/** Reuses an equation's existing numeric model; no formula parsing. */
+export interface ExperimentMeasurement {
+  symbol: string
+  unit?: string
+  note?: string
+  compute: (values: Record<string, number>) => number
+}
+
+export interface ExperimentChange {
+  variableName: string
+  value: number
+  expectedValues: Record<string, number>
+}
+
 export interface LessonStep {
   id: string
   instruction: string

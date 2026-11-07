@@ -17,13 +17,16 @@ import { readStoredPanelWidth, ResizablePanel } from "../ui/resizable-panel"
 import { LearnMorePanel } from "../scenes/LearnMorePanel"
 import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
-import type { Variable, LessonStep, GlossaryTerm, SetEquationVariable } from "./types"
+import type { Variable, LessonStep, GlossaryTerm, SetEquationVariable, ExperimentSnapshot, ExperimentMeasurement, ExperimentChange } from "./types"
 import { ErrorBoundary } from "../ErrorBoundary"
 import { VisualizationViewport } from "./VisualizationViewport"
 import { shouldUseStackedTeachingLayout } from "./layoutMode"
 import { useEquationConfig } from "../../data/equationConfig"
 import { getConceptCheck } from "../../data/conceptChecks"
 import { applyLessonAction, applyLessonVariableInteraction, createLessonAttempt, type LessonAttempt } from "./lessonInteraction"
+import { ExperimentBench } from "./ExperimentBench"
+import { PredictionChallenge } from "./PredictionChallenge"
+import { captureExperiment, experimentChangeAllowed, experimentRestorePlan, experimentResultLine } from "./experimentComparison"
 
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
@@ -66,6 +69,7 @@ interface TeachableEquationProps {
   buildLiveFormula?: (vars: Record<string, number>) => string
   buildResultLine?: (vars: Record<string, number>) => string
   describeResult?: (vars: Record<string, number>) => string
+  experimentMeasurement?: ExperimentMeasurement
   presets?: Preset[]
   phoneVisualizationHeight?: string
   glossary?: GlossaryTerm[]
@@ -241,7 +245,7 @@ function mergeSceneGlossary(
 export function TeachableEquation({
   equationId, hook, hookAction, formula, latexFormula,
   variables: initialVariables, lessonSteps,
-  buildLiveFormula, buildResultLine, describeResult, presets, glossary, children,
+  buildLiveFormula, buildResultLine, describeResult, experimentMeasurement, presets, glossary, children,
   phoneVisualizationHeight = "clamp(240px, 38dvh, 340px)",
 }: TeachableEquationProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -295,6 +299,8 @@ export function TeachableEquation({
   })
 
   const varsRef = useRef(vars)
+  const [experimentSnapshot, setExperimentSnapshot] = useState<ExperimentSnapshot | null>(null)
+  const [experimentSession, setExperimentSession] = useState(0)
   const [highlightedVar, setHighlightedVar] = useState<string | null>(null)
   const [highlightedTerm, setHighlightedTerm] = useState<string | null>(null)
   const { settings: appSettings } = useSettings()
@@ -383,6 +389,7 @@ export function TeachableEquation({
     equationIdentityRef.current = resolvedId
     resumeAppliedRef.current = null
     lessonCompletionRecordedRef.current = false
+    setExperimentSnapshot(null)
     const defaults = Object.fromEntries(initialVariables.map((variable) => [variable.name, variable.value]))
     varsRef.current = defaults
     setVars(defaults)
@@ -474,6 +481,8 @@ export function TeachableEquation({
 
   const resetLesson = useCallback(() => {
     lessonCompletionRecordedRef.current = false
+    setExperimentSnapshot(null)
+    setExperimentSession((session) => session + 1)
     const r: Record<string, number> = {}
     for (const v of initialVariables) r[v.name] = v.value
     varsRef.current = r
@@ -525,6 +534,74 @@ export function TeachableEquation({
   const resultNote = useMemo(
     () => appSettings.showResultNote ? describeResult?.(vars) : undefined,
     [appSettings.showResultNote, describeResult, vars],
+  )
+  const experimentContextRef = useRef({ variables: initialVariables, experimentMeasurement, buildResultLine, snapshot: experimentSnapshot })
+  experimentContextRef.current = { variables: initialVariables, experimentMeasurement, buildResultLine, snapshot: experimentSnapshot }
+
+  // Read current permissions and values at the click, including an advance that
+  // happened before React painted the next step.
+  const getExperimentControls = useCallback(() => {
+    const context = interactionContextRef.current
+    const step = context.lessonSteps[lessonAttemptRef.current.stepIndex]
+    const unlocked = new Set(step?.unlockedVariables ?? [])
+    return experimentContextRef.current.variables.map((variable) => ({
+      ...variable,
+      value: varsRef.current[variable.name] ?? variable.value,
+      locked: context.lessonMode && !variable.constant && !unlocked.has(variable.name),
+    }))
+  }, [])
+
+  const captureBaseline = useCallback(() => {
+    const id = interactionContextRef.current.resolvedId
+    if (id !== resolvedId || equationIdentityRef.current !== id) return
+    const context = experimentContextRef.current
+    setExperimentSnapshot(captureExperiment(id, varsRef.current, context.experimentMeasurement, context.buildResultLine))
+  }, [resolvedId])
+
+  const restoreBaseline = useCallback(() => {
+    const context = experimentContextRef.current
+    if (context.snapshot !== experimentSnapshot || interactionContextRef.current.resolvedId !== resolvedId) return
+    const plan = experimentRestorePlan(context.snapshot, interactionContextRef.current.resolvedId, getExperimentControls(), varsRef.current)
+    if (plan.disabledReason) return
+    for (const [name, value] of Object.entries(plan.changes)) setVar(name, value, { source: "restore" })
+  }, [experimentSnapshot, resolvedId, getExperimentControls, setVar])
+
+  const runPrediction = useCallback((change: ExperimentChange): boolean => {
+    const context = experimentContextRef.current
+    const id = interactionContextRef.current.resolvedId
+    const attempt = lessonAttemptRef.current
+    if (id !== resolvedId || equationIdentityRef.current !== id
+      || attempt.stepIndex !== lessonStep || attempt.revision !== lessonAttempt.revision
+      || interactionContextRef.current.lessonMode !== lessonMode
+      || context.experimentMeasurement !== experimentMeasurement || !context.experimentMeasurement
+      || !experimentChangeAllowed(change, getExperimentControls(), varsRef.current)) return false
+    try {
+      const before = context.experimentMeasurement.compute(varsRef.current)
+      const after = context.experimentMeasurement.compute({ ...varsRef.current, [change.variableName]: change.value })
+      if (!Number.isFinite(before) || !Number.isFinite(after)) return false
+    } catch { return false }
+    if (!context.snapshot || context.snapshot.equationId !== id) {
+      setExperimentSnapshot(captureExperiment(id, varsRef.current, context.experimentMeasurement, context.buildResultLine))
+    }
+    setVar(change.variableName, change.value, { source: "learner" })
+    return true
+  }, [resolvedId, lessonStep, lessonAttempt.revision, lessonMode, experimentMeasurement, getExperimentControls, setVar])
+
+  const activeSnapshot = experimentSnapshot?.equationId === resolvedId ? experimentSnapshot : null
+  const restorePlan = experimentRestorePlan(activeSnapshot, resolvedId, formulaVariables, vars)
+  const experimentKey = `${resolvedId}:${lessonMode ? lessonStep : "explore"}:${lessonAttempt.revision}`
+  const experimentsBlock = (
+    <ExperimentBench
+      variables={formulaVariables} snapshot={activeSnapshot}
+      currentResult={experimentResultLine(vars, experimentMeasurement, buildResultLine)}
+      currentResultNote={experimentMeasurement?.note}
+      onCapture={captureBaseline} onRestore={restoreBaseline} onClear={() => setExperimentSnapshot(null)}
+      restoreDisabledReason={restorePlan.disabledReason} resetKey={`${resolvedId}:${lessonMode ? lessonStep : "explore"}:${experimentSession}`}
+    >
+      {experimentMeasurement && (
+        <PredictionChallenge key={experimentKey} measurement={experimentMeasurement} variables={formulaVariables} values={vars} onRun={runPrediction} />
+      )}
+    </ExperimentBench>
   )
   const mobileTabOrder = useMemo<MobileTeachingTab[]>(() => {
     const tabs: MobileTeachingTab[] = ["controls"]
@@ -715,9 +792,9 @@ export function TeachableEquation({
       </div>
       <div key={mobileTeachingTab} className={isPhone ? "min-w-0" : "native-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain"}>
         <div className={isPhone ? "space-y-4 px-1 pb-4 pt-4" : "space-y-5 p-4"}>
-          {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{presetsBlock}</>}
+          {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{experimentsBlock}{presetsBlock}</>}
           {mobileTeachingTab === "learn" && <>{learnBlock}{learnMoreBlock}</>}
-          {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}</>}
+          {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}{experimentsBlock}</>}
         </div>
       </div>
     </section>

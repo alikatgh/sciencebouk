@@ -5,7 +5,7 @@ import { api } from "../../api/client"
 import { SettingsProvider } from "../../settings/SettingsContext"
 import type { LessonRunner } from "./LessonRunner"
 import { TeachableEquation } from "./TeachableEquation"
-import type { LessonStep, SetEquationVariable, Variable } from "./types"
+import type { ExperimentChange, ExperimentMeasurement, LessonStep, SetEquationVariable, Variable } from "./types"
 
 type RunnerProps = ComponentProps<typeof LessonRunner>
 interface SceneState {
@@ -13,7 +13,10 @@ interface SceneState {
   setVar: SetEquationVariable
   onAction: (name: string) => void
 }
-const state = vi.hoisted(() => ({ runner: null as RunnerProps | null, scene: null as SceneState | null }))
+const state = vi.hoisted(() => ({
+  runner: null as RunnerProps | null, scene: null as SceneState | null,
+  runPrediction: null as ((change: ExperimentChange) => boolean) | null,
+}))
 const progress = vi.hoisted(() => ({
   update: vi.fn(), explore: vi.fn(),
   value: { lessonStep: "", completed: false, timeSpentSeconds: 0 },
@@ -37,6 +40,12 @@ vi.mock("./LessonRunner", () => ({
     return <div data-testid="lesson-controller">{props.steps[props.currentStepIndex]?.instruction}</div>
   },
 }))
+vi.mock("./PredictionChallenge", () => ({
+  PredictionChallenge: ({ onRun }: { onRun: (change: ExperimentChange) => boolean }) => {
+    state.runPrediction = onRun
+    return <div>Prediction practice</div>
+  },
+}))
 
 const variables: Variable[] = [{
   name: "a", symbol: "a", latex: "a", value: 3, min: 1, max: 10, step: 1,
@@ -51,11 +60,11 @@ const steps: LessonStep[] = [{
   celebration: "subtle", insight: "The triangle changes shape.",
 }]
 
-function equation(equationId = 987, lessonSteps = steps, sceneVariables = variables) {
+function equation(equationId = 987, lessonSteps = steps, sceneVariables = variables, measurement?: ExperimentMeasurement) {
   return (
     <SettingsProvider>
       <TeachableEquation equationId={equationId} hook="Explore a triangle" hookAction="Change a side" formula="a" variables={sceneVariables} lessonSteps={lessonSteps}
-        presets={[{ label: "Goal preset", values: { a: 5 } }]}>
+        presets={[{ label: "Goal preset", values: { a: 5 } }]} experimentMeasurement={measurement}>
         {(props) => {
           state.scene = props
           return <div>Triangle side: {props.vars.a}; second side: {props.vars.b}</div>
@@ -65,8 +74,8 @@ function equation(equationId = 987, lessonSteps = steps, sceneVariables = variab
   )
 }
 
-async function renderEquation(equationId = 987, lessonSteps = steps, sceneVariables = variables) {
-  const view = render(equation(equationId, lessonSteps, sceneVariables))
+async function renderEquation(equationId = 987, lessonSteps = steps, sceneVariables = variables, measurement?: ExperimentMeasurement) {
+  const view = render(equation(equationId, lessonSteps, sceneVariables, measurement))
   await screen.findByTestId("lesson-controller")
   return view
 }
@@ -88,6 +97,7 @@ beforeEach(() => {
   progress.value = { lessonStep: "", completed: false, timeSpentSeconds: 0 }
   state.runner = null
   state.scene = null
+  state.runPrediction = null
   vi.spyOn(api.analytics, "logEvent").mockResolvedValue({ ok: true })
 })
 afterEach(() => vi.useRealTimers())
@@ -281,6 +291,112 @@ describe("lesson completion controller", () => {
     vi.useFakeTimers()
     act(() => { vi.advanceTimersByTime(1000) })
     expect(runner().stepCompleted).toBe(false)
+    expect(completionWrites()).toHaveLength(0)
+  })
+})
+
+describe("experiment controller", () => {
+  const measurement: ExperimentMeasurement = { symbol: "area", compute: (values) => values.a * values.b }
+  function openBench() {
+    const button = screen.getByRole("button", { name: "Experiment bench" })
+    if (button.getAttribute("aria-expanded") !== "true") fireEvent.click(button)
+  }
+  function prediction() {
+    if (!state.runPrediction) throw Error("Prediction practice has not mounted")
+    return state.runPrediction
+  }
+
+  it("captures and restores inputs without completing an unearned step, keeping comparison open", async () => {
+    await renderEquation()
+    openBench()
+    fireEvent.click(screen.getByRole("button", { name: "Capture baseline" }))
+    expect(scene().vars.a).toBe(3)
+    expect(runner().stepCompleted).toBe(false)
+    act(() => scene().setVar("a", 5, { source: "preset" }))
+    expect(runner().stepCompleted).toBe(false)
+    expect(screen.getByRole("table", { name: "Baseline and current values" })).toHaveTextContent("5")
+    fireEvent.click(screen.getByRole("button", { name: "Restore inputs" }))
+    expect(scene().vars).toEqual({ a: 3, b: 4 })
+    expect(runner().stepCompleted).toBe(false)
+    expect(screen.getByRole("button", { name: "Experiment bench" })).toHaveAttribute("aria-expanded", "true")
+    expect(completionWrites()).toHaveLength(0)
+  })
+
+  it("preserves the captured baseline across tabs but clears it on replay and equation navigation", async () => {
+    const view = await renderEquation()
+    openBench()
+    fireEvent.click(screen.getByRole("button", { name: "Capture baseline" }))
+    fireEvent.click(screen.getByRole("button", { name: "Explore" }))
+    openBench()
+    expect(screen.getByRole("button", { name: "Replace baseline" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Lesson" }))
+    act(() => runner().onReset())
+    openBench()
+    expect(screen.getByRole("button", { name: "Capture baseline" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Capture baseline" }))
+    view.rerender(equation(988))
+    openBench()
+    expect(screen.getByRole("button", { name: "Capture baseline" })).toBeInTheDocument()
+  })
+
+  it("rejects restoring a baseline that would change an input locked by the next step", async () => {
+    const multiStep = [steps[0], { ...steps[0], id: "second-side", unlockedVariables: ["b"],
+      successCondition: { type: "variable_changed" as const, target: "b" } }]
+    await renderEquation(987, multiStep)
+    openBench()
+    fireEvent.click(screen.getByRole("button", { name: "Capture baseline" }))
+    act(() => scene().setVar("a", 5))
+    act(() => runner().onAdvance())
+    openBench()
+    expect(screen.getByRole("button", { name: "Restore inputs" })).toBeDisabled()
+    expect(scene().vars.a).toBe(5)
+    expect(runner().stepCompleted).toBe(false)
+    expect(completionWrites()).toHaveLength(0)
+  })
+
+  it("runs one fresh legal prediction and captures its baseline, without skipping the final check", async () => {
+    await renderEquation(987, steps, variables, measurement)
+    openBench()
+    const expectedValues = { ...scene().vars }
+    let accepted = true
+    act(() => { accepted = prediction()({ variableName: "b", value: 5, expectedValues }) })
+    expect(accepted).toBe(false)
+    act(() => { accepted = prediction()({ variableName: "a", value: 5, expectedValues: { a: 3, b: 9 } }) })
+    expect(accepted).toBe(false)
+    expect(runner().stepCompleted).toBe(false)
+    act(() => { accepted = prediction()({ variableName: "a", value: 5, expectedValues }) })
+    expect(accepted).toBe(true)
+    expect(scene().vars.a).toBe(5)
+    expect(runner().stepCompleted).toBe(true)
+    expect(screen.getByRole("button", { name: "Replace baseline" })).toBeInTheDocument()
+    expect(runner().checkPassed).toBe(false)
+    expect(completionWrites()).toHaveLength(0)
+    act(() => runner().onAdvance())
+    expect(completionWrites()).toHaveLength(0)
+  })
+
+  it("rejects an old prediction after Retry, a step change, or an equation change even when values match", async () => {
+    const multiStep = [steps[0], { ...steps[0], id: "second-side", unlockedVariables: ["b"],
+      successCondition: { type: "variable_changed" as const, target: "b" } }]
+    const view = await renderEquation(987, multiStep, variables, measurement)
+    openBench()
+    const beforeRetry = prediction()
+    act(() => runner().onRetryStep())
+    let accepted = true
+    act(() => { accepted = beforeRetry({ variableName: "a", value: 5, expectedValues: { ...scene().vars } }) })
+    expect(accepted).toBe(false)
+    const beforeAdvance = prediction()
+    act(() => scene().setVar("a", 5))
+    act(() => runner().onAdvance())
+    act(() => { accepted = beforeAdvance({ variableName: "b", value: 5, expectedValues: { ...scene().vars } }) })
+    expect(accepted).toBe(false)
+    expect(runner().stepCompleted).toBe(false)
+    openBench()
+    const beforeNavigation = prediction()
+    view.rerender(equation(988, multiStep, variables, measurement))
+    act(() => { accepted = beforeNavigation({ variableName: "a", value: 5, expectedValues: { ...scene().vars } }) })
+    expect(accepted).toBe(false)
+    expect(scene().vars.a).toBe(3)
     expect(completionWrites()).toHaveLength(0)
   })
 })
