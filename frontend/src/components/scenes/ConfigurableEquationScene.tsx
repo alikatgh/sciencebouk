@@ -10,6 +10,8 @@ import { TeachableEquation, type Preset } from "../teaching/TeachableEquation"
 import { useEquationId } from "../teaching/EquationContext"
 import type { GlossaryTerm, LessonStep, Variable, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { VisualizationViewport } from "../teaching/VisualizationViewport"
+import { SceneInteractionSurface } from "../teaching/SceneInteractionSurface"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
@@ -33,6 +35,8 @@ const COPY_LABELS: Record<string, string> = {
   result: "Result copied",
   cite: "Citation copied",
 }
+
+const preserveConstants: SetEquationVariable = () => {}
 
 const COLOR_MAP: Record<string, string> = {
   primary: VAR_COLORS.primary,
@@ -192,9 +196,11 @@ export function ConfigurableEquationScene(): ReactElement {
     )
   }
 
-  // No interactive variables to drive: fall back to a calm static formula card.
+  // Fixed identities can still be repositioned without inventing editable constants.
   if (variables.filter((v) => !v.constant).length === 0) {
     return (
+      <VisualizationViewport mobileOptimized>
+      <SceneInteractionSurface variables={variables} onVariableChange={preserveConstants} identity={equationId}>
       <div className="flex h-full flex-col items-center justify-center gap-6 rounded-2xl border border-slate-200 bg-white px-6 py-10 dark:border-slate-700 dark:bg-slate-800">
         <div className="rounded-2xl bg-slate-50 px-8 py-6 dark:bg-slate-900">
           <BlockMath math={equation.formula} />
@@ -207,6 +213,8 @@ export function ConfigurableEquationScene(): ReactElement {
           {equation.year ? `, ${equation.year}` : ""}
         </p>
       </div>
+      </SceneInteractionSurface>
+      </VisualizationViewport>
     )
   }
 
@@ -306,7 +314,7 @@ function GenericMetersVisual({
   }
 
   return (
-    <div className="scene-stage studio-surface flex h-full w-full min-h-0 flex-col rounded-2xl border">
+    <div data-scene-canvas className="scene-stage studio-surface flex h-full w-full min-h-0 flex-col rounded-2xl border">
       <div className="relative flex shrink-0 flex-wrap items-center gap-1 py-2 pl-3 pr-24 sm:pr-44">
         <button
           type="button"
@@ -374,16 +382,18 @@ function GenericMetersVisual({
       </div>
 
       {result && resultValue !== null && Number.isFinite(resultValue) && (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
-          className="shrink-0 px-4 py-1 text-center font-mono text-xl font-semibold tabular-nums"
-          style={{ color: VAR_COLORS.result }}
-        >
-          {result.symbol} = {formatResultValue(resultValue)}
-          {result.unit ? ` ${result.unit}` : ""}
+        <div data-drag-variable={activeSweep ?? undefined} aria-label={`${result.symbol} result controlled by ${activeSweep ?? "the input"}`} className="shrink-0">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
+            className="px-4 py-1 text-center font-mono text-xl font-semibold tabular-nums"
+            style={{ color: VAR_COLORS.result }}
+          >
+            {result.symbol} = {formatResultValue(resultValue)}
+            {result.unit ? ` ${result.unit}` : ""}
+          </div>
         </div>
       )}
 
@@ -402,6 +412,7 @@ function GenericMetersVisual({
                 return (
                   <button
                     key={variable.name}
+                    data-drag-variable={variable.name}
                     type="button"
                     onClick={() => setSweepName(variable.name)}
                     aria-pressed={isActive}
@@ -431,7 +442,7 @@ function GenericMetersVisual({
             const pct = span > 0 ? Math.min(100, Math.max(0, ((value - variable.min) / span) * 100)) : 0
             const decimals = variable.step >= 1 ? 0 : variable.step >= 0.1 ? 1 : variable.step >= 0.01 ? 2 : 3
             return (
-              <div key={variable.name} className="flex flex-col gap-1">
+              <div key={variable.name} data-drag-variable={variable.name} aria-label={`${variable.description || variable.symbol} input meter`} className="flex flex-col gap-1">
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="font-bold" style={{ color: variable.color }}>
                     {variable.symbol}
@@ -455,8 +466,8 @@ function GenericMetersVisual({
 
       <p className="hidden shrink-0 px-4 pb-3 text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:block">
         {result
-          ? `Drag a slider — the curve traces ${result.symbol} across its range, and reshapes as you change the other inputs.`
-          : "Drag the sliders — each bar tracks a variable across its range."}
+          ? "Drag the curve or point to change its x-axis input. Drag the axes to move the view."
+          : "Drag a bar or its label to change that input. Drag the background to move the view."}
       </p>
     </div>
   )

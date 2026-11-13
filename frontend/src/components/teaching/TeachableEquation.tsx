@@ -20,6 +20,7 @@ import { useLatexFormula } from "./FormulaContext"
 import type { Variable, LessonStep, GlossaryTerm, SetEquationVariable, ExperimentSnapshot, ExperimentMeasurement, ExperimentChange } from "./types"
 import { ErrorBoundary } from "../ErrorBoundary"
 import { VisualizationViewport } from "./VisualizationViewport"
+import { SceneInteractionSurface } from "./SceneInteractionSurface"
 import { shouldUseStackedTeachingLayout } from "./layoutMode"
 import { useEquationConfig } from "../../data/equationConfig"
 import { getConceptCheck } from "../../data/conceptChecks"
@@ -299,6 +300,16 @@ export function TeachableEquation({
   })
 
   const varsRef = useRef(vars)
+  const [sceneEpoch, setSceneEpoch] = useState(0)
+  const sceneEpochRef = useRef(0)
+  const nativeGestureActiveRef = useRef(false)
+  const setNativeGestureActive = useCallback((active: boolean) => { nativeGestureActiveRef.current = active }, [])
+  const interruptScene = useCallback(() => {
+    if (!nativeGestureActiveRef.current) return
+    nativeGestureActiveRef.current = false
+    sceneEpochRef.current += 1
+    setSceneEpoch(sceneEpochRef.current)
+  }, [])
   const [experimentSnapshot, setExperimentSnapshot] = useState<ExperimentSnapshot | null>(null)
   const [experimentSession, setExperimentSession] = useState(0)
   const [highlightedVar, setHighlightedVar] = useState<string | null>(null)
@@ -320,19 +331,22 @@ export function TeachableEquation({
 
   const commitLessonAttempt = useCallback((next: LessonAttempt) => {
     if (next === lessonAttemptRef.current) return
+    if (next.stepIndex !== lessonAttemptRef.current.stepIndex || next.revision !== lessonAttemptRef.current.revision) interruptScene()
     lessonAttemptRef.current = next
     setLessonAttempt(next)
-  }, [])
+  }, [interruptScene])
 
   useEffect(() => {
     if (!lessonModeWasToggledRef.current) {
+      if (interactionContextRef.current.lessonMode !== appSettings.autoStartLesson) interruptScene()
       setLessonMode(appSettings.autoStartLesson)
     }
-  }, [appSettings.autoStartLesson])
+  }, [appSettings.autoStartLesson, interruptScene])
 
   const setVar = useCallback<SetEquationVariable>((name, value, options) => {
     if (!Number.isFinite(value)) return
     const source = options?.source ?? "learner"
+    if (source === "preset" || source === "restore" || source === "reset") interruptScene()
     const previous = varsRef.current[name]
     const next = { ...varsRef.current, [name]: value }
     const context = interactionContextRef.current
@@ -347,7 +361,7 @@ export function TeachableEquation({
     varsRef.current = next
     setVars(next)
     if (source === "learner" && context.progressEnabled) context.markVariableExplored(name)
-  }, [commitLessonAttempt])
+  }, [commitLessonAttempt, interruptScene])
 
   const onAction = useCallback((name: string) => {
     const context = interactionContextRef.current
@@ -357,24 +371,11 @@ export function TeachableEquation({
     commitLessonAttempt(applyLessonAction(attempt, context.lessonSteps[attempt.stepIndex], name))
   }, [commitLessonAttempt])
 
-  // Compute lockedVars early (as a stable Set) so applyPreset can reference it.
-  // This mirrors the same logic used later for formulaVariables — kept in sync via useMemo.
-  const lockedVarsMemo = useMemo<Set<string>>(() => {
-    const locked = new Set<string>()
-    if (lessonMode && lessonSteps[lessonStep]) {
-      const unlocked = new Set(lessonSteps[lessonStep].unlockedVariables)
-      for (const v of initialVariables) {
-        if (!v.constant && !unlocked.has(v.name)) locked.add(v.name)
-      }
-    }
-    return locked
-  }, [lessonMode, lessonStep, lessonSteps, initialVariables])
-
   const applyPreset = useCallback((preset: Preset) => {
     for (const [name, value] of Object.entries(preset.values)) {
-      if (!lockedVarsMemo.has(name)) setVar(name, value, { source: "preset" })
+      setVar(name, value, { source: "preset" })
     }
-  }, [lockedVarsMemo, setVar])
+  }, [setVar])
 
   const currentVariables = useMemo(
     () => localizedVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value })),
@@ -492,10 +493,11 @@ export function TeachableEquation({
   }, [initialVariables, resolvedId, commitLessonAttempt])
 
   const disableLessonMode = useCallback(() => {
+    interruptScene()
     lessonModeWasToggledRef.current = true
     setLessonMode(false)
     setMobileTeachingTab("controls")
-  }, [])
+  }, [interruptScene])
 
   const restartLessonMode = useCallback(() => {
     lessonModeWasToggledRef.current = true
@@ -503,10 +505,11 @@ export function TeachableEquation({
     resetLesson()
   }, [resetLesson])
 
-  // lockedVarsMemo is computed above (before applyPreset) and is the single source of truth.
+  // Exploration stays available during a lesson. The progress evaluator still
+  // accepts only the active step's authored drivers and goal.
   const formulaVariables = useMemo(
-    () => currentVariables.map((v) => ({ ...v, locked: lockedVarsMemo.has(v.name) })),
-    [currentVariables, lockedVarsMemo],
+    () => currentVariables.map((v) => ({ ...v, locked: false })),
+    [currentVariables],
   )
   const hasLessons = lessonSteps.length > 0
 
@@ -541,13 +544,10 @@ export function TeachableEquation({
   // Read current permissions and values at the click, including an advance that
   // happened before React painted the next step.
   const getExperimentControls = useCallback(() => {
-    const context = interactionContextRef.current
-    const step = context.lessonSteps[lessonAttemptRef.current.stepIndex]
-    const unlocked = new Set(step?.unlockedVariables ?? [])
     return experimentContextRef.current.variables.map((variable) => ({
       ...variable,
       value: varsRef.current[variable.name] ?? variable.value,
-      locked: context.lessonMode && !variable.constant && !unlocked.has(variable.name),
+      locked: false,
     }))
   }, [])
 
@@ -666,12 +666,6 @@ export function TeachableEquation({
       <div>
         <h3 className="font-display text-sm font-bold text-slate-700 dark:text-slate-200">Variables</h3>
         {formulaVariables.some((variable) => !variable.constant && !variable.locked) && <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Drag a slider or select a value to type.</p>}
-        {lockedVarsMemo.size > 0 && mobileTeachingTab !== "lesson" && (
-          <div className="space-y-2 pt-1">
-            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">Some variables stay fixed during this lesson step.</p>
-            <Button variant="outline" size="sm" className={isPhone ? "min-h-11" : "min-h-9"} onClick={disableLessonMode}>Explore freely</Button>
-          </div>
-        )}
       </div>
         <TouchableFormula
           variables={formulaVariables} onVariableChange={setVar}
@@ -691,9 +685,6 @@ export function TeachableEquation({
           variant="outline"
           size="xs"
           onClick={() => applyPreset(p)}
-          disabled={Object.entries(p.values).some(([name, value]) => lockedVarsMemo.has(name) && vars[name] !== value)}
-          title={Object.entries(p.values).some(([name, value]) => lockedVarsMemo.has(name) && vars[name] !== value)
-            ? "Choose Explore freely to use this preset" : undefined}
           aria-pressed={presetIsActive(p, vars)}
           className={cn(
             "shadow-none",
@@ -800,7 +791,35 @@ export function TeachableEquation({
     </section>
   )
 
-  const visualizationContent = children({ vars, setVar, onAction, highlightedVar, setHighlightedVar, highlightedTerm })
+  const sceneIsCurrent = useCallback((revision = lessonAttempt.revision, allowBatch = false) => {
+    const attempt = lessonAttemptRef.current
+    return interactionContextRef.current.resolvedId === resolvedId
+      && interactionContextRef.current.lessonMode === lessonMode
+      && attempt.stepIndex === lessonStep && attempt.revision === revision
+      && (allowBatch || sceneEpochRef.current === sceneEpoch)
+  }, [resolvedId, lessonMode, lessonStep, lessonAttempt.revision, sceneEpoch])
+  const sceneSetVar = useMemo<SetEquationVariable>(() => {
+    // A child bulk restore may reset the attempt on each field. Follow only
+    // revisions produced by this callback; unrelated Retry/Next stays stale.
+    let batchRevision = lessonAttempt.revision
+    return (name, value, options) => {
+      const source = options?.source
+      const batch = source === "preset" || source === "restore" || source === "reset"
+      if (!sceneIsCurrent(batch ? batchRevision : undefined, batch)) return
+      setVar(name, value, options)
+      if (batch) batchRevision = lessonAttemptRef.current.revision
+    }
+  }, [sceneIsCurrent, setVar, lessonAttempt.revision])
+  const sceneOnAction = useCallback((name: string) => {
+    if (sceneIsCurrent()) onAction(name)
+  }, [sceneIsCurrent, onAction])
+  const sceneIdentity = `${resolvedId}:${lessonMode}:${lessonStep}:${lessonAttempt.revision}:${sceneEpoch}`
+  const visualizationContent = (
+    <SceneInteractionSurface variables={formulaVariables} onVariableChange={sceneSetVar}
+      key={`${resolvedId}:${sceneEpoch}`} identity={sceneIdentity} onInterrupt={interruptScene} onNativeGestureChange={setNativeGestureActive}>
+      {children({ vars, setVar: sceneSetVar, onAction: sceneOnAction, highlightedVar, setHighlightedVar, highlightedTerm })}
+    </SceneInteractionSurface>
+  )
 
   const handleMobilePanelGestureStart = useCallback((clientY: number) => {
     dragStartYRef.current = clientY

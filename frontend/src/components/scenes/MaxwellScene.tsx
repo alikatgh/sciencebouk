@@ -313,6 +313,7 @@ function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactEle
     // Clear both mode groups
     g.select(".field-mode").selectAll("*").remove()
     g.select(".wave-mode").selectAll("*").remove()
+    g.select(".wave-mode").attr("data-drag-variable", null).attr("aria-label", null)
 
     runningRef.current = false
     cancelAnimationFrame(rafRef.current)
@@ -336,23 +337,78 @@ function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactEle
     const ultraCompact = W < 430 || H < 360
 
     // Field lines group
-    fm.append("g").attr("class", "field-lines")
+    const fieldLines = fm.append("g").attr("class", "field-lines")
+    bindFieldMovement(fieldLines, g)
     // Charges group
     fm.append("g").attr("class", "charges-group")
 
     // Hint text
     const hintFs = Math.max(11, Math.min(14, H / 32))
-    fm.append("text").attr("x", Math.round(W * 0.044)).attr("y", H - 20)
+    const moveHint = fm.append("g").attr("class", "field-move-hint")
+    bindFieldMovement(moveHint, g)
+    moveHint.append("text").attr("x", Math.round(W * 0.044)).attr("y", H - 20)
       .attr("font-size", hintFs).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
       .text(ultraCompact ? "Move" : compact ? "Move charges" : "Drag charges to reposition")
 
     // Legend
-    fm.append("circle").attr("cx", Math.round(W * 0.467)).attr("cy", Math.round(H * 0.059)).attr("r", 5).attr("fill", "#1e40af")
-    fm.append("text").attr("x", Math.round(W * 0.48)).attr("y", Math.round(H * 0.068))
+    const fieldLegend = fm.append("g").attr("class", "field-legend")
+    bindFieldMovement(fieldLegend, g)
+    fieldLegend.append("rect").attr("x", Math.round(W * 0.45)).attr("y", Math.round(H * 0.059) - 22)
+      .attr("width", Math.max(100, W * 0.26)).attr("height", 44).attr("fill", "transparent")
+    fieldLegend.append("circle").attr("cx", Math.round(W * 0.467)).attr("cy", Math.round(H * 0.059)).attr("r", 5).attr("fill", "#1e40af")
+    fieldLegend.append("text").attr("x", Math.round(W * 0.48)).attr("y", Math.round(H * 0.068))
       .attr("font-size", hintFs).attr("font-family", F).attr("fill", "#64748b")
       .text(ultraCompact ? "lines" : compact ? "field lines" : "E field lines (gray)")
 
     drawFieldScene(g)
+  }
+
+  // A field line is controlled by the actual source charge, not the EM-wave
+  // wavelength. Relative movement keeps grabbing a line from teleporting it.
+  function bindFieldMovement(
+    target: Selection<SVGGElement, unknown, null, undefined>,
+    g: Selection<SVGGElement, unknown, null, undefined>,
+  ) {
+    target.attr("data-scene-drag", "native").attr("role", "button").attr("tabindex", 0)
+      .attr("aria-label", "Move positive source charge with arrow keys or drag the electric field")
+      .style("cursor", "grab").style("touch-action", "none")
+    const moveSource = (dx: number, dy: number): boolean => {
+      const charge = chargesRef.current.find((item) => item.sign === 1)
+      if (!charge) return false
+      const nx = Math.max(60, Math.min(W - 60, charge.x + dx))
+      const ny = Math.max(60, Math.min(H - 60, charge.y + dy))
+      if (nx === charge.x && ny === charge.y) return false
+      charge.x = nx
+      charge.y = ny
+      drawFieldScene(g)
+      return true
+    }
+    target.on("keydown", (event: KeyboardEvent) => {
+      const offsets: Record<string, Vec2> = {
+        ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20],
+      }
+      const offset = offsets[event.key]
+      if (!offset) return
+      event.preventDefault()
+      if (moveSource(...offset)) onActionRef.current('move-charge')
+    })
+    let dragStart: Vec2 | null = null
+    target.call(drag<SVGGElement, unknown>()
+      .on("start", () => {
+        const charge = chargesRef.current.find((item) => item.sign === 1)
+        dragStart = charge ? [charge.x, charge.y] : null
+        target.style("cursor", "grabbing")
+      })
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
+        moveSource(event.dx, event.dy)
+      })
+      .on("end", () => {
+        target.style("cursor", "grab")
+        const charge = chargesRef.current.find((item) => item.sign === 1)
+        if (charge && dragStart && (charge.x !== dragStart[0] || charge.y !== dragStart[1])) {
+          onActionRef.current('move-charge')
+        }
+      }))
   }
 
   function drawFieldScene(g: Selection<SVGGElement, unknown, null, undefined>) {
@@ -390,6 +446,8 @@ function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactEle
     for (const pts of fieldLines) {
       const pathD = pts.map((p, j) => `${j === 0 ? "M" : "L"} ${p[0]} ${p[1]}`).join(" ")
       flGroup.append("path").attr("d", pathD).attr("fill", "none")
+        .attr("stroke", "transparent").attr("stroke-width", 22)
+      flGroup.append("path").attr("d", pathD).attr("fill", "none")
         .attr("stroke", "#94a3b8").attr("stroke-width", 1.5).attr("opacity", 0.7)
     }
 
@@ -399,6 +457,7 @@ function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactEle
 
     for (const c of charges) {
       const cg = cGroup.append("g").attr("class", `charge-${c.id}`).style("cursor", "grab").style("touch-action", "none")
+        .attr("data-scene-drag", "native")
         .attr("role", "button").attr("tabindex", 0)
         .attr("aria-label", `Move ${c.sign === 1 ? "positive" : "negative"} charge with arrow keys or drag`)
         .on("keydown", (event: KeyboardEvent) => {
@@ -469,6 +528,7 @@ function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactEle
 
   function buildWaveMode(g: Selection<SVGGElement, unknown, null, undefined>) {
     const wm = g.select(".wave-mode")
+      .attr("data-drag-variable", "wavelength").attr("aria-label", "Adjust electromagnetic wavelength")
     const compact = W < 580
     const ultraCompact = W < 430 || H < 360
     const waveCenter = Math.round(H * 0.48)
@@ -525,9 +585,11 @@ function D3MaxwellVisual({ wavelength, onVarChange, onAction }: Props): ReactEle
     // Draggable wavelength handle on the right tick
     const wlStart = waveLeft + Math.round(W * 0.089)
     const wlHandleG = wm.append("g").attr("class", "wl-handle").style("cursor", "grab").style("touch-action", "none")
+      .attr("data-scene-drag", "native").attr("data-drag-variable", "wavelength")
+      .attr("aria-label", "Adjust wavelength indicator")
     // Invisible hit area (min 30px wide)
     wlHandleG.append("rect").attr("class", "wl-hit")
-      .attr("x", -15).attr("y", wlY - 18).attr("width", 30).attr("height", 36)
+      .attr("x", -22).attr("y", wlY - 22).attr("width", 44).attr("height", 44)
       .attr("fill", "transparent")
     // Visible handle circle
     wlHandleG.append("circle").attr("class", "wl-knob")

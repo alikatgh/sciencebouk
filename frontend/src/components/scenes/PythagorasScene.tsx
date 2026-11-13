@@ -356,25 +356,32 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
 
       // Squares (drawn behind triangle)
       g.append("rect").attr("class", "sq-a").attr("rx", 3)
+        .attr("data-drag-variable", "a").attr("data-drag-axis", "y").attr("aria-label", "Vertical side a and its square")
         .attr("fill", VAR_COLORS.primary).attr("fill-opacity", 0.18).attr("stroke", VAR_COLORS.primary).attr("stroke-width", 1.5)
       g.append("text").attr("class", "sq-a-text")
+        .attr("data-drag-variable", "a").attr("data-drag-axis", "y").attr("aria-label", "Change vertical side a using its area")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.primary)
 
       g.append("rect").attr("class", "sq-b").attr("rx", 3)
+        .attr("data-drag-variable", "b").attr("aria-label", "Horizontal side b and its square")
         .attr("fill", VAR_COLORS.secondary).attr("fill-opacity", 0.18).attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 1.5)
       g.append("text").attr("class", "sq-b-text")
+        .attr("data-drag-variable", "b").attr("aria-label", "Change horizontal side b using its area")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.secondary)
 
       g.append("polygon").attr("class", "sq-c")
+        .attr("data-drag-variable", "b").attr("data-drag-variable-y", "a").attr("aria-label", "Change triangle sides using the hypotenuse square")
         .attr("fill", VAR_COLORS.result).attr("fill-opacity", 0.16).attr("stroke", VAR_COLORS.result).attr("stroke-width", 1.5)
       g.append("text").attr("class", "sq-c-text")
+        .attr("data-drag-variable", "b").attr("data-drag-variable-y", "a").attr("aria-label", "Change triangle sides using their combined area")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 700).attr("fill", VAR_COLORS.result)
 
       // Triangle (on top of squares)
       g.append("polygon").attr("class", "tri")
+        .attr("data-drag-variable", "b").attr("data-drag-variable-y", "a").attr("aria-label", "Triangle: drag horizontally for b and vertically for a")
         .attr("fill", "#f8fafc").attr("fill-opacity", 0.85)
         .attr("stroke", pal.ink).attr("stroke-width", 2.5).attr("stroke-linejoin", "round")
 
@@ -384,17 +391,21 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
 
       // Side labels
       g.append("text").attr("class", "label-a")
+        .attr("data-drag-variable", "a").attr("data-drag-axis", "y").attr("aria-label", "Vertical side a")
         .attr("text-anchor", "start").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.primary)
       g.append("text").attr("class", "label-b")
+        .attr("data-drag-variable", "b").attr("aria-label", "Horizontal side b")
         .attr("text-anchor", "middle").attr("dominant-baseline", "auto")
         .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.secondary)
       g.append("text").attr("class", "label-c")
+        .attr("data-drag-variable", "b").attr("data-drag-variable-y", "a").attr("aria-label", "Change the sides that determine the hypotenuse")
         .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
         .attr("font-family", FONT).attr("font-weight", 800).attr("fill", VAR_COLORS.result)
 
       // Drag handles
       const hA = g.append("g").attr("class", "handle-a").style("cursor", "ns-resize").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "a").attr("data-drag-axis", "y").attr("aria-label", "Vertical side a")
       hA.append("circle").attr("class", "handle-a-hit").attr("r", 30).attr("fill", "transparent")
       hA.append("circle").attr("class", "handle-a-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.primary).attr("stroke", "white").attr("stroke-width", 2.5)
@@ -403,6 +414,7 @@ function D3Pythagoras({ a, b, highlightedTerm, onVarChange, highlightedVar, onHi
         .attr("stroke-width", 2).attr("stroke-dasharray", "5 3").attr("opacity", 0)
 
       const hB = g.append("g").attr("class", "handle-b").style("cursor", "ew-resize").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "b").attr("aria-label", "Horizontal side b")
       hB.append("circle").attr("class", "handle-b-hit").attr("r", 30).attr("fill", "transparent")
       hB.append("circle").attr("class", "handle-b-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.secondary).attr("stroke", "white").attr("stroke-width", 2.5)

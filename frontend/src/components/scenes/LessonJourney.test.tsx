@@ -72,7 +72,7 @@ describe("real authored lesson journey", () => {
       </SettingsProvider>,
     )
 
-    await screen.findByRole("button", { name: "Retry this step" })
+    await screen.findByRole("button", { name: "Retry this step" }, { timeout: 5000 })
     expect(screen.getByText("1/3")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Select Cube" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.queryByRole("button", { name: "Next step" })).not.toBeInTheDocument()

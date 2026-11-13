@@ -245,8 +245,10 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const lpTop = Math.round(H * 0.037)
       const lpHeight = Math.round(H * 0.88)
       g.append("rect").attr("x", lpLeft).attr("y", lpTop).attr("width", lpWidth).attr("height", lpHeight)
+        .attr("data-drag-variable", "v").attr("aria-label", "Velocity in the Lorentz-factor panel")
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", lpLeft + lpWidth / 2).attr("y", lpTop + 24).attr("text-anchor", "middle")
+        .attr("data-drag-variable", "v").attr("aria-label", "Velocity controlling the Lorentz factor")
         .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(ultraCompact ? "Gamma" : "Lorentz Factor")
 
@@ -295,14 +297,18 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
         .x(d => xScale(d))
         .y(d => yScale(1 / Math.sqrt(1 - d * d)))
       g.append("path").attr("d", pathGen(vs) ?? "").attr("fill", "none")
+        .attr("data-drag-variable", "v").attr("aria-label", "Velocity on the Lorentz-factor curve")
         .attr("stroke", "#1e40af").attr("stroke-width", 3)
 
       // Current point + drop line (will update)
       g.append("line").attr("class", "curve-drop")
+        .attr("data-drag-variable", "v").attr("aria-label", "Current velocity guide")
         .attr("stroke", "#ef4444").attr("stroke-width", 1).attr("stroke-dasharray", "4 3")
 
       // Draggable velocity handle on the curve
-      const dotG = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab").style("touch-action", "none")
+      const dotG = g.append("g").attr("class", "curve-dot-group")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "v").attr("aria-label", "Velocity on the curve")
+        .style("cursor", "grab").style("touch-action", "none")
       // Invisible hit area (min 30px)
       dotG.append("circle").attr("class", "curve-hit").attr("r", 18).attr("fill", "transparent")
       // Visible dot
@@ -333,6 +339,7 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
 
       // Velocity label on curve
       g.append("text").attr("class", "v-curve-label").attr("y", axBottom + Math.round(H * 0.042))
+        .attr("data-drag-variable", "v").attr("aria-label", "Current velocity")
         .attr("text-anchor", "middle").attr("font-size", fs).attr("font-weight", 600)
         .attr("font-family", F).attr("fill", VAR_COLORS.primary).style("cursor", "pointer")
       g.select(".v-curve-label")
@@ -343,8 +350,10 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const tdTop = lpTop
       const tdHeight = Math.round(H * 0.52)
       g.append("rect").attr("x", rpLeft).attr("y", tdTop).attr("width", rpWidth).attr("height", tdHeight)
+        .attr("data-drag-variable", "v").attr("aria-label", "Velocity controlling time dilation")
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", tdTop + 24).attr("text-anchor", "middle")
+        .attr("data-drag-variable", "v").attr("aria-label", "Velocity controlling the clocks")
         .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(compact ? "Clocks" : "Time Dilation")
 
@@ -352,38 +361,42 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const cr = Math.round(Math.min(rpWidth * 0.1, tdHeight * 0.2))
       const c1x = Math.round(rpLeft + rpWidth * 0.22)
       const c1y = Math.round(tdTop + tdHeight * 0.55)
-      g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", cr)
+      const stationaryClock = g.append("g").attr("data-drag-variable", "v")
+        .attr("aria-label", "Velocity relative to the stationary reference clock")
+      stationaryClock.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", cr)
         .attr("fill", "white").attr("stroke", "#334155").attr("stroke-width", 2.5)
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2
-        g.append("line")
+        stationaryClock.append("line")
           .attr("x1", c1x + Math.sin(a) * cr * 0.82).attr("y1", c1y - Math.cos(a) * cr * 0.82)
           .attr("x2", c1x + Math.sin(a) * cr * 0.95).attr("y2", c1y - Math.cos(a) * cr * 0.95)
           .attr("stroke", "#64748b").attr("stroke-width", 2)
       }
-      g.append("line").attr("class", "clock1-hand").attr("x1", c1x).attr("y1", c1y)
+      stationaryClock.append("line").attr("class", "clock1-hand").attr("x1", c1x).attr("y1", c1y)
         .attr("stroke", pal.ink).attr("stroke-width", 3).attr("stroke-linecap", "round")
-      g.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", pal.ink)
-      g.append("text").attr("x", c1x).attr("y", c1y + cr + 20).attr("text-anchor", "middle")
+      stationaryClock.append("circle").attr("cx", c1x).attr("cy", c1y).attr("r", 3).attr("fill", pal.ink)
+      stationaryClock.append("text").attr("x", c1x).attr("y", c1y + cr + 20).attr("text-anchor", "middle")
         .attr("font-size", fs).attr("fill", "#475569").attr("font-family", F).attr("font-weight", 600)
         .text(compact ? "Rest" : "Stationary")
 
       // Clock 2 (moving)
       const c2x = Math.round(rpLeft + rpWidth * 0.64)
       const c2y = c1y
-      g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", cr)
+      const movingClock = g.append("g").attr("data-drag-variable", "v")
+        .attr("aria-label", "Velocity controlling the moving clock rate")
+      movingClock.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", cr)
         .attr("fill", "white").attr("stroke", "#334155").attr("stroke-width", 2.5)
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2
-        g.append("line")
+        movingClock.append("line")
           .attr("x1", c2x + Math.sin(a) * cr * 0.82).attr("y1", c2y - Math.cos(a) * cr * 0.82)
           .attr("x2", c2x + Math.sin(a) * cr * 0.95).attr("y2", c2y - Math.cos(a) * cr * 0.95)
           .attr("stroke", "#64748b").attr("stroke-width", 2)
       }
-      g.append("line").attr("class", "clock2-hand").attr("x1", c2x).attr("y1", c2y)
+      movingClock.append("line").attr("class", "clock2-hand").attr("x1", c2x).attr("y1", c2y)
         .attr("stroke", pal.ink).attr("stroke-width", 3).attr("stroke-linecap", "round")
-      g.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", 3).attr("fill", pal.ink)
-      g.append("text").attr("class", "clock2-label").attr("x", c2x).attr("y", c2y + cr + 20)
+      movingClock.append("circle").attr("cx", c2x).attr("cy", c2y).attr("r", 3).attr("fill", pal.ink)
+      movingClock.append("text").attr("class", "clock2-label").attr("x", c2x).attr("y", c2y + cr + 20)
         .attr("text-anchor", "middle").attr("font-size", fs).attr("fill", "#475569")
         .attr("font-family", F).attr("font-weight", 600)
 
@@ -391,8 +404,10 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       const lcTop = tdTop + tdHeight + Math.round(H * 0.023)
       const lcHeight = Math.round(H * 0.30)
       g.append("rect").attr("x", rpLeft).attr("y", lcTop).attr("width", rpWidth).attr("height", lcHeight)
+        .attr("data-drag-variable", "v").attr("data-drag-direction", "-1").attr("aria-label", "Contracted length controlled by velocity")
         .attr("rx", 14).attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       g.append("text").attr("x", rpCenter).attr("y", lcTop + 24).attr("text-anchor", "middle")
+        .attr("data-drag-variable", "v").attr("data-drag-direction", "-1").attr("aria-label", "Velocity controlling length contraction")
         .attr("font-size", fs * (ultraCompact ? 0.98 : compact ? 1.05 : 1.2)).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(ultraCompact ? "Length" : compact ? "Length" : "Length Contraction")
 
@@ -410,13 +425,16 @@ function D3RelativityVisual({ velocity, gamma, highlightedVar, onHighlight, onVa
       // Contracted bar (will update)
       const barY2 = barY1 + barH + 8
       g.append("rect").attr("class", "contract-bar").attr("y", barY2).attr("height", barH)
+        .attr("data-drag-variable", "v").attr("data-drag-direction", "-1").attr("aria-label", "Contracted length; drag right to reduce velocity")
         .attr("rx", 5).attr("fill", "#fef3c7").attr("stroke", "#f59e0b").attr("stroke-width", 1.5)
       g.append("text").attr("class", "contract-label").attr("y", barY2 + barH * 0.73)
+        .attr("data-drag-variable", "v").attr("data-drag-direction", "-1").attr("aria-label", "Contracted length readout controlled by velocity")
         .attr("text-anchor", "middle").attr("font-size", fs * 0.9).attr("fill", "#92400e")
         .attr("font-family", F).attr("font-weight", 600)
 
       // Extreme annotation (below contraction panel)
       g.append("text").attr("class", "extreme-label")
+        .attr("data-drag-variable", "v").attr("aria-label", "Relativistic regime controlled by velocity")
         .attr("x", rpCenter).attr("y", lcTop + lcHeight + Math.round(H * 0.05))
         .attr("text-anchor", "middle").attr("font-size", fs * 0.85).attr("font-family", F).attr("font-weight", 600)
 

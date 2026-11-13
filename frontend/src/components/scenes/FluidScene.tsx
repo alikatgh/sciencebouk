@@ -210,7 +210,7 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .attr("role", "img")
+        .attr("role", "group")
         .attr("aria-label", "Navier-Stokes fluid flow around an obstacle")
       const pal = readScenePalette(el)
 
@@ -236,12 +236,18 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
 
       // Vector field group
       g.append("g").attr("class", "arrows-group")
+        .attr("data-drag-variable", "flowSpeed").attr("data-drag-variable-y", "viscosity")
+        .attr("aria-label", "Adjust flow speed horizontally and viscosity vertically")
 
       // Particles group
       g.append("g").attr("class", "particles-group")
+        .attr("data-drag-variable", "flowSpeed").attr("data-drag-variable-y", "viscosity")
+        .attr("aria-label", "Adjust particle flow speed horizontally and viscosity vertically")
 
       // Draggable obstacle
       const obstacleGroup = g.append("g").attr("class", "obstacle-group").style("cursor", "grab").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("role", "button").attr("tabindex", 0)
+        .attr("aria-label", "Move flow obstacle with arrow keys or drag")
         .attr("transform", `translate(${liveRef.current.obstacleX},${liveRef.current.obstacleY})`)
       obstacleGroup.append("circle").attr("r", OBSTACLE_R)
         .attr("fill", pal.ink)
@@ -256,9 +262,13 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
 
       // Flow direction indicator
       const flowIndicatorY = H * 0.45
-      g.append("line").attr("x1", W * 0.03).attr("y1", flowIndicatorY).attr("x2", W * 0.09).attr("y2", flowIndicatorY)
+      const flowIndicator = g.append("g").attr("class", "flow-indicator")
+        .attr("data-drag-variable", "flowSpeed").attr("aria-label", "Adjust incoming flow speed")
+      flowIndicator.append("rect").attr("x", W * 0.02).attr("y", flowIndicatorY - 30)
+        .attr("width", Math.max(36, W * 0.08)).attr("height", 48).attr("fill", "transparent")
+      flowIndicator.append("line").attr("x1", W * 0.03).attr("y1", flowIndicatorY).attr("x2", W * 0.09).attr("y2", flowIndicatorY)
         .attr("stroke", pal.ink).attr("stroke-width", 3).attr("marker-end", "url(#flowArr)")
-      g.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
+      flowIndicator.append("text").attr("x", W * 0.06).attr("y", flowIndicatorY - 12).attr("text-anchor", "middle")
         .attr("font-size", 13).attr("font-family", F).attr("font-weight", 600).attr("fill", "#475569")
         .text(ultraCompact ? "U" : compact ? "flow" : "Flow")
 
@@ -266,11 +276,15 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
       if (!ultraCompact) {
         const legendX = compact ? W * 0.68 : W * 0.75
         const legendW = compact ? W * 0.2 : W * 0.16
-        g.append("rect").attr("x", legendX).attr("y", H - 50).attr("width", legendW).attr("height", 10)
+        const legend = g.append("g").attr("class", "velocity-legend")
+          .attr("data-drag-variable", "flowSpeed").attr("aria-label", "Adjust velocity magnitude")
+        legend.append("rect").attr("x", legendX).attr("y", H - 64).attr("width", legendW).attr("height", 42)
+          .attr("fill", "transparent")
+        legend.append("rect").attr("x", legendX).attr("y", H - 50).attr("width", legendW).attr("height", 10)
           .attr("rx", 5).attr("fill", "url(#velGrad-d3)")
-        g.append("text").attr("x", legendX).attr("y", H - 54).attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Slow")
-        g.append("text").attr("x", legendX + legendW).attr("y", H - 54).attr("text-anchor", "end").attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Fast")
-        g.append("text").attr("x", legendX + legendW / 2).attr("y", H - 28).attr("text-anchor", "middle")
+        legend.append("text").attr("x", legendX).attr("y", H - 54).attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Slow")
+        legend.append("text").attr("x", legendX + legendW).attr("y", H - 54).attr("text-anchor", "end").attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text("Fast")
+        legend.append("text").attr("x", legendX + legendW / 2).attr("y", H - 28).attr("text-anchor", "middle")
           .attr("font-size", 12).attr("font-family", F).attr("fill", "#64748b").text(compact ? "Speed" : "Velocity magnitude")
       }
 
@@ -378,6 +392,19 @@ function D3FluidVisual({ viscosity, flowSpeed, onVarChange }: Props): ReactEleme
         })
 
       obstacleGroup.call(obstacleDragBehavior)
+      obstacleGroup.on("keydown", (event: KeyboardEvent) => {
+        const offsets: Record<string, [number, number]> = {
+          ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20],
+        }
+        const offset = offsets[event.key]
+        if (!offset) return
+        event.preventDefault()
+        const live = liveRef.current
+        live.obstacleX = Math.max(W * 0.15, Math.min(W * 0.85, live.obstacleX + offset[0]))
+        live.obstacleY = Math.max(H * 0.15, Math.min(H * 0.8, live.obstacleY + offset[1]))
+        obstacleGroup.attr("transform", `translate(${live.obstacleX},${live.obstacleY})`)
+        updateArrows()
+      })
 
       // Initialize particles
       const initial: ParticleState[] = []

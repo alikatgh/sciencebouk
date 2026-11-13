@@ -373,7 +373,10 @@ function D3EulerVisual({ counts, onUpdateVars, onAction }: EulerVisualProps): Re
 
     svgSelRef.current = svg
 
-    const g = svg.append("g")
+    const g = svg.append("g").attr("class", "polyhedron-rotation")
+      .attr("data-scene-drag", "native").attr("role", "group").attr("tabindex", 0)
+      .attr("aria-label", "Rotate polyhedron with arrow keys or drag its faces, edges, vertices or readouts")
+      .style("cursor", "grab").style("touch-action", "none")
     gRef.current = g
 
     // Shape selector buttons (these are D3 elements, not React)
@@ -417,19 +420,20 @@ function D3EulerVisual({ counts, onUpdateVars, onAction }: EulerVisualProps): Re
     g.append("g").attr("class", "edges-group")
     g.append("g").attr("class", "verts-group")
 
-    // Drag-to-rotate: invisible hit area over the wireframe region
-    const hitArea = svg.append("rect")
+    // Keep the roomy rotation target behind the actual marks so faces,
+    // edges, vertices and their labels remain direct rotation targets.
+    g.insert("rect", ":first-child").attr("class", "rotation-hit-area")
       .attr("x", W * 0.35).attr("y", H * 0.05)
       .attr("width", W * 0.55).attr("height", H * 0.85)
       .attr("fill", "transparent")
       .style("cursor", "grab")
 
-    const rotateDrag = drag<SVGRectElement, unknown>()
+    const rotateDrag = drag<SVGGElement, unknown>()
       .on("start", function () {
         select(this).style("cursor", "grabbing")
         autoRotateRef.current = false
       })
-      .on("drag", (event: D3DragEvent<SVGRectElement, unknown, unknown>) => {
+      .on("drag", (event: D3DragEvent<SVGGElement, unknown, unknown>) => {
         angleRef.current += event.dx * 0.01
         angleXRef.current += event.dy * 0.01
         renderWireframe()
@@ -439,7 +443,18 @@ function D3EulerVisual({ counts, onUpdateVars, onAction }: EulerVisualProps): Re
         autoRotateRef.current = true
       })
 
-    hitArea.call(rotateDrag)
+    g.call(rotateDrag).on("keydown", (event: KeyboardEvent) => {
+      const offsets: Record<string, [number, number]> = {
+        ArrowLeft: [-0.15, 0], ArrowRight: [0.15, 0], ArrowUp: [0, -0.15], ArrowDown: [0, 0.15],
+      }
+      const offset = offsets[event.key]
+      if (!offset) return
+      event.preventDefault()
+      angleRef.current += offset[0]
+      angleXRef.current += offset[1]
+      autoRotateRef.current = false
+      renderWireframe()
+    })
 
     // V, E, F info panel
     const ipX = W * 0.04

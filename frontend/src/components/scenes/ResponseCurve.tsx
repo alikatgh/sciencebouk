@@ -51,6 +51,7 @@ interface CurvePoint {
 interface CurveModel {
   symbol: string
   unit?: string
+  sweepName: string
   sweepSymbol: string
   sweepUnit?: string
   sweepColor: string
@@ -259,6 +260,7 @@ function buildModel(
   return {
     symbol: result.symbol,
     unit: result.unit,
+    sweepName: sweep.name,
     sweepSymbol: sweep.symbol,
     sweepUnit: sweep.unit,
     sweepColor: sweep.color,
@@ -328,7 +330,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
   const labelY = model.dot ? Math.max(model.dot.y - 12, PAD_T + 10) : 0
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-col">
+    <div data-scene-canvas className="relative flex h-full min-h-0 w-full flex-col">
       {/* Screen-reader mirror of the live result — SVG text nodes are not announced. */}
       <div className="sr-only" role="status" aria-live="polite">
         {`${model.symbol} = ${model.dotValue !== null ? tick(model.dotValue) : "—"}${model.unit ? ` ${model.unit}` : ""}`}
@@ -369,16 +371,27 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       <line x1={PAD_L} y1={H - PAD_B} x2={W - PAD_R} y2={H - PAD_B} stroke="currentColor" strokeOpacity="0.25" />
       <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={H - PAD_B} stroke="currentColor" strokeOpacity="0.25" />
 
-      {model.areaPath && <path d={model.areaPath} fill={`url(#${model.gradientId})`} />}
-      <path
-        d={model.linePath}
-        fill="none"
-        stroke={VAR_COLORS.result}
-        strokeWidth="3"
-        vectorEffect="non-scaling-stroke"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      {model.areaPath && <path data-drag-variable={model.sweepName} aria-label={`${model.sweepSymbol} represented by the shaded response area`} d={model.areaPath} fill={`url(#${model.gradientId})`} />}
+      <g data-drag-variable={model.sweepName} aria-label={`${model.sweepSymbol} on the ${model.symbol} response curve`}>
+        <path
+          d={model.linePath}
+          fill="none"
+          stroke="transparent"
+          strokeWidth="24"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <path
+          d={model.linePath}
+          fill="none"
+          stroke={VAR_COLORS.result}
+          strokeWidth="3"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </g>
 
       {/* notable-point markers */}
       {model.markers.map((m, i) => (
@@ -409,7 +422,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       )}
 
       {model.dot && model.guideX !== null && (
-        <>
+        <g data-drag-variable={model.sweepName} aria-label={`Current ${model.sweepSymbol} and resulting ${model.symbol}`}>
           <line
             x1={model.guideX}
             y1={PAD_T}
@@ -418,6 +431,15 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
             stroke={model.sweepColor}
             strokeOpacity="0.45"
             strokeDasharray="3 3"
+          />
+          <circle
+            cx={model.dot.x}
+            cy={model.dot.y}
+            r="22"
+            fill="transparent"
+            stroke="transparent"
+            strokeWidth="16"
+            vectorEffect="non-scaling-stroke"
           />
           <circle
             cx={model.dot.x}
@@ -441,7 +463,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
               {model.unit ? ` ${model.unit}` : ""}
             </text>
           )}
-        </>
+        </g>
       )}
 
       {/* axis labels */}

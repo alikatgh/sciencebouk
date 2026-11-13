@@ -235,21 +235,32 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
       // ── Dynamic elements (positioned by updateGeometry) ──
 
       // Angle arc
-      g.append("path").attr("class", "angle-arc")
+      const angleG = g.append("g").attr("class", "angle-control")
+        .attr("data-drag-variable", "b").attr("data-drag-axis", "y").attr("aria-label", "Change the imaginary part that determines the angle")
+      angleG.append("path").attr("class", "angle-hit")
+        .attr("fill", "none").attr("stroke", "transparent").attr("stroke-width", 24).style("pointer-events", "stroke")
+      angleG.append("path").attr("class", "angle-arc").style("pointer-events", "stroke")
         .attr("fill", "none").attr("stroke", "#f59e0b").attr("stroke-width", 2)
 
       // Angle text
       g.append("text").attr("class", "angle-text")
+        .attr("data-drag-variable", "b").attr("data-drag-axis", "y").attr("aria-label", "Change the imaginary part using the angle readout")
         .attr("font-size", 13).attr("fill", "#f59e0b").attr("font-weight", 600).attr("font-family", F).attr("text-anchor", "middle")
 
       // Vector line
-      g.append("line").attr("class", "vector-line")
+      const vectorG = g.append("g").attr("class", "vector-control")
+        .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Complex vector: drag horizontally for the real part and vertically for the imaginary part")
+      vectorG.append("line").attr("class", "vector-hit")
+        .attr("stroke", "transparent").attr("stroke-width", 24).style("pointer-events", "stroke")
+      vectorG.append("line").attr("class", "vector-line").style("pointer-events", "stroke")
         .attr("stroke", "#5a79ff").attr("stroke-width", 4)
 
       // Dashed projection lines
       g.append("line").attr("class", "proj-a")
+        .attr("data-drag-variable", "a").attr("aria-label", "Real coordinate of the complex number")
         .attr("stroke", "#5a79ff").attr("stroke-width", 1.5).attr("stroke-dasharray", "4 4").attr("opacity", 0.5)
       g.append("line").attr("class", "proj-b")
+        .attr("data-drag-variable", "b").attr("data-drag-axis", "y").attr("aria-label", "Imaginary coordinate of the complex number")
         .attr("stroke", "#57b59a").attr("stroke-width", 1.5).attr("stroke-dasharray", "4 4").attr("opacity", 0.5)
 
       // Glow ring for point
@@ -258,12 +269,14 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
 
       // Draggable point group
       const ptG = g.append("g").attr("class", "point-group").style("cursor", "grab").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Complex point: drag horizontally for the real part and vertically for the imaginary part")
       ptG.append("circle").attr("class", "point-hit").attr("r", 44).attr("fill", "transparent")
       ptG.append("circle").attr("class", "point-dot").attr("r", 10)
         .attr("fill", "#5a79ff").attr("stroke", "white").attr("stroke-width", 3)
 
       // Point label
       g.append("text").attr("class", "point-label")
+        .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Change real and imaginary parts using the point label")
         .attr("font-size", ultraCompact ? 12 : compact ? 13 : 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
 
       // Info panel — hidden on narrow screens (redundant with live formula below)
@@ -277,18 +290,24 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
           .text(sceneCopy.ui.infoPanel.title)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.19)
+          .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Real and imaginary coordinates")
           .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.rectangular)
         g.append("text").attr("class", "info-rect").attr("x", infoTxtX).attr("y", H * 0.23)
+          .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Change real and imaginary parts using rectangular form")
           .attr("font-size", 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.29)
+          .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Change the coordinates that determine polar form")
           .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.polar)
         g.append("text").attr("class", "info-polar").attr("x", infoTxtX).attr("y", H * 0.33)
+          .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Change the coordinates that determine magnitude and angle")
           .attr("font-size", 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
 
         g.append("text").attr("x", infoTxtX).attr("y", H * 0.39)
+          .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Change the coordinates that determine magnitude")
           .attr("font-size", 13).attr("fill", "#64748b").attr("font-family", F).attr("font-weight", 600).text(sceneCopy.ui.infoPanel.magnitude)
         g.append("text").attr("class", "info-mag").attr("x", infoTxtX).attr("y", H * 0.43)
+          .attr("data-drag-variable", "a").attr("data-drag-variable-y", "b").attr("aria-label", "Change the coordinates that determine this magnitude")
           .attr("font-size", 15).attr("fill", pal.ink).attr("font-weight", 600).attr("font-family", F)
       }
 
@@ -340,7 +359,7 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
         const angleDeg = (angle * 180) / Math.PI
 
         // Vector line
-        g.select(".vector-line")
+        g.selectAll(".vector-line, .vector-hit")
           .attr("x1", CX).attr("y1", CY).attr("x2", px).attr("y2", py)
 
         // Projection lines
@@ -358,13 +377,13 @@ function D3ComplexVisual({ a, b, onVarChange, highlightedVar, onHighlight }: D3C
           const endY = CY + arcR * Math.sin(-angle)
           const largeArc = Math.abs(angleDeg) > 180 ? 1 : 0
           const sweep = angle >= 0 ? 0 : 1
-          g.select(".angle-arc").attr("d", `M ${startX} ${startY} A ${arcR} ${arcR} 0 ${largeArc} ${sweep} ${endX} ${endY}`)
+          g.selectAll(".angle-arc, .angle-hit").attr("d", `M ${startX} ${startY} A ${arcR} ${arcR} 0 ${largeArc} ${sweep} ${endX} ${endY}`)
           g.select(".angle-text")
             .attr("x", CX + 45 * Math.cos(-angle / 2))
             .attr("y", CY + 45 * Math.sin(-angle / 2) + 4)
             .text(ultraCompact ? "" : `${angleDeg.toFixed(0)}\u00B0`)
         } else {
-          g.select(".angle-arc").attr("d", "")
+          g.selectAll(".angle-arc, .angle-hit").attr("d", "")
           g.select(".angle-text").text("")
         }
 

@@ -412,6 +412,12 @@ html.reduce-motion {
 /* Settings: formula scale — scoped to visualization area only, prevents sidebar/card overlap */
 .equation-content .katex { transform: scale(var(--formula-scale, 1)); transform-origin: left center; }
 
+/* Marks edit real inputs; the remaining diagram can be repositioned. */
+.scene-interaction-surface svg { cursor: grab; }
+.scene-interaction-surface [data-drag-variable] { cursor: grab; touch-action: none; user-select: none; }
+.scene-interaction-surface [data-drag-variable]:active { cursor: grabbing; }
+.scene-interaction-surface [data-drag-variable][aria-disabled="true"] { cursor: default; }
+
 /* Settings: animation speed multiplier */
 :root { --animation-speed: 1; }
 

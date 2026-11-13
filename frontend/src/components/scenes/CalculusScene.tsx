@@ -147,14 +147,10 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
   }, [frame])
 
   const handleDragStart = useCallback((e: React.PointerEvent) => {
-    // Only start drag if near the blue dot
-    const dataX = clientXToDataX(e.clientX)
-    if (dataX == null) return
-    if (Math.abs(dataX - t) > 0.6) return // too far from the dot
     setIsDragging(true)
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    e.currentTarget.setPointerCapture(e.pointerId)
     e.preventDefault()
-  }, [clientXToDataX, t])
+  }, [])
 
   const handleDragMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging || !onVarChange) return
@@ -245,6 +241,13 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
     x: (point) => point.x,
     y: (point) => point.y,
   }), [curveData, frame.xScale, frame.yScale])
+  const derivativePath = useMemo(() => buildLinePath({
+    data: curveData,
+    xScale: frame.xScale,
+    yScale: frame.yScale,
+    x: (point) => point.x,
+    y: (point) => point.deriv,
+  }), [curveData, frame.xScale, frame.yScale])
   const areaPath = useMemo(() => buildAreaPath({
     data: curveData,
     xScale: frame.xScale,
@@ -278,11 +281,11 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`${compact ? "w-16 text-xs" : "w-20 text-sm"} rounded-lg border-2 px-2 py-1 font-bold outline-none`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("t", t)} className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button data-drag-variable="t" aria-label="Point t on the curve; click to type a value" onClick={() => handleBadgeClick("t", t)} className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
               {ultraCompact ? `t${t.toFixed(1)}` : compact ? `t ${t.toFixed(1)}` : `t = ${t.toFixed(1)}`}
             </button>
           )}
-          <span className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} rounded-lg border border-slate-200 py-1 font-extrabold dark:border-slate-600`} style={{ color: VAR_COLORS.result }}>
+          <span data-drag-variable="t" aria-label="Change point t to explore the slope" className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} rounded-lg border border-slate-200 py-1 font-extrabold dark:border-slate-600`} style={{ color: VAR_COLORS.result }}>
             {ultraCompact
               ? interpolateSceneCopy(sceneCopy.ui.slopeBadge.ultraCompact, { slope: slope.toFixed(2) })
               : compact
@@ -294,7 +297,7 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`${compact ? "w-16" : "ml-auto w-20"} rounded-lg border-2 px-2 py-1 text-xs font-bold outline-none`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("h", h)} className={`${compact ? "" : "ml-auto"} cursor-text rounded-lg border border-slate-200 ${compact ? "px-2.5 text-[11px]" : "px-3 text-xs"} py-1 font-semibold transition hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800`} style={{ color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
+            <button data-drag-variable="h" aria-label="Distance h between the points; click to type a value" onClick={() => handleBadgeClick("h", h)} className={`${compact ? "" : "ml-auto"} cursor-text rounded-lg border border-slate-200 ${compact ? "px-2.5 text-[11px]" : "px-3 text-xs"} py-1 font-semibold transition hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800`} style={{ color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
               {ultraCompact ? `h${h.toFixed(2)}` : compact ? `h ${h.toFixed(2)}` : `h = ${h.toFixed(2)}`}
             </button>
           )}
@@ -305,10 +308,6 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
           ref={frame.containerRef}
           className="min-h-0 flex-1"
           style={{ cursor: isDragging ? "grabbing" : "crosshair", touchAction: "none" }}
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={handleDragEnd}
-          onPointerCancel={handleDragEnd}
           onClick={handleChartClick}
         >
           <svg width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -338,38 +337,38 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
             <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
             <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
-            {showArea && areaPath && <path d={areaPath} fill={VAR_COLORS.primary} opacity={0.12} />}
-            <path d={curvePath} fill="none" stroke="var(--scene-ink)" strokeWidth={3} />
+            {showArea && areaPath && <path data-drag-variable="t" aria-label="Change the endpoint t of the shaded area" d={areaPath} fill={VAR_COLORS.primary} opacity={0.12} />}
+            <g data-drag-variable="t" aria-label="Point t along the function curve">
+              <path d={curvePath} fill="none" stroke="transparent" strokeWidth={24} pointerEvents="stroke" />
+              <path d={curvePath} fill="none" stroke="var(--scene-ink)" strokeWidth={3} pointerEvents="stroke" />
+            </g>
 
             {showDeriv && (
-              <path
-                d={buildLinePath({
-                  data: curveData,
-                  xScale: frame.xScale,
-                  yScale: frame.yScale,
-                  x: (point) => point.x,
-                  y: (point) => point.deriv,
-                })}
-                fill="none"
-                stroke="#06b6d4"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                opacity={0.5}
-              />
+              <g data-drag-variable="t" aria-label="Change point t to explore the derivative">
+                <path d={derivativePath} fill="none" stroke="transparent" strokeWidth={24} pointerEvents="stroke" />
+                <path d={derivativePath} fill="none" stroke="#06b6d4" strokeWidth={2} strokeDasharray="6 4" opacity={0.5} pointerEvents="stroke" />
+              </g>
             )}
 
-            <path
-              d={tangentPath}
-              fill="none"
-              stroke="#94a3b8"
-              strokeWidth={isNearLimit ? 2.5 : 1.5}
-              strokeDasharray={isNearLimit ? undefined : "6 4"}
-              opacity={isNearLimit ? 0.6 : 0.3}
-            />
-            <path d={secantPath} fill="none" stroke={VAR_COLORS.secondary} strokeWidth={2.5} opacity={0.8} />
+            <g data-drag-variable="t" aria-label="Change the point that determines the tangent">
+              <path d={tangentPath} fill="none" stroke="transparent" strokeWidth={24} pointerEvents="stroke" />
+              <path
+                d={tangentPath}
+                fill="none"
+                stroke="#94a3b8"
+                strokeWidth={isNearLimit ? 2.5 : 1.5}
+                strokeDasharray={isNearLimit ? undefined : "6 4"}
+                opacity={isNearLimit ? 0.6 : 0.3}
+                pointerEvents="stroke"
+              />
+            </g>
+            <g data-drag-variable="h" aria-label="Change the distance between the secant points">
+              <path d={secantPath} fill="none" stroke="transparent" strokeWidth={24} pointerEvents="stroke" />
+              <path d={secantPath} fill="none" stroke={VAR_COLORS.secondary} strokeWidth={2.5} opacity={0.8} pointerEvents="stroke" />
+            </g>
 
-            <line x1={frame.xScale(t)} x2={frame.xScale(t)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeDasharray="4 3" strokeWidth={1} opacity={0.4} />
-            <line x1={frame.xScale(t + h)} x2={frame.xScale(t + h)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.secondary} strokeDasharray="4 3" strokeWidth={1} opacity={0.3} />
+            <line data-drag-variable="t" aria-label="Position t on the curve" x1={frame.xScale(t)} x2={frame.xScale(t)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeDasharray="4 3" strokeWidth={1} opacity={0.4} />
+            <line data-drag-variable="h" aria-label="Distance h to the second point" x1={frame.xScale(t + h)} x2={frame.xScale(t + h)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.secondary} strokeDasharray="4 3" strokeWidth={1} opacity={0.3} />
 
             {xTicks.map((tick) => (
               <g key={`tick-x-${tick}`}>
@@ -403,26 +402,39 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               {ultraCompact ? "" : "y"}
             </text>
 
-            <circle
-              cx={frame.xScale(t)}
-              cy={frame.yScale(f(t))}
-              r={isDragging ? 13 : 10}
-              fill={VAR_COLORS.primary}
-              stroke="white"
-              strokeWidth={3}
-              style={{
-                cursor: isDragging ? "grabbing" : "grab",
-                filter: isDragging ? "drop-shadow(0 0 6px rgba(59,130,246,0.5))" : undefined,
-              }}
-            />
-            <circle
-              cx={frame.xScale(t + h)}
-              cy={frame.yScale(f(t + h))}
-              r={6}
-              fill={VAR_COLORS.secondary}
-              stroke="white"
-              strokeWidth={2}
-            />
+            <g
+              data-scene-drag="native"
+              data-drag-variable="t"
+              aria-label="Point t on the curve"
+              onPointerDown={handleDragStart}
+              onPointerMove={handleDragMove}
+              onPointerUp={handleDragEnd}
+              onPointerCancel={handleDragEnd}
+              style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
+            >
+              <circle cx={frame.xScale(t)} cy={frame.yScale(f(t))} r={22} fill="transparent" />
+              <circle
+                cx={frame.xScale(t)}
+                cy={frame.yScale(f(t))}
+                r={isDragging ? 13 : 10}
+                fill={VAR_COLORS.primary}
+                stroke="white"
+                strokeWidth={3}
+                style={{ filter: isDragging ? "drop-shadow(0 0 6px rgba(59,130,246,0.5))" : undefined }}
+              />
+            </g>
+            <g data-drag-variable="h" aria-label="Distance h between the curve points">
+              {/* Keep the touch area to the right so h approaching zero leaves t reachable. */}
+              <circle cx={frame.xScale(t + h) + 22} cy={frame.yScale(f(t + h))} r={22} fill="transparent" />
+              <circle
+                cx={frame.xScale(t + h)}
+                cy={frame.yScale(f(t + h))}
+                r={6}
+                fill={VAR_COLORS.secondary}
+                stroke="white"
+                strokeWidth={2}
+              />
+            </g>
           </svg>
         </div>
 
@@ -455,10 +467,10 @@ function CalculusChart({ t, h, onVarChange }: CalculusChartProps): ReactElement 
               : (showDeriv ? sceneCopy.ui.derivativeToggle.fullOn : sceneCopy.ui.derivativeToggle.fullOff)}
           </button>
           <div className={`${compact ? "w-full pt-0.5" : "ml-auto"} flex items-center gap-2 text-xs text-slate-400`}>
-            <span className="inline-block h-0.5 w-4" style={{ backgroundColor: "#94a3b8", height: 2 }} />
-            <span>{ultraCompact ? sceneCopy.ui.tangentLegend.ultraCompact : compact ? sceneCopy.ui.tangentLegend.compact : sceneCopy.ui.tangentLegend.full}</span>
-            <span className="ml-2 inline-block h-0.5 w-4" style={{ backgroundColor: VAR_COLORS.secondary, height: 2 }} />
-            <span>{ultraCompact ? sceneCopy.ui.secantLegend.ultraCompact : compact ? sceneCopy.ui.secantLegend.compact : sceneCopy.ui.secantLegend.full}</span>
+            <span data-drag-variable="t" aria-label="Change the tangent point" className="inline-block h-0.5 w-4" style={{ backgroundColor: "#94a3b8", height: 2 }} />
+            <span data-drag-variable="t" aria-label="Change the tangent point">{ultraCompact ? sceneCopy.ui.tangentLegend.ultraCompact : compact ? sceneCopy.ui.tangentLegend.compact : sceneCopy.ui.tangentLegend.full}</span>
+            <span data-drag-variable="h" aria-label="Change the secant point spacing" className="ml-2 inline-block h-0.5 w-4" style={{ backgroundColor: VAR_COLORS.secondary, height: 2 }} />
+            <span data-drag-variable="h" aria-label="Change the secant point spacing">{ultraCompact ? sceneCopy.ui.secantLegend.ultraCompact : compact ? sceneCopy.ui.secantLegend.compact : sceneCopy.ui.secantLegend.full}</span>
           </div>
         </div>
       </div>

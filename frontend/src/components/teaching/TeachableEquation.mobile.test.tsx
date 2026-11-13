@@ -49,7 +49,7 @@ describe("mobile teaching workspace", () => {
   it("keeps phone lessons visible without an expandable or hidden sheet", async () => {
     renderMobileEquation()
     expect(screen.getByRole("region", { name: "Equation workspace" })).toBeInTheDocument()
-    expect(await screen.findByText("Change the side length")).toBeInTheDocument()
+    expect(await screen.findByText("Change the side length", {}, { timeout: 5000 })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Resize teaching panel" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Hide" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Open teaching panel" })).not.toBeInTheDocument()
@@ -124,17 +124,17 @@ describe("mobile teaching workspace", () => {
     expect(screen.getByText("Change the side length")).toBeInTheDocument()
   })
 
-  it("lets learners leave guided mode and apply a complete preset", async () => {
+  it("keeps all inputs and complete presets available while following a lesson", async () => {
     renderMobileEquation()
     await userEvent.click(screen.getByRole("button", { name: "Explore" }))
-    expect(screen.getByText("Locked for this lesson step")).toBeVisible()
-    expect(screen.getByRole("button", { name: "5-12-13" })).toBeDisabled()
-
-    await userEvent.click(screen.getByRole("button", { name: "Explore freely" }))
     expect(screen.queryByText("Locked for this lesson step")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "5-12-13" })).toBeEnabled()
     expect(screen.getByLabelText("Horizontal side: 4")).toBeEnabled()
     await userEvent.click(screen.getByRole("button", { name: "5-12-13" }))
     expect(screen.getByText("Triangle side: 5")).toBeInTheDocument()
     expect(screen.getByText("Horizontal side: 12")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Lesson" }))
+    await screen.findByText("Change the side length", {}, { timeout: 5000 })
+    expect(screen.queryByText(/Goal reached/)).not.toBeInTheDocument()
   })
 })

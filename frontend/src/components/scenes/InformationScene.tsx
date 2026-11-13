@@ -170,11 +170,11 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("p", prob)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button data-drag-variable="p" aria-label="Probability of heads" onClick={() => handleBadgeClick("p", prob)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
               p = {prob.toFixed(2)}
             </button>
           )}
-          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
+          <span data-drag-variable="p" aria-label="Entropy controlled by probability of heads" className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
             {ultraCompact
               ? interpolateSceneCopy(sceneCopy.ui.entropyBadge.ultraCompact, { entropy: entropy.toFixed(3) })
               : interpolateSceneCopy(sceneCopy.ui.entropyBadge.full, { entropy: entropy.toFixed(4) })}
@@ -215,13 +215,16 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
             <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
             <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
-            {fillPath && <path d={fillPath} fill={VAR_COLORS.primary} opacity={0.15} />}
-            <path d={linePath} fill="none" stroke="#1e40af" strokeWidth={2.5} />
+            {fillPath && <path data-drag-variable="p" aria-label="Probability represented by the shaded entropy region" d={fillPath} fill={VAR_COLORS.primary} opacity={0.15} />}
+            <path data-drag-variable="p" aria-label="Probability on the entropy curve" d={linePath} fill="none" stroke="#1e40af" strokeWidth={2.5} />
 
             <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.yScale(1)} y2={frame.yScale(1)} stroke="#f59e0b" strokeDasharray="4 4" />
             <line x1={frame.xScale(0.5)} x2={frame.xScale(0.5)} y1={frame.plotTop} y2={frame.plotBottom} stroke="#f59e0b" strokeDasharray="4 4" />
-            <line x1={frame.xScale(prob)} x2={frame.xScale(prob)} y1={frame.plotTop} y2={frame.plotBottom} stroke="#ef4444" strokeDasharray="4 3" />
-            <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={7} fill="#ef4444" stroke="white" strokeWidth={2} />
+            <g data-drag-variable="p" aria-label="Current probability and entropy">
+              <line x1={frame.xScale(prob)} x2={frame.xScale(prob)} y1={frame.plotTop} y2={frame.plotBottom} stroke="#ef4444" strokeDasharray="4 3" />
+              <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={18} fill="transparent" />
+              <circle cx={frame.xScale(prob)} cy={frame.yScale(entropy)} r={7} fill="#ef4444" stroke="white" strokeWidth={2} />
+            </g>
 
             <text x={frame.plotRight - 4} y={frame.yScale(1) - 6} textAnchor="end" fontSize="11" fontWeight="600" fill="#f59e0b">
               {ultraCompact ? sceneCopy.ui.maxEntropyLine.ultraCompact : compact ? sceneCopy.ui.maxEntropyLine.compact : sceneCopy.ui.maxEntropyLine.full}
@@ -264,6 +267,8 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
         <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3 dark:border-slate-700">
           {/* Coin display */}
           <div
+            data-drag-variable="p"
+            aria-label="Probability of heads for future coin flips"
             className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white"
             style={{
               backgroundColor: lastOutcome === "H" ? "#3b82f6" : lastOutcome === "T" ? "#10b981" : "#e2e8f0",
@@ -289,8 +294,8 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
 
           {/* Tally */}
           <div className={`flex flex-wrap gap-3 font-semibold ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`}>
-            <span className="text-blue-600">H: {heads}</span>
-            <span className="text-emerald-600">T: {tails}</span>
+            <span data-drag-variable="p" aria-label="Heads tally; adjust probability for future flips" className="text-blue-600">H: {heads}</span>
+            <span data-drag-variable="p" data-drag-direction="-1" aria-label="Tails tally; adjust probability of tails for future flips" className="text-emerald-600">T: {tails}</span>
             <span className="text-slate-500">
               {ultraCompact
                 ? `${flips.length}`
@@ -302,14 +307,14 @@ function InformationChart({ prob, onVarChange }: InformationChartProps): ReactEl
 
           {/* Surprise */}
           <div className={`ml-auto flex flex-col ${compact ? "w-full text-[11px]" : "text-xs"}`}>
-            <span className="text-blue-600">
+            <span data-drag-variable="p" data-drag-direction="-1" aria-label="Heads surprise; drag right to reduce probability of heads" className="text-blue-600">
               {ultraCompact
                 ? interpolateSceneCopy(sceneCopy.ui.surprise.headsUltraCompact, { value: surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2) })
                 : compact
                   ? interpolateSceneCopy(sceneCopy.ui.surprise.headsCompact, { value: surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2) })
                   : interpolateSceneCopy(sceneCopy.ui.surprise.headsFull, { value: surpriseH === Infinity ? "\u221E" : surpriseH.toFixed(2) })}
             </span>
-            <span className="text-emerald-600">
+            <span data-drag-variable="p" aria-label="Tails surprise controlled by probability of heads" className="text-emerald-600">
               {ultraCompact
                 ? interpolateSceneCopy(sceneCopy.ui.surprise.tailsUltraCompact, { value: surpriseT === Infinity ? "\u221E" : surpriseT.toFixed(2) })
                 : compact

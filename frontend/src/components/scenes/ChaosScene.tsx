@@ -223,8 +223,8 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
       <div className="flex h-full flex-col">
         {/* Header with clickable badges */}
         <div className={`flex flex-wrap items-center ${compact ? "gap-1.5 px-3 pt-2.5" : "gap-2 px-4 pt-3"}`}>
-          <span className={`${compact ? "text-xs" : "text-sm"} font-bold text-ink`}>{ultraCompact ? "Chaos map" : compact ? "Bifurcation" : "Bifurcation Diagram"}</span>
-          <span className={`rounded-lg border border-slate-200 bg-white ${compact ? "px-2 py-1 text-[11px]" : "px-3 py-1 text-xs"} font-bold text-ink dark:border-slate-600 dark:bg-slate-700`}>
+          <span data-drag-variable="r" aria-label="Growth rate in the bifurcation diagram" className={`${compact ? "text-xs" : "text-sm"} font-bold text-ink`}>{ultraCompact ? "Chaos map" : compact ? "Bifurcation" : "Bifurcation Diagram"}</span>
+          <span data-drag-variable="r" aria-label="Period controlled by growth rate" className={`rounded-lg border border-slate-200 bg-white ${compact ? "px-2 py-1 text-[11px]" : "px-3 py-1 text-xs"} font-bold text-ink dark:border-slate-600 dark:bg-slate-700`}>
             {ultraCompact ? compactPeriodText.replace(" stable", "") : compact ? compactPeriodText : periodText}
           </span>
           {editingVar === "r" ? (
@@ -232,7 +232,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`${compact ? "w-16 text-xs" : "ml-auto w-20 text-sm"} rounded-lg border-2 px-2 py-1 font-bold outline-none`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("r", r)} className={`${compact ? "px-2.5 text-xs" : "ml-auto px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button data-drag-variable="r" aria-label="Growth rate" onClick={() => handleBadgeClick("r", r)} className={`${compact ? "px-2.5 text-xs" : "ml-auto px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
               {ultraCompact ? `r${r.toFixed(3)}` : compact ? `r ${r.toFixed(3)}` : `r = ${r.toFixed(3)}`}
             </button>
           )}
@@ -241,7 +241,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`${compact ? "w-16 text-xs" : "w-20 text-sm"} rounded-lg border-2 px-2 py-1 font-bold outline-none`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("x0", x0)} className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
+            <button data-drag-variable="x0" aria-label="Initial population" onClick={() => handleBadgeClick("x0", x0)} className={`${compact ? "px-2.5 text-xs" : "px-3 text-sm"} cursor-text rounded-lg border py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
               {ultraCompact ? `x₀${x0.toFixed(2)}` : compact ? `x₀ ${x0.toFixed(2)}` : `x₀ = ${x0.toFixed(2)}`}
             </button>
           )}
@@ -280,16 +280,21 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
             <line x1={bifurcationFrame.plotLeft} x2={bifurcationFrame.plotRight} y1={bifurcationFrame.plotBottom} y2={bifurcationFrame.plotBottom} stroke="#cbd5e1" />
             <line x1={bifurcationFrame.plotLeft} x2={bifurcationFrame.plotLeft} y1={bifurcationFrame.plotTop} y2={bifurcationFrame.plotBottom} stroke="#cbd5e1" />
 
-            {bifurcationCloud}
-            <line
-              x1={bifurcationFrame.xScale(r)}
-              x2={bifurcationFrame.xScale(r)}
-              y1={bifurcationFrame.plotTop}
-              y2={bifurcationFrame.plotBottom}
-              stroke="#ef4444"
-              strokeWidth={2}
-              strokeDasharray="6 4"
-            />
+            <g data-drag-variable="r" aria-label="Growth rate on the bifurcation cloud">
+              {bifurcationCloud}
+            </g>
+            <g data-drag-variable="r" aria-label="Current growth-rate marker">
+              <line x1={bifurcationFrame.xScale(r)} x2={bifurcationFrame.xScale(r)} y1={bifurcationFrame.plotTop} y2={bifurcationFrame.plotBottom} stroke="transparent" strokeWidth={24} />
+              <line
+                x1={bifurcationFrame.xScale(r)}
+                x2={bifurcationFrame.xScale(r)}
+                y1={bifurcationFrame.plotTop}
+                y2={bifurcationFrame.plotBottom}
+                stroke="#ef4444"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+              />
+            </g>
 
             {bifurcationXTicks.map((tick) => (
               <g key={`bif-tick-x-${tick}`}>
@@ -327,7 +332,7 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
         {/* Time series -- bottom half */}
         <div className="min-h-0 flex-1 border-t border-slate-100 dark:border-slate-700" style={{ minHeight: 200 }}>
           <div className={`${compact ? "px-3 pt-1.5" : "px-4 pt-1"}`}>
-            <span className={`${compact ? "text-xs" : "text-sm"} font-bold text-ink`}>{ultraCompact ? "t-series" : compact ? "Series" : "Time Series"}</span>
+            <span data-drag-variable="r" data-drag-variable-y="x0" aria-label="Time-series growth rate horizontally and initial population vertically" className={`${compact ? "text-xs" : "text-sm"} font-bold text-ink`}>{ultraCompact ? "t-series" : compact ? "Series" : "Time Series"}</span>
           </div>
           <div ref={timeFrame.containerRef} className="h-[85%] min-h-0">
             <svg width={timeFrame.width} height={timeFrame.height} viewBox={`0 0 ${timeFrame.width} ${timeFrame.height}`}>
@@ -355,10 +360,13 @@ function ChaosChart({ r, x0, onVarChange }: ChaosChartProps): ReactElement {
               ))}
               <line x1={timeFrame.plotLeft} x2={timeFrame.plotRight} y1={timeFrame.plotBottom} y2={timeFrame.plotBottom} stroke="#cbd5e1" />
               <line x1={timeFrame.plotLeft} x2={timeFrame.plotLeft} y1={timeFrame.plotTop} y2={timeFrame.plotBottom} stroke="#cbd5e1" />
-              <path d={timeSeriesPath} fill="none" stroke="#5a79ff" strokeWidth={2} />
-              {timeSeriesData.map((point) => (
-                <circle key={`time-point-${point.t}`} cx={timeFrame.xScale(point.t)} cy={timeFrame.yScale(point.x)} r={compact ? 1.2 : 1.5} fill="#5a79ff" />
-              ))}
+              <g data-drag-variable="r" data-drag-variable-y="x0" aria-label="Population series: growth rate horizontally, initial population vertically">
+                <path d={timeSeriesPath} fill="none" stroke="transparent" strokeWidth={18} />
+                <path d={timeSeriesPath} fill="none" stroke="#5a79ff" strokeWidth={2} />
+                {timeSeriesData.map((point) => (
+                  <circle key={`time-point-${point.t}`} cx={timeFrame.xScale(point.t)} cy={timeFrame.yScale(point.x)} r={compact ? 1.2 : 1.5} fill="#5a79ff" />
+                ))}
+              </g>
 
               {timeXTicks.map((tick) => (
                 <g key={`time-tick-x-${tick}`}>

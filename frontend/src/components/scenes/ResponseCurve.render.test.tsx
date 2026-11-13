@@ -45,6 +45,35 @@ describe("ResponseCurve render smoke", () => {
     expect(container.querySelector("svg")).toBeNull()
   })
 
+  it("binds the curve, shaded area and live result to the chosen input name and leaves axes for panning", () => {
+    const variables = [
+      { ...v("I", 0, 10, 2), symbol: "current" },
+      { ...v("R", 1, 100, 10), symbol: "resistance" },
+    ]
+    const props = { equationId: 37, variables, vars: { I: 2, R: 10 } }
+    const { container, rerender } = render(<ResponseCurve {...props} sweepOverride="I" />)
+    const initialTargets = [...container.querySelectorAll("[data-drag-variable]")]
+
+    expect(initialTargets.length).toBeGreaterThanOrEqual(3)
+    for (const target of initialTargets) expect(target).toHaveAttribute("data-drag-variable", "I")
+    expect(container.querySelector('path[stroke="transparent"][stroke-width="24"]')?.closest("[data-drag-variable]")).toHaveAttribute("data-drag-variable", "I")
+    expect(container.querySelector('circle[r="22"]')?.closest("[data-drag-variable]")).toHaveAttribute("data-drag-variable", "I")
+    expect(container.querySelector('circle[r="8"]')?.closest("[data-drag-variable]")).toHaveAttribute("data-drag-variable", "I")
+    expect(container.querySelector('text[font-weight="700"]')?.closest("[data-drag-variable]")).toHaveAttribute("data-drag-variable", "I")
+    for (const axis of container.querySelectorAll('line[stroke="currentColor"]')) {
+      expect(axis.closest("[data-drag-variable]")).toBeNull()
+    }
+    expect(screen.getByRole("img").closest("[data-scene-canvas]")).not.toBeNull()
+
+    rerender(<ResponseCurve {...props} sweepOverride="R" />)
+
+    for (const target of container.querySelectorAll("[data-drag-variable]")) {
+      expect(target).toHaveAttribute("data-drag-variable", "R")
+    }
+    expect(screen.getByRole("button", { name: /Toggle logarithmic/ }).closest("[data-drag-variable]")).toBeNull()
+    expect(container.querySelector('[data-drag-variable="V"], [data-drag-variable="current"], [data-drag-variable="resistance"]')).toBeNull()
+  })
+
   it("describes both phone axes with ranges and units and updates the selected axis", () => {
     vi.stubGlobal("innerWidth", 390)
     vi.stubGlobal("innerHeight", 844)

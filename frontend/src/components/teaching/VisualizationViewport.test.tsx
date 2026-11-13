@@ -54,7 +54,7 @@ describe("VisualizationViewport", () => {
     const stage = screen.getByTestId("visualization-zoom-stage")
     const zoomIn = screen.getByRole("button", { name: "Zoom in visualization" })
     const zoomOut = screen.getByRole("button", { name: "Zoom out visualization" })
-    const reset = screen.getByRole("button", { name: "Reset visualization zoom" })
+    const reset = screen.getByRole("button", { name: "Reset visualization view" })
 
     expect(frame).toHaveAttribute("data-zoom-scale", "100")
     expect(zoomOut).not.toBeDisabled()
