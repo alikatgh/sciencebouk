@@ -9,6 +9,7 @@ import { api } from "../api/client"
 import type { DashboardData } from "../api/client"
 import { Button } from "./ui/button"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
 
 export default function Dashboard(): ReactElement {
   const { isPro, isAuthenticated } = useAuth()
@@ -252,6 +253,7 @@ export default function Dashboard(): ReactElement {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   )
 }

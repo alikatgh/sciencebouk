@@ -10,11 +10,11 @@ import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
+import { FormulaText } from "./math/FormulaText"
 import { subjects } from "../data/subjects"
 import { AuthModal } from "../auth/AuthModal"
 import { useAllProgress } from "../progress/useProgress"
-import "katex/dist/katex.min.css"
-import { InlineMath } from "react-katex"
 
 const HeroDemo = lazy(() =>
   import("./HeroDemo").then((module) => ({ default: module.HeroDemo })),
@@ -35,9 +35,10 @@ const iconMap: Record<string, ReactElement> = {
 
 function FormulaPreview({ formula, muted = false }: { formula: string; muted?: boolean }): ReactElement {
   return (
-    <span className={muted ? "opacity-30" : ""}>
-      <InlineMath math={formula} />
-    </span>
+    <FormulaText
+      math={formula}
+      className={`font-mono text-[0.95em] tabular-nums ${muted ? "opacity-30" : ""}`}
+    />
   )
 }
 
@@ -271,6 +272,8 @@ export function HomePage(): ReactElement {
             </div>
           )}
         </div>
+
+        <Footer />
     </main>
   )
 }

@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AuthProvider } from "./auth/AuthContext"
 import { SettingsProvider } from "./settings/SettingsContext"
-import "katex/dist/katex.min.css"
 import "./index.css"
 
 const App = lazy(() => import("./App"))
@@ -14,6 +13,8 @@ const Dashboard = lazy(() => import("./components/Dashboard"))
 const ProfilePage = lazy(() => import("./components/ProfilePage"))
 const SettingsPage = lazy(() => import("./components/SettingsPage"))
 const AboutPage = lazy(() => import("./components/AboutPage"))
+const PrivacyPage = lazy(() => import("./components/PrivacyPage"))
+const TermsPage = lazy(() => import("./components/TermsPage"))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
               </Routes>
             </Suspense>
           </BrowserRouter>

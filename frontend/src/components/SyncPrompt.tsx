@@ -20,8 +20,15 @@ export function SyncPrompt({ onDismiss, onSynced }: SyncPromptProps): ReactEleme
   const { isPro } = useAuth()
   const [status, setStatus] = useState<"idle" | "syncing" | "done">("idle")
   const attempted = useRef(false)
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const localItems = getLocalProgressSyncItems()
+
+  useEffect(() => () => {
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current)
+    }
+  }, [])
 
   // Auto-sync on mount — no user interaction needed
   useEffect(() => {
@@ -36,8 +43,9 @@ export function SyncPrompt({ onDismiss, onSynced }: SyncPromptProps): ReactEleme
       .then(() => {
         setStatus("done")
         // Auto-dismiss after showing success briefly
-        setTimeout(() => {
+        dismissTimerRef.current = setTimeout(() => {
           onSynced()
+          dismissTimerRef.current = null
         }, 2000)
       })
       .catch(() => {

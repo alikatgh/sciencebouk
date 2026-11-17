@@ -7,6 +7,7 @@ import { useAllProgress } from "../progress/useProgress"
 import { equationManifest } from "../data/equationManifest"
 import { api } from "../api/client"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
 
 export default function ProfilePage(): ReactElement {
   const navigate = useNavigate()
@@ -294,6 +295,7 @@ export default function ProfilePage(): ReactElement {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

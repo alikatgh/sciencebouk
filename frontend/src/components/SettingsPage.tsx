@@ -1,5 +1,6 @@
 import type { ReactElement } from "react"
 import { useCallback, useState } from "react"
+import "katex/dist/katex.min.css"
 import { InlineMath } from "react-katex"
 import { Volume2, VolumeX, Type, Palette, Gauge, Globe, Keyboard, RotateCcw, Trash2, BookOpen, Sparkles, GraduationCap, Lightbulb, Target } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
@@ -10,6 +11,7 @@ import { Separator } from "./ui/separator"
 import { Slider } from "./ui/slider"
 import { Switch } from "./ui/switch"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
 import { clearStoredProgress } from "../progress/useProgress"
 import { useSettings, type Settings } from "../settings/SettingsContext"
 
@@ -272,10 +274,8 @@ export default function SettingsPage(): ReactElement {
           </CardContent>
         </Card>
 
-        <p className="mt-2 text-center text-xs text-slate-300 dark:text-slate-700">
-          Formulas v0.1.0 · sciencebo.uk
-        </p>
       </div>
+      <Footer />
     </main>
   )
 }

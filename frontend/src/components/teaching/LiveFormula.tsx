@@ -1,6 +1,6 @@
-import type { ReactElement } from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { InlineMath } from "react-katex"
+import type { MouseEvent, ReactElement } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
+import { FormulaText } from "../math/FormulaText"
 import type { Variable } from "./types"
 
 interface LiveFormulaProps {
@@ -20,50 +20,27 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
   const liveRef = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState<{ varName: string; color: string; rect: DOMRect } | null>(null)
   const [inputValue, setInputValue] = useState("")
+  const colorLookup = useMemo(() => {
+    return new Map((variables ?? []).map((variable) => [variable.color.toLowerCase(), variable]))
+  }, [variables])
 
-  // After KaTeX renders, attach click handlers to colored number spans
-  useEffect(() => {
-    const el = liveRef.current
-    if (!el || !variables || !onVariableChange) return
+  const handleColorTokenClick = useCallback(({ color, event }: { color: string; event: MouseEvent<HTMLElement> }) => {
+    if (!variables || !onVariableChange) return
 
-    // Find all colored spans in the rendered KaTeX
-    const coloredSpans = el.querySelectorAll<HTMLSpanElement>('span.mord[style*="color"]')
-    coloredSpans.forEach((span) => {
-      const color = span.style.color
-      if (!color) return
+    const matchedVar = colorLookup.get(color.toLowerCase())
+    if (!matchedVar || matchedVar.constant || matchedVar.locked) return
 
-      // Match color to variable
-      const matchedVar = variables.find((v) => {
-        const varColor = v.color.toLowerCase()
-        // Compare rgb values
-        const temp = document.createElement("div")
-        temp.style.color = varColor
-        document.body.appendChild(temp)
-        const computed = getComputedStyle(temp).color
-        document.body.removeChild(temp)
-        return computed === color || varColor === color
-      })
+    const parentRect = liveRef.current?.getBoundingClientRect()
+    if (!parentRect) return
 
-      if (matchedVar && !matchedVar.constant && !matchedVar.locked) {
-        span.style.cursor = "pointer"
-        span.style.borderBottom = `1.5px dashed ${matchedVar.color}`
-        span.style.paddingBottom = "1px"
-        span.title = `Click to edit ${matchedVar.symbol}`
-
-        span.onclick = (e) => {
-          e.stopPropagation()
-          const rect = span.getBoundingClientRect()
-          const parentRect = el.getBoundingClientRect()
-          setEditing({
-            varName: matchedVar.name,
-            color: matchedVar.color,
-            rect: new DOMRect(rect.left - parentRect.left, rect.top - parentRect.top, rect.width, rect.height),
-          })
-          setInputValue(String(matchedVar.value))
-        }
-      }
+    const rect = event.currentTarget.getBoundingClientRect()
+    setEditing({
+      varName: matchedVar.name,
+      color: matchedVar.color,
+      rect: new DOMRect(rect.left - parentRect.left, rect.top - parentRect.top, rect.width, rect.height),
     })
-  }, [liveFormula, variables, onVariableChange])
+    setInputValue(String(matchedVar.value))
+  }, [colorLookup, onVariableChange, variables])
 
   const handleSubmit = useCallback(() => {
     if (!editing || !variables || !onVariableChange) return
@@ -80,11 +57,16 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
     <div className="relative space-y-1">
       {/* Letter formula */}
       <div className="overflow-x-auto text-xs text-slate-400 dark:text-slate-500">
-        <InlineMath math={letterFormula} />
+        <FormulaText math={letterFormula} className="font-mono tabular-nums" />
       </div>
       {/* Live formula — numbers are clickable */}
       <div ref={liveRef} className="overflow-x-auto text-base text-slate-800 dark:text-slate-200">
-        <InlineMath math={liveFormula} />
+        <FormulaText
+          math={liveFormula}
+          className="font-mono tabular-nums"
+          colorTokenClassName="border-b border-dashed"
+          onColorTokenClick={handleColorTokenClick}
+        />
       </div>
       {/* Inline edit overlay */}
       {editing && (
@@ -110,7 +92,7 @@ export function LiveFormula({ letterFormula, liveFormula, resultLine, resultNote
       {/* Result */}
       {resultLine && (
         <div className="overflow-x-auto text-sm font-bold text-slate-700 dark:text-slate-300">
-          <InlineMath math={resultLine} />
+          <FormulaText math={resultLine} className="font-mono tabular-nums" />
         </div>
       )}
       {/* Note */}

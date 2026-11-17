@@ -49,15 +49,20 @@ export function HeroDemo(): ReactElement {
     }, 8000)
   }, [])
 
-  // Square sizes proportional to area (sqrt for visual)
+  // Square sizes proportional to area (sqrt for visual), scaled to fit container
   const maxArea = 50
-  const sqA = Math.max(20, Math.sqrt(a2 / maxArea) * 52)
-  const sqB = Math.max(20, Math.sqrt(b2 / maxArea) * 52)
-  const sqC = Math.max(20, Math.sqrt(c2 / maxArea) * 52)
+  const rawA = Math.max(20, Math.sqrt(a2 / maxArea) * 52)
+  const rawB = Math.max(20, Math.sqrt(b2 / maxArea) * 52)
+  const rawC = Math.max(20, Math.sqrt(c2 / maxArea) * 52)
+  const maxTotal = 140 // fits inside w-56 (224px) minus padding and operators
+  const scale = Math.min(1, maxTotal / (rawA + rawB + rawC))
+  const sqA = rawA * scale
+  const sqB = rawB * scale
+  const sqC = rawC * scale
 
   return (
     <div
-      className="w-56 cursor-pointer select-none rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]"
+      className="w-56 cursor-pointer select-none overflow-hidden rounded-2xl bg-white/10 px-5 py-5 backdrop-blur transition hover:bg-white/[0.14]"
       onClick={handleClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {

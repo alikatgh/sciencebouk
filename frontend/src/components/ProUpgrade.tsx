@@ -8,6 +8,7 @@ import { AuthModal } from "../auth/AuthModal"
 import { api } from "../api/client"
 import { equationManifest } from "../data/equationManifest"
 import { TopNav } from "./TopNav"
+import { Footer } from "./Footer"
 
 const EQUATION_COUNT = equationManifest.length
 
@@ -21,7 +22,6 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "Everything in Free",
   "Progress sync across devices",
-  "Personal notes & bookmarks",
   "Learning analytics dashboard",
   "Streak tracking",
   "Smart recommendations",
@@ -156,6 +156,7 @@ export function ProPricingPage(): ReactElement {
 
         <AuthModal open={showAuth} onClose={() => setShowAuth(false)} initialMode="register" />
       </div>
+      <Footer />
     </main>
   )
 }

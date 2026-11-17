@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from "react"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { LogOut, User, ArrowLeft, Crown, BarChart2, Settings, ChevronDown, Info } from "lucide-react"
 import { useAuth } from "../auth/AuthContext"
@@ -36,13 +36,25 @@ export function TopNav({ left, showBack, onBack }: TopNavProps): ReactElement {
   const [menuOpen, setMenuOpen] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current)
+    }
+  }, [])
 
   // Close menu on outside click
   const handleBlur = () => {
-    setTimeout(() => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current)
+    }
+
+    blurTimerRef.current = setTimeout(() => {
       if (menuRef.current && !menuRef.current.contains(document.activeElement)) {
         setMenuOpen(false)
       }
+      blurTimerRef.current = null
     }, 150)
   }
 
