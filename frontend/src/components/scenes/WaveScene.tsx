@@ -231,11 +231,13 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Wave 1 label
       g.append("text").attr("class", "wave1-label").attr("x", mx).attr("y", H * 0.06)
+        .attr("data-drag-variable", "freq").attr("aria-label", "Wave frequency")
         .attr("font-size", 14).attr("fill", "#5a79ff").attr("font-family", F).attr("font-weight", 600)
         .text(compact ? "1" : "Wave 1")
 
       // Wave 2 label
       g.append("text").attr("class", "wave2-label").attr("x", mx + (ultraCompact ? 26 : compact ? 34 : 80)).attr("y", H * 0.06)
+        .attr("data-drag-variable", "wavelength").attr("aria-label", "Wavelength of the component waves")
         .attr("font-size", 14).attr("fill", "#57b59a").attr("font-family", F).attr("font-weight", 600)
         .text(compact ? "2" : "Wave 2")
 
@@ -244,15 +246,24 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
 
       // Wave 1 path
-      g.append("path").attr("class", "wave1-path")
+      const wave1G = g.append("g").attr("class", "wave1-control")
+        .attr("data-drag-variable", "wavelength").attr("data-drag-variable-y", "amp").attr("aria-label", "Wave one: drag horizontally for wavelength and vertically for amplitude")
+      wave1G.append("path").attr("class", "wave1-hit")
+        .attr("fill", "none").attr("stroke", "transparent").attr("stroke-width", 24).style("pointer-events", "stroke")
+      wave1G.append("path").attr("class", "wave1-path").style("pointer-events", "stroke")
         .attr("fill", "none").attr("stroke", "#5a79ff").attr("stroke-width", 3)
 
       // Wave 2 path
-      g.append("path").attr("class", "wave2-path")
+      const wave2G = g.append("g").attr("class", "wave2-control")
+        .attr("data-drag-variable", "wavelength").attr("data-drag-variable-y", "amp").attr("aria-label", "Wave two: drag horizontally for wavelength and vertically for amplitude")
+      wave2G.append("path").attr("class", "wave2-hit")
+        .attr("fill", "none").attr("stroke", "transparent").attr("stroke-width", 24).style("pointer-events", "stroke")
+      wave2G.append("path").attr("class", "wave2-path").style("pointer-events", "stroke")
         .attr("fill", "none").attr("stroke", "#57b59a").attr("stroke-width", 3).attr("opacity", 0.85)
 
       // Draggable amplitude handle at wave peak
       const ampHandle = g.append("g").attr("class", "amp-handle").style("cursor", "grab").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "amp").attr("data-drag-axis", "y").attr("aria-label", "Wave amplitude")
       ampHandle.append("circle").attr("class", "amp-handle-hit").attr("r", 28).attr("fill", "transparent")
       ampHandle.append("circle").attr("class", "amp-handle-dot").attr("r", 8)
         .attr("fill", VAR_COLORS.secondary).attr("stroke", "white").attr("stroke-width", 3)
@@ -261,6 +272,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Amplitude annotation
       const ampG = g.append("g").attr("class", "amp-annotation").attr("opacity", 0)
+        .attr("data-drag-variable", "amp").attr("data-drag-axis", "y").attr("aria-label", "Wave amplitude measurement")
       ampG.append("line").attr("class", "amp-line")
         .attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 2).attr("stroke-dasharray", "4 3")
       ampG.append("text").attr("class", "amp-text")
@@ -268,6 +280,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Wavelength annotation
       const wlG = g.append("g").attr("class", "wl-annotation").attr("opacity", 0)
+        .attr("data-drag-variable", "wavelength").attr("aria-label", "Wavelength measurement")
       wlG.append("line").attr("class", "wl-line")
         .attr("stroke", VAR_COLORS.tertiary).attr("stroke-width", 2)
       wlG.append("text").attr("class", "wl-text")
@@ -275,6 +288,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
 
       // Superposition section
       g.append("text").attr("x", mx).attr("y", H * 0.47)
+        .attr("data-drag-variable", "wavelength").attr("data-drag-variable-y", "amp").attr("aria-label", "Change the waves that form the superposition")
         .attr("font-size", 14).attr("fill", pal.ink).attr("font-family", F).attr("font-weight", 700)
         .text(ultraCompact ? "Σ" : compact ? "Sum" : "Superposition")
 
@@ -283,18 +297,23 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
         .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
 
       // Super path
-      g.append("path").attr("class", "super-path")
+      const superG = g.append("g").attr("class", "super-control")
+        .attr("data-drag-variable", "wavelength").attr("data-drag-variable-y", "amp").attr("aria-label", "Superposition: drag horizontally for wavelength and vertically for amplitude")
+      superG.append("path").attr("class", "super-hit")
+        .attr("fill", "none").attr("stroke", "transparent").attr("stroke-width", 24).style("pointer-events", "stroke")
+      superG.append("path").attr("class", "super-path").style("pointer-events", "stroke")
         .attr("fill", "none").attr("stroke", pal.ink).attr("stroke-width", 3.5)
 
       // Legend — compact bottom row
       const legY = H * 0.88
       const legItems = [
-        { x: mx, color: "#5a79ff", label: compact ? "1" : "Wave 1" },
-        { x: mx + W * (ultraCompact ? 0.13 : 0.2), color: "#57b59a", label: compact ? "2" : "Wave 2" },
-        { x: mx + W * (ultraCompact ? 0.26 : 0.4), color: pal.ink, label: ultraCompact ? "Σ" : "Sum" },
+        { x: mx, color: "#5a79ff", label: compact ? "1" : "Wave 1", variable: "freq", variableY: null },
+        { x: mx + W * (ultraCompact ? 0.13 : 0.2), color: "#57b59a", label: compact ? "2" : "Wave 2", variable: "wavelength", variableY: null },
+        { x: mx + W * (ultraCompact ? 0.26 : 0.4), color: pal.ink, label: ultraCompact ? "Σ" : "Sum", variable: "wavelength", variableY: "amp" },
       ]
-      legItems.forEach(({ x, color, label }) => {
+      legItems.forEach(({ x, color, label, variable, variableY }) => {
         g.append("line")
+          .attr("data-drag-variable", variable).attr("data-drag-variable-y", variableY).attr("aria-label", `${label}: change the wave parameters`)
           .attr("x1", x)
           .attr("y1", legY)
           .attr("x2", x + (ultraCompact ? 14 : 18))
@@ -302,6 +321,7 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
           .attr("stroke", color)
           .attr("stroke-width", 3)
         g.append("text")
+          .attr("data-drag-variable", variable).attr("data-drag-variable-y", variableY).attr("aria-label", `${label}: change the wave parameters`)
           .attr("x", x + (ultraCompact ? 18 : 22))
           .attr("y", legY + 4)
           .attr("font-size", ultraCompact ? 11 : 12)
@@ -377,21 +397,21 @@ function D3WaveVisual({ frequency, amplitude, wavelength, onVarChange, highlight
           x: xScale(xv),
           y: wave1Y + amp * Math.sin((2 * Math.PI * xv) / wl - t * 2 * Math.PI),
         }))
-        g.select(".wave1-path").attr("d", pathGen(w1) ?? "")
+        g.selectAll(".wave1-path, .wave1-hit").attr("d", pathGen(w1) ?? "")
 
         // Wave 2
         const w2 = xs.map(xv => ({
           x: xScale(xv),
           y: wave1Y + amp * 0.7 * Math.sin((2 * Math.PI * xv) / (wl * 0.8) + t * 2 * Math.PI),
         }))
-        g.select(".wave2-path").attr("d", pathGen(w2) ?? "")
+        g.selectAll(".wave2-path, .wave2-hit").attr("d", pathGen(w2) ?? "")
 
         // Superposition
         const sup = w1.map((p, i) => ({
           x: p.x,
           y: superY + (p.y - wave1Y) + (w2[i].y - wave1Y),
         }))
-        g.select(".super-path").attr("d", pathGen(sup) ?? "")
+        g.selectAll(".super-path, .super-hit").attr("d", pathGen(sup) ?? "")
       }
 
       // ── updateScene: repositions static elements (handle, annotations) WITHOUT React ──

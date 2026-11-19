@@ -54,7 +54,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     highlightElements: ['n'],
     unlockedVariables: ['n'],
     lockedVariables: ['L'],
-    successCondition: { type: 'time_elapsed', duration: 8000 },
+    successCondition: { type: 'value_reached', target: 'n', value: 2, tolerance: 0 },
     celebration: 'subtle',
     insight: lessonCopy["ground-state"].insight,
   },
@@ -65,7 +65,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     highlightElements: ['n'],
     unlockedVariables: ['n'],
     lockedVariables: ['L'],
-    successCondition: { type: 'variable_changed', target: 'n' },
+    successCondition: { type: 'value_reached', target: 'n', value: 3, tolerance: 0 },
     celebration: 'subtle',
     insight: lessonCopy["increase-n"].insight,
   },
@@ -75,7 +75,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     hint: lessonCopy["shrink-box"].hint,
     highlightElements: ['L'],
     unlockedVariables: ['n', 'L'],
-    successCondition: { type: 'variable_changed', target: 'L' },
+    successCondition: { type: 'value_reached', target: 'L', value: 0.5, tolerance: 0 },
     celebration: 'big',
     insight: lessonCopy["shrink-box"].insight,
   },
@@ -207,6 +207,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       const g = svg.append("g")
 
       g.append("rect")
+        .attr("data-drag-variable", "L").attr("aria-label", "Width of the particle box")
         .attr("x", plotLeft)
         .attr("y", plotTop)
         .attr("width", plotRight - plotLeft)
@@ -214,18 +215,23 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("fill", pal.plot)
 
       g.append("rect").attr("class", "forbidden")
+        .attr("data-drag-variable", "L").attr("aria-label", "Box width at the forbidden region")
         .attr("y", plotTop)
         .attr("height", plotBottom - plotTop)
         .attr("fill", pal.forbidden)
 
       g.append("line").attr("class", "wall-left")
+        .attr("data-drag-variable", "L").attr("aria-label", "Box width from the fixed left wall")
         .attr("x1", plotLeft).attr("y1", plotTop).attr("x2", plotLeft).attr("y2", plotBottom)
         .attr("stroke", pal.ink).attr("stroke-width", 3)
       g.append("line").attr("class", "wall-right")
+        .attr("data-drag-variable", "L").attr("aria-label", "Box width at the right wall")
         .attr("y1", plotTop).attr("y2", plotBottom)
         .attr("stroke", pal.ink).attr("stroke-width", 3)
 
-      const wallHandle = g.append("g").attr("class", "wall-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
+      const wallHandle = g.append("g").attr("class", "wall-drag-handle")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "L").attr("aria-label", "Box width")
+        .style("cursor", "ew-resize").style("touch-action", "none")
       wallHandle.append("rect")
         .attr("x", -14).attr("y", plotTop)
         .attr("width", 28).attr("height", plotBottom - plotTop)
@@ -245,7 +251,9 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
       const probLineGen = line<number>().x((point) => waveXScale(point))
       let waveXs = range(0, liveRef.current.L + 0.001, liveRef.current.L / 200)
 
-      const nHandle = g.append("g").attr("class", "n-drag-handle").style("cursor", "ns-resize").style("touch-action", "none")
+      const nHandle = g.append("g").attr("class", "n-drag-handle")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "n").attr("data-drag-axis", "y").attr("aria-label", "Quantum number at the current energy")
+        .style("cursor", "ns-resize").style("touch-action", "none")
       nHandle.append("rect").attr("x", -18).attr("y", -14).attr("width", 36).attr("height", 28).attr("fill", "transparent")
       nHandle.append("circle").attr("r", 5).attr("fill", OCEAN).attr("stroke", "white").attr("stroke-width", 2)
 
@@ -253,6 +261,7 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("text-anchor", "start").attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F)
         .text("x = 0")
       g.append("text").attr("class", "wall-right-label").attr("y", plotBottom - 8)
+        .attr("data-drag-variable", "L").attr("aria-label", "Box width at x equals L")
         .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F)
 
       g.append("line").attr("class", "midline")
@@ -260,20 +269,28 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("stroke", pal.hair).attr("stroke-width", 1).attr("stroke-dasharray", "4 4")
 
       g.append("path").attr("class", "prob-area").attr("fill", PROB).attr("opacity", 0.15)
+        .attr("data-drag-variable", "n").attr("data-drag-variable-y", "L").attr("aria-label", "Probability density: quantum number horizontally, box width vertically")
       g.append("path").attr("class", "prob-line").attr("fill", "none").attr("stroke", PROB).attr("stroke-width", 2)
+        .attr("data-drag-variable", "n").attr("data-drag-variable-y", "L").attr("aria-label", "Probability curve: quantum number horizontally, box width vertically")
       g.append("path").attr("class", "psi-path").attr("fill", "none").attr("stroke", OCEAN).attr("stroke-width", 2.5)
+        .attr("data-drag-variable", "n").attr("data-drag-variable-y", "L").attr("aria-label", "Wave function: quantum number horizontally, box width vertically")
 
       const legendY = plotTop + 16
-      g.append("line").attr("x1", plotLeft + 10).attr("y1", legendY).attr("x2", plotLeft + 28).attr("y2", legendY)
+      const waveLegend = g.append("g").attr("data-drag-variable", "n").attr("data-drag-variable-y", "L")
+        .attr("aria-label", "Wave-function quantum number and box width")
+      waveLegend.append("line").attr("x1", plotLeft + 10).attr("y1", legendY).attr("x2", plotLeft + 28).attr("y2", legendY)
         .attr("stroke", OCEAN).attr("stroke-width", 2.5)
-      g.append("text").attr("x", plotLeft + 32).attr("y", legendY + 4)
+      waveLegend.append("text").attr("x", plotLeft + 32).attr("y", legendY + 4)
         .attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F).text(compact ? "\u03C8" : "\u03C8(x, t)")
-      g.append("line").attr("x1", plotLeft + 96).attr("y1", legendY).attr("x2", plotLeft + 114).attr("y2", legendY)
+      const probabilityLegend = g.append("g").attr("data-drag-variable", "n").attr("data-drag-variable-y", "L")
+        .attr("aria-label", "Probability-density quantum number and box width")
+      probabilityLegend.append("line").attr("x1", plotLeft + 96).attr("y1", legendY).attr("x2", plotLeft + 114).attr("y2", legendY)
         .attr("stroke", PROB).attr("stroke-width", 2)
-      g.append("text").attr("x", plotLeft + 118).attr("y", legendY + 4)
+      probabilityLegend.append("text").attr("x", plotLeft + 118).attr("y", legendY + 4)
         .attr("font-size", fontSizeSm).attr("fill", pal.muted).attr("font-family", F).text(compact ? "|\u03C8|\u00B2" : "|\u03C8(x)|\u00B2")
 
       g.append("text").attr("x", energyLeft).attr("y", plotTop - 6)
+        .attr("data-drag-variable", "n").attr("data-drag-axis", "y").attr("aria-label", "Energy controlled by quantum number")
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.muted)
         .attr("text-anchor", "start")
         .text(ultraCompact ? "E" : "Energy")
@@ -283,15 +300,18 @@ function D3SchrodingerVisual({ quantumN, wellWidth, onVarChange }: D3Schrodinger
         .attr("stroke", pal.hair).attr("stroke-width", 1)
 
       for (let n = 1; n <= 5; n++) {
-        g.append("line").attr("class", `elevel-line-${n}`)
+        const energyLevel = g.append("g").attr("data-drag-variable", "n").attr("data-drag-axis", "y")
+          .attr("aria-label", `Quantum number at energy level ${n}`)
+        energyLevel.append("line").attr("class", `elevel-line-${n}`)
           .attr("stroke", pal.faint).attr("stroke-width", 1.5)
-        g.append("text").attr("class", `elevel-n-${n}`)
+        energyLevel.append("text").attr("class", `elevel-n-${n}`)
           .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 500).attr("fill", pal.muted)
-        g.append("text").attr("class", `elevel-val-${n}`)
+        energyLevel.append("text").attr("class", `elevel-val-${n}`)
           .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", pal.faint)
       }
 
       g.append("text").attr("class", "energy-current")
+        .attr("data-drag-variable", "n").attr("data-drag-axis", "y").attr("aria-label", "Current energy controlled by quantum number")
         .attr("x", energyRight).attr("y", plotTop - 6)
         .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", pal.ink)
 

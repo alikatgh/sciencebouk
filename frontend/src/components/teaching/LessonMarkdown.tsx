@@ -64,7 +64,7 @@ export function LessonMarkdown({
       },
       blockquote({ children }) {
         return (
-          <blockquote className="border-l-2 border-ocean/30 pl-3 text-slate-600 dark:text-slate-300">
+          <blockquote className="pl-3 italic text-slate-600 dark:text-slate-300">
             {enhance(children)}
           </blockquote>
         )

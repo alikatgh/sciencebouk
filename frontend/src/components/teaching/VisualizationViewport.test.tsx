@@ -1,8 +1,46 @@
 import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { VisualizationViewport } from "./VisualizationViewport"
 
 describe("VisualizationViewport", () => {
+  it("includes a closed native disclosure at the focus boundary", () => {
+    const rectangles = vi.spyOn(HTMLElement.prototype, "getClientRects").mockImplementation(function (this: HTMLElement) {
+      const closedDetails = this.closest("details:not([open])")
+      return (closedDetails && this.tagName !== "SUMMARY" ? [] : [new DOMRect(0, 0, 10, 10)]) as unknown as DOMRectList
+    })
+    try {
+      render(<VisualizationViewport><button>Before disclosure</button><details><summary>Copy and share</summary><button>Hidden copy action</button></details></VisualizationViewport>)
+      fireEvent.click(screen.getByRole("button", { name: "Enter focused visualization mode" }))
+      const before = screen.getByRole("button", { name: "Before disclosure" })
+      before.focus()
+      expect(fireEvent.keyDown(before, { key: "Tab" })).toBe(true)
+      const summary = screen.getByText("Copy and share")
+      summary.focus()
+      fireEvent.keyDown(summary, { key: "Tab" })
+      const first = screen.getByRole("button", { name: "Zoom out visualization" })
+      expect(first).toHaveFocus()
+      fireEvent.keyDown(first, { key: "Tab", shiftKey: true })
+      expect(summary).toHaveFocus()
+    } finally {
+      rectangles.mockRestore()
+    }
+  })
+
+  it("offers focus mode on desktop and preserves zoom when returning", () => {
+    render(<VisualizationViewport><div>Scene</div></VisualizationViewport>)
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in visualization" }))
+    fireEvent.click(screen.getByRole("button", { name: "Enter focused visualization mode" }))
+    expect(screen.getByTestId("visualization-viewport")).toHaveAttribute("data-fullscreen", "true")
+    const dialog = screen.getByRole("dialog", { name: "Focused visualization" })
+    expect(dialog).toHaveAttribute("aria-modal", "true")
+    expect(screen.getByRole("button", { name: "Exit focused visualization mode" })).toHaveFocus()
+    fireEvent.keyDown(window, { key: "Tab" })
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    fireEvent.keyDown(window, { key: "Escape" })
+    expect(screen.getByTestId("visualization-viewport")).toHaveAttribute("data-fullscreen", "false")
+    expect(screen.getByTestId("visualization-zoom-frame")).toHaveAttribute("data-zoom-scale", "105")
+  })
+
   it("zooms the visualization frame in and out", () => {
     render(
       <div style={{ width: 420, height: 320 }}>
@@ -16,7 +54,7 @@ describe("VisualizationViewport", () => {
     const stage = screen.getByTestId("visualization-zoom-stage")
     const zoomIn = screen.getByRole("button", { name: "Zoom in visualization" })
     const zoomOut = screen.getByRole("button", { name: "Zoom out visualization" })
-    const reset = screen.getByRole("button", { name: "Reset visualization zoom" })
+    const reset = screen.getByRole("button", { name: "Reset visualization view" })
 
     expect(frame).toHaveAttribute("data-zoom-scale", "100")
     expect(zoomOut).not.toBeDisabled()

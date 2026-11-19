@@ -1,5 +1,6 @@
 import type { ReactElement } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { LockKeyhole, Pencil } from "lucide-react"
 import { Slider } from "../ui/slider"
 import { Input } from "../ui/input"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip"
@@ -88,13 +89,17 @@ function SliderRow({ variable, isHighlighted, onChange, onHover, phoneLayout }: 
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`${phoneLayout ? "py-1" : "rounded-lg px-2.5 py-2 [@media(pointer:coarse)]:rounded-xl [@media(pointer:coarse)]:px-3 [@media(pointer:coarse)]:py-3"} transition-colors ${isHighlighted ? "bg-slate-100 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+          className={`${phoneLayout ? "px-2 py-2" : "rounded-xl px-3 py-3"} transition-colors ${isHighlighted ? "bg-ocean/5 dark:bg-blue-400/10" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           onPointerEnter={() => onHover(variable.name)}
           onPointerLeave={() => onHover(null)}
+          onFocusCapture={() => onHover(variable.name)}
+          onBlurCapture={(event) => {
+            if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) onHover(null)
+          }}
         >
           <div className={`flex ${phoneLayout ? "items-center" : "items-start"} justify-between gap-3`}>
             <div className={phoneLayout ? "flex min-w-0 flex-wrap items-baseline gap-x-2" : "min-w-0"}>
-              <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{variable.symbol}</span>
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">{variable.symbol}{variable.locked && <LockKeyhole className="h-3 w-3 text-slate-400" aria-hidden="true" />}</span>
               {variable.description && (
                 <p className={`${phoneLayout ? "text-sm" : "text-xs"} leading-snug text-slate-500 dark:text-slate-400`}>{variable.description}</p>
               )}
@@ -115,7 +120,7 @@ function SliderRow({ variable, isHighlighted, onChange, onHover, phoneLayout }: 
                     setEditing(false)
                   }
                 }}
-                className={`${phoneLayout ? "h-11 w-20 text-base" : "h-6 w-20 text-sm [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-24"} shrink-0 text-right font-mono font-medium tabular-nums text-slate-800 dark:text-slate-100`}
+                className={`${phoneLayout ? "h-11 w-24 text-base" : "h-8 w-24 text-sm [@media(pointer:coarse)]:h-11"} shrink-0 text-right font-medium tabular-nums text-slate-800 dark:text-slate-100`}
                 autoFocus
               />
             ) : (
@@ -123,13 +128,14 @@ function SliderRow({ variable, isHighlighted, onChange, onHover, phoneLayout }: 
                 onClick={handleValueClick}
                 disabled={isDisabled}
                 aria-label={`${variable.description || variable.symbol}: ${formatValue(variable.value, variable.step)}${variable.unit ? ` ${variable.unit}` : ""}${isDisabled ? ". Locked in this lesson step" : ". Edit value"}`}
-                className={`shrink-0 rounded ${phoneLayout ? "min-h-11 min-w-11 px-2 text-base" : "px-1.5 py-0.5 text-sm [@media(pointer:coarse)]:min-h-[36px] [@media(pointer:coarse)]:px-2.5"} font-mono font-medium tabular-nums text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-100 ${
-                  isDisabled ? "cursor-default" : "cursor-text hover:bg-slate-100 dark:hover:bg-slate-600"
+                className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white ${phoneLayout ? "min-h-11 min-w-11 px-2.5 text-base" : "min-h-8 min-w-11 px-2.5 text-sm [@media(pointer:coarse)]:min-h-11"} font-medium tabular-nums text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 ${
+                  isDisabled ? "cursor-default" : "cursor-text border-dashed hover:bg-slate-100 dark:hover:bg-slate-600"
                 }`}
                 type="button"
               >
                 {formatValue(variable.value, variable.step)}
                 {variable.unit ? ` ${variable.unit}` : ""}
+                {!isDisabled && <Pencil className="h-3 w-3 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true" />}
               </button>
             )}
           </div>

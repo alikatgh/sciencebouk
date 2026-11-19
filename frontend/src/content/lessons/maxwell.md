@@ -4,20 +4,20 @@
 
 ## field-lines
 ### instruction
-Observe the electric field lines connecting the positive (+) and negative (-) charges. Try dragging them to see the field bend.
+Move either the positive (+) or negative (-) charge to bend the electric field lines connecting them.
 
 ### hint
-You can grab a charge and move it around. The step will advance shortly.
+Drag a charge to a new position, or focus it and use an arrow key. The step advances after you move it.
 
 ### insight
 Field lines flow from positive to negative charges. The closer the charges, the stronger the field between them. This is Coulomb's law in action.
 
 ## em-wave
 ### instruction
-Now watch the EM Wave mode. Electric (blue) and magnetic (green) waves travel together, in phase.
+Switch to EM Wave mode. Compare it with the static field: electric (blue) and magnetic (green) waves travel together, in phase.
 
 ### hint
-Click the "EM Wave" button at the top to switch views.
+Select the "EM Wave" button at the top to switch views. If it is already selected, switch to Field Lines first, then return. You can also focus the buttons and press Enter.
 
 ### insight
 A changing electric field creates a magnetic field, and vice versa. This self-sustaining dance is an electromagnetic wave -- light, radio, WiFi, X-rays are all the same phenomenon at different wavelengths.

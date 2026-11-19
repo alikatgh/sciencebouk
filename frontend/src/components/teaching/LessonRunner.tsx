@@ -1,18 +1,27 @@
-import type { CSSProperties, ReactElement } from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowRight, CheckCircle2, RotateCcw, Trophy, Sparkles } from "lucide-react"
+import type { ReactElement } from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { ArrowRight, CheckCircle2, RotateCcw } from "lucide-react"
 import { Button } from "../ui/button"
 import { Progress } from "../ui/progress"
+import { ConceptCheck } from "../scenes/ConceptCheck"
+import { getConceptCheck } from "../../data/conceptChecks"
 import { useSettings } from "../../settings/SettingsContext"
 import { LessonMarkdown } from "./LessonMarkdown"
 import type { LessonStep, Variable, GlossaryTerm } from "./types"
 
 interface LessonRunnerProps {
+  equationId: number
   steps: LessonStep[]
   currentStepIndex: number
   onAdvance: () => void
   onReset: () => void
   stepCompleted: boolean
+  stepStartValues: Record<string, number>
+  attemptKey: string | number
+  onRetryStep: () => void
+  checkPassed: boolean
+  onCheckAnswer: (answerIndex: number | null) => void
+  lessonFinished: boolean
   variables?: Variable[]
   onHighlight?: (name: string | null) => void
   glossary?: GlossaryTerm[]
@@ -22,139 +31,114 @@ interface LessonRunnerProps {
   onExploreFreely?: () => void
 }
 
-const PARTICLE_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
-
-function CelebrationParticles(): ReactElement {
-  const particles = useRef(
-    Array.from({ length: 24 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
-      size: 4 + Math.random() * 6,
-      delay: Math.random() * 0.6,
-      duration: 1.2 + Math.random() * 0.8,
-      drift: (Math.random() - 0.5) * 60,
-    }))
-  ).current
-
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="animate-lesson-confetti absolute rounded-full"
-          style={{
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            left: `${p.x}%`,
-            top: "-8px",
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-            ["--lesson-confetti-drift" as const]: `${p.drift}px`,
-          } as CSSProperties}
-        />
-      ))}
-    </div>
-  )
+function formatValue(value: number): string {
+  return Number.isFinite(value) ? Number(value.toPrecision(5)).toString() : "—"
 }
 
-export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, stepCompleted, variables = [], onHighlight, glossary = [], onTermHighlight, compact = false, phoneLayout = false, onExploreFreely }: LessonRunnerProps): ReactElement {
+function valueWithUnit(value: number, variable?: Variable): string {
+  return `${formatValue(value)}${variable?.unit ? ` ${variable.unit}` : ""}`
+}
+
+function valueGoals(step: LessonStep): Array<{ target: string; value: number; tolerance?: number }> {
+  const condition = step.successCondition
+  if (condition.type !== "value_reached") return []
+  return [
+    ...(condition.target && condition.value !== undefined ? [{ target: condition.target, value: condition.value, tolerance: condition.tolerance }] : []),
+    ...(condition.additionalTargets ?? []),
+  ]
+}
+
+function describeGoal(step: LessonStep, variables: Variable[], stepStartValues: Record<string, number>): string {
+  const condition = step.successCondition
+  const variable = variables.find((entry) => entry.name === condition.target)
+  const label = variable?.symbol || condition.target || "the highlighted variable"
+
+  switch (condition.type) {
+    case "variable_changed": {
+      const start = condition.target ? stepStartValues[condition.target] : undefined
+      return start === undefined
+        ? `Change ${label} and observe the visualization.`
+        : `Change ${label} from ${valueWithUnit(start, variable)} and observe the visualization.`
+    }
+    case "value_reached": {
+      const goals = valueGoals(step)
+      if (goals.length === 0) return `Adjust ${label} as described above.`
+      return `Set ${goals.map((goal) => {
+        const goalVariable = variables.find((entry) => entry.name === goal.target)
+        return `${goalVariable?.symbol || goal.target} to ${valueWithUnit(goal.value, goalVariable)} (±${valueWithUnit(goal.tolerance ?? 0.5, goalVariable)})`
+      }).join(" and ")}.`
+    }
+    case "time_elapsed":
+      return `Observe the visualization for ${formatValue((condition.duration ?? 15000) / 1000)} seconds.`
+    case "clicked":
+      return "Try the highlighted interaction described above."
+  }
+}
+
+export function LessonRunner({
+  equationId, steps, currentStepIndex, onAdvance, onReset, stepCompleted,
+  stepStartValues, attemptKey, onRetryStep, checkPassed, onCheckAnswer, lessonFinished,
+  variables = [], onHighlight, glossary = [], onTermHighlight,
+  compact = false, phoneLayout = false, onExploreFreely,
+}: LessonRunnerProps): ReactElement {
   const { settings: appSettings } = useSettings()
   const [showHint, setShowHint] = useState(false)
-  const [showInsight, setShowInsight] = useState(false)
-  const [showCelebration, setShowCelebration] = useState(false)
-  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const insightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const autoAdvancedRef = useRef(false)
-  const onAdvanceRef = useRef(onAdvance)
-  useEffect(() => { onAdvanceRef.current = onAdvance }, [onAdvance])
+  const hintId = useId()
+  const finishHelpId = useId()
+  const finishButtonRef = useRef<HTMLButtonElement>(null)
+  const previousCheckPassedRef = useRef(checkPassed)
   const step = steps[currentStepIndex]
   const isLastStep = currentStepIndex >= steps.length - 1
-  const isAllDone = isLastStep && stepCompleted
 
   const highlight = useCallback((name: string | null) => { onHighlight?.(name) }, [onHighlight])
   const termHighlight = useCallback((cls: string | null) => { onTermHighlight?.(cls) }, [onTermHighlight])
 
-  useEffect(() => () => {
-    if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
-    if (insightTimerRef.current) clearTimeout(insightTimerRef.current)
-    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current)
-  }, [])
+  useEffect(() => {
+    setShowHint(false)
+  }, [attemptKey, currentStepIndex, equationId])
 
   useEffect(() => {
-    setShowHint(false); setShowInsight(false)
-    if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
-    if (step?.hint && !stepCompleted) hintTimerRef.current = setTimeout(() => setShowHint(true), 10000)
-    return () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current) }
-  }, [currentStepIndex, step, stepCompleted])
-
-  useEffect(() => {
-    if (insightTimerRef.current) {
-      clearTimeout(insightTimerRef.current)
-      insightTimerRef.current = null
-    }
-    if (celebrationTimerRef.current) {
-      clearTimeout(celebrationTimerRef.current)
-      celebrationTimerRef.current = null
-    }
-
-    if (!stepCompleted) {
-      autoAdvancedRef.current = false
-      setShowInsight(false)
-      setShowCelebration(false)
-      return
-    }
-
-    setShowHint(false)
-    insightTimerRef.current = setTimeout(() => {
-      insightTimerRef.current = null
-      setShowInsight(true)
-      if (isLastStep) {
-        if (!autoAdvancedRef.current) {
-          autoAdvancedRef.current = true
-          onAdvanceRef.current()
-        }
-        celebrationTimerRef.current = setTimeout(() => {
-          setShowCelebration(true)
-          celebrationTimerRef.current = null
-        }, 400)
-      }
-    }, 300)
-
-    return () => {
-      if (insightTimerRef.current) {
-        clearTimeout(insightTimerRef.current)
-        insightTimerRef.current = null
-      }
-      if (celebrationTimerRef.current) {
-        clearTimeout(celebrationTimerRef.current)
-        celebrationTimerRef.current = null
-      }
-    }
-  }, [stepCompleted, isLastStep])
-
-  const handleAdvance = useCallback(() => {
-    if (autoAdvancedRef.current) return
-    // Mark as advanced so any pending auto-advance timer (300ms after stepCompleted) skips.
-    autoAdvancedRef.current = true
-    setShowInsight(false)
-    setShowHint(false)
-    onAdvance()
-  }, [onAdvance])
+    if (checkPassed && !previousCheckPassedRef.current) finishButtonRef.current?.focus()
+    previousCheckPassedRef.current = checkPassed
+  }, [checkPassed])
 
   if (!step) return <div />
 
+  const goals = valueGoals(step)
+  const targetNames = new Set([step.successCondition.target, ...goals.map((goal) => goal.target)])
+  const targetVariables = variables.filter((variable) => targetNames.has(variable.name))
+  const comparisonVariables = targetVariables.length > 0
+    ? targetVariables
+    : variables.filter((variable) => step.unlockedVariables.includes(variable.name))
+  const comparableVariables = comparisonVariables.filter((variable) => stepStartValues[variable.name] !== undefined)
+  const startsAtGoal = goals.length > 0 && goals.every((goal) => {
+    const start = stepStartValues[goal.target]
+    const current = variables.find((variable) => variable.name === goal.target)?.value
+    return start !== undefined && current !== undefined
+      && Math.abs(start - goal.value) <= (goal.tolerance ?? 0.5)
+      && Math.abs(current - goal.value) <= (goal.tolerance ?? 0.5)
+  })
+  const markdownProps = { variables, glossary, onHighlight: highlight, onTermHighlight: termHighlight }
+  const passedCheck = checkPassed ? getConceptCheck(equationId) : undefined
+  const textClass = `${phoneLayout ? "text-base leading-6 [&_p]:leading-6" : "text-sm leading-relaxed"} text-slate-700 dark:text-slate-300`
+  // The concept check is a separate stage; the final experiment alone does not
+  // represent a finished lesson.
+  const progress = lessonFinished ? 100 : ((currentStepIndex + (stepCompleted ? 1 : 0)) / (steps.length + 1)) * 100
+
+  const handleAdvance = () => {
+    if (!stepCompleted || lessonFinished || (isLastStep && !checkPassed)) return
+    setShowHint(false)
+    onAdvance()
+  }
+
   return (
     <div>
-      {/* Progress */}
       <div className={phoneLayout ? "flex min-h-11 items-center gap-2" : compact ? "mb-2.5 flex items-center gap-2" : "mb-2 flex items-center gap-2"}>
-        <Progress value={((currentStepIndex + (stepCompleted ? 1 : 0)) / steps.length) * 100} className="h-1 flex-1" />
-        <span className={`text-xs font-medium text-slate-400`}>{currentStepIndex + 1}/{steps.length}</span>
-        {currentStepIndex > 0 && (
-          <Button variant="ghost" size="icon-sm" aria-label="Restart lesson" onClick={onReset} className={`${phoneLayout ? "h-11 w-11" : "h-9 w-9"} shrink-0 text-slate-400`}>
-            <RotateCcw className="h-2.5 w-2.5" />
+        <Progress value={progress} aria-label="Lesson progress" className="h-1 flex-1" />
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{currentStepIndex + 1}/{steps.length}</span>
+        {currentStepIndex > 0 && !lessonFinished && (
+          <Button variant="ghost" size="icon-sm" aria-label="Restart lesson" onClick={onReset} className="h-11 w-11 shrink-0 text-slate-500 dark:text-slate-400">
+            <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         )}
         {onExploreFreely && (
@@ -164,112 +148,109 @@ export function LessonRunner({ steps, currentStepIndex, onAdvance, onReset, step
         )}
       </div>
 
-      {/* Instruction */}
-      <div
-        key={step.id}
-        className={phoneLayout ? "animate-slide-in-right py-1" : compact
-          ? "animate-slide-in-right rounded-[18px] border border-ocean/15 bg-ocean/5 px-3.5 py-3 dark:border-ocean/20 dark:bg-ocean/10"
-          : "animate-slide-in-right rounded-lg border border-ocean/15 bg-ocean/5 px-3 py-2 dark:border-ocean/20 dark:bg-ocean/10"}
-      >
-        <LessonMarkdown
-          content={step.instruction}
-          className={`${phoneLayout ? "text-base leading-6 [&_p]:leading-6" : "text-sm leading-relaxed"} text-slate-700 dark:text-slate-300`}
-          variables={variables}
-          glossary={glossary}
-          onHighlight={highlight}
-          onTermHighlight={termHighlight}
-        />
-      </div>
-
-      {/* Hint */}
-      {showHint && step.hint && !stepCompleted && appSettings.showHints && (
-        <div className={phoneLayout ? "animate-fade-in mt-2 border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400" : compact
-          ? "animate-fade-in mt-1.5 rounded-[16px] bg-slate-100 px-3.5 py-2 text-xs text-slate-400 dark:bg-slate-700"
-          : "animate-fade-in mt-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] text-slate-400 dark:bg-slate-700"}>
-          <LessonMarkdown
-            content={step.hint}
-            variables={variables}
-            glossary={glossary}
-            onHighlight={highlight}
-            onTermHighlight={termHighlight}
-          />
+      {lessonFinished ? (
+        <div className="py-2">
+          <p role="status" className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-ocean" aria-hidden="true" />
+            Lesson complete!
+          </p>
+          <LessonMarkdown content={step.insight} className={`mt-2 ${textClass}`} {...markdownProps} />
+          <Button variant="outline" size="sm" aria-label="Restart lesson" onClick={onReset} className="mt-3 min-h-11 gap-1.5 px-3">
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Replay
+          </Button>
         </div>
-      )}
+      ) : (
+        <>
+          <LessonMarkdown content={step.instruction} className={`py-1 ${textClass}`} {...markdownProps} />
 
-      {/* Insight (mid-lesson steps) */}
-      {showInsight && stepCompleted && !isAllDone && (
-        <div className={phoneLayout ? "animate-fade-in-up mt-2 border-l-2 border-sky-300 pl-3 dark:border-sky-700" : compact
-          ? "animate-fade-in-up mt-1.5 rounded-[18px] border border-sky-200 bg-sky-50 px-3.5 py-3 dark:border-sky-700/40 dark:bg-sky-950/30"
-          : "animate-fade-in-up mt-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-700/40 dark:bg-sky-950/30"}>
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-500" />
-              <div className="flex-1">
-                <LessonMarkdown
-                  content={step.insight}
-                  className={`${phoneLayout ? "text-base leading-6 [&_p]:leading-6" : "text-sm leading-relaxed"} text-slate-600 dark:text-slate-300`}
-                  variables={variables}
-                  glossary={glossary}
-                  onHighlight={highlight}
-                  onTermHighlight={termHighlight}
-                />
-                <Button size="xs" className={`${phoneLayout ? "mt-2 min-h-11 px-4" : compact ? "mt-2.5 min-h-[42px] rounded-full px-4" : "mt-2"}`} onClick={handleAdvance}>
-                  Next step <ArrowRight className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-        </div>
-      )}
+          <p role="status" aria-live="polite" className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            <span className="font-medium text-slate-700 dark:text-slate-300">{stepCompleted ? "Goal reached. " : "Goal: "}</span>
+            {describeGoal(step, variables, stepStartValues)}
+          </p>
+          {startsAtGoal && !stepCompleted && (
+            <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">You are starting at the goal. Try another value, then return to the target to test the relationship.</p>
+          )}
 
-      {/* Lesson complete celebration */}
-      {showCelebration && isAllDone && (
-        <div className={phoneLayout ? "animate-scale-in relative mt-2 overflow-hidden rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 dark:border-emerald-600 dark:bg-emerald-950/30" : compact
-          ? "animate-scale-in relative mt-2 overflow-hidden rounded-[22px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-[18px] dark:border-emerald-600/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-sky-950/30"
-          : "animate-scale-in relative mt-2 overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-4 dark:border-emerald-600/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-sky-950/30"}>
-            <CelebrationParticles />
+          {comparableVariables.length > 0 && (
+            <table aria-label="Experiment values" className="mt-2 w-full border-collapse text-left text-xs tabular-nums text-slate-600 dark:text-slate-300">
+              <thead>
+                <tr className="text-slate-500 dark:text-slate-400">
+                  <th scope="col" className="pb-1 pr-3 font-normal">Variable</th>
+                  <th scope="col" className="pb-1 pr-3 text-right font-normal">Start</th>
+                  <th scope="col" className="pb-1 text-right font-normal">Now</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparableVariables.map((variable) => (
+                  <tr key={variable.name}>
+                    <th scope="row" className="py-1 pr-3 font-medium">{variable.symbol || variable.name}</th>
+                    <td className="py-1 pr-3 text-right">{valueWithUnit(stepStartValues[variable.name], variable)}</td>
+                    <td className="py-1 text-right font-medium text-slate-800 dark:text-slate-100">{valueWithUnit(variable.value, variable)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
-            <div className="relative flex flex-col items-center text-center">
-              <div
-                className="animate-pop-in"
-                style={{ animationDelay: "150ms" }}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3">
+            {step.hint && appSettings.showHints && (
+              <Button
+                variant="ghost" size="sm" aria-expanded={showHint} aria-controls={hintId}
+                className="min-h-11 px-0 text-xs text-slate-600 dark:text-slate-300"
+                onClick={() => setShowHint((visible) => !visible)}
               >
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
-                  <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                {showHint ? "Hide hint" : "Show hint"}
+              </Button>
+            )}
+            <Button
+              variant="ghost" size="sm" className="min-h-11 gap-1.5 px-0 text-xs text-slate-600 dark:text-slate-300"
+              onClick={() => { setShowHint(false); onRetryStep() }}
+            >
+              <RotateCcw className="h-3 w-3" aria-hidden="true" /> Retry this step
+            </Button>
+          </div>
+
+          {showHint && step.hint && appSettings.showHints && (
+            <div id={hintId} className="pb-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <LessonMarkdown content={step.hint} {...markdownProps} />
+            </div>
+          )}
+
+          {stepCompleted && (
+            <div className="mt-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ocean" aria-hidden="true" />
+                <LessonMarkdown content={step.insight} className={textClass} {...markdownProps} />
+              </div>
+
+              {isLastStep ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Check your understanding</p>
+                  {checkPassed ? (
+                    <div role="group" aria-label="Concept check">
+                      <p role="status" className="text-xs font-semibold leading-relaxed text-slate-700 dark:text-slate-200">Concept check answered correctly.</p>
+                      {passedCheck && (
+                        <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{passedCheck.explanation}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <ConceptCheck equationId={equationId} variant="lesson" resetKey={attemptKey} onAnswer={onCheckAnswer} />
+                  )}
+                  <p id={finishHelpId} className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                    {checkPassed ? "Finish when you are ready." : "Answer the concept check correctly to finish this lesson."}
+                  </p>
+                  <Button ref={finishButtonRef} size="sm" className="mt-2 min-h-11 px-4" onClick={handleAdvance} disabled={!checkPassed} aria-describedby={finishHelpId}>
+                    Finish lesson <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
                 </div>
-              </div>
-
-              <p
-                className={`animate-fade-in-up ${compact ? "text-base" : "text-sm"} font-bold text-emerald-700 dark:text-emerald-300`}
-                style={{ animationDelay: "250ms" }}
-              >
-                Lesson complete!
-              </p>
-
-              <div
-                className={`animate-fade-in mt-1.5 text-sm leading-relaxed leading-relaxed text-slate-600 dark:text-slate-300`}
-                style={{ animationDelay: "400ms" }}
-              >
-                <LessonMarkdown
-                  content={step.insight}
-                  variables={variables}
-                  glossary={glossary}
-                  onHighlight={highlight}
-                  onTermHighlight={termHighlight}
-                />
-              </div>
-
-              <div
-                className={`animate-fade-in-up mt-3 flex ${compact ? "flex-wrap justify-center" : ""} gap-2`}
-                style={{ animationDelay: "550ms" }}
-              >
-                <Button variant="outline" size="xs" aria-label="Restart lesson" onClick={onReset} className={`${phoneLayout ? "min-h-11 px-4" : compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 text-slate-500`}>
-                  <RotateCcw className="h-3 w-3" /> Replay
+              ) : (
+                <Button size="sm" className="mt-3 min-h-11 px-4" onClick={handleAdvance}>
+                  Next step <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
-                <Button size="xs" className={`${phoneLayout ? "min-h-11 px-4" : compact ? "min-h-[42px] rounded-full px-4" : ""} gap-1 bg-emerald-600 hover:bg-emerald-700`} onClick={() => setShowCelebration(false)}>
-                  <Sparkles className="h-3 w-3" /> Keep exploring
-                </Button>
-              </div>
+              )}
             </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   )

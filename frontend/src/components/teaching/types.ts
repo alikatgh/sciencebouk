@@ -13,6 +13,37 @@ export interface Variable {
   description?: string
 }
 
+/** Why a scene is changing a value; only deliberate learner input earns a step. */
+export type EquationVariableSource = 'learner' | 'preset' | 'reset' | 'restore' | 'system'
+
+export type SetEquationVariable = (
+  name: string,
+  value: number,
+  options?: { source: EquationVariableSource },
+) => void
+
+/** A bounded in-memory observation, scoped to one equation. */
+export interface ExperimentSnapshot {
+  equationId: number
+  values: Record<string, number>
+  resultLine?: string
+  resultNote?: string
+}
+
+/** Reuses an equation's existing numeric model; no formula parsing. */
+export interface ExperimentMeasurement {
+  symbol: string
+  unit?: string
+  note?: string
+  compute: (values: Record<string, number>) => number
+}
+
+export interface ExperimentChange {
+  variableName: string
+  value: number
+  expectedValues: Record<string, number>
+}
+
 export interface LessonStep {
   id: string
   instruction: string
@@ -25,6 +56,7 @@ export interface LessonStep {
     target?: string
     value?: number
     tolerance?: number
+    additionalTargets?: Array<{ target: string; value: number; tolerance?: number }>
     duration?: number
   }
   celebration: 'subtle' | 'medium' | 'big'

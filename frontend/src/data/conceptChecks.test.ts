@@ -13,18 +13,20 @@ describe("conceptChecks", () => {
     expect(getConceptCheck(999)).toBeNull()
   })
 
-  it("covers EVERY subject equation (ids 18-81)", () => {
-    for (let id = 18; id <= 81; id += 1) {
+  it("covers every equation exactly once (ids 1-81)", () => {
+    expect(Object.keys(conceptChecks)).toHaveLength(81)
+    for (let id = 1; id <= 81; id += 1) {
       expect(getConceptCheck(id), `concept check missing for equation ${id}`).not.toBeNull()
     }
   })
 
-  it("every check is internally consistent (valid answer index, non-empty fields, subject id)", () => {
+  it("every check is internally consistent (valid answer index, non-empty fields, equation id)", () => {
     for (const [id, check] of Object.entries(conceptChecks)) {
-      expect(Number(id)).toBeGreaterThanOrEqual(18)
+      expect(Number(id)).toBeGreaterThanOrEqual(1)
       expect(Number(id)).toBeLessThanOrEqual(81)
       expect(check.question.length).toBeGreaterThan(10)
       expect(check.options.length).toBeGreaterThanOrEqual(2)
+      expect(Number.isInteger(check.correctIndex)).toBe(true)
       expect(check.correctIndex).toBeGreaterThanOrEqual(0)
       expect(check.correctIndex).toBeLessThan(check.options.length)
       expect(check.explanation.length).toBeGreaterThan(15)

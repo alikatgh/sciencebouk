@@ -1,8 +1,9 @@
 import type { PointerEvent as ReactPointerEvent, ReactElement } from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
 import type { Variable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
 import { subjectResults } from "../../data/subjectResults"
+import { usePhoneLayout } from "../../hooks/usePhoneLayout"
 
 /**
  * The world-class generic stage for data-driven equations: instead of echoing
@@ -25,11 +26,6 @@ const PAD_L = 64
 const PAD_R = 36
 const PAD_T = 36
 const PAD_B = 52
-
-const REDUCED_MOTION =
-  typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : false
 
 interface ResponseCurveProps {
   equationId: number
@@ -55,7 +51,9 @@ interface CurvePoint {
 interface CurveModel {
   symbol: string
   unit?: string
+  sweepName: string
   sweepSymbol: string
+  sweepUnit?: string
   sweepColor: string
   points: CurvePoint[]
   linePath: string
@@ -262,7 +260,9 @@ function buildModel(
   return {
     symbol: result.symbol,
     unit: result.unit,
+    sweepName: sweep.name,
     sweepSymbol: sweep.symbol,
+    sweepUnit: sweep.unit,
     sweepColor: sweep.color,
     points,
     linePath: linePath.trim(),
@@ -284,6 +284,8 @@ function buildModel(
 }
 
 export function ResponseCurve({ equationId, variables, vars, sweepOverride }: ResponseCurveProps): ReactElement | null {
+  const phoneLayout = usePhoneLayout()
+  const axisDescriptionId = useId()
   const [logScale, setLogScale] = useState(false)
   const model = useMemo(
     () => buildModel(equationId, variables, vars, logScale, sweepOverride),
@@ -328,37 +330,27 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
   const labelY = model.dot ? Math.max(model.dot.y - 12, PAD_T + 10) : 0
 
   return (
-    <div className="relative h-full min-h-0 w-full">
+    <div data-scene-canvas className="relative flex h-full min-h-0 w-full flex-col">
       {/* Screen-reader mirror of the live result — SVG text nodes are not announced. */}
       <div className="sr-only" role="status" aria-live="polite">
         {`${model.symbol} = ${model.dotValue !== null ? tick(model.dotValue) : "—"}${model.unit ? ` ${model.unit}` : ""}`}
       </div>
-      {model.canLog && (
-        <button
-          type="button"
-          onClick={() => setLogScale((v) => !v)}
-          aria-pressed={model.logActive}
-          aria-label={`Toggle logarithmic y-axis (currently ${model.logActive ? "on" : "off"})`}
-          className={`absolute right-1.5 top-1.5 z-10 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide transition ${
-            model.logActive ? "" : "text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-700"
-          }`}
-          style={
-            model.logActive
-              ? { backgroundColor: `${VAR_COLORS.result}22`, color: VAR_COLORS.result, boxShadow: `inset 0 0 0 1px ${VAR_COLORS.result}66` }
-              : undefined
-          }
-        >
-          log y
-        </button>
+      {phoneLayout && hover && (
+        <div className="pointer-events-none absolute left-3 top-2 z-10 max-w-[calc(100%-1.5rem)] rounded-lg bg-white/95 px-2 py-1 font-mono text-xs font-medium text-slate-700 dark:bg-slate-900/95 dark:text-slate-200">
+          {model.sweepSymbol} = {tick(hover.x)} · {model.symbol} = {tick(hover.y)}{model.unit ? ` ${model.unit}` : ""}
+        </div>
       )}
+      {/* Keep model coordinates unchanged; phone labels live in the unscaled HTML footer. */}
       <svg
         viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio={phoneLayout ? "none" : "xMidYMid meet"}
         role="img"
         aria-label={`Response curve of ${model.symbol} versus ${model.sweepSymbol}`}
-        className="h-full w-full pb-7 text-[color:var(--scene-muted,#64748b)] sm:pb-0"
+        aria-describedby={axisDescriptionId}
+        className="min-h-0 w-full flex-1 text-[color:var(--scene-muted,#64748b)]"
         style={{ cursor: "crosshair" }}
         onPointerMove={handlePointerMove}
-      onPointerLeave={clearHover}
+        onPointerLeave={clearHover}
     >
       <defs>
         <linearGradient id={model.gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -379,15 +371,27 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       <line x1={PAD_L} y1={H - PAD_B} x2={W - PAD_R} y2={H - PAD_B} stroke="currentColor" strokeOpacity="0.25" />
       <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={H - PAD_B} stroke="currentColor" strokeOpacity="0.25" />
 
-      {model.areaPath && <path d={model.areaPath} fill={`url(#${model.gradientId})`} />}
-      <path
-        d={model.linePath}
-        fill="none"
-        stroke={VAR_COLORS.result}
-        strokeWidth="3"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      {model.areaPath && <path data-drag-variable={model.sweepName} aria-label={`${model.sweepSymbol} represented by the shaded response area`} d={model.areaPath} fill={`url(#${model.gradientId})`} />}
+      <g data-drag-variable={model.sweepName} aria-label={`${model.sweepSymbol} on the ${model.symbol} response curve`}>
+        <path
+          d={model.linePath}
+          fill="none"
+          stroke="transparent"
+          strokeWidth="24"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <path
+          d={model.linePath}
+          fill="none"
+          stroke={VAR_COLORS.result}
+          strokeWidth="3"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </g>
 
       {/* notable-point markers */}
       {model.markers.map((m, i) => (
@@ -409,7 +413,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
             y={Math.max(hover.py - 9, PAD_T + 9)}
             textAnchor="middle"
             fontSize="9.5"
-            className="fill-current font-semibold tabular-nums"
+            className={phoneLayout ? "hidden" : "fill-current font-semibold tabular-nums"}
           >
             {model.sweepSymbol}={tick(hover.x)} · {tick(hover.y)}
             {model.unit ? ` ${model.unit}` : ""}
@@ -418,7 +422,7 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       )}
 
       {model.dot && model.guideX !== null && (
-        <>
+        <g data-drag-variable={model.sweepName} aria-label={`Current ${model.sweepSymbol} and resulting ${model.symbol}`}>
           <line
             x1={model.guideX}
             y1={PAD_T}
@@ -431,11 +435,19 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
           <circle
             cx={model.dot.x}
             cy={model.dot.y}
+            r="22"
+            fill="transparent"
+            stroke="transparent"
+            strokeWidth="16"
+            vectorEffect="non-scaling-stroke"
+          />
+          <circle
+            cx={model.dot.x}
+            cy={model.dot.y}
             r="8"
             fill={VAR_COLORS.result}
             stroke="white"
             strokeWidth="3"
-            style={REDUCED_MOTION ? undefined : { transition: "cx 120ms linear, cy 120ms linear" }}
           />
           {model.dotValue !== null && (
             <text
@@ -451,11 +463,11 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
               {model.unit ? ` ${model.unit}` : ""}
             </text>
           )}
-        </>
+        </g>
       )}
 
       {/* axis labels */}
-      <g className="hidden sm:inline">
+      <g className={phoneLayout ? "hidden" : undefined}>
       <text x={W - PAD_R} y={H - 8} textAnchor="end" fontSize="11" className="fill-current font-medium">
         {model.sweepSymbol} →
       </text>
@@ -478,9 +490,35 @@ export function ResponseCurve({ equationId, variables, vars, sweepOverride }: Re
       </text>
       </g>
       </svg>
-      <div className="absolute inset-x-3 bottom-1 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs tabular-nums text-slate-500 dark:text-slate-400 sm:hidden">
-        <span>{model.sweepSymbol}: {model.xMinLabel}–{model.xMaxLabel}</span>
-        <span>{model.symbol}: {model.yMinLabel}–{model.yMaxLabel}{model.unit ? ` ${model.unit}` : ""}</span>
+      <div className={phoneLayout ? "flex shrink-0 items-center gap-3 px-3 pb-2 pt-1" : "absolute right-1.5 top-1.5 z-10"}>
+        <dl id={axisDescriptionId} className={phoneLayout ? "grid min-w-0 flex-1 grid-cols-2 gap-x-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400" : "sr-only"}>
+          <div className="min-w-0">
+            <dt className="font-medium text-slate-700 dark:text-slate-200">Horizontal · {model.sweepSymbol}</dt>
+            <dd className="tabular-nums">{model.xMinLabel} to {model.xMaxLabel}{model.sweepUnit ? ` ${model.sweepUnit}` : ""}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="font-medium text-slate-700 dark:text-slate-200">Vertical · {model.symbol}</dt>
+            <dd className="tabular-nums">{model.yMinLabel} to {model.yMaxLabel}{model.unit ? ` ${model.unit}` : ""}{model.logActive ? " · log scale" : ""}</dd>
+          </div>
+        </dl>
+        {model.canLog && (
+          <button
+            type="button"
+            onClick={() => setLogScale((v) => !v)}
+            aria-pressed={model.logActive}
+            aria-label={`Toggle logarithmic y-axis (currently ${model.logActive ? "on" : "off"})`}
+            className={`min-h-11 min-w-11 shrink-0 rounded-lg px-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean ${
+              model.logActive ? "" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
+            }`}
+            style={
+              model.logActive
+                ? { backgroundColor: `${VAR_COLORS.result}22`, color: VAR_COLORS.result, boxShadow: `inset 0 0 0 1px ${VAR_COLORS.result}66` }
+                : undefined
+            }
+          >
+            Log y
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode, WheelEvent } from "react"
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Maximize2, Minimize2, Minus, Plus, RotateCcw, SlidersHorizontal } from "lucide-react"
 import { Button } from "../ui/button"
 import { cn } from "../../lib/utils"
@@ -10,6 +10,14 @@ const MAX_ZOOM = 2
 const BUTTON_ZOOM_STEP = 0.05
 const WHEEL_ZOOM_SENSITIVITY = 0.0015
 const MIN_PINCH_DISTANCE = 24
+
+const VisualizationViewContext = createContext<{
+  registerReset: (reset: () => void) => () => void
+  registerInterrupt: (interrupt: () => void) => () => void
+  setPanActive: (active: boolean) => void
+} | null>(null)
+
+export const useVisualizationView = () => useContext(VisualizationViewContext)
 
 function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(2))))
@@ -31,6 +39,20 @@ export function VisualizationViewport({
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [viewControlsOpen, setViewControlsOpen] = useState(false)
+  const [hasPan, setPanActive] = useState(false)
+  const resettersRef = useRef(new Set<() => void>())
+  const interruptersRef = useRef(new Set<() => void>())
+  const registerInterrupt = useCallback((interrupt: () => void) => {
+    interruptersRef.current.add(interrupt)
+    return () => { interruptersRef.current.delete(interrupt) }
+  }, [])
+  const registerReset = useCallback((reset: () => void) => {
+    resettersRef.current.add(reset)
+    return () => { resettersRef.current.delete(reset); if (!resettersRef.current.size) setPanActive(false) }
+  }, [])
+  const viewContext = useMemo(() => ({ registerReset, registerInterrupt, setPanActive }), [registerReset, registerInterrupt])
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const focusToggleRef = useRef<HTMLButtonElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pendingAnchorRef = useRef<{ x: number; y: number } | null>(null)
   const activePointersRef = useRef(new Map<number, { x: number; y: number }>())
@@ -39,7 +61,7 @@ export function VisualizationViewport({
   const zoomPercent = Math.round(zoom * 100)
   const canZoomOut = zoom > MIN_ZOOM
   const canZoomIn = zoom < MAX_ZOOM
-  const canReset = zoom !== DEFAULT_ZOOM
+  const canReset = zoom !== DEFAULT_ZOOM || hasPan
   const isZoomedOut = zoom < DEFAULT_ZOOM
   const zoomFrameStyle = useMemo(
     () => (zoom > DEFAULT_ZOOM ? { width: `${zoom * 100}%`, height: `${zoom * 100}%` } : undefined),
@@ -97,7 +119,10 @@ export function VisualizationViewport({
   }, [updateZoom])
 
   const resetZoom = useCallback(() => {
+    interruptersRef.current.forEach((interrupt) => interrupt())
     updateZoom(DEFAULT_ZOOM)
+    resettersRef.current.forEach((reset) => reset())
+    setPanActive(false)
   }, [updateZoom])
 
   const clearPinch = useCallback(() => {
@@ -149,6 +174,7 @@ export function VisualizationViewport({
     })
 
     if (activePointersRef.current.size >= 2) {
+      if (!pinchRef.current) interruptersRef.current.forEach((interrupt) => interrupt())
       event.preventDefault()
       try {
         event.currentTarget.setPointerCapture(event.pointerId)
@@ -213,29 +239,61 @@ export function VisualizationViewport({
   useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return
 
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    focusToggleRef.current?.focus()
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault()
+        event.stopPropagation()
+        interruptersRef.current.forEach((interrupt) => interrupt())
         setIsFullscreen(false)
+      } else if (event.key === "Tab") {
+        const viewport = viewportRef.current
+        if (!viewport) return
+        const controls = Array.from(viewport.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        )).filter((control) => control.getClientRects().length > 0)
+        const first = controls[0]
+        const last = controls[controls.length - 1]
+        if (!first || !last) {
+          event.preventDefault()
+          viewport.focus()
+        } else if (event.shiftKey && (document.activeElement === first || !viewport.contains(document.activeElement))) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && (document.activeElement === last || !viewport.contains(document.activeElement))) {
+          event.preventDefault()
+          first.focus()
+        }
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown, true)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true)
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
   }, [isFullscreen])
 
   return (
+    <VisualizationViewContext.Provider value={viewContext}>
     <div
+      ref={viewportRef}
+      role={isFullscreen ? "dialog" : undefined}
+      aria-modal={isFullscreen ? true : undefined}
+      aria-label={isFullscreen ? "Focused visualization" : undefined}
+      tabIndex={isFullscreen ? -1 : undefined}
       data-testid="visualization-viewport"
       data-fullscreen={isFullscreen ? "true" : "false"}
       className={cn(
         "relative h-full min-h-0",
-        isFullscreen && "fixed inset-0 z-[90] h-[100dvh] bg-slate-950/96 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]",
+        isFullscreen && "fixed inset-0 z-[90] h-[100dvh] bg-mist px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] dark:bg-slate-950",
         className,
       )}
     >
-      <div className={cn("relative h-full min-h-0", isFullscreen && "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950 shadow-2xl")}>
+      <div className={cn("relative h-full min-h-0", isFullscreen && "studio-surface overflow-hidden rounded-[18px] border")}>
       <div className={cn("pointer-events-none absolute z-10 flex", flowingPage ? "right-1 top-1" : "inset-x-0 top-2 justify-center px-3 sm:inset-x-auto sm:right-3 sm:top-3 sm:px-0")}>
-        <div role="group" aria-label="Diagram view controls" className={cn("pointer-events-auto flex items-center gap-0.5 bg-white/90 dark:bg-slate-900/90", flowingPage ? "rounded-lg" : "rounded-full border border-slate-200 px-1 py-0.5 sm:gap-1 dark:border-slate-700")}>
+        <div role="group" aria-label="Diagram view controls" className={cn("pointer-events-auto flex items-center gap-0.5 bg-white/95 dark:bg-slate-900/95", flowingPage ? "rounded-lg" : "rounded-xl border border-slate-200 px-1 py-1 shadow-sm dark:border-slate-700")}>
           {flowingPage && !isFullscreen && (
             <Button type="button" variant="ghost" size="icon-sm" className="h-11 w-11 rounded-lg text-slate-500 dark:text-slate-300" aria-label="Adjust visualization view" aria-expanded={viewControlsOpen} onClick={() => setViewControlsOpen((open) => !open)}>
               <SlidersHorizontal className="h-4 w-4" />
@@ -275,25 +333,24 @@ export function VisualizationViewport({
             variant="ghost"
             size="icon-sm"
             className="h-10 w-10 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:h-7 sm:w-7 sm:rounded-lg dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-            aria-label="Reset visualization zoom"
+            aria-label="Reset visualization view"
             disabled={!canReset}
             onClick={resetZoom}
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
           </>}
-          {mobileOptimized && (
             <Button
+              ref={focusToggleRef}
               type="button"
               variant="ghost"
               size="icon-sm"
-              className={cn("h-11 w-11 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800", !flowingPage && "sm:hidden")}
+              className="h-11 w-11 rounded-lg text-slate-500 hover:bg-slate-100 sm:h-8 sm:w-8 dark:text-slate-300 dark:hover:bg-slate-800 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
               aria-label={isFullscreen ? "Exit focused visualization mode" : "Enter focused visualization mode"}
-              onClick={() => setIsFullscreen((previous) => !previous)}
+              onClick={() => { interruptersRef.current.forEach((interrupt) => interrupt()); setIsFullscreen((previous) => !previous) }}
             >
               {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
             </Button>
-          )}
         </div>
       </div>
 
@@ -338,5 +395,6 @@ export function VisualizationViewport({
       </div>
       </div>
     </div>
+    </VisualizationViewContext.Provider>
   )
 }

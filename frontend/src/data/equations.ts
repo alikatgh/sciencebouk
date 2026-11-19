@@ -28,6 +28,7 @@ export interface EquationLesson {
   successDuration?: number
   successValue?: number
   successTolerance?: number
+  successAdditionalTargets?: Array<{ target: string; value: number; tolerance?: number }>
   celebration: string
   insight: string
 }

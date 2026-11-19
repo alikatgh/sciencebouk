@@ -129,16 +129,17 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy.order.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
-    successCondition: { type: 'time_elapsed', duration: 5000 },
+    successCondition: { type: 'value_reached', target: 'temperature', value: 0, tolerance: 0 },
     celebration: 'subtle',
     insight: lessonCopy.order.insight,
   },
   {
     id: 'heat',
     instruction: lessonCopy.heat.instruction,
+    hint: lessonCopy.heat.hint,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
-    successCondition: { type: 'variable_changed', target: 'temperature' },
+    successCondition: { type: 'value_reached', target: 'temperature', value: 50, tolerance: 0 },
     celebration: 'subtle',
     insight: lessonCopy.heat.insight,
   },
@@ -147,7 +148,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy.arrow.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
-    successCondition: { type: 'value_reached', target: 'temperature', value: 100, tolerance: 5 },
+    successCondition: { type: 'value_reached', target: 'temperature', value: 100, tolerance: 0 },
     celebration: 'medium',
     insight: lessonCopy.arrow.insight,
   },
@@ -156,7 +157,7 @@ function buildLessons(lessonCopy: Record<string, Pick<LessonStep, "instruction" 
     instruction: lessonCopy.irreversible.instruction,
     highlightElements: ['temperature'],
     unlockedVariables: ['temperature'],
-    successCondition: { type: 'value_reached', target: 'temperature', value: 0, tolerance: 5 },
+    successCondition: { type: 'value_reached', target: 'temperature', value: 0, tolerance: 0 },
     celebration: 'big',
     insight: lessonCopy.irreversible.insight,
   },
@@ -173,6 +174,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
   const { width, height } = useContainerSize(containerRef)
   const compact = width > 0 && (width < 460 || height < 420)
   const ultraCompact = width > 0 && (width < 390 || height < 360)
+  const particleHitRadius = Math.max(28, (22 * VIEWBOX_WIDTH) / (width || VIEWBOX_WIDTH))
   const orderedParticles = useMemo(() => buildOrderedParticles(), [])
   const visualStateCount = useMemo(() => visualStateCountForTemperature(temperature), [temperature])
   const microstateCloud = useMemo(
@@ -193,7 +195,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
       <svg
         viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
         className="h-full w-full"
-        role="img"
+        role="group"
         aria-label="Particles exploring more arrangements as temperature increases"
       >
         <defs>
@@ -217,9 +219,11 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
         </defs>
 
         <rect width={VIEWBOX_WIDTH} height={VIEWBOX_HEIGHT} fill="transparent" />
-        <circle cx={VIEWBOX_WIDTH * 0.5} cy={VIEWBOX_HEIGHT * 0.48} r={VIEWBOX_WIDTH * 0.3} fill="url(#thermal-haze)" opacity={0.7} />
+        <circle data-drag-variable="temperature" aria-label="Adjust thermal haze temperature" cx={VIEWBOX_WIDTH * 0.5} cy={VIEWBOX_HEIGHT * 0.48} r={VIEWBOX_WIDTH * 0.3} fill="url(#thermal-haze)" opacity={0.7} />
 
         <rect
+          data-drag-variable="temperature"
+          aria-label="Adjust particle chamber temperature"
           x={CHAMBER.x}
           y={CHAMBER.y}
           width={CHAMBER.width}
@@ -265,6 +269,8 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
         {orderedParticles.map((particle, index) => (
           <circle
             key={`ordered-${index}`}
+            data-drag-variable="temperature"
+            aria-label={`Adjust temperature from ordered particle ${index + 1}`}
             cx={particle.x}
             cy={particle.y}
             r={ultraCompact ? PARTICLE_RADIUS - 1.5 : PARTICLE_RADIUS}
@@ -275,7 +281,7 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
         ))}
 
         {visibleGhostStates.slice(0, -1).map((state, stateIndex) => (
-          <g key={`state-${stateIndex}`} opacity={ultraCompact ? 0.06 + stateIndex * 0.05 : compact ? 0.08 + stateIndex * 0.04 : 0.06 + stateIndex * 0.03}>
+          <g key={`state-${stateIndex}`} data-drag-variable="temperature" aria-label={`Adjust temperature from possible arrangement ${stateIndex + 1}`} opacity={ultraCompact ? 0.06 + stateIndex * 0.05 : compact ? 0.08 + stateIndex * 0.04 : 0.06 + stateIndex * 0.03}>
             {state.map((particle, particleIndex) => (
               <circle
                 key={`ghost-${stateIndex}-${particleIndex}`}
@@ -289,7 +295,8 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
         ))}
 
         {currentMicrostate.map((particle, index) => (
-          <g key={`current-${index}`}>
+          <g key={`current-${index}`} data-drag-variable="temperature" aria-label={`Adjust temperature from particle ${index + 1}`}>
+            <circle cx={particle.x} cy={particle.y} r={particleHitRadius} fill="transparent" />
             <circle
               cx={particle.x}
               cy={particle.y}
@@ -311,6 +318,8 @@ function EntropyVisual({ temperature }: EntropyVisualProps): ReactElement {
 
         {!ultraCompact && (
           <line
+            data-drag-variable="temperature"
+            aria-label="Adjust heat indicator temperature"
             x1={CHAMBER.x + 54}
             x2={CHAMBER.x + CHAMBER.width - 54}
             y1={CHAMBER.y + CHAMBER.height + 48}

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { buildAreaPath, buildLinePath, getTicks, useChartFrame } from "../charts/simpleChart"
 import { TeachableEquation } from "../teaching/TeachableEquation"
 import { useLessonCopy } from "../teaching/lessonContent"
@@ -76,9 +76,6 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
   const sceneCopy = useSceneCopy("normalDistribution")
   const [editingVar, setEditingVar] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [isDragging, setIsDragging] = useState(false)
-  const onVarChangeRef = useRef(onVarChange)
-  onVarChangeRef.current = onVarChange
 
   const xDomainMin = mu - 4 * sigma
   const xDomainMax = mu + 4 * sigma
@@ -105,31 +102,6 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
     }
     setEditingVar(null)
   }, [editingVar, editValue, onVarChange])
-
-  const pointerToMu = useCallback((clientX: number): number => {
-    const val = frame.clientXToX(clientX)
-    if (val == null) return mu
-    return Math.round(Math.max(-3, Math.min(3, val)) * 10) / 10
-  }, [frame, mu])
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    setIsDragging(true)
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    if (onVarChangeRef.current) {
-      onVarChangeRef.current("mu", pointerToMu(e.clientX))
-    }
-  }, [pointerToMu])
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return
-    if (onVarChangeRef.current) {
-      onVarChangeRef.current("mu", pointerToMu(e.clientX))
-    }
-  }, [isDragging, pointerToMu])
-
-  const handlePointerUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
 
   const data = useMemo(() => {
     const xMin = mu - 4 * sigma
@@ -198,7 +170,7 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("mu", mu)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Click to type a value">
+            <button data-drag-variable="mu" aria-label="Adjust bell curve center" onClick={() => handleBadgeClick("mu", mu)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.primary, color: VAR_COLORS.primary }} type="button" title="Drag to adjust, or click to type a value">
               {"\u03BC"} = {mu.toFixed(1)}
             </button>
           )}
@@ -207,11 +179,11 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
               onBlur={handleEditSubmit} onKeyDown={(e) => { if (e.key === "Enter") handleEditSubmit(); if (e.key === "Escape") setEditingVar(null) }}
               className={`w-20 rounded-lg border-2 px-2 py-1 font-bold outline-none ${ultraCompact ? "text-[11px]" : compact ? "text-xs" : "text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} />
           ) : (
-            <button onClick={() => handleBadgeClick("sigma", sigma)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Click to type a value">
+            <button data-drag-variable="sigma" aria-label="Adjust bell curve spread" onClick={() => handleBadgeClick("sigma", sigma)} className={`cursor-text rounded-lg border font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ borderColor: VAR_COLORS.secondary, color: VAR_COLORS.secondary }} type="button" title="Drag to adjust, or click to type a value">
               {"\u03C3"} = {sigma.toFixed(1)}
             </button>
           )}
-          <span className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
+          <span data-drag-variable="sigma" data-drag-axis="y" data-drag-direction="-1" aria-label="Adjust bell curve peak by changing spread" className={`ml-auto rounded-lg border border-slate-200 font-extrabold dark:border-slate-600 ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1 text-sm"}`} style={{ color: VAR_COLORS.result }}>
             {ultraCompact
               ? interpolateSceneCopy(sceneCopy.ui.peakBadge.ultraCompact, { peak: pdf(mu, mu, sigma).toFixed(3) })
               : interpolateSceneCopy(sceneCopy.ui.peakBadge.full, { peak: pdf(mu, mu, sigma).toFixed(3) })}
@@ -220,13 +192,6 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
 
         {/* Chart */}
         <div ref={frame.containerRef} className="relative min-h-0 flex-1" style={{ minHeight: 300 }}>
-          <div
-            className="absolute inset-0 z-10"
-            style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-          />
           <svg width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
             {xTicks.map((tick) => (
               <line
@@ -254,61 +219,53 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
             <line x1={frame.plotLeft} x2={frame.plotRight} y1={frame.plotBottom} y2={frame.plotBottom} stroke="#cbd5e1" />
             <line x1={frame.plotLeft} x2={frame.plotLeft} y1={frame.plotTop} y2={frame.plotBottom} stroke="#cbd5e1" />
 
-            {shade3Path && <path d={shade3Path} fill="#dbeafe" opacity={0.3} />}
-            {shade2Path && <path d={shade2Path} fill="#93c5fd" opacity={0.3} />}
-            {shade1Path && <path d={shade1Path} fill={VAR_COLORS.primary} opacity={0.25} />}
-            <path d={curvePath} fill="none" stroke="var(--scene-ink)" strokeWidth={2.5} />
+            {shade3Path && <path data-drag-variable="sigma" aria-label="Adjust three standard deviation region" d={shade3Path} fill="#dbeafe" opacity={0.3} />}
+            {shade2Path && <path data-drag-variable="sigma" aria-label="Adjust two standard deviation region" d={shade2Path} fill="#93c5fd" opacity={0.3} />}
+            {shade1Path && <path data-drag-variable="sigma" aria-label="Adjust one standard deviation region" d={shade1Path} fill={VAR_COLORS.primary} opacity={0.25} />}
+            <g data-drag-variable="mu" aria-label="Move bell curve center">
+              <path d={curvePath} fill="none" stroke="transparent" strokeWidth={22} />
+              <path d={curvePath} fill="none" stroke="var(--scene-ink)" strokeWidth={2.5} />
+            </g>
 
-            <line
-              x1={frame.xScale(mu)}
-              x2={frame.xScale(mu)}
-              y1={frame.plotTop}
-              y2={frame.plotBottom}
-              stroke={muHighlighted ? VAR_COLORS.primary : "#3b82f6"}
-              strokeWidth={muHighlighted ? 3 : 1.5}
-              strokeDasharray="6 3"
-            />
-            <line
-              x1={frame.xScale(mu - sigma)}
-              x2={frame.xScale(mu - sigma)}
-              y1={frame.plotTop}
-              y2={frame.plotBottom}
-              stroke={sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0"}
-              strokeDasharray="4 4"
-            />
-            <line
-              x1={frame.xScale(mu + sigma)}
-              x2={frame.xScale(mu + sigma)}
-              y1={frame.plotTop}
-              y2={frame.plotBottom}
-              stroke={sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0"}
-              strokeDasharray="4 4"
-            />
-            <line
-              x1={frame.xScale(mu - 2 * sigma)}
-              x2={frame.xScale(mu - 2 * sigma)}
-              y1={frame.plotTop}
-              y2={frame.plotBottom}
-              stroke="#f1f5f9"
-              strokeDasharray="3 3"
-            />
-            <line
-              x1={frame.xScale(mu + 2 * sigma)}
-              x2={frame.xScale(mu + 2 * sigma)}
-              y1={frame.plotTop}
-              y2={frame.plotBottom}
-              stroke="#f1f5f9"
-              strokeDasharray="3 3"
-            />
+            <g data-drag-variable="mu" aria-label="Move mean marker">
+              <line x1={frame.xScale(mu)} x2={frame.xScale(mu)} y1={frame.plotTop} y2={frame.plotBottom} stroke="transparent" strokeWidth={22} />
+              <line
+                x1={frame.xScale(mu)}
+                x2={frame.xScale(mu)}
+                y1={frame.plotTop}
+                y2={frame.plotBottom}
+                stroke={muHighlighted ? VAR_COLORS.primary : "#3b82f6"}
+                strokeWidth={muHighlighted ? 3 : 1.5}
+                strokeDasharray="6 3"
+              />
+            </g>
+            {[
+              { offset: -1, label: "left standard deviation" },
+              { offset: 1, label: "right standard deviation" },
+              { offset: -2, label: "left two standard deviation" },
+              { offset: 2, label: "right two standard deviation" },
+            ].map(({ offset, label }) => (
+              <g key={offset} data-drag-variable="sigma" data-drag-direction={offset < 0 ? "-1" : undefined} aria-label={`Adjust ${label} marker`}>
+                <line x1={frame.xScale(mu + offset * sigma)} x2={frame.xScale(mu + offset * sigma)} y1={frame.plotTop} y2={frame.plotBottom} stroke="transparent" strokeWidth={22} />
+                <line
+                  x1={frame.xScale(mu + offset * sigma)}
+                  x2={frame.xScale(mu + offset * sigma)}
+                  y1={frame.plotTop}
+                  y2={frame.plotBottom}
+                  stroke={Math.abs(offset) === 1 ? sigmaHighlighted ? VAR_COLORS.secondary : "#e2e8f0" : "#f1f5f9"}
+                  strokeDasharray={Math.abs(offset) === 1 ? "4 4" : "3 3"}
+                />
+              </g>
+            ))}
 
-            <text x={frame.xScale(mu)} y={frame.plotTop + 14} textAnchor="middle" fontSize={compact ? "12" : "13"} fontWeight="700" fill={VAR_COLORS.primary}>
+            <text data-drag-variable="mu" aria-label="Move mean label" x={frame.xScale(mu)} y={frame.plotTop + 14} textAnchor="middle" fontSize={compact ? "12" : "13"} fontWeight="700" fill={VAR_COLORS.primary}>
               {ultraCompact ? `${mu.toFixed(1)}` : compact ? `μ ${mu.toFixed(1)}` : `μ = ${mu.toFixed(1)}`}
             </text>
-            <text x={frame.xScale(mu + sigma)} y={frame.plotTop + 30} textAnchor="middle" fontSize="11" fill={VAR_COLORS.secondary}>
+            <text data-drag-variable="sigma" aria-label="Adjust standard deviation label" x={frame.xScale(mu + sigma)} y={frame.plotTop + 30} textAnchor="middle" fontSize="11" fill={VAR_COLORS.secondary}>
               {ultraCompact ? "σ" : "+1σ"}
             </text>
             {!compact && (
-              <text x={frame.xScale(mu + 2 * sigma)} y={frame.plotTop + 44} textAnchor="middle" fontSize="10" fill="#94a3b8">
+              <text data-drag-variable="sigma" aria-label="Adjust two standard deviation label" x={frame.xScale(mu + 2 * sigma)} y={frame.plotTop + 44} textAnchor="middle" fontSize="10" fill="#94a3b8">
                 +2σ
               </text>
             )}
@@ -334,9 +291,9 @@ function NormalChart({ mu, sigma, highlightedVar, onVarChange }: NormalChartProp
 
         {/* Percentage labels */}
         <div className="flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 px-4 py-2 text-[10px] font-medium dark:border-slate-700">
-          <span className="text-blue-600">{ultraCompact ? "1σ 68%" : compact ? "68%" : `1σ: 68.27%`}</span>
-          <span className="text-blue-400">{ultraCompact ? "2σ 95%" : compact ? "95%" : `2σ: 95.45%`}</span>
-          <span className="text-blue-300">{ultraCompact ? "3σ 99.7%" : compact ? "99.7%" : `3σ: 99.73%`}</span>
+          <span data-drag-variable="sigma" aria-label="Adjust one standard deviation region" className="text-blue-600">{ultraCompact ? "1σ 68%" : compact ? "68%" : `1σ: 68.27%`}</span>
+          <span data-drag-variable="sigma" aria-label="Adjust two standard deviation region" className="text-blue-400">{ultraCompact ? "2σ 95%" : compact ? "95%" : `2σ: 95.45%`}</span>
+          <span data-drag-variable="sigma" aria-label="Adjust three standard deviation region" className="text-blue-300">{ultraCompact ? "3σ 99.7%" : compact ? "99.7%" : `3σ: 99.73%`}</span>
         </div>
       </div>
     </div>

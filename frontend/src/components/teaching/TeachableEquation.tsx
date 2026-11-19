@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { PanelBottomOpen, PanelRightOpen } from "lucide-react"
+import { BookOpen, FlaskConical, ListChecks, PanelBottomOpen, PanelRightOpen } from "lucide-react"
 import { usePhoneLayout } from "../../hooks/usePhoneLayout"
 import { useDocumentVisibility } from "../../hooks/useDocumentVisibility"
 import { useContainerSize } from "../../hooks/useContainerSize"
@@ -17,17 +17,23 @@ import { readStoredPanelWidth, ResizablePanel } from "../ui/resizable-panel"
 import { LearnMorePanel } from "../scenes/LearnMorePanel"
 import { TouchableFormula } from "./TouchableFormula"
 import { useLatexFormula } from "./FormulaContext"
-import type { Variable, LessonStep, GlossaryTerm } from "./types"
+import type { Variable, LessonStep, GlossaryTerm, SetEquationVariable, ExperimentSnapshot, ExperimentMeasurement, ExperimentChange } from "./types"
 import { ErrorBoundary } from "../ErrorBoundary"
 import { VisualizationViewport } from "./VisualizationViewport"
+import { SceneInteractionSurface } from "./SceneInteractionSurface"
 import { shouldUseStackedTeachingLayout } from "./layoutMode"
 import { useEquationConfig } from "../../data/equationConfig"
+import { getConceptCheck } from "../../data/conceptChecks"
+import { applyLessonAction, applyLessonVariableInteraction, createLessonAttempt, type LessonAttempt } from "./lessonInteraction"
+import { ExperimentBench } from "./ExperimentBench"
+import { PredictionChallenge } from "./PredictionChallenge"
+import { captureExperiment, experimentChangeAllowed, experimentRestorePlan, experimentResultLine } from "./experimentComparison"
 
 const LiveFormula = lazy(() => import("./LiveFormula").then((module) => ({ default: module.LiveFormula })))
 const LessonRunner = lazy(() => import("./LessonRunner").then((module) => ({ default: module.LessonRunner })))
 const TEACHING_PANEL_STORAGE_KEY = "sciencebouk-teaching-panel-width"
-const TEACHING_PANEL_DEFAULT_WIDTH = 360
-const TEACHING_PANEL_MIN_WIDTH = 320
+const TEACHING_PANEL_DEFAULT_WIDTH = 316
+const TEACHING_PANEL_MIN_WIDTH = 296
 const TEACHING_PANEL_MAX_WIDTH = 520
 const MOBILE_PANEL_DRAG_THRESHOLD = 36
 const MOBILE_PANEL_PEEK_HEIGHT = "min(45%, 22rem)"
@@ -64,11 +70,14 @@ interface TeachableEquationProps {
   buildLiveFormula?: (vars: Record<string, number>) => string
   buildResultLine?: (vars: Record<string, number>) => string
   describeResult?: (vars: Record<string, number>) => string
+  experimentMeasurement?: ExperimentMeasurement
   presets?: Preset[]
+  phoneVisualizationHeight?: string
   glossary?: GlossaryTerm[]
   children: (props: {
     vars: Record<string, number>
-    setVar: (name: string, value: number) => void
+    setVar: SetEquationVariable
+    onAction: (name: string) => void
     highlightedVar: string | null
     setHighlightedVar: (name: string | null) => void
     highlightedTerm: string | null
@@ -237,7 +246,8 @@ function mergeSceneGlossary(
 export function TeachableEquation({
   equationId, hook, hookAction, formula, latexFormula,
   variables: initialVariables, lessonSteps,
-  buildLiveFormula, buildResultLine, describeResult, presets, glossary, children,
+  buildLiveFormula, buildResultLine, describeResult, experimentMeasurement, presets, glossary, children,
+  phoneVisualizationHeight = "clamp(240px, 38dvh, 340px)",
 }: TeachableEquationProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width: containerWidth, height: containerHeight } = useContainerSize(containerRef)
@@ -289,58 +299,103 @@ export function TeachableEquation({
     return r
   })
 
+  const varsRef = useRef(vars)
+  const [sceneEpoch, setSceneEpoch] = useState(0)
+  const sceneEpochRef = useRef(0)
+  const nativeGestureActiveRef = useRef(false)
+  const setNativeGestureActive = useCallback((active: boolean) => { nativeGestureActiveRef.current = active }, [])
+  const interruptScene = useCallback(() => {
+    if (!nativeGestureActiveRef.current) return
+    nativeGestureActiveRef.current = false
+    sceneEpochRef.current += 1
+    setSceneEpoch(sceneEpochRef.current)
+  }, [])
+  const [experimentSnapshot, setExperimentSnapshot] = useState<ExperimentSnapshot | null>(null)
+  const [experimentSession, setExperimentSession] = useState(0)
   const [highlightedVar, setHighlightedVar] = useState<string | null>(null)
   const [highlightedTerm, setHighlightedTerm] = useState<string | null>(null)
   const { settings: appSettings } = useSettings()
   const isDocumentVisible = useDocumentVisibility()
   const [lessonMode, setLessonMode] = useState(appSettings.autoStartLesson)
-  const [lessonStep, setLessonStep] = useState(0)
-  const [stepCompleted, setStepCompleted] = useState(false)
-  const prevVarsRef = useRef(vars)
+  const [lessonAttempt, setLessonAttempt] = useState(() => createLessonAttempt(0, vars))
+  const lessonAttemptRef = useRef(lessonAttempt)
+  const lessonStep = lessonAttempt.stepIndex
+  const stepCompleted = lessonAttempt.stepCompleted
   const progressRef = useRef(progress)
   const resumeAppliedRef = useRef<number | null>(null)
   const lessonModeWasToggledRef = useRef(false)
   const lessonCompletionRecordedRef = useRef(false)
+  const equationIdentityRef = useRef(resolvedId)
+  const interactionContextRef = useRef({ lessonMode, lessonSteps, resolvedId, progressEnabled, markVariableExplored })
+  interactionContextRef.current = { lessonMode, lessonSteps, resolvedId, progressEnabled, markVariableExplored }
+
+  const commitLessonAttempt = useCallback((next: LessonAttempt) => {
+    if (next === lessonAttemptRef.current) return
+    if (next.stepIndex !== lessonAttemptRef.current.stepIndex || next.revision !== lessonAttemptRef.current.revision) interruptScene()
+    lessonAttemptRef.current = next
+    setLessonAttempt(next)
+  }, [interruptScene])
 
   useEffect(() => {
     if (!lessonModeWasToggledRef.current) {
+      if (interactionContextRef.current.lessonMode !== appSettings.autoStartLesson) interruptScene()
       setLessonMode(appSettings.autoStartLesson)
     }
-  }, [appSettings.autoStartLesson])
+  }, [appSettings.autoStartLesson, interruptScene])
 
-  const setVar = useCallback((name: string, value: number) => { setVars((p) => ({ ...p, [name]: value })) }, [])
-
-  // Compute lockedVars early (as a stable Set) so applyPreset can reference it.
-  // This mirrors the same logic used later for formulaVariables — kept in sync via useMemo.
-  const lockedVarsMemo = useMemo<Set<string>>(() => {
-    const locked = new Set<string>()
-    if (lessonMode && lessonSteps[lessonStep]) {
-      const unlocked = new Set(lessonSteps[lessonStep].unlockedVariables)
-      for (const v of initialVariables) {
-        if (!v.constant && !unlocked.has(v.name)) locked.add(v.name)
-      }
+  const setVar = useCallback<SetEquationVariable>((name, value, options) => {
+    if (!Number.isFinite(value)) return
+    const source = options?.source ?? "learner"
+    if (source === "preset" || source === "restore" || source === "reset") interruptScene()
+    const previous = varsRef.current[name]
+    const next = { ...varsRef.current, [name]: value }
+    const context = interactionContextRef.current
+    if (source === "learner" && !Object.is(previous, value)) resumeAppliedRef.current = context.resolvedId
+    if (context.lessonMode) {
+      const attempt = lessonAttemptRef.current
+      commitLessonAttempt(applyLessonVariableInteraction(
+        attempt, context.lessonSteps[attempt.stepIndex], name, varsRef.current, next, source,
+      ))
     }
-    return locked
-  }, [lessonMode, lessonStep, lessonSteps, initialVariables])
+    if (Object.is(previous, value)) return
+    varsRef.current = next
+    setVars(next)
+    if (source === "learner" && context.progressEnabled) context.markVariableExplored(name)
+  }, [commitLessonAttempt, interruptScene])
+
+  const onAction = useCallback((name: string) => {
+    const context = interactionContextRef.current
+    if (!context.lessonMode) return
+    resumeAppliedRef.current = context.resolvedId
+    const attempt = lessonAttemptRef.current
+    commitLessonAttempt(applyLessonAction(attempt, context.lessonSteps[attempt.stepIndex], name))
+  }, [commitLessonAttempt])
 
   const applyPreset = useCallback((preset: Preset) => {
-    setVars((p) => {
-      const filtered = Object.fromEntries(
-        Object.entries(preset.values).filter(([k]) => !lockedVarsMemo.has(k))
-      )
-      return { ...p, ...filtered }
-    })
-  }, [lockedVarsMemo])
+    for (const [name, value] of Object.entries(preset.values)) {
+      setVar(name, value, { source: "preset" })
+    }
+  }, [setVar])
 
   const currentVariables = useMemo(
     () => localizedVariables.map((v) => ({ ...v, value: vars[v.name] ?? v.value })),
     [localizedVariables, vars],
   )
-  const currentStep = lessonSteps[lessonStep]
-
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
+
+  useEffect(() => {
+    if (equationIdentityRef.current === resolvedId) return
+    equationIdentityRef.current = resolvedId
+    resumeAppliedRef.current = null
+    lessonCompletionRecordedRef.current = false
+    setExperimentSnapshot(null)
+    const defaults = Object.fromEntries(initialVariables.map((variable) => [variable.name, variable.value]))
+    varsRef.current = defaults
+    setVars(defaults)
+    commitLessonAttempt(createLessonAttempt(0, defaults, lessonAttemptRef.current.revision + 1))
+  }, [resolvedId, initialVariables, commitLessonAttempt])
 
   useEffect(() => {
     if (!progressEnabled || !lessonMode || lessonSteps.length === 0) return
@@ -351,52 +406,10 @@ export function TeachableEquation({
 
     const resumeIndex = lessonSteps.findIndex((step) => step.id === savedStepId)
     if (resumeIndex >= 0) {
-      setLessonStep(resumeIndex)
-      setStepCompleted(false)
+      commitLessonAttempt(createLessonAttempt(resumeIndex, varsRef.current, lessonAttemptRef.current.revision + 1))
     }
     resumeAppliedRef.current = resolvedId
-  }, [progress.lessonStep, progressEnabled, lessonMode, lessonSteps, resolvedId])
-
-  // Single effect owns prevVarsRef so reads and writes are always in the same
-  // commit — eliminates the race condition where two sibling effects with
-  // different dep arrays could read/write prevVarsRef in different renders.
-  useEffect(() => {
-    const previousVars = prevVarsRef.current
-    prevVarsRef.current = vars  // update immediately so next run sees fresh prev
-
-    // Track variable exploration
-    if (progressEnabled) {
-      for (const key of Object.keys(vars)) {
-        if (previousVars[key] !== vars[key]) {
-          markVariableExplored(key)
-        }
-      }
-    }
-
-    // Check success condition
-    if (!lessonMode || stepCompleted || !currentStep) return
-    const c = currentStep.successCondition
-    if (c.type === "time_elapsed") return
-    switch (c.type) {
-      case 'variable_changed': {
-        if (c.target) { const prev = previousVars[c.target]; const curr = vars[c.target]; if (prev !== undefined && curr !== undefined && prev !== curr) setStepCompleted(true) }
-        break
-      }
-      case 'value_reached': {
-        if (c.target && c.value !== undefined) { const curr = vars[c.target]; if (curr !== undefined && Math.abs(curr - c.value) <= (c.tolerance ?? 0.5)) setStepCompleted(true) }
-        break
-      }
-    }
-  }, [vars, lessonMode, currentStep, stepCompleted, progressEnabled, markVariableExplored])
-
-  useEffect(() => {
-    if (!lessonMode || stepCompleted || !currentStep) return
-    const c = currentStep.successCondition
-    if (c.type !== "time_elapsed") return
-
-    const timer = setTimeout(() => setStepCompleted(true), c.duration ?? 15000)
-    return () => clearTimeout(timer)
-  }, [lessonMode, currentStep, stepCompleted])
+  }, [progress.lessonStep, progressEnabled, lessonMode, lessonSteps, resolvedId, commitLessonAttempt])
 
   // Track time spent — tick every 5 seconds
   useEffect(() => {
@@ -408,18 +421,24 @@ export function TeachableEquation({
   }, [isDocumentVisible, progressEnabled, updateProgress])
 
   const advanceLesson = useCallback(() => {
-    const completedStepIndex = lessonStep
-    const isLastStep = lessonStep >= lessonSteps.length - 1
+    const attempt = lessonAttemptRef.current
+    const context = interactionContextRef.current
+    if (!context.lessonMode || !attempt.stepCompleted || attempt.lessonFinished) return
+    const completedStepIndex = attempt.stepIndex
+    if (!lessonSteps[completedStepIndex]) return
+    const isLastStep = completedStepIndex >= lessonSteps.length - 1
+    resumeAppliedRef.current = resolvedId
     // The lesson view can remount when switching tabs; record its final step once per run.
     if (isLastStep) {
+      if (!getConceptCheck(resolvedId) || !attempt.checkPassed) return
       if (lessonCompletionRecordedRef.current) return
       lessonCompletionRecordedRef.current = true
+      commitLessonAttempt({ ...attempt, lessonFinished: true })
     }
     const nextStepId = isLastStep ? "" : lessonSteps[completedStepIndex + 1]?.id ?? ""
 
     if (!isLastStep) {
-      setLessonStep((p) => p + 1)
-      setStepCompleted(false)
+      commitLessonAttempt(createLessonAttempt(completedStepIndex + 1, varsRef.current, attempt.revision + 1))
     }
 
     // Persist the next step to resume from, not the one just completed.
@@ -434,22 +453,51 @@ export function TeachableEquation({
     if (isPro && isAuthenticated && resolvedId > 0) {
       api.analytics.logEvent(resolvedId, isLastStep ? 'lesson_completed' : 'lesson_step_completed', { step: completedStepIndex }).catch(() => {})
     }
-  }, [lessonStep, lessonSteps, isPro, isAuthenticated, resolvedId, progressEnabled, updateProgress])
+  }, [lessonSteps, isPro, isAuthenticated, resolvedId, progressEnabled, updateProgress, commitLessonAttempt])
+
+  const checkAnswer = useCallback((answerIndex: number | null) => {
+    const attempt = lessonAttemptRef.current
+    if (attempt.lessonFinished) return
+    const check = getConceptCheck(resolvedId)
+    const checkPassed = answerIndex !== null
+      && interactionContextRef.current.lessonMode
+      && attempt.stepCompleted
+      && attempt.stepIndex === lessonSteps.length - 1
+      && check != null
+      && Number.isInteger(answerIndex)
+      && answerIndex >= 0
+      && answerIndex < check.options.length
+      && answerIndex === check.correctIndex
+    if (attempt.checkPassed !== checkPassed) commitLessonAttempt({ ...attempt, checkPassed })
+  }, [resolvedId, lessonSteps.length, commitLessonAttempt])
+
+  const retryStep = useCallback(() => {
+    const attempt = lessonAttemptRef.current
+    if (attempt.lessonFinished) return
+    const restored = { ...attempt.stepStartValues }
+    varsRef.current = restored
+    setVars(restored)
+    commitLessonAttempt(createLessonAttempt(attempt.stepIndex, restored, attempt.revision + 1))
+  }, [commitLessonAttempt])
 
   const resetLesson = useCallback(() => {
     lessonCompletionRecordedRef.current = false
-    setLessonStep(0); setStepCompleted(false)
+    setExperimentSnapshot(null)
+    setExperimentSession((session) => session + 1)
     const r: Record<string, number> = {}
     for (const v of initialVariables) r[v.name] = v.value
-    prevVarsRef.current = r
+    varsRef.current = r
     setVars(r)
-  }, [initialVariables])
+    commitLessonAttempt(createLessonAttempt(0, r, lessonAttemptRef.current.revision + 1))
+    resumeAppliedRef.current = resolvedId
+  }, [initialVariables, resolvedId, commitLessonAttempt])
 
   const disableLessonMode = useCallback(() => {
+    interruptScene()
     lessonModeWasToggledRef.current = true
     setLessonMode(false)
     setMobileTeachingTab("controls")
-  }, [])
+  }, [interruptScene])
 
   const restartLessonMode = useCallback(() => {
     lessonModeWasToggledRef.current = true
@@ -457,10 +505,11 @@ export function TeachableEquation({
     resetLesson()
   }, [resetLesson])
 
-  // lockedVarsMemo is computed above (before applyPreset) and is the single source of truth.
+  // Exploration stays available during a lesson. The progress evaluator still
+  // accepts only the active step's authored drivers and goal.
   const formulaVariables = useMemo(
-    () => currentVariables.map((v) => ({ ...v, locked: lockedVarsMemo.has(v.name) })),
-    [currentVariables, lockedVarsMemo],
+    () => currentVariables.map((v) => ({ ...v, locked: false })),
+    [currentVariables],
   )
   const hasLessons = lessonSteps.length > 0
 
@@ -488,6 +537,71 @@ export function TeachableEquation({
   const resultNote = useMemo(
     () => appSettings.showResultNote ? describeResult?.(vars) : undefined,
     [appSettings.showResultNote, describeResult, vars],
+  )
+  const experimentContextRef = useRef({ variables: initialVariables, experimentMeasurement, buildResultLine, snapshot: experimentSnapshot })
+  experimentContextRef.current = { variables: initialVariables, experimentMeasurement, buildResultLine, snapshot: experimentSnapshot }
+
+  // Read current permissions and values at the click, including an advance that
+  // happened before React painted the next step.
+  const getExperimentControls = useCallback(() => {
+    return experimentContextRef.current.variables.map((variable) => ({
+      ...variable,
+      value: varsRef.current[variable.name] ?? variable.value,
+      locked: false,
+    }))
+  }, [])
+
+  const captureBaseline = useCallback(() => {
+    const id = interactionContextRef.current.resolvedId
+    if (id !== resolvedId || equationIdentityRef.current !== id) return
+    const context = experimentContextRef.current
+    setExperimentSnapshot(captureExperiment(id, varsRef.current, context.experimentMeasurement, context.buildResultLine))
+  }, [resolvedId])
+
+  const restoreBaseline = useCallback(() => {
+    const context = experimentContextRef.current
+    if (context.snapshot !== experimentSnapshot || interactionContextRef.current.resolvedId !== resolvedId) return
+    const plan = experimentRestorePlan(context.snapshot, interactionContextRef.current.resolvedId, getExperimentControls(), varsRef.current)
+    if (plan.disabledReason) return
+    for (const [name, value] of Object.entries(plan.changes)) setVar(name, value, { source: "restore" })
+  }, [experimentSnapshot, resolvedId, getExperimentControls, setVar])
+
+  const runPrediction = useCallback((change: ExperimentChange): boolean => {
+    const context = experimentContextRef.current
+    const id = interactionContextRef.current.resolvedId
+    const attempt = lessonAttemptRef.current
+    if (id !== resolvedId || equationIdentityRef.current !== id
+      || attempt.stepIndex !== lessonStep || attempt.revision !== lessonAttempt.revision
+      || interactionContextRef.current.lessonMode !== lessonMode
+      || context.experimentMeasurement !== experimentMeasurement || !context.experimentMeasurement
+      || !experimentChangeAllowed(change, getExperimentControls(), varsRef.current)) return false
+    try {
+      const before = context.experimentMeasurement.compute(varsRef.current)
+      const after = context.experimentMeasurement.compute({ ...varsRef.current, [change.variableName]: change.value })
+      if (!Number.isFinite(before) || !Number.isFinite(after)) return false
+    } catch { return false }
+    if (!context.snapshot || context.snapshot.equationId !== id) {
+      setExperimentSnapshot(captureExperiment(id, varsRef.current, context.experimentMeasurement, context.buildResultLine))
+    }
+    setVar(change.variableName, change.value, { source: "learner" })
+    return true
+  }, [resolvedId, lessonStep, lessonAttempt.revision, lessonMode, experimentMeasurement, getExperimentControls, setVar])
+
+  const activeSnapshot = experimentSnapshot?.equationId === resolvedId ? experimentSnapshot : null
+  const restorePlan = experimentRestorePlan(activeSnapshot, resolvedId, formulaVariables, vars)
+  const experimentKey = `${resolvedId}:${lessonMode ? lessonStep : "explore"}:${lessonAttempt.revision}`
+  const experimentsBlock = (
+    <ExperimentBench
+      variables={formulaVariables} snapshot={activeSnapshot}
+      currentResult={experimentResultLine(vars, experimentMeasurement, buildResultLine)}
+      currentResultNote={experimentMeasurement?.note}
+      onCapture={captureBaseline} onRestore={restoreBaseline} onClear={() => setExperimentSnapshot(null)}
+      restoreDisabledReason={restorePlan.disabledReason} resetKey={`${resolvedId}:${lessonMode ? lessonStep : "explore"}:${experimentSession}`}
+    >
+      {experimentMeasurement && (
+        <PredictionChallenge key={experimentKey} measurement={experimentMeasurement} variables={formulaVariables} values={vars} onRun={runPrediction} />
+      )}
+    </ExperimentBench>
   )
   const mobileTabOrder = useMemo<MobileTeachingTab[]>(() => {
     const tabs: MobileTeachingTab[] = ["controls"]
@@ -518,7 +632,7 @@ export function TeachableEquation({
         </>
       )}
       {formulaCardVisible && (
-        <div className={appSettings.showHookText ? "mt-3" : undefined}>
+        <div className={cn("studio-formula", appSettings.showHookText && "mt-4")}>
           <ErrorBoundary fallback={<FormulaFallback />}>
             <Suspense fallback={<FormulaFallback />}>
               {buildLiveFormula ? (
@@ -551,12 +665,7 @@ export function TeachableEquation({
     <section className={isPhone ? "space-y-1" : "space-y-3"} aria-label="Adjust variables">
       <div>
         <h3 className="font-display text-sm font-bold text-slate-700 dark:text-slate-200">Variables</h3>
-        {lockedVarsMemo.size > 0 && mobileTeachingTab !== "lesson" && (
-          <div className="space-y-2 pt-1">
-            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">Some variables stay fixed during this lesson step.</p>
-            <Button variant="outline" size="sm" className={isPhone ? "min-h-11" : "min-h-9"} onClick={disableLessonMode}>Explore freely</Button>
-          </div>
-        )}
+        {formulaVariables.some((variable) => !variable.constant && !variable.locked) && <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Drag a slider or select a value to type.</p>}
       </div>
         <TouchableFormula
           variables={formulaVariables} onVariableChange={setVar}
@@ -576,9 +685,6 @@ export function TeachableEquation({
           variant="outline"
           size="xs"
           onClick={() => applyPreset(p)}
-          disabled={Object.entries(p.values).some(([name, value]) => lockedVarsMemo.has(name) && vars[name] !== value)}
-          title={Object.entries(p.values).some(([name, value]) => lockedVarsMemo.has(name) && vars[name] !== value)
-            ? "Choose Explore freely to use this preset" : undefined}
           aria-pressed={presetIsActive(p, vars)}
           className={cn(
             "shadow-none",
@@ -598,8 +704,14 @@ export function TeachableEquation({
     <ErrorBoundary fallback={<LessonFallback />}>
       <Suspense fallback={<LessonFallback />}>
         <LessonRunner
+          equationId={resolvedId}
           steps={lessonSteps} currentStepIndex={lessonStep}
           onAdvance={advanceLesson} onReset={resetLesson} stepCompleted={stepCompleted}
+          stepStartValues={lessonAttempt.stepStartValues}
+          attemptKey={`${resolvedId}:${lessonAttempt.revision}`}
+          onRetryStep={retryStep}
+          checkPassed={lessonAttempt.checkPassed} onCheckAnswer={checkAnswer}
+          lessonFinished={lessonAttempt.lessonFinished}
           variables={formulaVariables} onHighlight={setHighlightedVar}
           glossary={localizedGlossary} onTermHighlight={setHighlightedTerm}
           compact={isMobile} phoneLayout={isPhone}
@@ -641,7 +753,7 @@ export function TeachableEquation({
     <section aria-label="Equation workspace" className={cn("flex min-w-0 flex-col", !isPhone && "h-full min-h-0", !isPhone && !isNarrow && "studio-inspector")}>
       {!isPhone && !isNarrow && (
         <div className="flex shrink-0 items-center justify-between px-5 pb-1 pt-4">
-          <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">Your experiment</h3>
+          <h3 className="flex items-center gap-2 font-display text-sm font-bold text-slate-900 dark:text-white"><FlaskConical className="h-4 w-4 text-ocean dark:text-blue-300" aria-hidden="true" />Your experiment</h3>
           <Button variant="ghost" size="icon-sm" onClick={() => setTeachingPanelOpen(false)} aria-label="Hide teaching panel">
             <PanelRightOpen className="h-4 w-4" />
           </Button>
@@ -663,22 +775,51 @@ export function TeachableEquation({
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white")}
               onClick={() => setMobileTeachingTab(tab)}
             >
+              {tab === "controls" ? <FlaskConical className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : tab === "learn" ? <BookOpen className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <ListChecks className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
               {tab === "controls" ? "Explore" : tab === "learn" ? "Learn" : "Lesson"}
             </Button>
           ))}
         </div>
       </div>
       <div key={mobileTeachingTab} className={isPhone ? "min-w-0" : "native-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain"}>
-        <div className={isPhone ? "space-y-3 px-1 pb-3 pt-1" : "space-y-5 p-4 sm:p-5"}>
-          {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{presetsBlock}</>}
+        <div className={isPhone ? "space-y-4 px-1 pb-4 pt-4" : "space-y-5 p-4"}>
+          {mobileTeachingTab === "controls" && <>{learnBlock}{variablesBlock}{experimentsBlock}{presetsBlock}</>}
           {mobileTeachingTab === "learn" && <>{learnBlock}{learnMoreBlock}</>}
-          {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}</>}
+          {mobileTeachingTab === "lesson" && <>{lessonBlock}{restartLessonBlock}{lessonMode && variablesBlock}{experimentsBlock}</>}
         </div>
       </div>
     </section>
   )
 
-  const visualizationContent = children({ vars, setVar, highlightedVar, setHighlightedVar, highlightedTerm })
+  const sceneIsCurrent = useCallback((revision = lessonAttempt.revision, allowBatch = false) => {
+    const attempt = lessonAttemptRef.current
+    return interactionContextRef.current.resolvedId === resolvedId
+      && interactionContextRef.current.lessonMode === lessonMode
+      && attempt.stepIndex === lessonStep && attempt.revision === revision
+      && (allowBatch || sceneEpochRef.current === sceneEpoch)
+  }, [resolvedId, lessonMode, lessonStep, lessonAttempt.revision, sceneEpoch])
+  const sceneSetVar = useMemo<SetEquationVariable>(() => {
+    // A child bulk restore may reset the attempt on each field. Follow only
+    // revisions produced by this callback; unrelated Retry/Next stays stale.
+    let batchRevision = lessonAttempt.revision
+    return (name, value, options) => {
+      const source = options?.source
+      const batch = source === "preset" || source === "restore" || source === "reset"
+      if (!sceneIsCurrent(batch ? batchRevision : undefined, batch)) return
+      setVar(name, value, options)
+      if (batch) batchRevision = lessonAttemptRef.current.revision
+    }
+  }, [sceneIsCurrent, setVar, lessonAttempt.revision])
+  const sceneOnAction = useCallback((name: string) => {
+    if (sceneIsCurrent()) onAction(name)
+  }, [sceneIsCurrent, onAction])
+  const sceneIdentity = `${resolvedId}:${lessonMode}:${lessonStep}:${lessonAttempt.revision}:${sceneEpoch}`
+  const visualizationContent = (
+    <SceneInteractionSurface variables={formulaVariables} onVariableChange={sceneSetVar}
+      key={`${resolvedId}:${sceneEpoch}`} identity={sceneIdentity} onInterrupt={interruptScene} onNativeGestureChange={setNativeGestureActive}>
+      {children({ vars, setVar: sceneSetVar, onAction: sceneOnAction, highlightedVar, setHighlightedVar, highlightedTerm })}
+    </SceneInteractionSurface>
+  )
 
   const handleMobilePanelGestureStart = useCallback((clientY: number) => {
     dragStartYRef.current = clientY
@@ -710,7 +851,7 @@ export function TeachableEquation({
   if (isPhone) {
     return (
       <div ref={containerRef} className="flex min-w-0 flex-col gap-3">
-        <div className="min-w-0" style={{ height: "clamp(240px, 38dvh, 340px)" }}>
+        <div className="min-w-0" style={{ height: phoneVisualizationHeight }}>
           <VisualizationViewport mobileOptimized flowingPage>
             {visualizationContent}
           </VisualizationViewport>
@@ -809,7 +950,7 @@ export function TeachableEquation({
 
   // Desktop: side-by-side with resizable panel
   return (
-    <div ref={containerRef} className="flex h-full gap-2">
+    <div ref={containerRef} className="flex h-full gap-3">
       <div className="min-h-0 min-w-0 flex-1">
         <VisualizationViewport mobileOptimized={isMobile}>
           {visualizationContent}

@@ -240,7 +240,7 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
         .attr("width", W)
         .attr("height", H)
         .style("display", "block")
-        .attr("role", "img")
+        .attr("role", "group")
         .attr("aria-label", "Fourier decomposition showing harmonics and composite signal")
       const pal = readScenePalette(el)
 
@@ -248,6 +248,8 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
       // --- Composite section ---
       g.append("text")
+        .attr("data-drag-variable", "a1").attr("data-drag-axis", "y")
+        .attr("aria-label", "Adjust fundamental amplitude in composite signal")
         .attr("x", plotLeft).attr("y", compositeTop - 4)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 700).attr("fill", pal.ink)
         .text(compact ? "Composite" : "Composite Signal")
@@ -260,6 +262,9 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
       // Composite path
       g.append("path").attr("class", "composite-path")
+        .attr("data-drag-variable", "a1").attr("data-drag-axis", "y")
+        .attr("aria-label", "Adjust fundamental amplitude in composite signal")
+        .style("pointer-events", "bounding-box")
         .attr("fill", "none").attr("stroke", pal.ink).attr("stroke-width", 3)
 
       // --- Individual harmonics ---
@@ -278,17 +283,28 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
           .attr("stroke", "#f1f5f9").attr("stroke-width", 1)
 
         // Waveform path
-        g.append("path").attr("class", `harmonic-path-${i}`)
+        const harmonicCurve = g.append("g").attr("class", `harmonic-curve-${i}`)
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust harmonic ${i + 1} amplitude`)
+        harmonicCurve.append("rect")
+          .attr("x", plotLeft).attr("y", yMid - harmonicHeight / 2)
+          .attr("width", plotRight - plotLeft).attr("height", Math.max(30, harmonicHeight))
+          .attr("fill", "transparent")
+        harmonicCurve.append("path").attr("class", `harmonic-path-${i}`)
           .attr("fill", "none").attr("stroke", color).attr("stroke-width", 2)
 
         // Glow ring for highlight
         g.append("circle").attr("class", `harmonic-glow-${i}`)
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust harmonic ${i + 1} amplitude`)
           .attr("cx", plotLeft - W * 0.024).attr("cy", yMid).attr("r", W * 0.018)
           .attr("fill", "none").attr("stroke", color).attr("stroke-width", 2).attr("stroke-dasharray", "5 3")
           .attr("opacity", 0)
 
         // Label n=i+1
         const labelG = g.append("g").attr("class", `harmonic-label-${i}`).style("cursor", "pointer")
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust harmonic ${i + 1} amplitude`)
         labelG.append("text")
           .attr("x", plotLeft - W * 0.007).attr("y", yMid + 5)
           .attr("text-anchor", "end").attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
@@ -299,6 +315,8 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
         // Amplitude label
         const ampG = g.append("g").attr("class", `harmonic-amp-${i}`).style("cursor", "pointer")
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust harmonic ${i + 1} amplitude readout`)
         ampG.append("text").attr("class", `amp-text-${i}`)
           .attr("x", plotRight + W * 0.009).attr("y", yMid + 5)
           .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", color)
@@ -321,16 +339,23 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
       for (let i = 0; i < 4; i++) {
         const bx = spectrumBarScale(i + 1) - spectrumBarW / 2
         g.append("rect").attr("class", `spectrum-bar-${i}`)
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust spectrum harmonic ${i + 1} amplitude`)
           .attr("x", bx).attr("width", spectrumBarW).attr("rx", 5)
           .attr("fill", HARMONIC_COLORS[i])
 
         g.append("text")
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust spectrum harmonic ${i + 1} amplitude`)
           .attr("x", bx + spectrumBarW / 2).attr("y", spectrumBottom + H * 0.038)
           .attr("text-anchor", "middle").attr("font-size", fontSizeSm).attr("font-family", F).attr("fill", "#64748b")
           .text(ultraCompact ? `${i + 1}` : compact ? `${i + 1}` : `${i + 1}f`)
 
         // Drag handle on top of each bar
         const handleG = g.append("g").attr("class", `spectrum-handle-${i}`).style("cursor", "grab").style("touch-action", "none")
+          .attr("data-scene-drag", "native")
+          .attr("data-drag-variable", HARMONIC_NAMES[i]).attr("data-drag-axis", "y")
+          .attr("aria-label", `Adjust spectrum harmonic ${i + 1} amplitude handle`)
         // Invisible hit area (min 30px)
         handleG.append("rect").attr("class", `spectrum-hit-${i}`)
           .attr("x", bx - 4).attr("width", spectrumBarW + 8).attr("height", Math.max(30, spectrumH))
@@ -367,6 +392,8 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
       // Equation readout
       g.append("text").attr("class", "equation-readout")
+        .attr("data-drag-variable", "a1").attr("data-drag-axis", "y")
+        .attr("aria-label", "Adjust fundamental amplitude in equation readout")
         .attr("x", spectrumLeft).attr("y", spectrumBottom + H * 0.11)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
 
@@ -380,19 +407,25 @@ function D3FourierVisual({ a1, a2, a3, a4, highlightedVar, onHighlight, onVarCha
 
       // D3 play/pause button inside SVG
       const btnG = g.append("g").attr("class", "play-btn").style("cursor", "pointer")
+        .attr("role", "button").attr("tabindex", 0).attr("aria-label", "Play or pause Fourier animation")
         .attr("transform", `translate(${W - (compact ? 84 : 100)}, ${H - 38})`)
       btnG.append("rect").attr("class", "play-btn-bg").attr("width", compact ? 64 : 80).attr("height", 26).attr("rx", 13)
         .attr("fill", "white").attr("stroke", "#e2e8f0").attr("stroke-width", 1.5)
       btnG.append("text").attr("class", "play-btn-text").attr("x", compact ? 32 : 40).attr("y", 17).attr("text-anchor", "middle")
         .attr("font-size", 12).attr("font-family", F).attr("font-weight", 600).attr("fill", "#64748b")
         .text(compact ? sceneCopy.ui.playButton.compactPlaying : sceneCopy.ui.playButton.fullPlaying)
-      btnG.on("click", () => {
+      const togglePlayback = () => {
         playingRef.current = !playingRef.current
         updatePlayButton()
         if (playingRef.current) {
           lastTsRef.current = 0
           rafRef.current = requestAnimationFrame(animate)
         }
+      }
+      btnG.on("click", togglePlayback).on("keydown", (event: KeyboardEvent) => {
+        if (event.key !== "Enter" && event.key !== " ") return
+        event.preventDefault()
+        togglePlayback()
       })
 
       // Hover cross-highlighting

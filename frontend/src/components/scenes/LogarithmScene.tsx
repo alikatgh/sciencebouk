@@ -199,10 +199,12 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
 
       // log(x) label + bar
       g.append("text").attr("class", "logx-label")
+        .attr("data-drag-variable", "x").attr("aria-label", "First number x and its logarithm")
         .attr("x", barX0).attr("y", barY1 - 8)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#2f5bd1")
 
       g.append("rect").attr("class", "logx-bar")
+        .attr("data-drag-variable", "x").attr("aria-label", "Change x using the log x bar")
         .attr("x", barX0).attr("y", barY1).attr("height", barH).attr("rx", 6)
         .attr("fill", "#6585ff")
 
@@ -214,10 +216,12 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
 
       // log(y) label + bar
       g.append("text").attr("class", "logy-label")
+        .attr("data-drag-variable", "y").attr("aria-label", "Second number y and its logarithm")
         .attr("x", barX0).attr("y", barY2 - 8)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#157a63")
 
       g.append("rect").attr("class", "logy-bar")
+        .attr("data-drag-variable", "y").attr("aria-label", "Change y using the log y bar")
         .attr("x", barX0).attr("y", barY2).attr("height", barH).attr("rx", 6)
         .attr("fill", "#57b59a")
 
@@ -229,17 +233,20 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
 
       // log(xy) label + bar
       g.append("text").attr("class", "logxy-label")
+        .attr("data-drag-variable", "x").attr("data-drag-variable-y", "y").attr("aria-label", "Change x and y using the product logarithm")
         .attr("x", barX0).attr("y", barY3 - 8)
         .attr("font-size", fontSize).attr("font-family", F).attr("font-weight", 600).attr("fill", "#9a5c0e")
 
       g.append("rect").attr("class", "logxy-bar")
+        .attr("data-drag-variable", "x").attr("data-drag-variable-y", "y").attr("aria-label", "Combined logarithm: drag horizontally for x and vertically for y")
         .attr("x", barX0).attr("y", barY3).attr("height", barH).attr("rx", 6)
         .attr("fill", "#f5b942")
 
       // Draggable handle on logx bar
       const xDragHandle = g.append("g").attr("class", "x-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "x").attr("aria-label", "First number x")
       xDragHandle.append("rect")
-        .attr("x", -15).attr("y", barY1 - 5).attr("width", 30).attr("height", barH + 10)
+        .attr("x", -22).attr("y", barY1 - 12).attr("width", 44).attr("height", Math.max(44, barH + 24))
         .attr("fill", "transparent")
       xDragHandle.append("circle")
         .attr("cy", barY1 + barH / 2).attr("r", 7)
@@ -247,8 +254,9 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
 
       // Draggable handle on logy bar
       const yDragHandle = g.append("g").attr("class", "y-drag-handle").style("cursor", "ew-resize").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "y").attr("aria-label", "Second number y")
       yDragHandle.append("rect")
-        .attr("x", -15).attr("y", barY2 - 5).attr("width", 30).attr("height", barH + 10)
+        .attr("x", -22).attr("y", barY2 - 12).attr("width", 44).attr("height", Math.max(44, barH + 24))
         .attr("fill", "transparent")
       yDragHandle.append("circle")
         .attr("cy", barY2 + barH / 2).attr("r", 7)
@@ -256,11 +264,13 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
 
       // Divider line inside combined bar
       g.append("line").attr("class", "logxy-divider")
+        .attr("data-drag-variable", "x").attr("aria-label", "Change x using the division of the combined bar")
         .attr("y1", barY3 + 2).attr("y2", barY3 + barH - 2)
         .attr("stroke", "#9a5c0e").attr("stroke-width", 2).attr("stroke-dasharray", "3 2")
 
       // Verification text
       g.append("text").attr("class", "verify-label")
+        .attr("data-drag-variable", "x").attr("data-drag-variable-y", "y").attr("aria-label", "Change x and y to verify the logarithm product rule")
         .attr("x", barX0).attr("y", barY3 + barH + H * 0.05)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#16a34a")
 
@@ -297,17 +307,25 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .x(d => cxScale(d))
         .y(d => cyScale(Math.log(d) / Math.log(BASE)))
         .curve(curveMonotoneX)
-      g.append("path")
+      const curveG = g.append("g").attr("class", "log-curve-control")
+        .attr("data-drag-variable", "x").attr("aria-label", "Change x along the logarithm curve")
+      curveG.append("path")
+        .attr("d", curveGen(range(0.5, 101, 0.5)) ?? "")
+        .attr("fill", "none").attr("stroke", "transparent").attr("stroke-width", 24).style("pointer-events", "stroke")
+      curveG.append("path").attr("class", "log-curve")
+        .style("pointer-events", "stroke")
         .attr("d", curveGen(range(0.5, 101, 0.5)) ?? "")
         .attr("fill", "none").attr("stroke", pal.ink).attr("stroke-width", 3)
 
       // Dot on curve for x -- vertical line
       g.append("line").attr("class", "curve-vline")
+        .attr("data-drag-variable", "x").attr("aria-label", "First number x on the logarithm curve")
         .attr("stroke", "#6585ff").attr("stroke-width", 1.5).attr("stroke-dasharray", "4 3")
 
       // Draggable curve dot
       const curveDotGroup = g.append("g").attr("class", "curve-dot-group").style("cursor", "grab").style("touch-action", "none")
-      curveDotGroup.append("circle").attr("r", 18).attr("fill", "transparent")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "x").attr("aria-label", "First number x on the logarithm curve")
+      curveDotGroup.append("circle").attr("r", 22).attr("fill", "transparent")
       curveDotGroup.append("circle").attr("class", "curve-dot").attr("r", 6)
         .attr("fill", "#6585ff").attr("stroke", "white").attr("stroke-width", 2)
 
@@ -327,18 +345,22 @@ function D3LogarithmVisual({ xVal, yVal, onVarChange }: D3LogarithmVisualProps):
         .text(ultraCompact ? "Vals" : compact ? "Values" : "Current Values")
 
       g.append("text").attr("class", "val-logx")
+        .attr("data-drag-variable", "x").attr("aria-label", "First number x and its logarithm value")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.4)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#2f5bd1")
 
       g.append("text").attr("class", "val-logy")
+        .attr("data-drag-variable", "y").attr("aria-label", "Second number y and its logarithm value")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.57)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#157a63")
 
       g.append("text").attr("class", "val-logxy")
+        .attr("data-drag-variable", "x").attr("data-drag-variable-y", "y").attr("aria-label", "Change x and y using their product value")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.73)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#9a5c0e")
 
       g.append("text").attr("class", "val-confirm")
+        .attr("data-drag-variable", "x").attr("data-drag-variable-y", "y").attr("aria-label", "Change x and y to explore the confirmed product rule")
         .attr("x", panelX + panelPad).attr("y", panelY + panelH * 0.92)
         .attr("font-size", fontSizeSm).attr("font-family", F).attr("font-weight", 600).attr("fill", "#16a34a")
         .text(ultraCompact ? "Rule ok" : compact ? "Rule confirmed" : "Product rule confirmed")

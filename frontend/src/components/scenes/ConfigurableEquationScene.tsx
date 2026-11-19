@@ -1,15 +1,17 @@
 import type { ReactElement } from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { BlockMath } from "react-katex"
-import { Check, Copy, Link2, RotateCcw, Shuffle } from "lucide-react"
+import { Check, Copy, Link2, RotateCcw, Share2, Shuffle } from "lucide-react"
 import { copyText } from "../../lib/clipboard"
 import { decodeVarsFromParam, encodeVarsToParam } from "../../lib/equationShareUrl"
 import { pushToast } from "../../lib/toast"
 import { buildCitation } from "../../lib/citation"
 import { TeachableEquation, type Preset } from "../teaching/TeachableEquation"
 import { useEquationId } from "../teaching/EquationContext"
-import type { GlossaryTerm, LessonStep, Variable } from "../teaching/types"
+import type { GlossaryTerm, LessonStep, Variable, SetEquationVariable } from "../teaching/types"
 import { VAR_COLORS } from "../teaching/types"
+import { VisualizationViewport } from "../teaching/VisualizationViewport"
+import { SceneInteractionSurface } from "../teaching/SceneInteractionSurface"
 import { useEquation } from "../../api/hooks"
 import { subjectResults, formatResultValue } from "../../data/subjectResults"
 import { ResponseCurve, pickSweepVariable } from "./ResponseCurve"
@@ -33,6 +35,8 @@ const COPY_LABELS: Record<string, string> = {
   result: "Result copied",
   cite: "Citation copied",
 }
+
+const preserveConstants: SetEquationVariable = () => {}
 
 const COLOR_MAP: Record<string, string> = {
   primary: VAR_COLORS.primary,
@@ -65,6 +69,7 @@ interface RawLesson {
   successTarget?: string
   successValue?: number
   successTolerance?: number
+  successAdditionalTargets?: unknown
   successDuration?: number
   celebration?: string
   insight?: string
@@ -120,12 +125,23 @@ function mapLessons(raw: unknown[]): LessonStep[] {
         target: lesson.successTarget,
         value: lesson.successValue,
         tolerance: lesson.successTolerance,
+        additionalTargets: mapAdditionalTargets(lesson.successAdditionalTargets),
         duration: lesson.successDuration,
       },
       celebration: (lesson.celebration as LessonStep["celebration"]) ?? "subtle",
       insight: lesson.insight ?? "",
     }
   })
+}
+
+function mapAdditionalTargets(raw: unknown): LessonStep["successCondition"]["additionalTargets"] {
+  if (!Array.isArray(raw)) return undefined
+  return raw.filter(isRecord).filter((target) => typeof target.target === "string"
+    && target.target.length > 0 && typeof target.value === "number" && Number.isFinite(target.value)
+    && (target.tolerance === undefined
+      || (typeof target.tolerance === "number" && Number.isFinite(target.tolerance) && target.tolerance >= 0)))
+    .map((target) => ({ target: target.target as string, value: target.value as number,
+      ...(target.tolerance !== undefined ? { tolerance: target.tolerance as number } : {}) }))
 }
 
 function mapPresets(raw: unknown[]): Preset[] {
@@ -180,9 +196,11 @@ export function ConfigurableEquationScene(): ReactElement {
     )
   }
 
-  // No interactive variables to drive: fall back to a calm static formula card.
+  // Fixed identities can still be repositioned without inventing editable constants.
   if (variables.filter((v) => !v.constant).length === 0) {
     return (
+      <VisualizationViewport mobileOptimized>
+      <SceneInteractionSurface variables={variables} onVariableChange={preserveConstants} identity={equationId}>
       <div className="flex h-full flex-col items-center justify-center gap-6 rounded-2xl border border-slate-200 bg-white px-6 py-10 dark:border-slate-700 dark:bg-slate-800">
         <div className="rounded-2xl bg-slate-50 px-8 py-6 dark:bg-slate-900">
           <BlockMath math={equation.formula} />
@@ -195,6 +213,8 @@ export function ConfigurableEquationScene(): ReactElement {
           {equation.year ? `, ${equation.year}` : ""}
         </p>
       </div>
+      </SceneInteractionSurface>
+      </VisualizationViewport>
     )
   }
 
@@ -209,6 +229,8 @@ export function ConfigurableEquationScene(): ReactElement {
       lessonSteps={lessonSteps}
       presets={presets}
       glossary={glossary}
+      experimentMeasurement={subjectResults[equationId]}
+      phoneVisualizationHeight={subjectResults[equationId] ? "clamp(380px, 52dvh, 460px)" : undefined}
     >
       {({ vars, setVar }) => (
         <GenericMetersVisual key={equationId} equationId={equationId} variables={variables} vars={vars} setVar={setVar} formula={equation.formula} citation={buildCitation(equation)} />
@@ -228,7 +250,7 @@ function GenericMetersVisual({
   equationId: number
   variables: Variable[]
   vars: Record<string, number>
-  setVar: (name: string, value: number) => void
+  setVar: SetEquationVariable
   formula: string
   citation: string
 }): ReactElement {
@@ -269,7 +291,7 @@ function GenericMetersVisual({
     for (const variable of variables) {
       if (variable.constant) continue
       const value = restored[variable.name]
-      if (value !== undefined) setVar(variable.name, Math.min(variable.max, Math.max(variable.min, value)))
+      if (value !== undefined) setVar(variable.name, Math.min(variable.max, Math.max(variable.min, value)), { source: "restore" })
     }
   }, [variables, setVar])
 
@@ -280,37 +302,41 @@ function GenericMetersVisual({
   }
 
   const resetInputs = () => {
-    for (const variable of meters) setVar(variable.name, variable.value)
+    for (const variable of meters) setVar(variable.name, variable.value, { source: "reset" })
   }
   const randomizeInputs = () => {
     for (const variable of meters) {
       const step = variable.step || (variable.max - variable.min) / 100 || 1
       const steps = Math.max(1, Math.round((variable.max - variable.min) / step))
       const raw = variable.min + Math.round(Math.random() * steps) * step
-      setVar(variable.name, Math.min(variable.max, Math.max(variable.min, Number(raw.toFixed(6)))))
+      setVar(variable.name, Math.min(variable.max, Math.max(variable.min, Number(raw.toFixed(6)))), { source: "preset" })
     }
   }
 
   return (
-    <div className="scene-stage studio-surface flex h-full w-full min-h-0 flex-col rounded-2xl border">
-      <div className="relative flex shrink-0 flex-wrap items-center gap-1 px-3 py-2 sm:pr-44">
+    <div data-scene-canvas className="scene-stage studio-surface flex h-full w-full min-h-0 flex-col rounded-2xl border">
+      <div className="relative flex shrink-0 flex-wrap items-center gap-1 py-2 pl-3 pr-24 sm:pr-44">
         <button
           type="button"
           onClick={resetInputs}
-          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          aria-label="Reset variables"
+          title="Reset variables"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
-          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /><span className="hidden sm:inline">Reset</span>
         </button>
         <button
           type="button"
           onClick={randomizeInputs}
-          className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          aria-label="Randomize variables"
+          title="Randomize variables"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
         >
-          <Shuffle className="h-3.5 w-3.5" aria-hidden="true" /> Randomize
+          <Shuffle className="h-3.5 w-3.5" aria-hidden="true" /><span className="hidden sm:inline">Randomize</span>
         </button>
         <details className="group relative ml-auto sm:ml-0">
-          <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-lg px-3 text-xs font-semibold text-slate-600 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-300 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
-            Copy &amp; share
+          <summary aria-label="Copy and share" title="Copy and share" className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-lg px-3 text-xs font-semibold text-slate-600 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-ocean dark:text-slate-300 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
+            <Share2 className="h-3.5 w-3.5 sm:hidden" aria-hidden="true" /><span className="hidden sm:inline">Copy &amp; share</span>
           </summary>
           <div className="absolute right-0 top-full z-30 grid w-48 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900 sm:left-0 sm:right-auto">
         <button
@@ -356,36 +382,43 @@ function GenericMetersVisual({
       </div>
 
       {result && resultValue !== null && Number.isFinite(resultValue) && (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
-          className="shrink-0 px-4 py-1 text-center font-mono text-xl font-semibold tabular-nums"
-          style={{ color: VAR_COLORS.result }}
-        >
-          {result.symbol} = {formatResultValue(resultValue)}
-          {result.unit ? ` ${result.unit}` : ""}
+        <div data-drag-variable={activeSweep ?? undefined} aria-label={`${result.symbol} result controlled by ${activeSweep ?? "the input"}`} className="shrink-0">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`Result: ${result.symbol} equals ${formatResultValue(resultValue)}${result.unit ? ` ${result.unit}` : ""}`}
+            className="px-4 py-1 text-center font-mono text-xl font-semibold tabular-nums"
+            style={{ color: VAR_COLORS.result }}
+          >
+            {result.symbol} = {formatResultValue(resultValue)}
+            {result.unit ? ` ${result.unit}` : ""}
+          </div>
         </div>
       )}
 
       {result ? (
         <div className="flex min-h-0 w-full flex-1 flex-col">
-          <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
+          <div className="min-h-0 flex-1">
+            <ResponseCurve equationId={equationId} variables={variables} vars={vars} sweepOverride={sweepName ?? undefined} />
+          </div>
           {meters.length > 1 && (
-            <div className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-3 pb-2">
-              <span className="mr-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                x-axis
+            <div role="group" aria-label="Choose x-axis variable" className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 border-t border-slate-200/70 px-3 pb-2 pt-2 dark:border-slate-700/70">
+              <span className="w-full text-center text-xs font-medium text-slate-500 dark:text-slate-400 sm:mr-1 sm:w-auto">
+                x-axis · plot against
               </span>
               {meters.map((variable) => {
                 const isActive = activeSweep === variable.name
                 return (
                   <button
                     key={variable.name}
+                    data-drag-variable={variable.name}
                     type="button"
                     onClick={() => setSweepName(variable.name)}
                     aria-pressed={isActive}
-                    className={`min-h-9 min-w-9 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                    aria-label={`Set x-axis to ${variable.description || variable.name} (${variable.symbol})`}
+                    title={variable.description || variable.name}
+                    className={`min-h-11 min-w-11 shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean focus-visible:ring-offset-2 ${
                       isActive ? "" : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
                     }`}
                     style={
@@ -409,7 +442,7 @@ function GenericMetersVisual({
             const pct = span > 0 ? Math.min(100, Math.max(0, ((value - variable.min) / span) * 100)) : 0
             const decimals = variable.step >= 1 ? 0 : variable.step >= 0.1 ? 1 : variable.step >= 0.01 ? 2 : 3
             return (
-              <div key={variable.name} className="flex flex-col gap-1">
+              <div key={variable.name} data-drag-variable={variable.name} aria-label={`${variable.description || variable.symbol} input meter`} className="flex flex-col gap-1">
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="font-bold" style={{ color: variable.color }}>
                     {variable.symbol}
@@ -433,8 +466,8 @@ function GenericMetersVisual({
 
       <p className="hidden shrink-0 px-4 pb-3 text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:block">
         {result
-          ? `Drag a slider — the curve traces ${result.symbol} across its range, and reshapes as you change the other inputs.`
-          : "Drag the sliders — each bar tracks a variable across its range."}
+          ? "Drag the curve or point to change its x-axis input. Drag the axes to move the view."
+          : "Drag a bar or its label to change that input. Drag the background to move the view."}
       </p>
     </div>
   )

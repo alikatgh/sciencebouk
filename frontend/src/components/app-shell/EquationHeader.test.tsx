@@ -26,6 +26,14 @@ afterEach(() => {
 })
 
 describe("EquationHeader", () => {
+  it("keeps scientist information available from the compact phone header", async () => {
+    render(<EquationHeader {...headerProps} phoneLayout />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Learn about Pythagoras" }))
+
+    expect(await screen.findByRole("dialog", { name: "Pythagoras of Samos" })).toBeInTheDocument()
+  })
+
   it("opens scientist information on the first click and can reopen after closing", async () => {
     render(<EquationHeader {...headerProps} />)
 

@@ -27,7 +27,7 @@ export function EquationVisualization({
   // clears it automatically when the learner navigates to another equation.
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <div key={equationId} className="h-full animate-fade-in-up motion-reduce:animate-none">
+      <div key={equationId} className="h-full">
         <EquationIdProvider value={equationId}>
           <ErrorBoundary resetKey={equationId}>
             <SceneComponent />

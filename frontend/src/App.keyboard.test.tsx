@@ -26,9 +26,10 @@ vi.mock("./progress/useProgress", () => ({
 }))
 vi.mock("./lib/useFavorites", () => ({ toggleFavorite: vi.fn(), useIsFavorite: () => false }))
 vi.mock("./components/sceneRegistry", () => ({ prefetchEquationScene: vi.fn().mockResolvedValue(undefined) }))
-vi.mock("./components/EquationVisualization", () => ({
-  EquationVisualization: () => <input type="range" aria-label="Scene variable" />,
-}))
+vi.mock("./components/EquationVisualization", async () => {
+  const { VisualizationViewport } = await import("./components/teaching/VisualizationViewport")
+  return { EquationVisualization: () => <VisualizationViewport><input type="range" aria-label="Scene variable" /></VisualizationViewport> }
+})
 vi.mock("./components/app-shell/EquationHeader", () => ({
   EquationHeader: ({ onOpenDrawer }: { onOpenDrawer: () => void }) => (
     <button onClick={onOpenDrawer}>Browse equations</button>
@@ -116,7 +117,7 @@ describe("equation keyboard navigation", () => {
     await screen.findByRole("slider", { name: "Scene variable" })
 
     fireEvent.keyDown(document.body, { key: "k", [modifier]: true })
-    const search = await screen.findByPlaceholderText("Search ( / )")
+    const search = await screen.findByRole("searchbox", { name: "Search equations" })
     await waitFor(() => expect(search).toHaveFocus())
     expect(screen.getByTestId("location")).toHaveTextContent("/equation/2")
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
@@ -132,7 +133,7 @@ describe("equation keyboard navigation", () => {
 
     fireEvent.keyDown(document.body, shortcut)
     const dialog = await screen.findByRole("dialog")
-    const search = within(dialog).getByRole("textbox", { name: "Search equations" })
+    const search = within(dialog).getByRole("searchbox", { name: "Search equations" })
     await waitFor(() => expect(search).toHaveFocus())
     expect(screen.getByTestId("location")).toHaveTextContent("/equation/2")
 
@@ -153,8 +154,26 @@ describe("equation keyboard navigation", () => {
     renderEquation()
     const slider = await screen.findByRole("slider", { name: "Scene variable" })
     expect(fireEvent.keyDown(slider, { key: "ArrowDown" })).toBe(true)
-    expect(fireEvent.keyDown(screen.getByPlaceholderText("Search ( / )"), { key: "j" })).toBe(true)
+    expect(fireEvent.keyDown(screen.getByRole("searchbox", { name: "Search equations" }), { key: "j" })).toBe(true)
     expect(screen.getByTestId("location")).toHaveTextContent("/equation/2")
+  })
+
+  it("keeps global navigation and search behind focused visualization inactive", async () => {
+    renderEquation()
+    await screen.findByRole("slider", { name: "Scene variable" })
+    const toggle = screen.getByRole("button", { name: "Enter focused visualization mode" })
+    toggle.focus()
+    fireEvent.click(toggle)
+    const dialog = screen.getByRole("dialog", { name: "Focused visualization" })
+    for (const shortcut of [{ key: "?" }, { key: "/" }, { key: "k", ctrlKey: true }, { key: "k", metaKey: true }, { key: "j" }]) {
+      fireEvent.keyDown(within(dialog).getByRole("button", { name: "Exit focused visualization mode" }), shortcut)
+      expect(screen.queryByRole("dialog", { name: "Keyboard Shortcuts" })).not.toBeInTheDocument()
+      expect(screen.getByTestId("location")).toHaveTextContent("/equation/2")
+      expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    }
+    fireEvent.keyDown(window, { key: "Escape" })
+    expect(screen.queryByRole("dialog", { name: "Focused visualization" })).not.toBeInTheDocument()
+    expect(toggle).toHaveFocus()
   })
 
   it("keeps equation shortcuts behind an open dialog inactive", async () => {

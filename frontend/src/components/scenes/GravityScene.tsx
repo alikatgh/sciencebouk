@@ -190,30 +190,39 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
 
       // Distance line
       g.append("line").attr("class", "dist-line").attr("y1", cy).attr("y2", cy)
+        .attr("data-drag-variable", "r").attr("aria-label", "Distance between the centers")
         .attr("stroke", "#cbd5e1").attr("stroke-width", 2).attr("stroke-dasharray", "8 6")
 
       // Distance label
       g.append("text").attr("class", "dist-label").attr("y", cy - 55)
+        .attr("data-drag-variable", "r").attr("aria-label", "Distance between the centers")
         .attr("text-anchor", "middle").attr("font-size", ultraCompact ? 14 : compact ? 16 : 18).attr("font-weight", 700).attr("font-family", F).attr("fill", VAR_COLORS.tertiary)
 
       // Force arrows (right from m1)
       g.append("line").attr("class", "arrow-r").attr("y1", cy).attr("y2", cy)
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Increase gravitational pull by reducing distance")
         .attr("stroke", "#64748b").attr("stroke-width", 5).attr("stroke-linecap", "round")
       g.append("polygon").attr("class", "arrow-r-head").attr("fill", "#64748b")
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Change the distance that determines gravitational pull")
 
       // Force arrows (left from m2)
       g.append("line").attr("class", "arrow-l").attr("y1", cy).attr("y2", cy)
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Increase gravitational pull by reducing distance")
         .attr("stroke", "#64748b").attr("stroke-width", 5).attr("stroke-linecap", "round")
       g.append("polygon").attr("class", "arrow-l-head").attr("fill", "#64748b")
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Change the distance that determines gravitational pull")
 
       // Force result box
       g.append("rect").attr("class", "force-box").attr("y", cy + 55).attr("height", 40).attr("rx", 14)
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Change force by reducing or increasing distance")
         .attr("fill", "white").attr("stroke-width", 2.5)
       g.append("text").attr("class", "force-label").attr("y", cy + 81)
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Change the distance that determines this force")
         .attr("text-anchor", "middle").attr("font-size", ultraCompact ? 16 : compact ? 18 : 20).attr("font-weight", 800).attr("font-family", F)
 
       // Extreme annotation
       g.append("text").attr("class", "extreme-label").attr("y", cy + 120)
+        .attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Explore gravitational pull by changing distance")
         .attr("text-anchor", "middle").attr("font-size", ultraCompact ? 12 : compact ? 13 : 15).attr("font-weight", 600).attr("font-family", F)
 
       // Mass 1 glow ring
@@ -222,6 +231,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
 
       // Mass 1 group — draggable
       const m1G = g.append("g").attr("class", "m1-group").style("cursor", "grab").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "r").attr("data-drag-direction", "-1").attr("aria-label", "Move the first body to change distance")
       m1G.append("circle").attr("class", "m1-hit").attr("cy", cy).attr("r", 50).attr("fill", "transparent")
       m1G.append("circle").attr("class", "m1-circle").attr("cy", cy)
         .attr("fill", "#93bbfd").attr("stroke", VAR_COLORS.primary).attr("stroke-width", 3)
@@ -229,6 +239,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         .attr("text-anchor", "middle").attr("font-size", 20).attr("font-weight", 700).attr("font-family", F).attr("fill", "white")
         .style("pointer-events", "none").text("m\u2081")
       g.append("text").attr("class", "m1-val").attr("y", cy)
+        .attr("data-drag-variable", "m1").attr("data-drag-axis", "y").attr("aria-label", "First mass in kilograms")
         .attr("text-anchor", "middle").attr("font-size", ultraCompact ? 13 : compact ? 14 : 16).attr("font-weight", 600).attr("font-family", F).attr("fill", VAR_COLORS.primary)
 
       // Mass 2 glow ring
@@ -237,6 +248,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
 
       // Mass 2 group — draggable
       const m2G = g.append("g").attr("class", "m2-group").style("cursor", "grab").style("touch-action", "none")
+        .attr("data-scene-drag", "native").attr("data-drag-variable", "r").attr("aria-label", "Move the second body to change distance")
       m2G.append("circle").attr("class", "m2-hit").attr("cy", cy).attr("r", 50).attr("fill", "transparent")
       m2G.append("circle").attr("class", "m2-circle").attr("cy", cy)
         .attr("fill", "#fcd88e").attr("stroke", VAR_COLORS.secondary).attr("stroke-width", 3)
@@ -244,6 +256,7 @@ function D3GravityVisual({ m1, m2, r, force: _force, onVarChange, highlightedVar
         .attr("text-anchor", "middle").attr("font-size", 20).attr("font-weight", 700).attr("font-family", F).attr("fill", "white")
         .style("pointer-events", "none").text("m\u2082")
       g.append("text").attr("class", "m2-val").attr("y", cy)
+        .attr("data-drag-variable", "m2").attr("data-drag-axis", "y").attr("aria-label", "Second mass in kilograms")
         .attr("text-anchor", "middle").attr("font-size", ultraCompact ? 13 : compact ? 14 : 16).attr("font-weight", 600).attr("font-family", F).attr("fill", VAR_COLORS.secondary)
 
       // Drag hint

@@ -271,7 +271,7 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
       )
     }
     return (
-      <button key={varName} onClick={() => handleBadgeClick(varName, value)} className={`cursor-text rounded-lg border px-2 py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} type="button" title="Click to type a value">
+      <button key={varName} data-drag-variable={varName} aria-label={`${label} option parameter`} onClick={() => handleBadgeClick(varName, value)} className={`cursor-text rounded-lg border px-2 py-1 font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800 ${ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"}`} style={{ borderColor: color, color }} type="button" title="Click to type a value">
         {label} = {format(value)}
       </button>
     )
@@ -324,17 +324,26 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
               <line x1={frame.plotRight} x2={frame.plotRight} y1={frame.plotTop} y2={frame.plotBottom} stroke="#f59e0b" />
             )}
 
-            <path d={intrinsicCallPath} fill="none" stroke="#5a79ff" strokeWidth={2} strokeDasharray="6 4" opacity={0.4} />
-            <path d={intrinsicPutPath} fill="none" stroke="#10b981" strokeWidth={2} strokeDasharray="6 4" opacity={0.4} />
-            <path d={callPath} fill="none" stroke="#5a79ff" strokeWidth={3} />
-            <path d={putPath} fill="none" stroke="#10b981" strokeWidth={3} />
-            {showGreeks && deltaPath && <path d={deltaPath} fill="none" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 3" />}
-            {showGreeks && gammaPath && <path d={gammaPath} fill="none" stroke="#ef4444" strokeWidth={2} strokeDasharray="4 3" />}
+            <path data-drag-variable="K" aria-label="Call intrinsic value controlled by strike price" d={intrinsicCallPath} fill="none" stroke="#5a79ff" strokeWidth={2} strokeDasharray="6 4" opacity={0.4} />
+            <path data-drag-variable="K" aria-label="Put intrinsic value controlled by strike price" d={intrinsicPutPath} fill="none" stroke="#10b981" strokeWidth={2} strokeDasharray="6 4" opacity={0.4} />
+            <g data-drag-variable="K" data-drag-variable-y="sigma" aria-label="Call price: strike horizontally, volatility vertically">
+              <path d={callPath} fill="none" stroke="transparent" strokeWidth={18} />
+              <path d={callPath} fill="none" stroke="#5a79ff" strokeWidth={3} />
+            </g>
+            <g data-drag-variable="K" data-drag-variable-y="sigma" aria-label="Put price: strike horizontally, volatility vertically">
+              <path d={putPath} fill="none" stroke="transparent" strokeWidth={18} />
+              <path d={putPath} fill="none" stroke="#10b981" strokeWidth={3} />
+            </g>
+            {showGreeks && deltaPath && <path data-drag-variable="r" data-drag-axis="y" aria-label="Delta controlled by the risk-free rate" d={deltaPath} fill="none" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 3" />}
+            {showGreeks && gammaPath && <path data-drag-variable="sigma" data-drag-axis="y" aria-label="Gamma controlled by volatility" d={gammaPath} fill="none" stroke="#ef4444" strokeWidth={2} strokeDasharray="4 3" />}
 
-            <line x1={frame.xScale(K)} x2={frame.xScale(K)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeWidth={1.5} strokeDasharray="6 4" />
-            <text x={frame.xScale(K)} y={frame.plotTop + 14} textAnchor="middle" fontSize="14" fontWeight="700" fill={VAR_COLORS.primary}>
-              {ultraCompact ? `${K}` : compact ? `K ${K}` : `K = ${K}`}
-            </text>
+            <g data-drag-variable="K" aria-label="Strike price marker and readout">
+              <line x1={frame.xScale(K)} x2={frame.xScale(K)} y1={frame.plotTop} y2={frame.plotBottom} stroke="transparent" strokeWidth={24} />
+              <line x1={frame.xScale(K)} x2={frame.xScale(K)} y1={frame.plotTop} y2={frame.plotBottom} stroke={VAR_COLORS.primary} strokeWidth={1.5} strokeDasharray="6 4" />
+              <text x={frame.xScale(K)} y={frame.plotTop + 14} textAnchor="middle" fontSize="14" fontWeight="700" fill={VAR_COLORS.primary}>
+                {ultraCompact ? `${K}` : compact ? `K ${K}` : `K = ${K}`}
+              </text>
+            </g>
 
             {xTicks.map((tick) => (
               <g key={`tick-x-${tick}`}>
@@ -380,15 +389,15 @@ function BlackScholesChart({ K, sigma, T, rRate, onVarChange }: BlackScholesChar
 
         {/* Legend + Greeks toggle */}
         <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-2 dark:border-slate-700">
-          <div className="flex items-center gap-2">
+          <div data-drag-variable="K" data-drag-variable-y="sigma" aria-label="Call price controlled by strike and volatility" className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 bg-[#5a79ff]" style={{ height: 3 }} />
             <span className="text-xs font-semibold text-[#5a79ff]">{sceneCopy.ui.legend.call}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-drag-variable="K" data-drag-variable-y="sigma" aria-label="Put price controlled by strike and volatility" className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 bg-emerald-500" style={{ height: 3 }} />
             <span className="text-xs font-semibold text-emerald-500">{sceneCopy.ui.legend.put}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-drag-variable="K" aria-label="Intrinsic value controlled by strike price" className="flex items-center gap-2">
             <span className="inline-block h-0.5 w-5 border-t-2 border-dashed border-slate-400" />
             <span className="text-xs font-semibold text-slate-400">{ultraCompact ? sceneCopy.ui.legend.intrinsicUltraCompact : sceneCopy.ui.legend.intrinsicFull}</span>
           </div>
